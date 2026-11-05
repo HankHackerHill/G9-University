@@ -1,0 +1,14 @@
+/target
+**/target
+node_modules
+dist
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.log
+.DS_Store
+/apps/desktop/src-tauri/gen
+/apps/desktop/src-tauri/target
+coverage
+*.tsbuildinfo

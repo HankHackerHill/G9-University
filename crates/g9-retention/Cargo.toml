@@ -1,0 +1,29 @@
+[package]
+name = "g9-retention"
+description = "Fixed-baseline spaced review scheduler, optional FSRS adapter for declarative items, practical transfer checks (M08)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+g9-domain = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies.rs-fsrs]
+workspace = true
+optional = true
+
+[features]
+default = []
+fsrs = ["dep:rs-fsrs"]

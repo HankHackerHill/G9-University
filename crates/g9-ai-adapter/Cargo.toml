@@ -1,0 +1,21 @@
+[package]
+name = "g9-ai-adapter"
+description = "Replaceable inference adapter (M10): runtime trait, model registry types, context budget, cancellation, structured-output validation, model-down fallback."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+g9-domain = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+jsonschema = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

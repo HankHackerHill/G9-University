@@ -1,0 +1,31 @@
+[package]
+name = "g9-app"
+description = "Application services and typed IPC command handlers composing policy, storage and domain crates (M01 bridge)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+g9-domain = { workspace = true }
+g9-policy = { workspace = true }
+g9-storage = { workspace = true }
+g9-curriculum = { workspace = true }
+g9-calendar = { workspace = true }
+g9-evidence = { workspace = true }
+g9-competency = { workspace = true }
+g9-assessment = { workspace = true }
+g9-retention = { workspace = true }
+g9-ai-adapter = { workspace = true }
+g9-skills = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

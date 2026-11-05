@@ -1,0 +1,21 @@
+[package]
+name = "g9-competency"
+description = "Competency graph, dimension-specific observations, evidence-rule state derivation with replay and correction (M06, M09)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+g9-domain = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+proptest = { workspace = true }
+
+[lints]
+workspace = true

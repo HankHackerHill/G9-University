@@ -1,0 +1,4048 @@
+{
+  "manifest_schema_version": "1.0.0",
+  "curriculum_id": "g9-ct9-480",
+  "name": "G9/CT9 480-hour cybersecurity and AI-security program",
+  "version": "0.1.0-seed",
+  "provenance": "PROPOSED_SEED",
+  "provenance_note": "Transcribed from G9_MENTOR_v6.0_FINAL_MASTER_BUILD_CODEX_HANDOFF.docx Appendix A (5 Nov 2026). NOT the original approved curriculum; authoritative promotion requires reconciliation diff and operator approval.",
+  "structure": {
+    "weeks": 12,
+    "days_per_week": 6,
+    "objectives_per_day": 3,
+    "weekday_minutes": 420,
+    "saturday_minutes": 300,
+    "weekly_minutes": 2400,
+    "total_minutes": 28800,
+    "sunday": "unscheduled"
+  },
+  "weekday_blocks": [
+    {
+      "block": "recall",
+      "minutes": 15
+    },
+    {
+      "block": "theory",
+      "minutes": 45
+    },
+    {
+      "block": "guided_lab",
+      "minutes": 120
+    },
+    {
+      "block": "independent_lab",
+      "minutes": 120
+    },
+    {
+      "block": "defense_verification",
+      "minutes": 60
+    },
+    {
+      "block": "evidence_reporting",
+      "minutes": 60
+    }
+  ],
+  "saturday_blocks": [
+    {
+      "block": "blind_practical",
+      "minutes": 120
+    },
+    {
+      "block": "remediation",
+      "minutes": 60
+    },
+    {
+      "block": "report",
+      "minutes": 60
+    },
+    {
+      "block": "performance_review",
+      "minutes": 60
+    }
+  ],
+  "weeks": [
+    {
+      "week_number": 1,
+      "title": "Linux, Python and secure lab engineering",
+      "days": [
+        {
+          "day_id": "D01",
+          "day_of_week": 1,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D01-O1",
+              "text": "Define lab authorization and boundaries"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D01-O2",
+              "text": "Map host/guest and evidence isolation"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D01-O3",
+              "text": "Establish diagnostic baseline"
+            }
+          ],
+          "evidence_artifact": "Lab design + baseline",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D02",
+          "day_of_week": 2,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D02-O1",
+              "text": "Explain filesystem hierarchy"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D02-O2",
+              "text": "Demonstrate permission/ownership controls"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D02-O3",
+              "text": "Diagnose controlled access failure"
+            }
+          ],
+          "evidence_artifact": "Permissions worksheet",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D03",
+          "day_of_week": 3,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D03-O1",
+              "text": "Analyze processes/services"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D03-O2",
+              "text": "Inspect system logging"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D03-O3",
+              "text": "Reproduce troubleshooting workflow"
+            }
+          ],
+          "evidence_artifact": "Host diagnostic report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D04",
+          "day_of_week": 4,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D04-O1",
+              "text": "Parse structured security records in Python"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D04-O2",
+              "text": "Handle malformed inputs safely"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D04-O3",
+              "text": "Test parser with fixtures"
+            }
+          ],
+          "evidence_artifact": "Parser tests and review",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D05",
+          "day_of_week": 5,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D05-O1",
+              "text": "Apply version-control concepts"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D05-O2",
+              "text": "Produce reproducible runbook"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D05-O3",
+              "text": "Assess evidence completeness"
+            }
+          ],
+          "evidence_artifact": "Technical runbook",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D06",
+          "day_of_week": 6,
+          "planned_minutes": 300,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D06-O1",
+              "text": "Blind Linux troubleshooting"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D06-O2",
+              "text": "Independent security-data analysis"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D06-O3",
+              "text": "Report remediation and limitations"
+            }
+          ],
+          "evidence_artifact": "Week 1 assessment",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "blind_practical",
+              "minutes": 120
+            },
+            {
+              "seq": 2,
+              "block": "remediation",
+              "minutes": 60
+            },
+            {
+              "seq": 3,
+              "block": "report",
+              "minutes": 60
+            },
+            {
+              "seq": 4,
+              "block": "performance_review",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": true
+        }
+      ]
+    },
+    {
+      "week_number": 2,
+      "title": "Networking, protocols and scoped reconnaissance",
+      "days": [
+        {
+          "day_id": "D07",
+          "day_of_week": 1,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D07-O1",
+              "text": "Map OSI/TCP-IP layers"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D07-O2",
+              "text": "Explain addressing and subnetting"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D07-O3",
+              "text": "Diagram network pathways"
+            }
+          ],
+          "evidence_artifact": "Network architecture map",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D08",
+          "day_of_week": 2,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D08-O1",
+              "text": "Explain TCP states"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D08-O2",
+              "text": "Interpret retransmission/failure PCAP"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D08-O3",
+              "text": "Diagnose connectivity in lab"
+            }
+          ],
+          "evidence_artifact": "Packet analysis report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D09",
+          "day_of_week": 3,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D09-O1",
+              "text": "Trace recursive/authoritative DNS"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D09-O2",
+              "text": "Analyze resolution cache and failure"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D09-O3",
+              "text": "Diagnose test DNS defect"
+            }
+          ],
+          "evidence_artifact": "DNS investigation",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D10",
+          "day_of_week": 4,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D10-O1",
+              "text": "Explain route selection"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D10-O2",
+              "text": "Examine NAT/firewall policy"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D10-O3",
+              "text": "Verify segmentation controls"
+            }
+          ],
+          "evidence_artifact": "Route/control report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D11",
+          "day_of_week": 5,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D11-O1",
+              "text": "Define reconnaissance scope"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D11-O2",
+              "text": "Interpret discovery results"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D11-O3",
+              "text": "Translate observations into risks"
+            }
+          ],
+          "evidence_artifact": "Scoped recon report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D12",
+          "day_of_week": 6,
+          "planned_minutes": 300,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D12-O1",
+              "text": "Analyze unfamiliar PCAP"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D12-O2",
+              "text": "Diagnose network failure"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D12-O3",
+              "text": "Write evidence-backed conclusion"
+            }
+          ],
+          "evidence_artifact": "Week 2 assessment",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "blind_practical",
+              "minutes": 120
+            },
+            {
+              "seq": 2,
+              "block": "remediation",
+              "minutes": 60
+            },
+            {
+              "seq": 3,
+              "block": "report",
+              "minutes": 60
+            },
+            {
+              "seq": 4,
+              "block": "performance_review",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": true
+        }
+      ]
+    },
+    {
+      "week_number": 3,
+      "title": "Web application fundamentals",
+      "days": [
+        {
+          "day_id": "D13",
+          "day_of_week": 1,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D13-O1",
+              "text": "Explain HTTP request semantics"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D13-O2",
+              "text": "Analyze cookies, origins and headers"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D13-O3",
+              "text": "Map browser trust boundaries"
+            }
+          ],
+          "evidence_artifact": "HTTP analysis",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D14",
+          "day_of_week": 2,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D14-O1",
+              "text": "Model authentication/session state"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D14-O2",
+              "text": "Analyze controlled session defects"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D14-O3",
+              "text": "Test session mitigations"
+            }
+          ],
+          "evidence_artifact": "Session review",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D15",
+          "day_of_week": 3,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D15-O1",
+              "text": "Distinguish authentication/authorization"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D15-O2",
+              "text": "Examine object access failure"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D15-O3",
+              "text": "Build regression cases"
+            }
+          ],
+          "evidence_artifact": "Access-control matrix",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D16",
+          "day_of_week": 4,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D16-O1",
+              "text": "Explain injection root causes"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D16-O2",
+              "text": "Analyze vulnerable controlled fixture"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D16-O3",
+              "text": "Validate prepared statements"
+            }
+          ],
+          "evidence_artifact": "Injection remediation",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D17",
+          "day_of_week": 5,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D17-O1",
+              "text": "Model XSS execution contexts"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D17-O2",
+              "text": "Inspect controlled XSS"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D17-O3",
+              "text": "Verify context-sensitive output encoding"
+            }
+          ],
+          "evidence_artifact": "XSS report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D18",
+          "day_of_week": 6,
+          "planned_minutes": 300,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D18-O1",
+              "text": "Analyze blind web task"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D18-O2",
+              "text": "Diagnose security failure"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D18-O3",
+              "text": "Verify remediation and document evidence"
+            }
+          ],
+          "evidence_artifact": "Week 3 assessment",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "blind_practical",
+              "minutes": 120
+            },
+            {
+              "seq": 2,
+              "block": "remediation",
+              "minutes": 60
+            },
+            {
+              "seq": 3,
+              "block": "report",
+              "minutes": 60
+            },
+            {
+              "seq": 4,
+              "block": "performance_review",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": true
+        }
+      ]
+    },
+    {
+      "week_number": 4,
+      "title": "Advanced web and API security",
+      "days": [
+        {
+          "day_id": "D19",
+          "day_of_week": 1,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D19-O1",
+              "text": "Map API token/identity flow"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D19-O2",
+              "text": "Check object-level authorization"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D19-O3",
+              "text": "Define API tests"
+            }
+          ],
+          "evidence_artifact": "API security matrix",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D20",
+          "day_of_week": 2,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D20-O1",
+              "text": "Explain SSRF trust boundary"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D20-O2",
+              "text": "Analyze isolated SSRF scenario"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D20-O3",
+              "text": "Verify destination restrictions"
+            }
+          ],
+          "evidence_artifact": "SSRF threat model",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D21",
+          "day_of_week": 3,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D21-O1",
+              "text": "Evaluate upload validation"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D21-O2",
+              "text": "Explain unsafe deserialization"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D21-O3",
+              "text": "Build input-processing tests"
+            }
+          ],
+          "evidence_artifact": "Processing security review",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D22",
+          "day_of_week": 4,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D22-O1",
+              "text": "Assess business logic invariants"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D22-O2",
+              "text": "Examine controlled concurrency issue"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D22-O3",
+              "text": "Create race-condition regression"
+            }
+          ],
+          "evidence_artifact": "Business-logic report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D23",
+          "day_of_week": 5,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D23-O1",
+              "text": "Draft application data-flow model"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D23-O2",
+              "text": "Rank vulnerabilities"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D23-O3",
+              "text": "Verify mitigations"
+            }
+          ],
+          "evidence_artifact": "Application threat model",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D24",
+          "day_of_week": 6,
+          "planned_minutes": 300,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D24-O1",
+              "text": "Investigate blind API scenario"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D24-O2",
+              "text": "Explain root cause"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D24-O3",
+              "text": "Verify and report control effectiveness"
+            }
+          ],
+          "evidence_artifact": "Week 4 assessment",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "blind_practical",
+              "minutes": 120
+            },
+            {
+              "seq": 2,
+              "block": "remediation",
+              "minutes": 60
+            },
+            {
+              "seq": 3,
+              "block": "report",
+              "minutes": 60
+            },
+            {
+              "seq": 4,
+              "block": "performance_review",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": true
+        }
+      ]
+    },
+    {
+      "week_number": 5,
+      "title": "Host security and privilege boundaries",
+      "days": [
+        {
+          "day_id": "D25",
+          "day_of_week": 1,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D25-O1",
+              "text": "Model Windows principals/services"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D25-O2",
+              "text": "Interpret event records"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D25-O3",
+              "text": "Map privilege boundaries"
+            }
+          ],
+          "evidence_artifact": "Windows architecture review",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D26",
+          "day_of_week": 2,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D26-O1",
+              "text": "Explain sudo/capabilities/service permissions"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D26-O2",
+              "text": "Analyze controlled Linux misconfiguration"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D26-O3",
+              "text": "Verify hardening"
+            }
+          ],
+          "evidence_artifact": "Linux privilege review",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D27",
+          "day_of_week": 3,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D27-O1",
+              "text": "Analyze Windows token/service controls"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D27-O2",
+              "text": "Investigate controlled privilege failure"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D27-O3",
+              "text": "Document remediation/detection"
+            }
+          ],
+          "evidence_artifact": "Windows privilege review",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D28",
+          "day_of_week": 4,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D28-O1",
+              "text": "Map common persistence mechanisms"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D28-O2",
+              "text": "Identify associated telemetry"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D28-O3",
+              "text": "Propose detection checks"
+            }
+          ],
+          "evidence_artifact": "Host visibility matrix",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D29",
+          "day_of_week": 5,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D29-O1",
+              "text": "Establish hardened baseline"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D29-O2",
+              "text": "Prioritize host weaknesses"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D29-O3",
+              "text": "Test configuration controls"
+            }
+          ],
+          "evidence_artifact": "Hardening verification",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D30",
+          "day_of_week": 6,
+          "planned_minutes": 300,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D30-O1",
+              "text": "Diagnose unfamiliar host case"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D30-O2",
+              "text": "Explain privilege failure"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D30-O3",
+              "text": "Report controls and evidence"
+            }
+          ],
+          "evidence_artifact": "Week 5 assessment",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "blind_practical",
+              "minutes": 120
+            },
+            {
+              "seq": 2,
+              "block": "remediation",
+              "minutes": 60
+            },
+            {
+              "seq": 3,
+              "block": "report",
+              "minutes": 60
+            },
+            {
+              "seq": 4,
+              "block": "performance_review",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": true
+        }
+      ]
+    },
+    {
+      "week_number": 6,
+      "title": "Active Directory and identity",
+      "days": [
+        {
+          "day_id": "D31",
+          "day_of_week": 1,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D31-O1",
+              "text": "Explain forest/domain/trust model"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D31-O2",
+              "text": "Model principal relationships"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D31-O3",
+              "text": "Identify identity trust boundaries"
+            }
+          ],
+          "evidence_artifact": "Identity diagram",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D32",
+          "day_of_week": 2,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D32-O1",
+              "text": "Explain Kerberos issuance/validation"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D32-O2",
+              "text": "Interpret auth events"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D32-O3",
+              "text": "Diagnose controlled ticket failure"
+            }
+          ],
+          "evidence_artifact": "Kerberos analysis",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D33",
+          "day_of_week": 3,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D33-O1",
+              "text": "Examine delegation types"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D33-O2",
+              "text": "Analyze excessive permissions"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D33-O3",
+              "text": "Specify controls"
+            }
+          ],
+          "evidence_artifact": "Delegation review",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D34",
+          "day_of_week": 4,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D34-O1",
+              "text": "Analyze isolated AD misconfiguration"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D34-O2",
+              "text": "Map privilege paths"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D34-O3",
+              "text": "Design defensive fix"
+            }
+          ],
+          "evidence_artifact": "Identity exposure report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D35",
+          "day_of_week": 5,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D35-O1",
+              "text": "Identify identity telemetry"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D35-O2",
+              "text": "Build suspicious-behavior hypotheses"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D35-O3",
+              "text": "Test hardening/detection"
+            }
+          ],
+          "evidence_artifact": "Identity defense report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D36",
+          "day_of_week": 6,
+          "planned_minutes": 300,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D36-O1",
+              "text": "Analyze blind identity case"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D36-O2",
+              "text": "Explain privilege/trust root cause"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D36-O3",
+              "text": "Recommend and verify fixes"
+            }
+          ],
+          "evidence_artifact": "Week 6 assessment",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "blind_practical",
+              "minutes": 120
+            },
+            {
+              "seq": 2,
+              "block": "remediation",
+              "minutes": 60
+            },
+            {
+              "seq": 3,
+              "block": "report",
+              "minutes": 60
+            },
+            {
+              "seq": 4,
+              "block": "performance_review",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": true
+        }
+      ]
+    },
+    {
+      "week_number": 7,
+      "title": "SOC, detection and threat hunting",
+      "days": [
+        {
+          "day_id": "D37",
+          "day_of_week": 1,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D37-O1",
+              "text": "Inventory event sources"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D37-O2",
+              "text": "Evaluate coverage gaps"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D37-O3",
+              "text": "Design telemetry mapping"
+            }
+          ],
+          "evidence_artifact": "Coverage map",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D38",
+          "day_of_week": 2,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D38-O1",
+              "text": "Normalize log events"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D38-O2",
+              "text": "Validate time/source identities"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D38-O3",
+              "text": "Assess enrichment"
+            }
+          ],
+          "evidence_artifact": "Normalization report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D39",
+          "day_of_week": 3,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D39-O1",
+              "text": "Understand Sigma schema"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D39-O2",
+              "text": "Draft detection hypothesis"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D39-O3",
+              "text": "Test positive/negative fixtures"
+            }
+          ],
+          "evidence_artifact": "Sigma test package",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D40",
+          "day_of_week": 4,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D40-O1",
+              "text": "Correlate sources"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D40-O2",
+              "text": "Reconstruct investigation timeline"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D40-O3",
+              "text": "Separate fact from inference"
+            }
+          ],
+          "evidence_artifact": "Investigation timeline",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D41",
+          "day_of_week": 5,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D41-O1",
+              "text": "Define detection criteria"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D41-O2",
+              "text": "Estimate false positives"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D41-O3",
+              "text": "Refine rule"
+            }
+          ],
+          "evidence_artifact": "Detection validation report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D42",
+          "day_of_week": 6,
+          "planned_minutes": 300,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D42-O1",
+              "text": "Investigate blind telemetry"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D42-O2",
+              "text": "Implement evidence-based detection"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D42-O3",
+              "text": "Report limitations"
+            }
+          ],
+          "evidence_artifact": "Week 7 assessment",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "blind_practical",
+              "minutes": 120
+            },
+            {
+              "seq": 2,
+              "block": "remediation",
+              "minutes": 60
+            },
+            {
+              "seq": 3,
+              "block": "report",
+              "minutes": 60
+            },
+            {
+              "seq": 4,
+              "block": "performance_review",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": true
+        }
+      ]
+    },
+    {
+      "week_number": 8,
+      "title": "DFIR, malware and hunting",
+      "days": [
+        {
+          "day_id": "D43",
+          "day_of_week": 1,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D43-O1",
+              "text": "Scope incident and severity"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D43-O2",
+              "text": "Preserve evidence"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D43-O3",
+              "text": "Draft triage plan"
+            }
+          ],
+          "evidence_artifact": "IR triage report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D44",
+          "day_of_week": 2,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D44-O1",
+              "text": "Analyze host artifacts"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D44-O2",
+              "text": "Construct event timeline"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D44-O3",
+              "text": "Explain chain-of-custody assumptions"
+            }
+          ],
+          "evidence_artifact": "Host forensic timeline",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D45",
+          "day_of_week": 3,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D45-O1",
+              "text": "Analyze suspicious PCAP"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D45-O2",
+              "text": "Correlate network and host evidence"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D45-O3",
+              "text": "Identify gaps"
+            }
+          ],
+          "evidence_artifact": "Network forensic report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D46",
+          "day_of_week": 4,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D46-O1",
+              "text": "Inspect safe static malware fixture"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D46-O2",
+              "text": "Record static characteristics"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D46-O3",
+              "text": "Distinguish behavior from static inference"
+            }
+          ],
+          "evidence_artifact": "Malware triage",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D47",
+          "day_of_week": 5,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D47-O1",
+              "text": "Define hunt hypothesis"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D47-O2",
+              "text": "Examine approved telemetry"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D47-O3",
+              "text": "Record findings/detections"
+            }
+          ],
+          "evidence_artifact": "Hunt report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D48",
+          "day_of_week": 6,
+          "planned_minutes": 300,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D48-O1",
+              "text": "Triage blind incident dataset"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D48-O2",
+              "text": "Reconstruct timeline"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D48-O3",
+              "text": "Recommend recovery"
+            }
+          ],
+          "evidence_artifact": "Week 8 assessment",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "blind_practical",
+              "minutes": 120
+            },
+            {
+              "seq": 2,
+              "block": "remediation",
+              "minutes": 60
+            },
+            {
+              "seq": 3,
+              "block": "report",
+              "minutes": 60
+            },
+            {
+              "seq": 4,
+              "block": "performance_review",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": true
+        }
+      ]
+    },
+    {
+      "week_number": 9,
+      "title": "LLM application and RAG security",
+      "days": [
+        {
+          "day_id": "D49",
+          "day_of_week": 1,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D49-O1",
+              "text": "Map LLM application"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D49-O2",
+              "text": "Identify data/tool boundaries"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D49-O3",
+              "text": "Threat-model application"
+            }
+          ],
+          "evidence_artifact": "LLM threat model",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D50",
+          "day_of_week": 2,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D50-O1",
+              "text": "Explain RAG ingestion/retrieval"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D50-O2",
+              "text": "Analyze source trust"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D50-O3",
+              "text": "Test provenance controls"
+            }
+          ],
+          "evidence_artifact": "RAG review",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D51",
+          "day_of_week": 3,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D51-O1",
+              "text": "Classify prompt-injection entry"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D51-O2",
+              "text": "Run controlled fixtures"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D51-O3",
+              "text": "Test authorization boundary"
+            }
+          ],
+          "evidence_artifact": "Injection evaluation",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D52",
+          "day_of_week": 4,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D52-O1",
+              "text": "Analyze output schema failures"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D52-O2",
+              "text": "Examine unsafe tools"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D52-O3",
+              "text": "Define typed enforcement"
+            }
+          ],
+          "evidence_artifact": "Tool safety matrix",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D53",
+          "day_of_week": 5,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D53-O1",
+              "text": "Design independent eval cases"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D53-O2",
+              "text": "Separate model from app security"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D53-O3",
+              "text": "Report actual limitations"
+            }
+          ],
+          "evidence_artifact": "LLM eval report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D54",
+          "day_of_week": 6,
+          "planned_minutes": 300,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D54-O1",
+              "text": "Evaluate blind AI application"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D54-O2",
+              "text": "Diagnose controlled trust failure"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D54-O3",
+              "text": "Verify mitigation"
+            }
+          ],
+          "evidence_artifact": "Week 9 assessment",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "blind_practical",
+              "minutes": 120
+            },
+            {
+              "seq": 2,
+              "block": "remediation",
+              "minutes": 60
+            },
+            {
+              "seq": 3,
+              "block": "report",
+              "minutes": 60
+            },
+            {
+              "seq": 4,
+              "block": "performance_review",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": true
+        }
+      ]
+    },
+    {
+      "week_number": 10,
+      "title": "Agent security, MCP and tool authorization",
+      "days": [
+        {
+          "day_id": "D55",
+          "day_of_week": 1,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D55-O1",
+              "text": "Map agent workflow"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D55-O2",
+              "text": "Identify authority crossings"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D55-O3",
+              "text": "Define bounded execution"
+            }
+          ],
+          "evidence_artifact": "Agent boundary diagram",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D56",
+          "day_of_week": 2,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D56-O1",
+              "text": "Examine identities/scopes"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D56-O2",
+              "text": "Identify excessive agency"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D56-O3",
+              "text": "Design backend approvals"
+            }
+          ],
+          "evidence_artifact": "Authorization specification",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D57",
+          "day_of_week": 3,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D57-O1",
+              "text": "Analyze MCP transport and actors"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D57-O2",
+              "text": "Examine token audience and exfil risk"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D57-O3",
+              "text": "Define MCP regression cases"
+            }
+          ],
+          "evidence_artifact": "MCP security report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D58",
+          "day_of_week": 4,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D58-O1",
+              "text": "Explain persistent memory trust"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D58-O2",
+              "text": "Evaluate isolated poisoning fixtures"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D58-O3",
+              "text": "Design correction/provenance"
+            }
+          ],
+          "evidence_artifact": "Memory integrity plan",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D59",
+          "day_of_week": 5,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D59-O1",
+              "text": "Define bounded red/blue experiment"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D59-O2",
+              "text": "Observe behavior"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D59-O3",
+              "text": "Verify defensive controls"
+            }
+          ],
+          "evidence_artifact": "Agent evaluation",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D60",
+          "day_of_week": 6,
+          "planned_minutes": 300,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D60-O1",
+              "text": "Analyze unfamiliar agent workflow"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D60-O2",
+              "text": "Explain authorization failure"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D60-O3",
+              "text": "Recommend control"
+            }
+          ],
+          "evidence_artifact": "Week 10 assessment",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "blind_practical",
+              "minutes": 120
+            },
+            {
+              "seq": 2,
+              "block": "remediation",
+              "minutes": 60
+            },
+            {
+              "seq": 3,
+              "block": "report",
+              "minutes": 60
+            },
+            {
+              "seq": 4,
+              "block": "performance_review",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": true
+        }
+      ]
+    },
+    {
+      "week_number": 11,
+      "title": "AI red-team, evaluation and supply chain",
+      "days": [
+        {
+          "day_id": "D61",
+          "day_of_week": 1,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D61-O1",
+              "text": "Identify AI assets/threats"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D61-O2",
+              "text": "Prioritize failure modes"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D61-O3",
+              "text": "Define test objectives"
+            }
+          ],
+          "evidence_artifact": "AI threat model",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D62",
+          "day_of_week": 2,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D62-O1",
+              "text": "Build controlled adversarial fixtures"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D62-O2",
+              "text": "Evaluate observed output"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D62-O3",
+              "text": "Report uncertainty"
+            }
+          ],
+          "evidence_artifact": "Red-team fixture set",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D63",
+          "day_of_week": 3,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D63-O1",
+              "text": "Trace model/dependency provenance"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D63-O2",
+              "text": "Assess licensing/integrity"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D63-O3",
+              "text": "Define acquisition controls"
+            }
+          ],
+          "evidence_artifact": "Supply-chain review",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D64",
+          "day_of_week": 4,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D64-O1",
+              "text": "Evaluate data poisoning"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D64-O2",
+              "text": "Assess privacy exposure"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D64-O3",
+              "text": "Define governance controls"
+            }
+          ],
+          "evidence_artifact": "Data security report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D65",
+          "day_of_week": 5,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D65-O1",
+              "text": "Define valid metrics"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D65-O2",
+              "text": "Detect benchmark leakage"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D65-O3",
+              "text": "Create regression criteria"
+            }
+          ],
+          "evidence_artifact": "Evaluation protocol",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D66",
+          "day_of_week": 6,
+          "planned_minutes": 300,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D66-O1",
+              "text": "Assess unfamiliar AI scenario"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D66-O2",
+              "text": "Produce evidence-linked findings"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D66-O3",
+              "text": "Verify control/limits"
+            }
+          ],
+          "evidence_artifact": "Week 11 assessment",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "blind_practical",
+              "minutes": 120
+            },
+            {
+              "seq": 2,
+              "block": "remediation",
+              "minutes": 60
+            },
+            {
+              "seq": 3,
+              "block": "report",
+              "minutes": 60
+            },
+            {
+              "seq": 4,
+              "block": "performance_review",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": true
+        }
+      ]
+    },
+    {
+      "week_number": 12,
+      "title": "Integrated G9/CT9 capstone",
+      "days": [
+        {
+          "day_id": "D67",
+          "day_of_week": 1,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D67-O1",
+              "text": "Define scope and authorization"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D67-O2",
+              "text": "Build integrated threat model"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D67-O3",
+              "text": "Establish acceptance rules"
+            }
+          ],
+          "evidence_artifact": "Capstone charter",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D68",
+          "day_of_week": 2,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D68-O1",
+              "text": "Assess isolated network"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D68-O2",
+              "text": "Evaluate controlled app weaknesses"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D68-O3",
+              "text": "Document remediation"
+            }
+          ],
+          "evidence_artifact": "Network/app assessment",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D69",
+          "day_of_week": 3,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D69-O1",
+              "text": "Assess host/identity boundaries"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D69-O2",
+              "text": "Explain access chain"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D69-O3",
+              "text": "Verify controls"
+            }
+          ],
+          "evidence_artifact": "Host/identity assessment",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D70",
+          "day_of_week": 4,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D70-O1",
+              "text": "Build telemetry/detection"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D70-O2",
+              "text": "Investigate incident scenario"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D70-O3",
+              "text": "Demonstrate IR reasoning"
+            }
+          ],
+          "evidence_artifact": "Detection+IR package",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D71",
+          "day_of_week": 5,
+          "planned_minutes": 420,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D71-O1",
+              "text": "Assess an AI/agent workflow"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D71-O2",
+              "text": "Test authorized trust boundaries"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D71-O3",
+              "text": "Verify mitigations"
+            }
+          ],
+          "evidence_artifact": "AI security assessment",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "recall",
+              "minutes": 15
+            },
+            {
+              "seq": 2,
+              "block": "theory",
+              "minutes": 45
+            },
+            {
+              "seq": 3,
+              "block": "guided_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 4,
+              "block": "independent_lab",
+              "minutes": 120
+            },
+            {
+              "seq": 5,
+              "block": "defense_verification",
+              "minutes": 60
+            },
+            {
+              "seq": 6,
+              "block": "evidence_reporting",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": false
+        },
+        {
+          "day_id": "D72",
+          "day_of_week": 6,
+          "planned_minutes": 300,
+          "objectives": [
+            {
+              "seq": 1,
+              "objective_id": "D72-O1",
+              "text": "Complete blind integrated practical"
+            },
+            {
+              "seq": 2,
+              "objective_id": "D72-O2",
+              "text": "Defend findings with evidence"
+            },
+            {
+              "seq": 3,
+              "objective_id": "D72-O3",
+              "text": "Deliver final CT9 portfolio"
+            }
+          ],
+          "evidence_artifact": "Capstone report",
+          "blocks": [
+            {
+              "seq": 1,
+              "block": "blind_practical",
+              "minutes": 120
+            },
+            {
+              "seq": 2,
+              "block": "remediation",
+              "minutes": 60
+            },
+            {
+              "seq": 3,
+              "block": "report",
+              "minutes": 60
+            },
+            {
+              "seq": 4,
+              "block": "performance_review",
+              "minutes": 60
+            }
+          ],
+          "is_assessment_day": true
+        }
+      ]
+    }
+  ]
+}

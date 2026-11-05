@@ -1,0 +1,24 @@
+[package]
+name = "g9-storage"
+description = "SQLite persistence (M17 + repositories): schema migrations with checksums, foreign keys, WAL profile, Online Backup API / VACUUM INTO snapshots, integrity verification, hash-chained audit metadata."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+g9-domain = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+rusqlite = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

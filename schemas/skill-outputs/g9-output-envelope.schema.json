@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/skill-outputs/g9-output-envelope",
+  "title": "G9 skill output envelope (v1.0)",
+  "description": "Runtime envelope for every skill result. Mirrors g9_domain::skill::SkillOutputEnvelope. The runtime composes a skill's schemas/output.schema.json into properties.result. Output is advisory: it never authorizes execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status", "result_schema_version", "observations", "inferences", "evidence_refs",
+    "confidence_limits", "recommended_actions", "approval_requirements", "resource_usage",
+    "validation_results", "errors", "result"
+  ],
+  "properties": {
+    "status": { "type": "string", "enum": ["COMPLETED", "ABSTAINED", "ERROR"] },
+    "result_schema_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["statement", "evidence_refs"],
+        "properties": {
+          "statement": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "evidence_refs": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+        }
+      }
+    },
+    "inferences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["statement", "supporting_evidence", "contradicting_evidence", "confidence_low", "confidence_high"],
+        "properties": {
+          "statement": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "supporting_evidence": { "type": "array", "items": { "type": "string" } },
+          "contradicting_evidence": { "type": "array", "items": { "type": "string" } },
+          "confidence_low": { "type": "number", "minimum": 0, "maximum": 1 },
+          "confidence_high": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "evidence_refs": { "type": "array", "items": { "type": "string" } },
+    "confidence_limits": { "type": "array", "items": { "type": "string", "maxLength": 500 } },
+    "recommended_actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["action", "resource", "rationale", "evidence_refs", "parameters"],
+        "properties": {
+          "action": { "type": "string", "enum": ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT", "IMPORT", "PROMOTE_CANONICAL", "PROPOSE", "APPROVE", "APPLY", "FINALIZE", "INVOKE", "EXECUTE", "CONNECT", "LOAD", "CORRECT"] },
+          "resource": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "id"],
+            "properties": {
+              "kind": { "type": "string" },
+              "id": { "type": "string" }
+            }
+          },
+          "rationale": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "evidence_refs": { "type": "array", "items": { "type": "string" } },
+          "parameters": { "type": "object" }
+        }
+      }
+    },
+    "approval_requirements": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["PROTECTED_RECORD_WRITE", "GRADE_FINALIZE", "SCHEDULE_APPLY", "CURRICULUM_IMPORT", "CURRICULUM_PROMOTE", "SKILL_INVOKE", "MODEL_INFERENCE", "FILESYSTEM_READ", "FILESYSTEM_WRITE", "NETWORK_EGRESS", "SHELL_EXEC", "DATA_EXPORT", "DATA_DELETE", "POLICY_MODIFY", "MODEL_LOAD", "LAB_ORCHESTRATE", "CROSS_DOMAIN_READ"] }
+    },
+    "resource_usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tokens", "seconds", "tool_calls"],
+      "properties": {
+        "tokens": { "type": "integer", "minimum": 0 },
+        "seconds": { "type": "integer", "minimum": 0 },
+        "tool_calls": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "validation_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["check", "passed", "detail"],
+        "properties": {
+          "check": { "type": "string" },
+          "passed": { "type": "boolean" },
+          "detail": { "type": "string", "maxLength": 2000 }
+        }
+      }
+    },
+    "errors": { "type": "array", "items": { "type": "string", "maxLength": 2000 } },
+    "result": { "type": "object", "description": "Skill-specific result; replaced by the skill's schemas/output.schema.json at composition time." }
+  }
+}

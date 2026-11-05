@@ -1,0 +1,25 @@
+[package]
+name = "g9-skills"
+description = "Skill registry loader (SKILL.md + schemas + evals), invocation state machine, orchestrator pipeline with budgets and no recursion (M11)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+g9-domain = { workspace = true }
+g9-policy = { workspace = true }
+g9-ai-adapter = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+jsonschema = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true

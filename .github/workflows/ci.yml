@@ -1,0 +1,92 @@
+name: ci
+
+on:
+  push:
+    branches: ["main", "ccr-*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  rust:
+    name: rust (fmt, clippy, test, deny)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.0
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: fmt
+        run: cargo fmt --all --check
+      - name: clippy (default members; Tauri shell needs system libs)
+        run: cargo clippy --all-targets -- -D warnings
+      - name: test
+        run: cargo test --all-targets
+      - name: doc tests
+        run: cargo test --doc
+      - name: dependency graph has no cycles / tree
+        run: cargo tree -e normal --prefix none | sort -u > /tmp/tree.txt && wc -l /tmp/tree.txt
+      - name: cargo-deny (licenses, advisories, bans)
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+          arguments: --all-features
+
+  desktop-shell:
+    name: tauri shell (Linux build with system webkit)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.0
+      - uses: Swatinem/rust-cache@v2
+      - name: install tauri linux prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+      - name: build shell (check only)
+        run: cargo check -p g9-mentor-desktop
+
+  frontend:
+    name: frontend (typecheck, lint, test, build)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test -- --run
+      - run: npm run build
+      - name: npm audit (high+)
+        run: npm audit --audit-level=high
+
+  content-gates:
+    name: curriculum + skills + schema gates
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: curriculum seed invariants (A01 static)
+        run: python3 -I scripts/check_curriculum_seed.py data/curriculum/g9-ct9-480.seed.v0.json
+      - name: skill package contract
+        run: python3 -I scripts/check_skill_packages.py .agents/skills
+      - name: json schemas are valid 2020-12
+        run: python3 -I scripts/check_schemas.py schemas .agents/skills

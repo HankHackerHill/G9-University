@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/skill-inputs/g9-invocation-envelope",
+  "title": "G9 skill invocation envelope (v1.0)",
+  "description": "Runtime envelope wrapped around a skill-specific input_payload. Mirrors g9_domain::skill::SkillInvocationEnvelope. Skill packages describe only input_payload in schemas/input.schema.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "skill_id", "skill_version", "invocation_id", "actor", "intent", "approved_scope",
+    "data_classification", "input_schema_version", "input_payload", "evidence_refs",
+    "policy_context", "resource_budget", "allowed_tool_ids", "idempotency_key", "trace_id"
+  ],
+  "properties": {
+    "skill_id": { "type": "string", "pattern": "^g9-[a-z0-9]+(-[a-z0-9]+)*$", "maxLength": 64 },
+    "skill_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "invocation_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "kind": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": { "type": "string", "enum": ["OPERATOR", "SYSTEM", "SKILL", "MODEL"] },
+            "skill_id": { "type": "string" }
+          }
+        }
+      }
+    },
+    "intent": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "approved_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domain", "mode"],
+      "properties": {
+        "domain": { "type": "string", "enum": ["LEARNING", "BUSINESS", "PERSONAL", "SECURITY_SENSITIVE", "SYSTEM"] },
+        "mode": { "type": "string", "enum": ["STUDY", "LAB", "EXAM", "REVIEW", "EXECUTIVE", "RESEARCH", "MAINTENANCE"] }
+      }
+    },
+    "data_classification": { "type": "string", "enum": ["PUBLIC", "INTERNAL", "PRIVATE", "SECRET"] },
+    "input_schema_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+    "input_payload": { "type": "object" },
+    "evidence_refs": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 } },
+    "policy_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "granted_capabilities", "recursion_depth"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["STUDY", "LAB", "EXAM", "REVIEW", "EXECUTIVE", "RESEARCH", "MAINTENANCE"] },
+        "granted_capabilities": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["PROTECTED_RECORD_WRITE", "GRADE_FINALIZE", "SCHEDULE_APPLY", "CURRICULUM_IMPORT", "CURRICULUM_PROMOTE", "SKILL_INVOKE", "MODEL_INFERENCE", "FILESYSTEM_READ", "FILESYSTEM_WRITE", "NETWORK_EGRESS", "SHELL_EXEC", "DATA_EXPORT", "DATA_DELETE", "POLICY_MODIFY", "MODEL_LOAD", "LAB_ORCHESTRATE", "CROSS_DOMAIN_READ"] }
+        },
+        "recursion_depth": { "type": "integer", "minimum": 0, "maximum": 0 }
+      }
+    },
+    "resource_budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_tokens", "max_seconds", "max_tool_calls"],
+      "properties": {
+        "max_tokens": { "type": "integer", "minimum": 1, "maximum": 32768 },
+        "max_seconds": { "type": "integer", "minimum": 1, "maximum": 600 },
+        "max_tool_calls": { "type": "integer", "minimum": 0, "maximum": 16 }
+      }
+    },
+    "allowed_tool_ids": { "type": "array", "items": { "type": "string" } },
+    "idempotency_key": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "expected_revision": { "type": "integer", "minimum": 1 },
+    "trace_id": { "type": "string", "minLength": 1, "maxLength": 128 }
+  }
+}

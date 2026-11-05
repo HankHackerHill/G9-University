@@ -1,0 +1,89 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/g9-domain",
+  "crates/g9-policy",
+  "crates/g9-storage",
+  "crates/g9-curriculum",
+  "crates/g9-calendar",
+  "crates/g9-evidence",
+  "crates/g9-competency",
+  "crates/g9-assessment",
+  "crates/g9-retention",
+  "crates/g9-ai-adapter",
+  "crates/g9-skills",
+  "crates/g9-app",
+  "crates/g9-evaluation",
+  "apps/desktop/src-tauri",
+]
+# The Tauri shell needs webkit2gtk-4.1 + GTK3 system libraries; it is excluded from
+# default builds so that `cargo test --workspace` stays runnable on headless CI hosts.
+# Build it explicitly with `cargo build -p g9-mentor-desktop` on a prepared host.
+default-members = [
+  "crates/g9-domain",
+  "crates/g9-policy",
+  "crates/g9-storage",
+  "crates/g9-curriculum",
+  "crates/g9-calendar",
+  "crates/g9-evidence",
+  "crates/g9-competency",
+  "crates/g9-assessment",
+  "crates/g9-retention",
+  "crates/g9-ai-adapter",
+  "crates/g9-skills",
+  "crates/g9-app",
+  "crates/g9-evaluation",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.90"
+license = "Apache-2.0"
+repository = "https://github.com/hackytacky/G9-University"
+authors = ["G9 / Cyber Team 9"]
+
+[workspace.dependencies]
+# ---- pinned on 2026-11-05 (see LICENSES.md and docs/release/dependency-policy.md) ----
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+thiserror = "2.0"
+uuid = { version = "1.29", features = ["v7", "serde"] }
+sha2 = "0.10"
+hex = "0.4"
+hmac = "0.12"
+subtle = "2.6"
+chrono = { version = "0.4.45", default-features = false, features = ["std", "clock", "serde"] }
+chrono-tz = { version = "0.10.4", features = ["serde"] }
+rusqlite = { version = "0.41.1", features = ["bundled", "backup", "functions", "hooks"] }
+jsonschema = { version = "0.60.2", default-features = false }
+rs-fsrs = { version = "1.2.1", features = ["serde"] }
+tracing = "0.1"
+tempfile = "3"
+proptest = "1"
+pretty_assertions = "1"
+
+# internal
+g9-domain = { path = "crates/g9-domain" }
+g9-policy = { path = "crates/g9-policy" }
+g9-storage = { path = "crates/g9-storage" }
+g9-curriculum = { path = "crates/g9-curriculum" }
+g9-calendar = { path = "crates/g9-calendar" }
+g9-evidence = { path = "crates/g9-evidence" }
+g9-competency = { path = "crates/g9-competency" }
+g9-assessment = { path = "crates/g9-assessment" }
+g9-retention = { path = "crates/g9-retention" }
+g9-ai-adapter = { path = "crates/g9-ai-adapter" }
+g9-skills = { path = "crates/g9-skills" }
+g9-app = { path = "crates/g9-app" }
+g9-evaluation = { path = "crates/g9-evaluation" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
