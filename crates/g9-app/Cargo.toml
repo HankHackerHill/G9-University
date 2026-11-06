@@ -23,9 +23,14 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+# Payload validation against schemas/ipc (§5 step 1); file/http resolution disabled.
+jsonschema = { workspace = true }
+# Only to name the transaction/connection types g9-storage hands out; no SQL is written here.
+rusqlite = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
+tempfile = { workspace = true }
 
 [lints]
 workspace = true

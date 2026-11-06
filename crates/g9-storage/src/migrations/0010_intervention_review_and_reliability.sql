@@ -1,5 +1,6 @@
 -- 0010_intervention_review_and_reliability: columns the typed repositories (g9-storage::repos) need and
--- 0001–0009 lack. Applied migrations are never edited; this file only adds columns and triggers.
+-- 0001–0009 lack. Applied migrations are never edited; this file only adds columns, indexes and triggers
+-- (plus one backfill UPDATE of the new interventions.origin_trust column).
 --
 -- interventions (M12, LRN-16, IPC interventions.list):
 --   * origin_trust  — trust class of the proposer, written once at insert, immutable afterwards.

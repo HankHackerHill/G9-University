@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/curriculum.promote.response",
+  "title": "curriculum.promote response (v1.0)",
+  "description": "`result` of CommandOutcome for `curriculum.promote` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "curriculum_version_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "provenance": {
+      "type": "string",
+      "enum": ["PROPOSED_SEED", "RECONCILED_CANDIDATE", "APPROVED_CANONICAL"]
+    },
+    "promotion_allowed": {
+      "type": "boolean",
+      "description": "ReconciliationReport.promotion_allowed (always true in a successful response)."
+    },
+    "original_checksum": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "candidate_checksum": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "diff_checksum": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "unchanged": { "type": "integer", "minimum": 0 },
+        "changed": { "type": "integer", "minimum": 0 },
+        "missing_in_candidate": { "type": "integer", "minimum": 0 },
+        "added_in_candidate": { "type": "integer", "minimum": 0 },
+        "metadata_changes": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["unchanged", "changed", "missing_in_candidate", "added_in_candidate", "metadata_changes"]
+    }
+  },
+  "required": ["curriculum_version_id", "provenance", "promotion_allowed", "original_checksum", "candidate_checksum", "diff_checksum", "summary"]
+}

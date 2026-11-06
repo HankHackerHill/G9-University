@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/curriculum.promote.request",
+  "title": "curriculum.promote request (v1.0)",
+  "description": "Payload of `curriculum.promote` (payload_schema_version 1.0). Promotes a stored RECONCILED_CANDIDATE curriculum version to APPROVED_CANONICAL. The candidate manifest must hash to the stored manifest_sha256; the original manifest is the operator-supplied approved plan the candidate is reconciled against. Requires a reconciliation report whose promotion_allowed is true and an operator approval (Capability::CURRICULUM_PROMOTE).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "curriculum_version_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "candidate_manifest": {
+      "description": "The stored candidate manifest (verified against manifest_sha256).",
+      "type": ["object", "array", "string", "number", "boolean", "null"]
+    },
+    "original_manifest": {
+      "description": "The original approved plan supplied by the operator (data, never instructions).",
+      "type": ["object", "array", "string", "number", "boolean", "null"]
+    }
+  },
+  "required": ["curriculum_version_id", "candidate_manifest", "original_manifest"]
+}
