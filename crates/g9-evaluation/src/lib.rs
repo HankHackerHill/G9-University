@@ -13,33 +13,55 @@
 //! | [`harness`] | [`Harness`]: `AppContext` over in-memory SQLite, fixed clock, fixed binding key, [`g9_ai_adapter::ScriptedRuntime`] (or `NullRuntime`), the real `.agents/skills` registry when present |
 //! | [`fixtures`] | `data/fixtures/*.json` loader (schema-validated before deserialization) and the learner-history seeder |
 //! | [`report`] | [`ScenarioReport`] (steps with recorded decision, outcome and state; evidence checks; computed `passed`) and the Markdown renderers |
-//! | [`scenarios`] | gate scenarios A01, A04, A05, A06, A09, A10, A11 |
+//! | [`scenarios`] | gate scenarios A01, A04, A05, A06 (policy, identity binding, pipeline order), A09, A10, A11 |
 //! | [`adversarial`] | threat-model catalogue ST01–ST12 (`docs/threat-model/threat-model.md` §6) |
-//! | [`recovery`] | A08 drill: populated DB → backup → verify → restore test → crash mid-transaction → reopen → recovery → audit chain |
+//! | [`recovery`] | A08/A03 drill: populated file DB → backup → verify → restore test → crash with a write transaction open → reopen → recovery → audit chain |
+//! | [`probes`] | read-only state probes through the `g9-storage` repositories (metadata only, no SQL here) |
+//!
+//! ## Running
+//!
+//! ```sh
+//! CARGO_TARGET_DIR=target/g9-evaluation cargo test -p g9-evaluation
+//! # regenerate docs/evaluations/gate-evidence.md (written only with this variable):
+//! G9_WRITE_EVIDENCE=1 CARGO_TARGET_DIR=target/g9-evaluation \
+//!   cargo test -p g9-evaluation --lib gate_evidence_document
+//! ```
+//!
+//! The gate tests live in `tests/integration/`, `tests/recovery/` and
+//! `tests/adversarial/` at the repository root and are registered as
+//! `[[test]]` targets of this crate.
 //!
 //! ## Honesty rules
 //!
 //! * `passed` is computed from evidence checks; a scenario without checks fails.
+//! * Every IPC step records the decision read back from the backend's audit
+//!   row and the backend state read back after the step.
 //! * Steps that cannot go through `dispatch` (no IPC operation exists) are
 //!   labelled with their boundary (`registry:`, `storage:`, `orchestrator:`,
-//!   `harness:`) and the gap is written into the report notes.
-//! * No model is run; replies are scripted. No network, no wall clock, no randomness
-//!   that affects an assertion (generated UUIDv7 ids are never asserted on).
+//!   `ai-adapter:`, `evidence:`, `harness:`) and the gap is written into the
+//!   report notes.
+//! * No model is run; replies are scripted. No network. The application clock
+//!   is fixed and advanced explicitly; backend-generated UUIDv7 ids (which
+//!   carry a wall-clock component) are compared for equality only and are
+//!   scrubbed from rendered evidence, so the evidence document is identical
+//!   across runs.
 //!
 //! ## Gaps in wave-1 APIs found while building the harness
 //!
-//! See [`WAVE1_GAPS`]; each is also attached as a note to the scenario that hit it.
+//! See [`WAVE1_GAPS`]; each is also attached as a note to the scenario that
+//! hit it and listed in the evidence document.
 
 pub mod adversarial;
 pub mod fixtures;
 pub mod harness;
+pub mod probes;
 pub mod recovery;
 pub mod report;
 pub mod scenarios;
 
 pub use harness::{
-    category_name, default_scope, CallOpts, Harness, HarnessOptions, RegistryStatus,
-    RuntimeChoice, StepOutcome, T0,
+    category_name, default_scope, CallOpts, Harness, HarnessOptions, RegistryStatus, RuntimeChoice,
+    StepOutcome, T0,
 };
 pub use report::{render_gate_evidence, EvidenceCheck, ScenarioReport, ScenarioStep};
 
@@ -48,9 +70,11 @@ pub const WAVE1_GAPS: &[&str] = &[
     "g9-app notes.create does not run g9_evidence::classify_text nor persist content_classifications: an instruction-like note is stored as data (correct) but its InstructionLike flag is not recorded (ST01).",
     "No IPC cancellation operation: skills.invoke always runs with a fresh CancelToken, so late-response discard (ST12) is exercised at the orchestrator boundary with g9-app's own PolicyAdapter/RuntimeBackend.",
     "No IPC path creates study sessions, competencies, assessment definitions or observations (FILL_CURRICULUM and catalogue import are PROPOSED): fixtures insert them through the g9-storage repositories.",
-    "g9-app RuntimeBackend maps a structured-output schema failure (InferenceError::InvalidOutput) to BackendError::Runtime, so a schema-invalid model reply surfaces as INTERNAL skills.backend.* instead of PRECONDITION_FAILED skills.output_rejected (A11).",
+    "g9-app RuntimeBackend maps a structured-output schema failure (InferenceError::InvalidOutput) to BackendError::Runtime, so a schema-invalid or non-JSON model reply surfaces as INTERNAL skills.backend.runtime instead of PRECONDITION_FAILED skills.output_rejected; the reply is still rejected and nothing is persisted (A11).",
     "No model-load IPC operation: modified model weights (ST06) are checked at the g9_ai_adapter::verify_checksum boundary only; dependency bans are CI (cargo deny) and NOT RUN here.",
-    "g9-app backup.verify/restore_test only know backups created by the same process (no manifest reader in g9-storage).",
+    "g9-app backup.verify/restore_test only know backups created by the same process (no manifest reader in g9-storage): after a restart the pre-crash backup answers PRECONDITION_FAILED backup.manifest_unavailable and is verified at the g9_storage::backup::verify_snapshot boundary instead (A08).",
+    "skills.invoke of a LEARNING-only package in BUSINESS scope is allowed by the g9-app policy (recorded ALLOW) and refused by the g9-skills orchestrator preflight (PRECONDITION_FAILED skills.preflight_failed); the refusal holds but is not a policy decision row (ST11).",
+    "ST03 expects contradicting evidence to be flagged for the operator; no IPC path ingests an observation in wave 1, so only the storage refusal of model provenance is evidenced.",
 ];
 
 #[cfg(test)]
@@ -68,7 +92,21 @@ mod tests {
         for r in &reports {
             assert!(r.passed, "{}", r.to_markdown());
         }
-        assert!(doc.contains("| A08 |"));
+        for g in report::GATES {
+            assert!(
+                doc.contains(&format!("| {} | {} |", g.gate, g.requirement)),
+                "{} missing from the evidence document",
+                g.gate
+            );
+        }
+        assert!(doc.contains(&format!(
+            "Scenarios: {}; PASS {}; FAIL 0.",
+            reports.len(),
+            reports.len()
+        )));
+        for gap in WAVE1_GAPS {
+            assert!(doc.contains(gap), "gap not listed: {gap}");
+        }
         if std::env::var("G9_WRITE_EVIDENCE").as_deref() == Ok("1") {
             let path = harness::repo_root()
                 .join("docs")

@@ -6,6 +6,7 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
+publish.workspace = true
 
 [lib]
 name = "g9_mentor_desktop_lib"
@@ -25,11 +26,11 @@ g9-app = { workspace = true }
 g9-policy = { workspace = true }
 g9-storage = { workspace = true }
 g9-skills = { workspace = true }
-# Approval binding key (src/keyring.rs). Exact pins; both build without system
-# libraries. getrandom 0.4.3 is already locked (uuid); keyring 4.2.0 reaches the
-# Secret Service over zbus (pure Rust, async-io executor, no libdbus).
+# Approval binding key (src/keyring.rs): 32 bytes from the OS CSPRNG into a 0600
+# file. Exact pin; already in the lock file through uuid. No OS keyring crate:
+# every Secret Service client fails the A12 advisory or licence gate
+# (apps/desktop/README.md "Binding key").
 getrandom = "=0.4.3"
-os-keyring = { package = "keyring", version = "=4.2.0" }
 
 [dev-dependencies]
 tempfile = { workspace = true }

@@ -279,7 +279,10 @@ impl fmt::Debug for Harness {
             .field("now", &self.clock.load(Ordering::SeqCst))
             .field("runtime", &self.runtime.describe().name)
             .field("registry_status", &self.registry_status)
-            .field("host_dirs", &self.host.as_ref().map(tempfile::TempDir::path))
+            .field(
+                "host_dirs",
+                &self.host.as_ref().map(tempfile::TempDir::path),
+            )
             .field("seq", &self.seq)
             .finish_non_exhaustive()
     }
@@ -307,8 +310,8 @@ impl Harness {
                 .prefix("g9-eval-")
                 .tempdir()
                 .map_err(|e| io_err("evaluation.tempdir", &e))?;
-            let root = std::fs::canonicalize(dir.path())
-                .map_err(|e| io_err("evaluation.tempdir", &e))?;
+            let root =
+                std::fs::canonicalize(dir.path()).map_err(|e| io_err("evaluation.tempdir", &e))?;
             for sub in ["backups", "scratch"] {
                 std::fs::create_dir_all(root.join(sub))
                     .map_err(|e| io_err("evaluation.tempdir", &e))?;
@@ -405,9 +408,7 @@ impl Harness {
         self.ctx
             .take()
             .map(AppContext::into_database)
-            .ok_or_else(|| {
-                G9Error::precondition_failed("evaluation.no_context", "no open context")
-            })
+            .ok_or_else(|| G9Error::precondition_failed("evaluation.no_context", "no open context"))
     }
 
     /// Simulate a process restart: same database, new context (recovery runs);
@@ -559,13 +560,20 @@ impl Harness {
         self.raw(op, meta, payload)
     }
 
-    /// Dispatch with caller-built metadata. The outcome/error is checked against
-    /// the IPC envelope schemas; a violation is returned as an `INTERNAL` error
-    /// with code `evaluation.envelope_schema_violation` so that scenarios fail.
+    /// Dispatch with caller-built metadata. The outcome is checked against
+    /// `command-outcome.schema.json` and its `result` against
+    /// `<op>.response.schema.json` (the contract the UI is built against); an
+    /// error against `g9-error.schema.json`. A violation is returned as an
+    /// `INTERNAL` error with code `evaluation.envelope_schema_violation` so
+    /// that scenarios fail.
     pub fn raw(&mut self, op: &str, meta: Value, payload: Value) -> Result<Value, G9Error> {
         let out = g9_app::dispatch(self.ctx()?, op, meta, payload);
         let envelope_ok = match &out {
-            Ok(v) => g9_app::schemas::validate_outcome(v).is_ok(),
+            Ok(v) => {
+                g9_app::schemas::validate_outcome(v).is_ok()
+                    && v.get("result")
+                        .is_some_and(|r| g9_app::schemas::validate_response(op, r).is_ok())
+            }
             Err(e) => serde_json::to_value(e)
                 .ok()
                 .is_some_and(|v| g9_app::schemas::validate_error(&v).is_ok()),
@@ -698,11 +706,9 @@ impl Harness {
     ) -> Result<(ApprovalId, Value), G9Error> {
         let first = self.call_with(op, payload.clone(), opts);
         let approval = match first {
-            Err(e) if e.category == ErrorCategory::ApprovalRequired => {
-                e.approval_id.ok_or_else(|| {
-                    G9Error::internal_redacted("evaluation.approval_id_missing")
-                })?
-            }
+            Err(e) if e.category == ErrorCategory::ApprovalRequired => e
+                .approval_id
+                .ok_or_else(|| G9Error::internal_redacted("evaluation.approval_id_missing"))?,
             Err(e) => return Err(e),
             Ok(_) => {
                 return Err(G9Error::precondition_failed(

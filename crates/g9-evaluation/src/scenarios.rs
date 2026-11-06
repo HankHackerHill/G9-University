@@ -21,7 +21,7 @@ use serde_json::{json, Value};
 
 /// Record the three standard expectations of a step: recorded decision,
 /// outcome category and (optionally) error code.
-pub fn expect(
+pub fn check_step(
     r: &mut ScenarioReport,
     label: &str,
     out: &StepOutcome,
@@ -64,8 +64,9 @@ pub fn seed_manifest() -> Result<Value, G9Error> {
             format!("seed manifest unreadable: {}", e.kind()),
         )
     })?;
-    serde_json::from_str(&text)
-        .map_err(|_| G9Error::invalid_input("evaluation.seed_manifest", "seed manifest is not JSON"))
+    serde_json::from_str(&text).map_err(|_| {
+        G9Error::invalid_input("evaluation.seed_manifest", "seed manifest is not JSON")
+    })
 }
 
 /// Harness seeded with the week-3 learner history.
@@ -80,7 +81,10 @@ fn seed_id<'a>(
     alias: &str,
 ) -> Result<&'a str, G9Error> {
     map.get(alias).map(String::as_str).ok_or_else(|| {
-        G9Error::invalid_input("evaluation.alias", format!("fixture alias {alias} not seeded"))
+        G9Error::invalid_input(
+            "evaluation.alias",
+            format!("fixture alias {alias} not seeded"),
+        )
     })
 }
 
@@ -98,7 +102,9 @@ pub fn a01_curriculum_import_gate() -> Result<ScenarioReport, G9Error> {
     let mut h = Harness::new()?;
     let seed = seed_manifest()?;
     let versions = |h: &Harness| -> Result<Value, G9Error> {
-        Ok(json!({ "versions": probes::curriculum_versions(h)?, "approvals": probes::approval_counts(h)? }))
+        Ok(
+            json!({ "versions": probes::curriculum_versions(h)?, "approvals": probes::approval_counts(h)? }),
+        )
     };
 
     let out = h.record(
@@ -108,8 +114,12 @@ pub fn a01_curriculum_import_gate() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         versions,
     );
-    expect(&mut r, "validate seed", &out, "NO_AUDIT_ROW", "OK", None);
-    r.check_eq("validate seed: valid", json!(true), out.value()["valid"].clone());
+    check_step(&mut r, "validate seed", &out, "NO_AUDIT_ROW", "OK", None);
+    r.check_eq(
+        "validate seed: valid",
+        json!(true),
+        out.value()["valid"].clone(),
+    );
     r.check_eq(
         "validate seed: provenance",
         json!("PROPOSED_SEED"),
@@ -125,7 +135,7 @@ pub fn a01_curriculum_import_gate() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         versions,
     );
-    expect(
+    check_step(
         &mut r,
         "import 11-week manifest",
         &out,
@@ -151,7 +161,7 @@ pub fn a01_curriculum_import_gate() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         versions,
     );
-    expect(
+    check_step(
         &mut r,
         "import claiming APPROVED_CANONICAL",
         &out,
@@ -168,7 +178,7 @@ pub fn a01_curriculum_import_gate() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         versions,
     );
-    expect(
+    check_step(
         &mut r,
         "import seed without approval",
         &out,
@@ -195,7 +205,7 @@ pub fn a01_curriculum_import_gate() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         |h| probes::approval(h, &approval),
     );
-    expect(&mut r, "operator approves", &decided, "ALLOW", "OK", None);
+    check_step(&mut r, "operator approves", &decided, "ALLOW", "OK", None);
 
     let out = h.record(
         &mut r,
@@ -204,7 +214,14 @@ pub fn a01_curriculum_import_gate() -> Result<ScenarioReport, G9Error> {
         &CallOpts::approval(approval.clone()),
         versions,
     );
-    expect(&mut r, "import seed with approval", &out, "ALLOW", "OK", None);
+    check_step(
+        &mut r,
+        "import seed with approval",
+        &out,
+        "ALLOW",
+        "OK",
+        None,
+    );
     r.check_eq("imported weeks", json!(12), out.value()["weeks"].clone());
     r.check_eq("imported days", json!(72), out.value()["days"].clone());
     r.check_eq(
@@ -242,19 +259,25 @@ pub fn a01_curriculum_import_gate() -> Result<ScenarioReport, G9Error> {
         &CallOpts::approval(approval.clone()),
         versions,
     );
-    expect(
+    check_step(
         &mut r,
-        "replay of the consumed approval",
+        "re-import of the same manifest presenting the consumed approval",
         &out,
-        "DENY",
-        "UNAUTHORIZED",
-        None,
+        "NOT_EVALUATED",
+        "CONFLICT",
+        Some("curriculum.version_exists"),
     );
     r.check_eq(
-        "replay stored nothing new",
+        "re-import stored nothing new",
         1,
         probes::curriculum_versions(&h)?.len(),
     );
+    r.check_eq(
+        "consumed approval stays CONSUMED",
+        Some(ApprovalState::Consumed),
+        probes::approval_state(&h, &approval)?,
+    );
+    r.note("The re-import is refused on the stored version (CONFLICT) before the approval is examined; approval replay as such is evidenced by ST09 and A10-02.");
     Ok(r.finish())
 }
 
@@ -281,7 +304,10 @@ pub fn a04_finalized_grade_immutable() -> Result<ScenarioReport, G9Error> {
     r.check_eq(
         "one final grade decision linked to the consumed approval",
         (json!(1), json!(approval.clone())),
-        (before["final_decisions"].clone(), before["final_approval"].clone()),
+        (
+            before["final_decisions"].clone(),
+            before["final_approval"].clone(),
+        ),
     );
     r.check_eq(
         "finalizing approval consumed",
@@ -298,7 +324,14 @@ pub fn a04_finalized_grade_immutable() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         probe,
     );
-    expect(&mut r, "regrade final attempt", &out, "DENY", "UNAUTHORIZED", Some("policy.denied"));
+    check_step(
+        &mut r,
+        "regrade final attempt",
+        &out,
+        "DENY",
+        "UNAUTHORIZED",
+        Some("policy.denied"),
+    );
     let out = h.record(
         &mut r,
         "assessment.approve_final",
@@ -306,7 +339,14 @@ pub fn a04_finalized_grade_immutable() -> Result<ScenarioReport, G9Error> {
         &CallOpts::revision(rev),
         probe,
     );
-    expect(&mut r, "re-finalize", &out, "DENY", "UNAUTHORIZED", Some("policy.denied"));
+    check_step(
+        &mut r,
+        "re-finalize",
+        &out,
+        "DENY",
+        "UNAUTHORIZED",
+        Some("policy.denied"),
+    );
     let out = h.record(
         &mut r,
         "assessment.review_evidence",
@@ -314,7 +354,14 @@ pub fn a04_finalized_grade_immutable() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         probe,
     );
-    expect(&mut r, "re-open evidence review", &out, "DENY", "UNAUTHORIZED", Some("policy.denied"));
+    check_step(
+        &mut r,
+        "re-open evidence review",
+        &out,
+        "DENY",
+        "UNAUTHORIZED",
+        Some("policy.denied"),
+    );
     let out = h.record(
         &mut r,
         "deletion.request",
@@ -322,7 +369,14 @@ pub fn a04_finalized_grade_immutable() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         probe,
     );
-    expect(&mut r, "delete final attempt", &out, "DENY", "UNAUTHORIZED", Some("policy.denied"));
+    check_step(
+        &mut r,
+        "delete final attempt",
+        &out,
+        "DENY",
+        "UNAUTHORIZED",
+        Some("policy.denied"),
+    );
 
     let after = probes::attempt(&h, &att)?;
     r.check_eq("attempt unchanged after denials", before, after);
@@ -331,7 +385,8 @@ pub fn a04_finalized_grade_immutable() -> Result<ScenarioReport, G9Error> {
         0,
         probes::approvals_in(&h, ApprovalState::Pending)?,
     );
-    let decision = probes::latest_policy_decision(&h, &ResourceRef::new(ResourceKind::Attempt, att.as_str()))?;
+    let decision =
+        probes::latest_policy_decision(&h, &ResourceRef::new(ResourceKind::Attempt, att.as_str()))?;
     r.check_eq(
         "DENY policy decision persisted for the attempt",
         Some(("DENY".to_string(), "immutable.finalized.deny".to_string())),
@@ -357,8 +412,11 @@ pub fn a04_model_advisory_cannot_finalize() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         |h| probes::attempt(h, &original),
     );
-    expect(&mut r, "begin retake", &begun, "ALLOW", "OK", None);
-    let retake = begun.value()["attempt_id"].as_str().unwrap_or_default().to_string();
+    check_step(&mut r, "begin retake", &begun, "ALLOW", "OK", None);
+    let retake = begun.value()["attempt_id"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
     r.check_eq(
         "retake is a new attempt linked to the original",
         json!(original.clone()),
@@ -369,7 +427,10 @@ pub fn a04_model_advisory_cannot_finalize() -> Result<ScenarioReport, G9Error> {
         "assessment.submit",
         json!({ "attempt_id": retake, "evidence_refs": [] }),
     )?;
-    h.call("assessment.review_evidence", json!({ "attempt_id": retake }))?;
+    h.call(
+        "assessment.review_evidence",
+        json!({ "attempt_id": retake }),
+    )?;
     let graded = h.record(
         &mut r,
         "assessment.grade_provisional",
@@ -377,7 +438,14 @@ pub fn a04_model_advisory_cannot_finalize() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         probe,
     );
-    expect(&mut r, "advisory grade recorded", &graded, "ALLOW", "OK", None);
+    check_step(
+        &mut r,
+        "advisory grade recorded",
+        &graded,
+        "ALLOW",
+        "OK",
+        None,
+    );
     let rev = graded
         .result
         .as_ref()
@@ -441,9 +509,13 @@ pub fn a05_competency_replay_and_correction() -> Result<ScenarioReport, G9Error>
         &CallOpts::default(),
         |h| Ok(json!({ "observations": probes::observation_ids(h, comp)? })),
     );
-    expect(&mut r, "projection read", &out, "NO_AUDIT_ROW", "OK", None);
+    check_step(&mut r, "projection read", &out, "NO_AUDIT_ROW", "OK", None);
     let p1 = out.value()["projections"][0].clone();
-    r.check_eq("derived state from fixture evidence", json!("INDEPENDENT"), p1["state"].clone());
+    r.check_eq(
+        "derived state from fixture evidence",
+        json!("INDEPENDENT"),
+        p1["state"].clone(),
+    );
     r.check_eq(
         "APPLICATION unaided count",
         json!(2),
@@ -484,12 +556,18 @@ pub fn a05_competency_replay_and_correction() -> Result<ScenarioReport, G9Error>
         p1["state"].clone(),
         serde_json::to_value(forward.state).unwrap_or(Value::Null),
     );
-    let replay_again = projection(&mut h)?;
-    r.check_eq("projection is stable across reads", p1.clone(), {
-        let mut v = replay_again.clone();
-        v["derived_at"] = p1["derived_at"].clone();
+    let without_derived_at = |mut v: Value| {
+        if let Some(o) = v.as_object_mut() {
+            o.remove("derived_at");
+        }
         v
-    });
+    };
+    let replay_again = projection(&mut h)?;
+    r.check_eq(
+        "projection is stable across reads",
+        without_derived_at(p1.clone()),
+        without_derived_at(replay_again),
+    );
 
     // Correction: supersede obs-w03-net-3 (78 → 55); the original row is retained.
     let operator = ActorId::parse(OPERATOR_ID)
@@ -497,8 +575,9 @@ pub fn a05_competency_replay_and_correction() -> Result<ScenarioReport, G9Error>
     let target = ObservationId::parse("obs-w03-net-3")
         .map_err(|_| G9Error::internal_redacted("evaluation.observation_id"))?;
     let attempt_id = seed_id(&seed.attempts, "att-net")?.to_string();
-    let original = competency_repo::get_observation(conn, &target)?
-        .ok_or_else(|| G9Error::not_found("evaluation.observation", "fixture observation missing"))?;
+    let original = competency_repo::get_observation(h.db()?.conn(), &target)?.ok_or_else(|| {
+        G9Error::not_found("evaluation.observation", "fixture observation missing")
+    })?;
     h.advance(MINUTE_MS);
     let correction = CompetencyObservation {
         id: ObservationId::parse("obs-w03-net-3-correction")
@@ -519,15 +598,18 @@ pub fn a05_competency_replay_and_correction() -> Result<ScenarioReport, G9Error>
         ..original.clone()
     };
     let conn = h.db()?.conn();
-    let appended =
-        competency_repo::append_observation(conn, &correction).map_err(G9Error::from);
+    let appended = competency_repo::append_observation(conn, &correction).map_err(G9Error::from);
     r.boundary_step(
         "storage:append_observation (MANUAL_CORRECTION supersedes obs-w03-net-3)",
-        if appended.is_ok() { "ACCEPTED" } else { "REFUSED" },
-        appended
-            .as_ref()
-            .err()
-            .map_or_else(|| "OK".to_string(), |e| crate::harness::category_name(e.category)),
+        if appended.is_ok() {
+            "ACCEPTED"
+        } else {
+            "REFUSED"
+        },
+        appended.as_ref().err().map_or_else(
+            || "OK".to_string(),
+            |e| crate::harness::category_name(e.category),
+        ),
         appended.as_ref().err().map(|e| e.code.clone()),
         json!({ "observations": probes::observation_ids(&h, comp)? }),
     );
@@ -556,9 +638,9 @@ pub fn a05_competency_replay_and_correction() -> Result<ScenarioReport, G9Error>
         "superseded observation no longer counted as evidence",
         "evidence_refs exclude obs-w03-net-3, include the correction",
         &p2["evidence_refs"],
-        p2["evidence_refs"]
-            .as_array()
-            .is_some_and(|a| !a.contains(&json!("obs-w03-net-3")) && a.contains(&json!("obs-w03-net-3-correction"))),
+        p2["evidence_refs"].as_array().is_some_and(|a| {
+            !a.contains(&json!("obs-w03-net-3")) && a.contains(&json!("obs-w03-net-3-correction"))
+        }),
     );
 
     // Model provenance is refused at the storage boundary.
@@ -572,7 +654,8 @@ pub fn a05_competency_replay_and_correction() -> Result<ScenarioReport, G9Error>
         mode: InteractionMode::Exam,
         score: 100,
         assistance: g9_domain::AssistanceLevel::Unaided,
-        uncertainty: Confidence::new(0.0).map_err(|_| G9Error::internal_redacted("evaluation.confidence"))?,
+        uncertainty: Confidence::new(0.0)
+            .map_err(|_| G9Error::internal_redacted("evaluation.confidence"))?,
         provenance: Provenance {
             source_kind: SourceKind::ModelResponse,
             source_ref: "scripted-eval-model".to_string(),
@@ -591,7 +674,11 @@ pub fn a05_competency_replay_and_correction() -> Result<ScenarioReport, G9Error>
     let code = refused.as_ref().err().cloned();
     r.boundary_step(
         "storage:append_observation (MODEL_OUTPUT provenance)",
-        if refused.is_ok() { "ACCEPTED" } else { "REFUSED" },
+        if refused.is_ok() {
+            "ACCEPTED"
+        } else {
+            "REFUSED"
+        },
         code.as_ref()
             .map(|e| crate::harness::category_name(e.category))
             .unwrap_or_else(|| "OK".to_string()),
@@ -609,7 +696,11 @@ pub fn a05_competency_replay_and_correction() -> Result<ScenarioReport, G9Error>
         probes::observation_ids(&h, comp)?,
     );
     let p3 = projection(&mut h)?;
-    r.check_eq("projection unchanged by the refusal", p2["state"].clone(), p3["state"].clone());
+    r.check_eq(
+        "projection unchanged by the refusal",
+        p2["state"].clone(),
+        p3["state"].clone(),
+    );
     Ok(r.finish())
 }
 
@@ -633,7 +724,10 @@ pub fn a06_gated_operations_require_approval() -> Result<ScenarioReport, G9Error
         "calendar.propose",
         json!({ "from": h.now().as_millis(), "to": h.now().as_millis() + 86_400_000, "intent": "ADD_REVIEWS" }),
     )?;
-    let proposal_id = proposal["result"]["proposal_id"].as_str().unwrap_or_default().to_string();
+    let proposal_id = proposal["result"]["proposal_id"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
     let seed_manifest = seed_manifest()?;
     let cases: Vec<(&str, Value, CallOpts, &str)> = vec![
         (
@@ -671,7 +765,14 @@ pub fn a06_gated_operations_require_approval() -> Result<ScenarioReport, G9Error
     for (op, payload, opts, capability) in cases {
         let pending_before = probes::approvals_in(&h, ApprovalState::Pending)?;
         let out = h.record(&mut r, op, payload.clone(), &opts, probes::approval_counts);
-        expect(&mut r, op, &out, "APPROVAL_REQUIRED", "APPROVAL_REQUIRED", Some("policy.approval_required"));
+        check_step(
+            &mut r,
+            op,
+            &out,
+            "APPROVAL_REQUIRED",
+            "APPROVAL_REQUIRED",
+            Some("policy.approval_required"),
+        );
         let approval = out.approval_id().unwrap_or_default();
         let stored = probes::approval(&h, &approval)?;
         r.check_eq(
@@ -679,10 +780,15 @@ pub fn a06_gated_operations_require_approval() -> Result<ScenarioReport, G9Error
             pending_before + 1,
             probes::approvals_in(&h, ApprovalState::Pending)?,
         );
-        r.check_eq(
+        // Payloads carry generated ids, so the hash itself is not rendered
+        // (the evidence document stays identical across runs).
+        let bound =
+            stored["parameters_sha256"] == json!(g9_app::pipeline::parameters_sha256(op, &payload));
+        r.check_that(
             format!("{op}: request bound to the exact parameters"),
-            json!(g9_app::pipeline::parameters_sha256(op, &payload)),
-            stored["parameters_sha256"].clone(),
+            "stored parameters_sha256 == sha256(operation, payload)",
+            if bound { "EQUAL" } else { "DIFFERENT" },
+            bound,
         );
         r.check_eq(
             format!("{op}: required capability"),
@@ -697,22 +803,38 @@ pub fn a06_gated_operations_require_approval() -> Result<ScenarioReport, G9Error
     }
     // Nothing was mutated by any refused command.
     let note_state = probes::note(&h, &note)?;
-    r.check_eq("note not erased", json!(false), note_state["erased"].clone());
+    r.check_eq(
+        "note not erased",
+        json!(false),
+        note_state["erased"].clone(),
+    );
     let attempt_state = probes::attempt(&h, &att)?;
     r.check_eq(
         "attempt still GRADED_PROVISIONAL",
         json!("GRADED_PROVISIONAL"),
         attempt_state["state"].clone(),
     );
-    r.check_eq("no curriculum version stored", 0, probes::curriculum_versions(&h)?.len());
-    r.check_eq("no calendar event created", 0, probes::calendar_event_count(&h)?);
+    r.check_eq(
+        "no curriculum version stored",
+        0,
+        probes::curriculum_versions(&h)?.len(),
+    );
+    r.check_eq(
+        "no calendar event created",
+        0,
+        probes::calendar_event_count(&h)?,
+    );
     let events_after = probes::event_kinds(&h)?;
     r.check_eq(
         "no domain event appended by refused commands",
         events_before.len(),
         events_after.len(),
     );
-    r.check_eq("audit chain verifies", json!(true), probes::audit(&h)?["ok"].clone());
+    r.check_eq(
+        "audit chain verifies",
+        json!(true),
+        probes::audit(&h)?["ok"].clone(),
+    );
     Ok(r.finish())
 }
 
@@ -740,7 +862,7 @@ pub fn a06_identity_binding_and_evidentiary_denial() -> Result<ScenarioReport, G
             json!({ "title": "t", "body_markdown": "b", "classification": "PRIVATE", "domain": "LEARNING" }),
             probes::audit,
         );
-        expect(
+        check_step(
             &mut r,
             "meta carrying an actor",
             &out,
@@ -768,7 +890,14 @@ pub fn a06_identity_binding_and_evidentiary_denial() -> Result<ScenarioReport, G
         &CallOpts::approval(approval.clone()),
         |h| probes::approval(h, &approval),
     );
-    expect(&mut r, "approval presented for a wider selection", &out, "DENY", "UNAUTHORIZED", None);
+    check_step(
+        &mut r,
+        "approval presented for a wider selection",
+        &out,
+        "DENY",
+        "UNAUTHORIZED",
+        None,
+    );
     r.check_eq(
         "mismatched use does not spend the approval",
         Some(ApprovalState::Approved),
@@ -777,7 +906,9 @@ pub fn a06_identity_binding_and_evidentiary_denial() -> Result<ScenarioReport, G
     r.check_eq(
         "no export recorded",
         false,
-        probes::event_kinds(&h)?.iter().any(|k| k == "export.requested"),
+        probes::event_kinds(&h)?
+            .iter()
+            .any(|k| k == "export.requested"),
     );
     let out = h.record(
         &mut r,
@@ -786,7 +917,14 @@ pub fn a06_identity_binding_and_evidentiary_denial() -> Result<ScenarioReport, G
         &CallOpts::approval(approval.clone()),
         |h| probes::approval(h, &approval),
     );
-    expect(&mut r, "approval presented for its own selection", &out, "ALLOW", "OK", None);
+    check_step(
+        &mut r,
+        "approval presented for its own selection",
+        &out,
+        "ALLOW",
+        "OK",
+        None,
+    );
     r.check_eq(
         "approval consumed exactly once",
         Some(ApprovalState::Consumed),
@@ -803,7 +941,14 @@ pub fn a06_identity_binding_and_evidentiary_denial() -> Result<ScenarioReport, G
         &CallOpts::default(),
         |h| probes::attempt(h, &att),
     );
-    expect(&mut r, "delete an attempt", &out, "DENY", "UNAUTHORIZED", Some("policy.denied"));
+    check_step(
+        &mut r,
+        "delete an attempt",
+        &out,
+        "DENY",
+        "UNAUTHORIZED",
+        Some("policy.denied"),
+    );
     r.check_that(
         "DENY decision row persisted for the attempt",
         "latest policy decision for the attempt is DENY",
@@ -815,7 +960,174 @@ pub fn a06_identity_binding_and_evidentiary_denial() -> Result<ScenarioReport, G
         json!(true),
         probes::attempt(&h, &att)?["exists"].clone(),
     );
-    r.check_eq("no approval left pending", 0, probes::approvals_in(&h, ApprovalState::Pending)?);
+    r.check_eq(
+        "no approval left pending",
+        0,
+        probes::approvals_in(&h, ApprovalState::Pending)?,
+    );
+    Ok(r.finish())
+}
+
+/// A06-03: pipeline order (ARCHITECTURE.md §5). The idempotency lookup runs
+/// before policy and approval consumption (a replay of an approved command
+/// returns the stored outcome and spends nothing); a reused key with a
+/// different payload is a CONFLICT; the revision check refuses a stale write.
+pub fn a06_pipeline_order_idempotency_and_revision() -> Result<ScenarioReport, G9Error> {
+    let mut r = ScenarioReport::new(
+        "A06-03",
+        "A06",
+        "pipeline order: idempotent replay before policy/approval; key reuse CONFLICT; stale revision refused",
+    );
+    let mut h = Harness::new()?;
+    let note_events = |h: &Harness| -> Result<usize, G9Error> {
+        Ok(probes::event_kinds(h)?
+            .iter()
+            .filter(|k| *k == "note.created")
+            .count())
+    };
+    let create = json!({ "title": "pipeline", "body_markdown": "synthetic", "classification": "PRIVATE", "domain": "LEARNING" });
+    let key = CallOpts::idempotency("eval-note-key-1");
+    let first = h.record(&mut r, "notes.create", create.clone(), &key, |h| {
+        Ok(json!({ "note_created_events": note_events(h)? }))
+    });
+    check_step(&mut r, "create with key K", &first, "ALLOW", "OK", None);
+    let note_id = first.value()["note_id"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
+    let replay = h.record(&mut r, "notes.create", create.clone(), &key, |h| {
+        Ok(json!({ "note_created_events": note_events(h)? }))
+    });
+    r.check_eq(
+        "same key, same payload: stored outcome replayed (replayed=true, same note id)",
+        (json!(true), json!(note_id.clone())),
+        (
+            replay
+                .result
+                .as_ref()
+                .ok()
+                .map_or(Value::Null, |v| v["replayed"].clone()),
+            replay.value()["note_id"].clone(),
+        ),
+    );
+    r.check_eq(
+        "replay answered from the idempotency store before policy (no audit row)",
+        "NO_AUDIT_ROW",
+        replay.decision.as_str(),
+    );
+    r.check_eq("replay created no second note", 1, note_events(&h)?);
+    let mut other = create.clone();
+    other["body_markdown"] = json!("a different body under the same key");
+    let reused = h.record(&mut r, "notes.create", other, &key, |h| {
+        Ok(json!({ "note_created_events": note_events(h)? }))
+    });
+    check_step(
+        &mut r,
+        "same key, different payload",
+        &reused,
+        "NOT_EVALUATED",
+        "CONFLICT",
+        Some("idempotency.key_reused"),
+    );
+    r.check_eq("key reuse created nothing", 1, note_events(&h)?);
+
+    // Idempotency precedes approval consumption.
+    let export = json!({ "domains": ["LEARNING"], "format": "JSON", "include_private": false });
+    let asked = h.step("export.request", export.clone(), &CallOpts::default());
+    let approval = asked.approval_id().unwrap_or_default();
+    h.approve(&approval)?;
+    let approved = CallOpts {
+        approval_id: Some(approval.clone()),
+        idempotency_key: Some("eval-export-key-1".to_string()),
+        ..CallOpts::default()
+    };
+    let exports = |h: &Harness| -> Result<Value, G9Error> {
+        Ok(json!({
+            "export_events": probes::event_kinds(h)?.iter().filter(|k| *k == "export.requested").count(),
+        }))
+    };
+    let out = h.record(&mut r, "export.request", export.clone(), &approved, |h| {
+        Ok(json!({ "exports": exports(h)?, "approval": probes::approval(h, &approval)? }))
+    });
+    check_step(&mut r, "approved export", &out, "ALLOW", "OK", None);
+    let out = h.record(&mut r, "export.request", export, &approved, |h| {
+        Ok(json!({ "exports": exports(h)?, "approval": probes::approval(h, &approval)? }))
+    });
+    r.check_eq(
+        "replay of the approved export returns the stored outcome (not an approval error)",
+        ("OK".to_string(), json!(true)),
+        (
+            out.outcome_category.clone(),
+            out.result
+                .as_ref()
+                .ok()
+                .map_or(Value::Null, |v| v["replayed"].clone()),
+        ),
+    );
+    r.check_eq(
+        "approved replay answered before policy and approval consumption (no audit row)",
+        "NO_AUDIT_ROW",
+        out.decision.as_str(),
+    );
+    r.check_eq(
+        "replay recorded no second export and spent nothing",
+        (json!({ "export_events": 1 }), Some(ApprovalState::Consumed)),
+        (exports(&h)?, probes::approval_state(&h, &approval)?),
+    );
+
+    // Revision check (step 5).
+    let before = probes::note(&h, &note_id)?;
+    let out = h.record(
+        &mut r,
+        "notes.revise",
+        json!({ "note_id": note_id, "body_markdown": "edited from a stale view" }),
+        &CallOpts::revision(7),
+        |h| probes::note(h, &note_id),
+    );
+    check_step(
+        &mut r,
+        "revise with a stale expected_revision",
+        &out,
+        "ALLOW",
+        "STALE_REVISION",
+        Some("revision.stale"),
+    );
+    r.check_eq(
+        "note unchanged by the stale write",
+        before.clone(),
+        probes::note(&h, &note_id)?,
+    );
+    let out = h.record(
+        &mut r,
+        "notes.revise",
+        json!({ "note_id": note_id, "body_markdown": "edited from the current view" }),
+        &CallOpts::revision(before["revision"].as_u64().unwrap_or(0)),
+        |h| probes::note(h, &note_id),
+    );
+    check_step(
+        &mut r,
+        "revise with the current revision",
+        &out,
+        "ALLOW",
+        "OK",
+        None,
+    );
+    r.check_eq(
+        "revision incremented once; previous version kept",
+        (
+            json!(before["revision"].as_u64().unwrap_or(0) + 1),
+            json!(2),
+        ),
+        {
+            let n = probes::note(&h, &note_id)?;
+            (n["revision"].clone(), n["version_count"].clone())
+        },
+    );
+    r.check_eq(
+        "audit chain verifies",
+        json!(true),
+        probes::audit(&h)?["ok"].clone(),
+    );
     Ok(r.finish())
 }
 
@@ -837,8 +1149,14 @@ pub fn a09_model_down() -> Result<ScenarioReport, G9Error> {
         (3, 2, 2),
         (seed.sessions.len(), seed.notes.len(), seed.attempts.len()),
     );
-    let status = h.record(&mut r, "system.status", json!({}), &CallOpts::default(), no_state);
-    expect(&mut r, "status", &status, "NO_AUDIT_ROW", "OK", None);
+    let status = h.record(
+        &mut r,
+        "system.status",
+        json!({}),
+        &CallOpts::default(),
+        no_state,
+    );
+    check_step(&mut r, "status", &status, "NO_AUDIT_ROW", "OK", None);
     r.check_eq(
         "status reports the model unavailable",
         (json!(false), json!("NO_RUNTIME_CONFIGURED")),
@@ -861,12 +1179,25 @@ pub fn a09_model_down() -> Result<ScenarioReport, G9Error> {
         ("interventions.list", json!({})),
         ("approvals.list", json!({})),
         ("audit.recent", json!({ "limit": 5 })),
-        ("calendar.list", json!({ "from": now - 86_400_000, "to": now + 86_400_000 })),
-        ("calendar.propose", json!({ "from": now, "to": now + 86_400_000, "intent": "ADD_REVIEWS" })),
-        ("notes.create", json!({ "title": "offline", "body_markdown": "written with the model down", "classification": "PRIVATE", "domain": "LEARNING" })),
+        (
+            "calendar.list",
+            json!({ "from": now - 86_400_000, "to": now + 86_400_000 }),
+        ),
+        (
+            "calendar.propose",
+            json!({ "from": now, "to": now + 86_400_000, "intent": "ADD_REVIEWS" }),
+        ),
+        (
+            "notes.create",
+            json!({ "title": "offline", "body_markdown": "written with the model down", "classification": "PRIVATE", "domain": "LEARNING" }),
+        ),
     ] {
         let out = h.record(&mut r, op, payload, &CallOpts::default(), no_state);
-        r.check_eq(format!("{op} works with the model down"), "OK", out.outcome_category.as_str());
+        r.check_eq(
+            format!("{op} works with the model down"),
+            "OK",
+            out.outcome_category.as_str(),
+        );
     }
     let pending_before = probes::approvals_in(&h, ApprovalState::Pending)?;
     let out = h.record(
@@ -876,7 +1207,7 @@ pub fn a09_model_down() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         |h| Ok(json!({ "invocations": probes::invocations(h, "g9-session-director")? })),
     );
-    expect(
+    check_step(
         &mut r,
         "skills.invoke with the model down",
         &out,
@@ -932,12 +1263,34 @@ pub fn a10_deletion_propagation() -> Result<ScenarioReport, G9Error> {
         .unwrap_or_default();
     let body_sha = sha256_hex(body.as_bytes());
     let before = probes::note(&h, &note)?;
-    r.check_eq("note stored verbatim before erasure", json!(body_sha.clone()), before["body_sha256"].clone());
-    let payload = json!({ "resource": { "kind": "NOTE", "id": note }, "reason": "operator erasure request" });
+    r.check_eq(
+        "note stored verbatim before erasure",
+        json!(body_sha.clone()),
+        before["body_sha256"].clone(),
+    );
+    let payload =
+        json!({ "resource": { "kind": "NOTE", "id": note }, "reason": "operator erasure request" });
     let probe = |h: &Harness| probes::note(h, &note);
-    let out = h.record(&mut r, "deletion.request", payload.clone(), &CallOpts::default(), probe);
-    expect(&mut r, "deletion without approval", &out, "APPROVAL_REQUIRED", "APPROVAL_REQUIRED", None);
-    r.check_eq("nothing erased before approval", before.clone(), probes::note(&h, &note)?);
+    let out = h.record(
+        &mut r,
+        "deletion.request",
+        payload.clone(),
+        &CallOpts::default(),
+        probe,
+    );
+    check_step(
+        &mut r,
+        "deletion without approval",
+        &out,
+        "APPROVAL_REQUIRED",
+        "APPROVAL_REQUIRED",
+        None,
+    );
+    r.check_eq(
+        "nothing erased before approval",
+        before.clone(),
+        probes::note(&h, &note)?,
+    );
     r.check_eq(
         "refusal carries no content",
         false,
@@ -953,10 +1306,27 @@ pub fn a10_deletion_propagation() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         |h| probes::approval(h, &approval),
     );
-    expect(&mut r, "operator approves deletion", &decided, "ALLOW", "OK", None);
-    let out = h.record(&mut r, "deletion.request", payload.clone(), &CallOpts::approval(approval.clone()), probe);
-    expect(&mut r, "deletion with approval", &out, "ALLOW", "OK", None);
-    r.check_eq("deletion state APPLIED", json!("APPLIED"), out.value()["state"].clone());
+    check_step(
+        &mut r,
+        "operator approves deletion",
+        &decided,
+        "ALLOW",
+        "OK",
+        None,
+    );
+    let out = h.record(
+        &mut r,
+        "deletion.request",
+        payload.clone(),
+        &CallOpts::approval(approval.clone()),
+        probe,
+    );
+    check_step(&mut r, "deletion with approval", &out, "ALLOW", "OK", None);
+    r.check_eq(
+        "deletion state APPLIED",
+        json!("APPLIED"),
+        out.value()["state"].clone(),
+    );
     r.check_eq(
         "tombstone carries the pre-erasure hash",
         json!(body_sha.clone()),
@@ -975,14 +1345,22 @@ pub fn a10_deletion_propagation() -> Result<ScenarioReport, G9Error> {
         after["version_count"].clone(),
         after["erased_versions"].clone(),
     );
-    let deletion_id = out.value()["deletion_id"].as_str().unwrap_or_default().to_string();
+    let deletion_id = out.value()["deletion_id"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
     let request = g9_storage::deletion::get_request(h.db()?.conn(), &deletion_id)?;
     r.check_eq(
         "deletion request EXECUTED and linked to the approval",
         (Some("EXECUTED".to_string()), Some(approval.clone())),
         (
-            request.as_ref().and_then(|d| serde_json::to_value(d.state).ok()).and_then(|v| v.as_str().map(str::to_string)),
-            request.as_ref().and_then(|d| d.approval_id.as_ref().map(|a| a.as_str().to_string())),
+            request
+                .as_ref()
+                .and_then(|d| serde_json::to_value(d.state).ok())
+                .and_then(|v| v.as_str().map(str::to_string)),
+            request
+                .as_ref()
+                .and_then(|d| d.approval_id.as_ref().map(|a| a.as_str().to_string())),
         ),
     );
     r.check_eq(
@@ -990,11 +1368,25 @@ pub fn a10_deletion_propagation() -> Result<ScenarioReport, G9Error> {
         Some(ApprovalState::Consumed),
         probes::approval_state(&h, &approval)?,
     );
-    r.check_eq("no event carries the erased content", false, probes::events_contain(&h, &body)?);
-    r.check_eq("audit chain verifies after erasure", json!(true), probes::audit(&h)?["ok"].clone());
+    r.check_eq(
+        "no event carries the erased content",
+        false,
+        probes::events_contain(&h, &body)?,
+    );
+    r.check_eq(
+        "audit chain verifies after erasure",
+        json!(true),
+        probes::audit(&h)?["ok"].clone(),
+    );
 
-    let out = h.record(&mut r, "deletion.request", payload, &CallOpts::default(), probe);
-    expect(
+    let out = h.record(
+        &mut r,
+        "deletion.request",
+        payload,
+        &CallOpts::default(),
+        probe,
+    );
+    check_step(
         &mut r,
         "repeat deletion of an erased note",
         &out,
@@ -1015,7 +1407,11 @@ pub fn a10_deletion_propagation() -> Result<ScenarioReport, G9Error> {
         out.outcome_category.as_str(),
         out.result.is_err(),
     );
-    r.check_eq("erased note unchanged by the refused revision", after, probes::note(&h, &note)?);
+    r.check_eq(
+        "erased note unchanged by the refused revision",
+        after,
+        probes::note(&h, &note)?,
+    );
     Ok(r.finish())
 }
 
@@ -1030,10 +1426,25 @@ pub fn a10_export_request() -> Result<ScenarioReport, G9Error> {
     let (mut h, _seed) = seeded(HarnessOptions::default())?;
     let payload = json!({ "domains": ["LEARNING"], "format": "JSON", "include_private": true });
     let exports = |h: &Harness| -> Result<Value, G9Error> {
-        Ok(json!({ "export_events": probes::event_kinds(h)?.iter().filter(|k| *k == "export.requested").count() }))
+        Ok(
+            json!({ "export_events": probes::event_kinds(h)?.iter().filter(|k| *k == "export.requested").count() }),
+        )
     };
-    let out = h.record(&mut r, "export.request", payload.clone(), &CallOpts::default(), exports);
-    expect(&mut r, "export without approval", &out, "APPROVAL_REQUIRED", "APPROVAL_REQUIRED", None);
+    let out = h.record(
+        &mut r,
+        "export.request",
+        payload.clone(),
+        &CallOpts::default(),
+        exports,
+    );
+    check_step(
+        &mut r,
+        "export without approval",
+        &out,
+        "APPROVAL_REQUIRED",
+        "APPROVAL_REQUIRED",
+        None,
+    );
     let approval = out.approval_id().unwrap_or_default();
     r.check_eq(
         "export approval requires DATA_EXPORT",
@@ -1041,9 +1452,19 @@ pub fn a10_export_request() -> Result<ScenarioReport, G9Error> {
         probes::approval(&h, &approval)?["required_capability"].clone(),
     );
     h.approve(&approval)?;
-    let out = h.record(&mut r, "export.request", payload.clone(), &CallOpts::approval(approval.clone()), exports);
-    expect(&mut r, "export with approval", &out, "ALLOW", "OK", None);
-    r.check_eq("export state REQUESTED", json!("REQUESTED"), out.value()["state"].clone());
+    let out = h.record(
+        &mut r,
+        "export.request",
+        payload.clone(),
+        &CallOpts::approval(approval.clone()),
+        exports,
+    );
+    check_step(&mut r, "export with approval", &out, "ALLOW", "OK", None);
+    r.check_eq(
+        "export state REQUESTED",
+        json!("REQUESTED"),
+        out.value()["state"].clone(),
+    );
     r.check_that(
         "outcome declares the writer PROPOSED",
         "warning export.execution_not_implemented",
@@ -1052,12 +1473,38 @@ pub fn a10_export_request() -> Result<ScenarioReport, G9Error> {
             .as_ref()
             .ok()
             .and_then(|v| v["warnings"].as_array().cloned())
-            .is_some_and(|w| w.iter().any(|x| x.as_str().is_some_and(|s| s.starts_with("export.execution_not_implemented")))),
+            .is_some_and(|w| {
+                w.iter().any(|x| {
+                    x.as_str()
+                        .is_some_and(|s| s.starts_with("export.execution_not_implemented"))
+                })
+            }),
     );
-    r.check_eq("one export.requested event", json!({ "export_events": 1 }), exports(&h)?);
-    let out = h.record(&mut r, "export.request", payload, &CallOpts::approval(approval.clone()), exports);
-    expect(&mut r, "replay the export approval", &out, "DENY", "UNAUTHORIZED", None);
-    r.check_eq("replay recorded no second export", json!({ "export_events": 1 }), exports(&h)?);
+    r.check_eq(
+        "one export.requested event",
+        json!({ "export_events": 1 }),
+        exports(&h)?,
+    );
+    let out = h.record(
+        &mut r,
+        "export.request",
+        payload,
+        &CallOpts::approval(approval.clone()),
+        exports,
+    );
+    check_step(
+        &mut r,
+        "replay the export approval",
+        &out,
+        "DENY",
+        "UNAUTHORIZED",
+        None,
+    );
+    r.check_eq(
+        "replay recorded no second export",
+        json!({ "export_events": 1 }),
+        exports(&h)?,
+    );
     r.note("The per-domain export file writer is PROPOSED in g9-app (no file is written); A10 covers the approval gate and the recorded request only.");
     Ok(r.finish())
 }
@@ -1111,23 +1558,39 @@ pub fn a11_output_validation() -> Result<ScenarioReport, G9Error> {
         "skill output validated: valid → advisory only; invalid → rejected; bad input refused before the model",
     );
     let mut h = Harness::new()?;
-    let probe = |h: &Harness| Ok(json!({ "invocations": invocation_states(h)?, "approvals": probes::approval_counts(h)? }));
+    let probe = |h: &Harness| {
+        Ok(
+            json!({ "invocations": invocation_states(h)?, "approvals": probes::approval_counts(h)? }),
+        )
+    };
 
     // Valid reply with an allowed proposal: returned, never executed.
     let proposal = json!([{ "action": "PROPOSE", "resource": { "kind": "INTERVENTION", "id": "int-route-drill" },
         "rationale": "two hinted route fixes this week", "evidence_refs": [], "parameters": { "minutes": 20 } }]);
     h.script_reply(&t01_output(proposal))?;
-    let out = h.record(&mut r, "skills.invoke", t01_input(), &CallOpts::default(), probe);
-    expect(&mut r, "valid reply", &out, "ALLOW", "OK", None);
+    let out = h.record(
+        &mut r,
+        "skills.invoke",
+        t01_input(),
+        &CallOpts::default(),
+        probe,
+    );
+    check_step(&mut r, "valid reply", &out, "ALLOW", "OK", None);
     r.check_eq(
         "envelope labelled MODEL_OUTPUT, validation VALID, state COMPLETED",
         (json!("MODEL_OUTPUT"), json!("VALID"), json!("COMPLETED")),
-        (out.value()["provenance"].clone(), out.value()["validation"].clone(), out.value()["state"].clone()),
+        (
+            out.value()["provenance"].clone(),
+            out.value()["validation"].clone(),
+            out.value()["state"].clone(),
+        ),
     );
     r.check_eq(
         "recommended action returned as a proposal",
         json!(1),
-        json!(out.value()["recommended_actions"].as_array().map_or(0, Vec::len)),
+        json!(out.value()["recommended_actions"]
+            .as_array()
+            .map_or(0, Vec::len)),
     );
     let interventions = h.call("interventions.list", json!({}))?;
     r.check_eq(
@@ -1135,7 +1598,11 @@ pub fn a11_output_validation() -> Result<ScenarioReport, G9Error> {
         json!([]),
         interventions["result"]["interventions"].clone(),
     );
-    r.check_eq("no approval created by advisory output", 0, probes::approvals_in(&h, ApprovalState::Pending)?);
+    r.check_eq(
+        "no approval created by advisory output",
+        0,
+        probes::approvals_in(&h, ApprovalState::Pending)?,
+    );
 
     // Schema-invalid reply (missing required `next_step`).
     let mut invalid = t01_output(json!([]));
@@ -1143,33 +1610,59 @@ pub fn a11_output_validation() -> Result<ScenarioReport, G9Error> {
         result.remove("next_step");
     }
     h.script_reply(&invalid)?;
-    let out = h.record(&mut r, "skills.invoke", t01_input(), &CallOpts::default(), probe);
-    r.check_eq("schema-invalid reply: recorded decision", "ALLOW", out.decision.as_str());
+    let out = h.record(
+        &mut r,
+        "skills.invoke",
+        t01_input(),
+        &CallOpts::default(),
+        probe,
+    );
+    r.check_eq(
+        "schema-invalid reply: recorded decision",
+        "ALLOW",
+        out.decision.as_str(),
+    );
     r.check_that(
         "schema-invalid reply rejected (never COMPLETED)",
         "error with invocation state ERROR",
         out.error().map(|e| (e.category, e.code.clone())),
-        out.error().and_then(|e| e.details.as_ref()).is_some_and(|d| d["state"] == json!("ERROR")),
+        out.error()
+            .and_then(|e| e.details.as_ref())
+            .is_some_and(|d| d["state"] == json!("ERROR")),
     );
     // Non-JSON reply.
     h.script_text_reply("Sure! Here is your brief: do the lab.")?;
-    let out = h.record(&mut r, "skills.invoke", t01_input(), &CallOpts::default(), probe);
+    let out = h.record(
+        &mut r,
+        "skills.invoke",
+        t01_input(),
+        &CallOpts::default(),
+        probe,
+    );
     r.check_that(
         "non-JSON reply rejected",
         "error with invocation state ERROR",
         out.error().map(|e| (e.category, e.code.clone())),
-        out.error().and_then(|e| e.details.as_ref()).is_some_and(|d| d["state"] == json!("ERROR")),
+        out.error()
+            .and_then(|e| e.details.as_ref())
+            .is_some_and(|d| d["state"] == json!("ERROR")),
     );
     let states = invocation_states(&h)?;
     r.check_eq(
         "only the valid reply produced an output hash",
         1,
-        states.iter().filter(|s| s["has_output_hash"] == json!(true)).count(),
+        states
+            .iter()
+            .filter(|s| s["has_output_hash"] == json!(true))
+            .count(),
     );
     r.check_eq(
         "rejected replies recorded as ERROR",
         2,
-        states.iter().filter(|s| s["state"] == json!("ERROR")).count(),
+        states
+            .iter()
+            .filter(|s| s["state"] == json!("ERROR"))
+            .count(),
     );
     r.note("Gap: a schema-invalid or non-JSON reply surfaces as INTERNAL skills.backend.runtime (g9-app RuntimeBackend maps InferenceError::InvalidOutput to BackendError::Runtime) instead of PRECONDITION_FAILED skills.output_rejected; the reply is still rejected and nothing is persisted.");
 
@@ -1183,7 +1676,7 @@ pub fn a11_output_validation() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         probe,
     );
-    expect(
+    check_step(
         &mut r,
         "skill input violating input.schema.json",
         &out,
@@ -1206,8 +1699,19 @@ pub fn a11_output_validation() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         probes::audit,
     );
-    expect(&mut r, "IPC payload violating its schema", &out, "NO_AUDIT_ROW", "INVALID_INPUT", Some("ipc.payload_invalid"));
-    r.check_eq("schema refusal persisted nothing", audit_before, probes::audit(&h)?);
+    check_step(
+        &mut r,
+        "IPC payload violating its schema",
+        &out,
+        "NO_AUDIT_ROW",
+        "INVALID_INPUT",
+        Some("ipc.payload_invalid"),
+    );
+    r.check_eq(
+        "schema refusal persisted nothing",
+        audit_before,
+        probes::audit(&h)?,
+    );
     Ok(r.finish())
 }
 
@@ -1220,6 +1724,7 @@ pub fn run_all() -> Result<Vec<ScenarioReport>, G9Error> {
         a05_competency_replay_and_correction()?,
         a06_gated_operations_require_approval()?,
         a06_identity_binding_and_evidentiary_denial()?,
+        a06_pipeline_order_idempotency_and_revision()?,
         a09_model_down()?,
         a10_deletion_propagation()?,
         a10_export_request()?,

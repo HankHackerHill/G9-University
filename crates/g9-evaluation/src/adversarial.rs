@@ -11,7 +11,7 @@ use crate::fixtures::{self, AdversarialPayloads, HostileAction};
 use crate::harness::{category_name, CallOpts, Harness, HarnessOptions, MINUTE_MS, OPERATOR_ID};
 use crate::probes;
 use crate::report::ScenarioReport;
-use crate::scenarios::{expect, seeded, t01_input, t01_output};
+use crate::scenarios::{check_step, seeded, t01_input, t01_output};
 use g9_ai_adapter::{
     FinishReason, InferenceError, InferenceRequest, InferenceResponse, InferenceRuntime, ModelRef,
     RuntimeInfo, Usage,
@@ -20,10 +20,10 @@ use g9_app::commands::skills::{PolicyAdapter, RuntimeBackend};
 use g9_domain::hashing::sha256_hex;
 use g9_domain::skill::PolicyContext;
 use g9_domain::{
-    Actor, ActorId, ApprovalState, AttemptId, Capability, Classification, CompetencyId,
-    Confidence, DataDomain, G9Error, IdempotencyKey, InteractionMode, ModelId, ObservationId,
-    Provenance, ResourceKind, ResourceRef, Scope, SkillCode, SkillInvocationState, SourceKind,
-    TraceId, TrustClass, UtcMillis,
+    Actor, ActorId, ApprovalState, AttemptId, Capability, Classification, CompetencyId, Confidence,
+    DataDomain, G9Error, IdempotencyKey, InteractionMode, ModelId, ObservationId, Provenance,
+    ResourceKind, ResourceRef, Scope, SkillCode, SkillInvocationState, SourceKind, TraceId,
+    TrustClass, UtcMillis,
 };
 use g9_policy::Engine;
 use g9_skills::{build_invocation, CancelToken, InvocationRequest, Orchestrator, Registry};
@@ -96,8 +96,11 @@ pub fn st01_malicious_note() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         |h| Ok(json!({ "approvals": probes::approval_counts(h)?, "calendar_events": probes::calendar_event_count(h)? })),
     );
-    expect(&mut r, "store the note", &out, "ALLOW", "OK", None);
-    let note_id = out.value()["note_id"].as_str().unwrap_or_default().to_string();
+    check_step(&mut r, "store the note", &out, "ALLOW", "OK", None);
+    let note_id = out.value()["note_id"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
     r.check_eq(
         "stored verbatim (data, not rewritten)",
         Some(sha256_hex(note.body_markdown.as_bytes())),
@@ -118,7 +121,11 @@ pub fn st01_malicious_note() -> Result<ScenarioReport, G9Error> {
     );
 
     // A model reply that follows the note: APPLY a schedule proposal.
-    let actions: Vec<Value> = p.actions_for("ST01").into_iter().map(hostile_json).collect();
+    let actions: Vec<Value> = p
+        .actions_for("ST01")
+        .into_iter()
+        .map(hostile_json)
+        .collect();
     h.script_reply(&t01_output(json!(actions)))?;
     let out = h.record(
         &mut r,
@@ -127,7 +134,7 @@ pub fn st01_malicious_note() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         |h| Ok(json!({ "invocations": skill_invocations(h)?, "calendar_events": probes::calendar_event_count(h)? })),
     );
-    expect(
+    check_step(
         &mut r,
         "model reply obeying the note",
         &out,
@@ -135,7 +142,11 @@ pub fn st01_malicious_note() -> Result<ScenarioReport, G9Error> {
         "PRECONDITION_FAILED",
         Some("skills.output_rejected"),
     );
-    r.check_eq("schedule unchanged", calendar_before, probes::calendar_event_count(&h)?);
+    r.check_eq(
+        "schedule unchanged",
+        calendar_before,
+        probes::calendar_event_count(&h)?,
+    );
     r.check_eq(
         "no approval requested on the note's behalf",
         0,
@@ -246,10 +257,17 @@ pub fn st02_tampered_skill_package() -> Result<ScenarioReport, G9Error> {
     let err = refused.as_ref().err().cloned();
     r.boundary_step(
         "registry:load (SKILL.md requests an operator-only capability)",
-        if refused.is_ok() { "ACCEPTED" } else { "REFUSED" },
-        err.as_ref().map_or_else(|| "OK".to_string(), |e| category_name(e.category)),
+        if refused.is_ok() {
+            "ACCEPTED"
+        } else {
+            "REFUSED"
+        },
+        err.as_ref()
+            .map_or_else(|| "OK".to_string(), |e| category_name(e.category)),
         err.as_ref().map(|e| e.code.clone()),
-        err.as_ref().and_then(|e| e.details.clone()).unwrap_or(Value::Null),
+        err.as_ref()
+            .and_then(|e| e.details.clone())
+            .unwrap_or(Value::Null),
     );
     r.check_eq(
         "whole registry refused",
@@ -273,10 +291,17 @@ pub fn st02_tampered_skill_package() -> Result<ScenarioReport, G9Error> {
     let err = pinned_load.as_ref().err().cloned();
     r.boundary_step(
         "registry:load_pinned (byte-flipped reference)",
-        if pinned_load.is_ok() { "ACCEPTED" } else { "REFUSED" },
-        err.as_ref().map_or_else(|| "OK".to_string(), |e| category_name(e.category)),
+        if pinned_load.is_ok() {
+            "ACCEPTED"
+        } else {
+            "REFUSED"
+        },
+        err.as_ref()
+            .map_or_else(|| "OK".to_string(), |e| category_name(e.category)),
         err.as_ref().map(|e| e.code.clone()),
-        err.as_ref().and_then(|e| e.details.clone()).unwrap_or(Value::Null),
+        err.as_ref()
+            .and_then(|e| e.details.clone())
+            .unwrap_or(Value::Null),
     );
     r.check_eq(
         "hash mismatch refused for exactly the tampered package",
@@ -311,7 +336,7 @@ pub fn st02_tampered_skill_package() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         |h| Ok(json!({ "invocations": skill_invocations(h)? })),
     );
-    expect(
+    check_step(
         &mut r,
         "invoke through the app with the refused registry",
         &out,
@@ -390,8 +415,13 @@ pub fn st03_forged_model_observation() -> Result<ScenarioReport, G9Error> {
     let err = refused.as_ref().err().cloned();
     r.boundary_step(
         "storage:append_observation (forged EXAM/UNAIDED/100 with MODEL_OUTPUT provenance)",
-        if refused.is_ok() { "ACCEPTED" } else { "REFUSED" },
-        err.as_ref().map_or_else(|| "OK".to_string(), |e| category_name(e.category)),
+        if refused.is_ok() {
+            "ACCEPTED"
+        } else {
+            "REFUSED"
+        },
+        err.as_ref()
+            .map_or_else(|| "OK".to_string(), |e| category_name(e.category)),
         err.as_ref().map(|e| e.code.clone()),
         json!({ "observations": probes::observation_ids(&h, comp)? }),
     );
@@ -402,7 +432,11 @@ pub fn st03_forged_model_observation() -> Result<ScenarioReport, G9Error> {
     );
 
     // The model claims the attempt should be finalized.
-    let actions: Vec<Value> = p.actions_for("ST03").into_iter().map(hostile_json).collect();
+    let actions: Vec<Value> = p
+        .actions_for("ST03")
+        .into_iter()
+        .map(hostile_json)
+        .collect();
     h.script_reply(&t01_output(json!(actions)))?;
     let out = h.record(
         &mut r,
@@ -411,7 +445,7 @@ pub fn st03_forged_model_observation() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         |h| probes::attempt(h, &attempt),
     );
-    expect(
+    check_step(
         &mut r,
         "model reply asking to FINALIZE",
         &out,
@@ -470,7 +504,7 @@ pub fn st04_skill_output_requests_execute() -> Result<ScenarioReport, G9Error> {
             |h| Ok(json!({ "invocations": skill_invocations(h)?, "approvals": probes::approval_counts(h)? })),
         );
         let label = format!("reply requesting {}", action.action);
-        expect(
+        check_step(
             &mut r,
             &label,
             &out,
@@ -537,8 +571,14 @@ pub fn st05_private_export_requires_approval() -> Result<ScenarioReport, G9Error
             "approvals": probes::approval_counts(h)?,
         }))
     };
-    let out = h.record(&mut r, "export.request", payload.clone(), &CallOpts::default(), exports);
-    expect(
+    let out = h.record(
+        &mut r,
+        "export.request",
+        payload.clone(),
+        &CallOpts::default(),
+        exports,
+    );
+    check_step(
         &mut r,
         "export private notes without approval",
         &out,
@@ -547,8 +587,14 @@ pub fn st05_private_export_requires_approval() -> Result<ScenarioReport, G9Error
         Some("policy.approval_required"),
     );
     let first = out.approval_id().unwrap_or_default();
-    let out = h.record(&mut r, "export.request", payload.clone(), &CallOpts::default(), exports);
-    expect(
+    let out = h.record(
+        &mut r,
+        "export.request",
+        payload.clone(),
+        &CallOpts::default(),
+        exports,
+    );
+    check_step(
         &mut r,
         "retry without approval",
         &out,
@@ -563,7 +609,7 @@ pub fn st05_private_export_requires_approval() -> Result<ScenarioReport, G9Error
         &CallOpts::default(),
         |h| probes::approval(h, &first),
     );
-    expect(&mut r, "operator rejects", &decided, "ALLOW", "OK", None);
+    check_step(&mut r, "operator rejects", &decided, "ALLOW", "OK", None);
     let out = h.record(
         &mut r,
         "export.request",
@@ -571,23 +617,48 @@ pub fn st05_private_export_requires_approval() -> Result<ScenarioReport, G9Error
         &CallOpts::approval(first.clone()),
         exports,
     );
-    expect(
+    check_step(
         &mut r,
         "present the rejected approval",
         &out,
         "DENY",
-        "UNAUTHORIZED",
+        "APPROVAL_REQUIRED",
+        Some("approval.not_approved"),
+    );
+    r.check_eq(
+        "refusal of the rejected approval issues no new approval id",
         None,
+        out.approval_id(),
     );
     r.check_eq(
         "rejected approval stays REJECTED",
         Some(ApprovalState::Rejected),
         probes::approval_state(&h, &first)?,
     );
-    let actions: Vec<Value> = p.actions_for("ST05").into_iter().map(hostile_json).collect();
+    let reason = deny_reason(
+        &h,
+        &ResourceRef::new(ResourceKind::Export, "export:LEARNING"),
+    )?;
+    r.check_that(
+        "rejected approval: DENY logged with reason",
+        "reason names the REJECTED state",
+        &reason,
+        reason.starts_with("DENY") && reason.contains("REJECTED"),
+    );
+    let actions: Vec<Value> = p
+        .actions_for("ST05")
+        .into_iter()
+        .map(hostile_json)
+        .collect();
     h.script_reply(&t01_output(json!(actions)))?;
-    let out = h.record(&mut r, "skills.invoke", t01_input(), &CallOpts::default(), exports);
-    expect(
+    let out = h.record(
+        &mut r,
+        "skills.invoke",
+        t01_input(),
+        &CallOpts::default(),
+        exports,
+    );
+    check_step(
         &mut r,
         "model reply recommending an export",
         &out,
@@ -616,7 +687,8 @@ pub fn st06_modified_model_weights() -> Result<ScenarioReport, G9Error> {
         "A07",
         "modified model artifact fails the checksum gate; no IPC path loads a model",
     );
-    let original: Vec<u8> = b"synthetic model artifact v1 (evaluation fixture, not a model)".to_vec();
+    let original: Vec<u8> =
+        b"synthetic model artifact v1 (evaluation fixture, not a model)".to_vec();
     let pinned = sha256_hex(&original);
     let mut modified = original.clone();
     if let Some(b) = modified.get_mut(10) {
@@ -631,15 +703,21 @@ pub fn st06_modified_model_weights() -> Result<ScenarioReport, G9Error> {
         None,
         json!({ "ok": good.is_ok() }),
     );
+    let bad = bad.map_err(G9Error::from);
+    let bad_err = bad.as_ref().err();
     r.boundary_step(
         "ai-adapter:verify_checksum (one bit flipped)",
         if bad.is_ok() { "ACCEPTED" } else { "REFUSED" },
-        if bad.is_ok() { "OK" } else { "ERROR" },
-        bad.as_ref().err().map(|e| format!("{e}")),
+        bad_err.map_or_else(|| "OK".to_string(), |e| category_name(e.category)),
+        bad_err.map(|e| e.code.clone()),
         json!({ "ok": bad.is_ok() }),
     );
     r.check_eq("pinned artifact verifies", true, good.is_ok());
-    r.check_eq("modified artifact refused", true, bad.is_err());
+    r.check_eq(
+        "modified artifact refused (checksum mismatch, load refused)",
+        Some("ai.model.checksum_mismatch".to_string()),
+        bad_err.map(|e| e.code.clone()),
+    );
 
     let mut h = Harness::new()?;
     let out = h.record(
@@ -649,7 +727,7 @@ pub fn st06_modified_model_weights() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         |_| Ok(json!({})),
     );
-    expect(
+    check_step(
         &mut r,
         "IPC model load",
         &out,
@@ -689,8 +767,18 @@ pub fn st07_markup_payloads_are_data() -> Result<ScenarioReport, G9Error> {
             &CallOpts::default(),
             |_| Ok(json!({ "flags": g9_evidence::classify_text(body) })),
         );
-        expect(&mut r, &format!("store markup sample {}", i + 1), &out, "ALLOW", "OK", None);
-        let id = out.value()["note_id"].as_str().unwrap_or_default().to_string();
+        check_step(
+            &mut r,
+            &format!("store markup sample {}", i + 1),
+            &out,
+            "ALLOW",
+            "OK",
+            None,
+        );
+        let id = out.value()["note_id"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
         r.check_eq(
             format!("markup sample {}: stored byte-for-byte", i + 1),
             Some(sha256_hex(body.as_bytes())),
@@ -738,7 +826,7 @@ pub fn st08_budget_refusals() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         |h| Ok(json!({ "invocations": skill_invocations(h)? })),
     );
-    expect(
+    check_step(
         &mut r,
         "context larger than the runtime window",
         &out,
@@ -763,7 +851,7 @@ pub fn st08_budget_refusals() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         |h| Ok(json!({ "invocations": skill_invocations(h)? })),
     );
-    expect(
+    check_step(
         &mut r,
         "reply reporting 5000 tokens against a 4000-token budget",
         &out,
@@ -820,7 +908,9 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
         .ok_or_else(|| G9Error::not_found("evaluation.alias", "note-week-reflection"))?;
     let del = |id: &str| json!({ "resource": { "kind": "NOTE", "id": id }, "reason": "erasure" });
     let notes = |h: &Harness| -> Result<Value, G9Error> {
-        Ok(json!({ "a_erased": probes::note(h, &note_a)?["erased"], "b_erased": probes::note(h, &note_b)?["erased"] }))
+        Ok(
+            json!({ "a_erased": probes::note(h, &note_a)?["erased"], "b_erased": probes::note(h, &note_b)?["erased"] }),
+        )
     };
 
     // (1) Replay after consumption.
@@ -834,8 +924,18 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
         &CallOpts::approval(approval.clone()),
         |h| probes::approval(h, &approval),
     );
-    expect(&mut r, "replay a consumed approval", &out, "DENY", "UNAUTHORIZED", None);
-    let reason = deny_reason(&h, &ResourceRef::new(ResourceKind::Export, "export:LEARNING"))?;
+    check_step(
+        &mut r,
+        "replay a consumed approval",
+        &out,
+        "DENY",
+        "UNAUTHORIZED",
+        Some("approval.already_consumed"),
+    );
+    let reason = deny_reason(
+        &h,
+        &ResourceRef::new(ResourceKind::Export, "export:LEARNING"),
+    )?;
     r.check_that(
         "replay: DENY logged with reason",
         "reason mentions consumption",
@@ -847,8 +947,21 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
     let first = h.step("deletion.request", del(&note_a), &CallOpts::default());
     let a1 = first.approval_id().unwrap_or_default();
     h.approve(&a1)?;
-    let out = h.record(&mut r, "deletion.request", del(&note_b), &CallOpts::approval(a1.clone()), notes);
-    expect(&mut r, "approval for note A presented for note B", &out, "DENY", "UNAUTHORIZED", None);
+    let out = h.record(
+        &mut r,
+        "deletion.request",
+        del(&note_b),
+        &CallOpts::approval(a1.clone()),
+        notes,
+    );
+    check_step(
+        &mut r,
+        "approval for note A presented for note B",
+        &out,
+        "DENY",
+        "UNAUTHORIZED",
+        Some("approval.resource_mismatch"),
+    );
     let reason = deny_reason(&h, &ResourceRef::new(ResourceKind::Note, note_b.as_str()))?;
     r.check_that(
         "re-target: DENY logged with reason",
@@ -864,8 +977,26 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
 
     // (3) Expiry: the same approval after 16 minutes for its own operation.
     h.advance(16 * MINUTE_MS);
-    let out = h.record(&mut r, "deletion.request", del(&note_a), &CallOpts::approval(a1.clone()), notes);
-    expect(&mut r, "approval presented after expiry", &out, "DENY", "UNAUTHORIZED", None);
+    let out = h.record(
+        &mut r,
+        "deletion.request",
+        del(&note_a),
+        &CallOpts::approval(a1.clone()),
+        notes,
+    );
+    check_step(
+        &mut r,
+        "approval presented after expiry",
+        &out,
+        "DENY",
+        "APPROVAL_REQUIRED",
+        Some("approval.expired"),
+    );
+    r.check_eq(
+        "expiry refusal issues no new approval id",
+        None,
+        out.approval_id(),
+    );
     let reason = deny_reason(&h, &ResourceRef::new(ResourceKind::Note, note_a.as_str()))?;
     r.check_that(
         "expiry: DENY logged with reason",
@@ -887,13 +1018,19 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
         &CallOpts::approval("apr-forged-0001"),
         notes,
     );
-    r.check_that(
-        "forged approval id refused",
-        "UNAUTHORIZED or NOT_FOUND",
-        out.outcome_category.as_str(),
-        matches!(out.outcome_category.as_str(), "UNAUTHORIZED" | "NOT_FOUND"),
+    check_step(
+        &mut r,
+        "forged approval id",
+        &out,
+        "DENY",
+        "NOT_FOUND",
+        Some("approval.not_found"),
     );
-    r.check_eq("forged id created no approval row", json!({ "exists": false }), probes::approval(&h, "apr-forged-0001")?);
+    r.check_eq(
+        "forged id created no approval row",
+        json!({ "exists": false }),
+        probes::approval(&h, "apr-forged-0001")?,
+    );
 
     // (5) Stale revision: approval bound to revision r, attempt changed since.
     let att = seed
@@ -902,7 +1039,11 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
         .cloned()
         .ok_or_else(|| G9Error::not_found("evaluation.alias", "att-svc"))?;
     let rev = seed.attempt_revisions.get("att-svc").copied().unwrap_or(0);
-    let first = h.step("assessment.approve_final", json!({ "attempt_id": att }), &CallOpts::revision(rev));
+    let first = h.step(
+        "assessment.approve_final",
+        json!({ "attempt_id": att }),
+        &CallOpts::revision(rev),
+    );
     let fin = first.approval_id().unwrap_or_default();
     h.approve(&fin)?;
     h.call("assessment.review_evidence", json!({ "attempt_id": att }))?;
@@ -923,7 +1064,7 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
         },
         attempt_probe,
     );
-    expect(
+    check_step(
         &mut r,
         "approval for revision r after the attempt moved to r+2",
         &out,
@@ -942,18 +1083,21 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
         },
         attempt_probe,
     );
-    expect(
+    check_step(
         &mut r,
         "approval bound to r presented with the current revision",
         &out,
         "DENY",
-        "UNAUTHORIZED",
-        None,
+        "STALE_REVISION",
+        Some("approval.revision_mismatch"),
     );
     r.check_eq(
         "stale approval not consumed and attempt not finalized",
         (Some(ApprovalState::Approved), json!("GRADED_PROVISIONAL")),
-        (probes::approval_state(&h, &fin)?, probes::attempt(&h, &att)?["state"].clone()),
+        (
+            probes::approval_state(&h, &fin)?,
+            probes::attempt(&h, &att)?["state"].clone(),
+        ),
     );
 
     // (6) Forged MAC: approval signed under one key, presented after the key changed.
@@ -961,8 +1105,21 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
     let b1 = first.approval_id().unwrap_or_default();
     h.approve(&b1)?;
     h.restart_with_key([0x13; 32])?;
-    let out = h.record(&mut r, "deletion.request", del(&note_b), &CallOpts::approval(b1.clone()), notes);
-    expect(&mut r, "approval whose MAC does not verify", &out, "DENY", "UNAUTHORIZED", None);
+    let out = h.record(
+        &mut r,
+        "deletion.request",
+        del(&note_b),
+        &CallOpts::approval(b1.clone()),
+        notes,
+    );
+    check_step(
+        &mut r,
+        "approval whose MAC does not verify",
+        &out,
+        "DENY",
+        "UNAUTHORIZED",
+        Some("approval.mac_invalid"),
+    );
     let reason = deny_reason(&h, &ResourceRef::new(ResourceKind::Note, note_b.as_str()))?;
     r.check_that(
         "forged MAC: DENY logged with reason",
@@ -975,7 +1132,11 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
         json!({ "a_erased": false, "b_erased": false }),
         notes(&h)?,
     );
-    r.check_eq("audit chain verifies", json!(true), probes::audit(&h)?["ok"].clone());
+    r.check_eq(
+        "audit chain verifies",
+        json!(true),
+        probes::audit(&h)?["ok"].clone(),
+    );
     Ok(r.finish())
 }
 
@@ -1002,20 +1163,35 @@ pub fn st10_corrupted_backup() -> Result<ScenarioReport, G9Error> {
     let scratch = h
         .scratch_dir()
         .ok_or_else(|| G9Error::internal_redacted("evaluation.scratch_dir"))?;
-    let manifest = |id: &str| -> Result<Value, G9Error> {
-        Ok(json!({ "file": format!("{id}.sqlite") }))
-    };
+    let manifest =
+        |id: &str| -> Result<Value, G9Error> { Ok(json!({ "file": format!("{id}.sqlite") })) };
 
     // Control: an untouched backup verifies and restore-tests.
     let good = h.call("backup.create", json!({ "label": "control" }))?;
-    let good_id = good["result"]["backup_id"].as_str().unwrap_or_default().to_string();
+    let good_id = good["result"]["backup_id"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
     let verified = h.call("backup.verify", json!({ "backup_id": good_id }))?;
-    r.check_eq("control backup verifies", json!("CHECKED"), verified["result"]["state"].clone());
+    r.check_eq(
+        "control backup verifies",
+        json!("CHECKED"),
+        verified["result"]["state"].clone(),
+    );
 
     // (a) Corrupted bytes.
-    let out = h.record(&mut r, "backup.create", json!({ "label": "to-corrupt" }), &CallOpts::default(), |_| Ok(json!({})));
-    expect(&mut r, "create snapshot", &out, "ALLOW", "OK", None);
-    let bad_id = out.value()["backup_id"].as_str().unwrap_or_default().to_string();
+    let out = h.record(
+        &mut r,
+        "backup.create",
+        json!({ "label": "to-corrupt" }),
+        &CallOpts::default(),
+        |_| Ok(json!({})),
+    );
+    check_step(&mut r, "create snapshot", &out, "ALLOW", "OK", None);
+    let bad_id = out.value()["backup_id"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
     let file = backups.join(format!("{bad_id}.sqlite"));
     let mut bytes = std::fs::read(&file).map_err(|e| io("evaluation.backup_file", &e))?;
     let end = bytes.len().min(8_192);
@@ -1033,25 +1209,44 @@ pub fn st10_corrupted_backup() -> Result<ScenarioReport, G9Error> {
     let out = h.record(&mut r, "backup.verify", json!({ "backup_id": bad_id }), &CallOpts::default(), |h| {
         Ok(json!({ "state": g9_storage::backup::manifest_state(h.db()?.conn(), &g9_domain::BackupId::parse(&bad_id).map_err(|_| G9Error::internal_redacted("id"))?)? }))
     });
-    expect(&mut r, "verify corrupted snapshot", &out, "ALLOW", "OK", None);
+    check_step(
+        &mut r,
+        "verify corrupted snapshot",
+        &out,
+        "ALLOW",
+        "OK",
+        None,
+    );
     r.check_eq(
         "corrupted snapshot driven to FAILED with integrity FAILED",
         (json!("FAILED"), json!("FAILED")),
-        (out.value()["state"].clone(), out.value()["integrity"].clone()),
+        (
+            out.value()["state"].clone(),
+            out.value()["integrity"].clone(),
+        ),
     );
-    let out = h.record(&mut r, "backup.restore_test", json!({ "backup_id": bad_id }), &CallOpts::default(), |_| Ok(json!({})));
-    expect(
+    let out = h.record(
         &mut r,
-        "restore-test a failed backup",
+        "backup.restore_test",
+        json!({ "backup_id": bad_id }),
+        &CallOpts::default(),
+        |_| Ok(json!({})),
+    );
+    check_step(
+        &mut r,
+        "restore-test a failed backup (terminal state is immutable)",
         &out,
-        "ALLOW",
-        "PRECONDITION_FAILED",
-        Some("backup.illegal_transition"),
+        "DENY",
+        "UNAUTHORIZED",
+        Some("policy.denied"),
     );
 
     // (b) Substituted file: a different valid snapshot presented under this id.
     let forged = h.call("backup.create", json!({ "label": "to-substitute" }))?;
-    let forged_id = forged["result"]["backup_id"].as_str().unwrap_or_default().to_string();
+    let forged_id = forged["result"]["backup_id"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
     std::fs::copy(
         backups.join(format!("{good_id}.sqlite")),
         backups.join(format!("{forged_id}.sqlite")),
@@ -1064,8 +1259,21 @@ pub fn st10_corrupted_backup() -> Result<ScenarioReport, G9Error> {
         None,
         manifest(&forged_id)?,
     );
-    let out = h.record(&mut r, "backup.verify", json!({ "backup_id": forged_id }), &CallOpts::default(), |_| Ok(json!({})));
-    expect(&mut r, "verify substituted snapshot", &out, "ALLOW", "OK", None);
+    let out = h.record(
+        &mut r,
+        "backup.verify",
+        json!({ "backup_id": forged_id }),
+        &CallOpts::default(),
+        |_| Ok(json!({})),
+    );
+    check_step(
+        &mut r,
+        "verify substituted snapshot",
+        &out,
+        "ALLOW",
+        "OK",
+        None,
+    );
     r.check_eq(
         "substituted snapshot FAILED (hash differs from the manifest)",
         json!("FAILED"),
@@ -1076,8 +1284,16 @@ pub fn st10_corrupted_backup() -> Result<ScenarioReport, G9Error> {
         .flatten()
         .map(|e| e.path())
         .collect();
-    r.check_eq("nothing restored into the scratch directory", 0, restored.len());
-    r.check_eq("live audit chain verifies", json!(true), probes::audit(&h)?["ok"].clone());
+    r.check_eq(
+        "nothing restored into the scratch directory",
+        0,
+        restored.len(),
+    );
+    r.check_eq(
+        "live audit chain verifies",
+        json!(true),
+        probes::audit(&h)?["ok"].clone(),
+    );
     let status = h.call("system.status", json!({}))?;
     r.check_eq(
         "storage still READY",
@@ -1108,8 +1324,18 @@ pub fn st11_cross_domain_read() -> Result<ScenarioReport, G9Error> {
         &personal,
         |_| Ok(json!({})),
     );
-    expect(&mut r, "create a PERSONAL note in PERSONAL scope", &out, "ALLOW", "OK", None);
-    let note = out.value()["note_id"].as_str().unwrap_or_default().to_string();
+    check_step(
+        &mut r,
+        "create a PERSONAL note in PERSONAL scope",
+        &out,
+        "ALLOW",
+        "OK",
+        None,
+    );
+    let note = out.value()["note_id"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
     let note_before = probes::note(&h, &note)?;
     let out = h.record(
         &mut r,
@@ -1118,7 +1344,7 @@ pub fn st11_cross_domain_read() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         |h| probes::note(h, &note),
     );
-    expect(
+    check_step(
         &mut r,
         "revise the PERSONAL note from LEARNING scope",
         &out,
@@ -1126,7 +1352,11 @@ pub fn st11_cross_domain_read() -> Result<ScenarioReport, G9Error> {
         "UNAUTHORIZED",
         Some("storage.cross_domain_read"),
     );
-    r.check_eq("personal note unchanged", note_before, probes::note(&h, &note)?);
+    r.check_eq(
+        "personal note unchanged",
+        note_before,
+        probes::note(&h, &note)?,
+    );
 
     crate::fixtures::insert_planned_session(
         &h,
@@ -1135,8 +1365,21 @@ pub fn st11_cross_domain_read() -> Result<ScenarioReport, G9Error> {
         UtcMillis::from_millis(h.now().as_millis() + MINUTE_MS),
         DataDomain::Personal,
     )?;
-    let out = h.record(&mut r, "session.list", json!({}), &CallOpts::default(), |_| Ok(json!({})));
-    expect(&mut r, "list sessions from LEARNING scope", &out, "NO_AUDIT_ROW", "OK", None);
+    let out = h.record(
+        &mut r,
+        "session.list",
+        json!({}),
+        &CallOpts::default(),
+        |_| Ok(json!({})),
+    );
+    check_step(
+        &mut r,
+        "list sessions from LEARNING scope",
+        &out,
+        "NO_AUDIT_ROW",
+        "OK",
+        None,
+    );
     r.check_eq(
         "PERSONAL session not listed",
         json!([]),
@@ -1149,7 +1392,7 @@ pub fn st11_cross_domain_read() -> Result<ScenarioReport, G9Error> {
         &CallOpts::default(),
         |h| probes::session(h, "ses-personal-1"),
     );
-    expect(
+    check_step(
         &mut r,
         "prepare the PERSONAL session from LEARNING scope",
         &out,
@@ -1171,11 +1414,28 @@ pub fn st11_cross_domain_read() -> Result<ScenarioReport, G9Error> {
         &CallOpts::scope(DataDomain::Business, InteractionMode::Study),
         |h| Ok(json!({ "invocations": skill_invocations(h)? })),
     );
+    check_step(
+        &mut r,
+        "invoke a LEARNING-only skill in BUSINESS scope",
+        &out,
+        "ALLOW",
+        "PRECONDITION_FAILED",
+        Some("skills.preflight_failed"),
+    );
     r.check_that(
-        "learning-only skill refused in BUSINESS scope",
-        "not OK",
-        (out.outcome_category.clone(), out.error().map(|e| e.code.clone())),
-        out.result.is_err(),
+        "refusal names the domain",
+        "message: domain Business is not allowed for this skill",
+        out.error().map(|e| e.message.clone()),
+        out.error()
+            .is_some_and(|e| e.message.contains("domain") && e.message.contains("not allowed")),
+    );
+    r.check_eq(
+        "no invocation reached the runtime",
+        0,
+        skill_invocations(&h)?
+            .iter()
+            .filter(|i| i["has_output_hash"] == json!(true))
+            .count(),
     );
     r.check_eq(
         "the model was not called",
@@ -1251,7 +1511,8 @@ fn orchestrate(
         Box::new(RuntimeBackend(Arc::new(runtime))),
         Box::new(move || now),
     );
-    let code = SkillCode::parse("T01").map_err(|_| G9Error::internal_redacted("evaluation.code"))?;
+    let code =
+        SkillCode::parse("T01").map_err(|_| G9Error::internal_redacted("evaluation.code"))?;
     let package = registry
         .by_code(&code)
         .ok_or_else(|| G9Error::not_found("evaluation.skill", "T01 not registered"))?;
@@ -1303,7 +1564,11 @@ pub fn st12_cancellation_discards_late_response() -> Result<ScenarioReport, G9Er
     r.boundary_step(
         "orchestrator:invoke T01 (no cancellation; control)",
         "ALLOW",
-        if control.is_completed() { "OK" } else { "ERROR" },
+        if control.is_completed() {
+            "OK"
+        } else {
+            "ERROR"
+        },
         control.record.error.as_ref().map(|e| e.code.clone()),
         json!({ "state": control.state, "has_output": control.output.is_some() }),
     );
@@ -1321,8 +1586,13 @@ pub fn st12_cancellation_discards_late_response() -> Result<ScenarioReport, G9Er
             .clone()
             .map_or_else(|| "NOT_EVALUATED".to_string(), |_| "ALLOW".to_string()),
         category_name(g9_domain::ErrorCategory::Cancelled),
-        cancelled.record.reason.clone(),
-        json!({ "state": cancelled.state, "has_output": cancelled.output.is_some(), "validated": !cancelled.record.validation.is_empty() }),
+        cancelled.record.error.as_ref().map(|e| e.code.clone()),
+        json!({
+            "state": cancelled.state,
+            "has_output": cancelled.output.is_some(),
+            "validated": !cancelled.record.validation.is_empty(),
+            "reason": cancelled.record.reason,
+        }),
     );
     r.check_eq(
         "late response discarded: CANCELLED, no output, never validated",
@@ -1347,20 +1617,26 @@ pub fn st12_cancellation_discards_late_response() -> Result<ScenarioReport, G9Er
     Ok(r.finish())
 }
 
+/// A scenario entry point.
+pub type ScenarioFn = fn() -> Result<ScenarioReport, G9Error>;
+
+/// The catalogue: threat-model id → scenario (docs/threat-model/threat-model.md §6).
+pub const CATALOGUE: &[(&str, ScenarioFn)] = &[
+    ("ST01", st01_malicious_note),
+    ("ST02", st02_tampered_skill_package),
+    ("ST03", st03_forged_model_observation),
+    ("ST04", st04_skill_output_requests_execute),
+    ("ST05", st05_private_export_requires_approval),
+    ("ST06", st06_modified_model_weights),
+    ("ST07", st07_markup_payloads_are_data),
+    ("ST08", st08_budget_refusals),
+    ("ST09", st09_replayed_stale_forged_approvals),
+    ("ST10", st10_corrupted_backup),
+    ("ST11", st11_cross_domain_read),
+    ("ST12", st12_cancellation_discards_late_response),
+];
+
 /// Every ST scenario, in catalogue order.
 pub fn run_all() -> Result<Vec<ScenarioReport>, G9Error> {
-    Ok(vec![
-        st01_malicious_note()?,
-        st02_tampered_skill_package()?,
-        st03_forged_model_observation()?,
-        st04_skill_output_requests_execute()?,
-        st05_private_export_requires_approval()?,
-        st06_modified_model_weights()?,
-        st07_markup_payloads_are_data()?,
-        st08_budget_refusals()?,
-        st09_replayed_stale_forged_approvals()?,
-        st10_corrupted_backup()?,
-        st11_cross_domain_read()?,
-        st12_cancellation_discards_late_response()?,
-    ])
+    CATALOGUE.iter().map(|(_, run)| run()).collect()
 }

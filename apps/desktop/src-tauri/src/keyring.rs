@@ -5,26 +5,32 @@
 //! bind an approval to the exact operation, resource and expected revision. It
 //! lives only in the backend process.
 //!
-//! # Order of sources
+//! # Storage decision (2026-11-06, `apps/desktop/README.md` "Binding key")
 //!
-//! 1. **OS keyring** — the Secret Service on Linux, through the `keyring` crate
-//!    (service [`KEYRING_SERVICE`], account [`KEYRING_ACCOUNT`]). A new key is
-//!    written and read back before it is used. When the keyring holds the key,
-//!    a fallback file left by an earlier session is deleted (it holds an unused
-//!    key); a valid fallback key found while the keyring is still empty is moved
-//!    into the keyring so that approvals already granted stay verifiable.
-//! 2. **Fallback file** — `<app data>/binding.key`: exactly 32 bytes from the OS
-//!    CSPRNG (`getrandom`), created atomically with mode `0600` (temporary file +
-//!    `hard_link`, so a second process can never observe a partial key). Using the
-//!    fallback adds the warning [`WARN_FILE_FALLBACK`], which the bridge reports in
-//!    `system.status` (`CommandOutcome.warnings`).
+//! The OS keyring (Secret Service) is **not** used. Every Secret Service client
+//! that builds without system libraries was rejected:
+//!
+//! * `keyring` 4.2.0 (`v1` feature) and `zbus-secret-service-keyring-store`
+//!   1.0.1 depend on `zbus` 5 / `zvariant` / `zbus_names`, which the A12
+//!   advisory gate refuses (RUSTSEC-2026-0370/0371/0372, unmaintained, no safe
+//!   upgrade). No advisory ignore is added for them.
+//! * `dbus-secret-service-keyring-store` 1.0.1 with `vendored` statically links
+//!   libdbus C sources (AFL-2.1 OR GPL-2.0-or-later), a licence class outside
+//!   the `deny.toml` allow-list that cargo-deny cannot see (it reads the
+//!   `libdbus-sys` crate metadata only).
+//! * `secret-service` 6.0.0-rc.1 (zbus 6) is a release candidate.
+//!
+//! The documented fallback is therefore the only key store:
+//! `<app data>/binding.key`, exactly 32 bytes from the OS CSPRNG (`getrandom`),
+//! created atomically with mode `0600` (private temporary file + `hard_link`,
+//! so a concurrent process never observes a partial key). Every start adds the
+//! warning [`WARN_FILE_FALLBACK`], which the bridge reports in `system.status`
+//! (`CommandOutcome.warnings`).
 //!
 //! # Integrity rules
 //!
 //! * Key bytes are never logged, serialized, displayed or placed in an error or
-//!   warning. Keyring errors are reduced to the fieldless [`StoreFailure`]
-//!   because `keyring` errors can carry secret bytes (`BadEncoding`) or host
-//!   paths (`PlatformFailure`).
+//!   warning; warnings name `<app data>` instead of the host path.
 //! * A key file that is group/other accessible or has the wrong length is
 //!   replaced (warning [`WARN_FILE_ROTATED`]); approvals bound to the old key then
 //!   fail verification, which is the fail-closed outcome. A path that is not a
@@ -33,142 +39,29 @@
 //! * Randomness is injected (`random`), so tests are deterministic; production
 //!   passes [`os_random`].
 //!
-//! The file fallback needs Unix permissions; on other platforms it is refused
-//! (`PRECONDITION_FAILED binding_key.file_fallback_unsupported`) and only the OS
-//! keyring is used.
+//! The file store needs Unix permissions; on other platforms provisioning is
+//! refused (`PRECONDITION_FAILED binding_key.file_store_unsupported`). Linux is
+//! the only shipping platform.
 
 use g9_domain::G9Error;
 use g9_policy::{BindingKey, BINDING_KEY_LEN};
-use std::fmt;
 use std::fs;
 use std::io::{self, Read};
 use std::path::Path;
 
-/// File name of the fallback key inside the app data directory.
+/// File name of the binding key inside the app data directory.
 pub const KEY_FILE_NAME: &str = "binding.key";
-/// Keyring service name (the Tauri bundle identifier).
-pub const KEYRING_SERVICE: &str = "com.g9.mentor";
-/// Keyring account name.
-pub const KEYRING_ACCOUNT: &str = "approval-binding-key";
 
-/// Warning code: the key is kept in the `0600` fallback file.
+/// Warning code: the key is kept in the `0600` file, not in the OS keyring.
 pub const WARN_FILE_FALLBACK: &str = "binding_key.file_fallback";
 /// Warning code: an unusable key file was replaced by a new key.
 pub const WARN_FILE_ROTATED: &str = "binding_key.file_rotated";
-/// Warning code: an unusable keyring entry was replaced by a new key.
-pub const WARN_KEYRING_ROTATED: &str = "binding_key.keyring_rotated";
-/// Warning code: a stale fallback file could not be removed.
+/// Warning code: a temporary key file could not be removed.
 pub const WARN_STALE_FILE: &str = "binding_key.stale_file_not_removed";
 
 /// Format a warning string as reported in `CommandOutcome.warnings`.
 pub fn warning(code: &str, message: &str) -> String {
     format!("WARNING {code}: {message}")
-}
-
-/// Where the binding key of this process came from.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum KeySource {
-    /// The OS keyring (Secret Service).
-    OsKeyring,
-    /// The `0600` fallback file in the app data directory.
-    File,
-}
-
-impl KeySource {
-    /// Stable spelling for logs and the README.
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            KeySource::OsKeyring => "OS_KEYRING",
-            KeySource::File => "FILE",
-        }
-    }
-}
-
-/// Why the OS keyring could not be used. Fieldless on purpose (see module docs).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StoreFailure {
-    /// No Secret Service answered (no session bus, no provider).
-    Unavailable,
-    /// The provider refused access (locked collection, dismissed prompt).
-    AccessDenied,
-    /// More than one matching keyring item exists.
-    Ambiguous,
-    /// The key could not be stored and read back unchanged.
-    WriteNotVerified,
-    /// Any other provider failure.
-    Failed,
-}
-
-impl StoreFailure {
-    /// Machine-readable reason (used inside warnings).
-    pub const fn code(self) -> &'static str {
-        match self {
-            StoreFailure::Unavailable => "keyring_unavailable",
-            StoreFailure::AccessDenied => "keyring_access_denied",
-            StoreFailure::Ambiguous => "keyring_ambiguous",
-            StoreFailure::WriteNotVerified => "keyring_write_not_verified",
-            StoreFailure::Failed => "keyring_failed",
-        }
-    }
-}
-
-/// A store that can hold the binding key: the OS keyring in production, an
-/// in-memory store in tests.
-pub trait SecretStore {
-    /// Read the stored secret; `Ok(None)` when no entry exists.
-    fn read(&self) -> Result<Option<Vec<u8>>, StoreFailure>;
-    /// Create or replace the stored secret.
-    fn write(&self, secret: &[u8]) -> Result<(), StoreFailure>;
-}
-
-/// The OS keyring entry for the binding key (`keyring` 4.2, `v1` API).
-pub struct OsKeyring {
-    entry: os_keyring::Entry,
-}
-
-impl fmt::Debug for OsKeyring {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("OsKeyring")
-            .field("service", &KEYRING_SERVICE)
-            .field("account", &KEYRING_ACCOUNT)
-            .finish_non_exhaustive()
-    }
-}
-
-impl OsKeyring {
-    /// Connect to the platform credential store. Fails with
-    /// [`StoreFailure::Unavailable`] when no Secret Service answers.
-    pub fn connect() -> Result<Self, StoreFailure> {
-        os_keyring::Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT)
-            .map(|entry| Self { entry })
-            .map_err(|e| classify(&e))
-    }
-}
-
-/// Reduce a keyring error to a secret-free reason.
-fn classify(error: &os_keyring::Error) -> StoreFailure {
-    match error {
-        os_keyring::Error::NoDefaultStore | os_keyring::Error::PlatformFailure(_) => {
-            StoreFailure::Unavailable
-        }
-        os_keyring::Error::NoStorageAccess(_) => StoreFailure::AccessDenied,
-        os_keyring::Error::Ambiguous(_) => StoreFailure::Ambiguous,
-        _ => StoreFailure::Failed,
-    }
-}
-
-impl SecretStore for OsKeyring {
-    fn read(&self) -> Result<Option<Vec<u8>>, StoreFailure> {
-        match self.entry.get_secret() {
-            Ok(secret) => Ok(Some(secret)),
-            Err(os_keyring::Error::NoEntry) => Ok(None),
-            Err(e) => Err(classify(&e)),
-        }
-    }
-
-    fn write(&self, secret: &[u8]) -> Result<(), StoreFailure> {
-        self.entry.set_secret(secret).map_err(|e| classify(&e))
-    }
 }
 
 /// Fill `buf` from the OS CSPRNG.
@@ -181,135 +74,34 @@ pub fn os_random(buf: &mut [u8]) -> Result<(), G9Error> {
     })
 }
 
-/// The provisioned key and how it was obtained. `BindingKey`'s `Debug` output
-/// is redacted.
+/// The provisioned key and the warnings to report. `BindingKey`'s `Debug`
+/// output is redacted.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProvisionedKey {
     /// The per-installation HMAC key.
     pub key: BindingKey,
-    /// Where it came from.
-    pub source: KeySource,
-    /// Warnings for `system.status` (secret-free, no host paths).
+    /// Warnings for `system.status` (secret-free, no host paths). The first
+    /// entry is always the [`WARN_FILE_FALLBACK`] warning.
     pub warnings: Vec<String>,
 }
 
-/// Provision the binding key: OS keyring first, then the `0600` file in
-/// `data_dir` (which must already exist). See the module docs for the rules.
+/// Provision the binding key from `<data_dir>/binding.key` (the directory must
+/// already exist): reuse a valid key file, replace an unusable one, or create
+/// one. See the module docs for the rules.
 pub fn provision(
-    store: Result<&dyn SecretStore, StoreFailure>,
     data_dir: &Path,
     random: &mut dyn FnMut(&mut [u8]) -> Result<(), G9Error>,
 ) -> Result<ProvisionedKey, G9Error> {
-    let file = data_dir.join(KEY_FILE_NAME);
-    let mut warnings = Vec::new();
-    let failure = match store {
-        Ok(store) => match from_store(store, &file, random, &mut warnings)? {
-            Ok(key) => {
-                return Ok(ProvisionedKey {
-                    key,
-                    source: KeySource::OsKeyring,
-                    warnings,
-                })
-            }
-            Err(failure) => failure,
-        },
-        Err(failure) => failure,
-    };
-    let key = from_file(&file, random, &mut warnings)?;
-    warnings.insert(
-        0,
-        warning(
-            WARN_FILE_FALLBACK,
-            &format!(
-                "the OS keyring is not usable ({}); the approval binding key is kept in \
-                 <app data>/{KEY_FILE_NAME} with mode 0600",
-                failure.code()
-            ),
+    let mut warnings = vec![warning(
+        WARN_FILE_FALLBACK,
+        &format!(
+            "the OS keyring is not used (no Secret Service client passes the supply-chain \
+             gate); the approval binding key is kept in <app data>/{KEY_FILE_NAME} with \
+             mode 0600"
         ),
-    );
-    Ok(ProvisionedKey {
-        key,
-        source: KeySource::File,
-        warnings,
-    })
-}
-
-/// Keyring path. The outer `Result` carries hard errors (no randomness); the
-/// inner one says whether the keyring produced the key.
-fn from_store(
-    store: &dyn SecretStore,
-    file: &Path,
-    random: &mut dyn FnMut(&mut [u8]) -> Result<(), G9Error>,
-    warnings: &mut Vec<String>,
-) -> Result<Result<BindingKey, StoreFailure>, G9Error> {
-    let stored = match store.read() {
-        Ok(stored) => stored,
-        Err(failure) => return Ok(Err(failure)),
-    };
-    let key = match stored {
-        Some(bytes) => match BindingKey::try_from_slice(&bytes) {
-            Ok(key) => key,
-            Err(_) => {
-                let fresh = fresh_key(random)?;
-                match store_and_verify(store, &fresh) {
-                    Ok(key) => {
-                        warnings.push(warning(
-                            WARN_KEYRING_ROTATED,
-                            "the keyring entry did not hold a valid key and was replaced; \
-                             approvals granted earlier must be requested again",
-                        ));
-                        key
-                    }
-                    Err(failure) => return Ok(Err(failure)),
-                }
-            }
-        },
-        None => {
-            // Move a valid fallback key into the keyring (approvals stay
-            // verifiable); otherwise start with a fresh key.
-            let bytes = match read_key_file(file) {
-                Ok(Some(bytes)) => bytes,
-                _ => fresh_key(random)?,
-            };
-            match store_and_verify(store, &bytes) {
-                Ok(key) => key,
-                Err(failure) => return Ok(Err(failure)),
-            }
-        }
-    };
-    remove_stale_file(file, warnings);
-    Ok(Ok(key))
-}
-
-fn store_and_verify(
-    store: &dyn SecretStore,
-    bytes: &[u8; BINDING_KEY_LEN],
-) -> Result<BindingKey, StoreFailure> {
-    store.write(bytes)?;
-    match store.read()? {
-        Some(back) if back.as_slice() == bytes.as_slice() => Ok(BindingKey::from_bytes(*bytes)),
-        _ => Err(StoreFailure::WriteNotVerified),
-    }
-}
-
-/// The keyring holds the key: a fallback file (or a link at its path) only
-/// holds an unused key and is removed.
-fn remove_stale_file(file: &Path, warnings: &mut Vec<String>) {
-    match fs::symlink_metadata(file) {
-        Err(e) if e.kind() == io::ErrorKind::NotFound => {}
-        Ok(meta) if !meta.file_type().is_dir() => {
-            if fs::remove_file(file).is_err() {
-                warnings.push(warning(
-                    WARN_STALE_FILE,
-                    "an unused fallback key file could not be removed from the app data directory",
-                ));
-            }
-        }
-        _ => warnings.push(warning(
-            WARN_STALE_FILE,
-            "the fallback key path is not a regular file and was left in place",
-        )),
-    }
+    )];
+    let key = from_file(&data_dir.join(KEY_FILE_NAME), random, &mut warnings)?;
+    Ok(ProvisionedKey { key, warnings })
 }
 
 fn fresh_key(
@@ -333,7 +125,7 @@ enum KeyFileProblem {
     Unreadable,
 }
 
-/// Read the fallback file; `Ok(None)` when it does not exist.
+/// Read the key file; `Ok(None)` when it does not exist. Never reads through a link.
 fn read_key_file(path: &Path) -> Result<Option<[u8; BINDING_KEY_LEN]>, KeyFileProblem> {
     let meta = match fs::symlink_metadata(path) {
         Ok(meta) => meta,
@@ -347,6 +139,12 @@ fn read_key_file(path: &Path) -> Result<Option<[u8; BINDING_KEY_LEN]>, KeyFilePr
         return Err(KeyFileProblem::PermissiveMode);
     }
     let file = fs::File::open(path).map_err(|_| KeyFileProblem::Unreadable)?;
+    // The opened file must be the regular file inspected above (a link swapped
+    // in between the two calls resolves to a different inode).
+    let opened = file.metadata().map_err(|_| KeyFileProblem::Unreadable)?;
+    if !platform::same_file(&meta, &opened) {
+        return Err(KeyFileProblem::NotRegular);
+    }
     let mut bytes = Vec::with_capacity(BINDING_KEY_LEN + 1);
     // Read at most one byte past the key length to detect oversize files.
     file.take(BINDING_KEY_LEN as u64 + 1)
@@ -357,16 +155,16 @@ fn read_key_file(path: &Path) -> Result<Option<[u8; BINDING_KEY_LEN]>, KeyFilePr
         .map_err(|_| KeyFileProblem::InvalidLength)
 }
 
-/// File path: reuse a valid key file, replace an unusable one, or create one.
+/// Reuse a valid key file, replace an unusable one, or create one.
 fn from_file(
     file: &Path,
     random: &mut dyn FnMut(&mut [u8]) -> Result<(), G9Error>,
     warnings: &mut Vec<String>,
 ) -> Result<BindingKey, G9Error> {
-    if !platform::FILE_FALLBACK_SUPPORTED {
+    if !platform::FILE_STORE_SUPPORTED {
         return Err(G9Error::precondition_failed(
-            "binding_key.file_fallback_unsupported",
-            "the OS keyring is not usable and the file fallback needs Unix permissions",
+            "binding_key.file_store_unsupported",
+            "the binding key file store needs Unix permissions and no OS keyring is configured",
         ));
     }
     match read_key_file(file) {
@@ -439,11 +237,14 @@ fn create_key_file(
     random(&mut nonce)?;
     let suffix: String = nonce.iter().map(|b| format!("{b:02x}")).collect();
     let tmp = dir.join(format!(".{KEY_FILE_NAME}.{suffix}.tmp"));
-    platform::write_private_file(&tmp, bytes).map_err(|_| {
-        // A partially written temporary file must not linger.
-        let _ = fs::remove_file(&tmp);
-        create_failed()
-    })?;
+    if let Err(e) = platform::write_private_file(&tmp, bytes) {
+        // A partially written temporary file we created must not linger; a
+        // pre-existing path (`AlreadyExists`) is not ours and is left alone.
+        if e.kind() != io::ErrorKind::AlreadyExists {
+            let _ = fs::remove_file(&tmp);
+        }
+        return Err(create_failed());
+    }
     let linked = fs::hard_link(&tmp, path);
     if fs::remove_file(&tmp).is_err() {
         warnings.push(warning(
@@ -463,16 +264,24 @@ fn create_key_file(
 
 #[cfg(unix)]
 mod platform {
-    use std::fs::{self, OpenOptions};
+    use std::fs::{self, File, OpenOptions};
     use std::io::{self, Write};
-    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+    use std::os::unix::fs::{MetadataExt, OpenOptionsExt, PermissionsExt};
     use std::path::Path;
 
-    pub(super) const FILE_FALLBACK_SUPPORTED: bool = true;
+    pub(super) const FILE_STORE_SUPPORTED: bool = true;
 
     /// No group/other permission bits.
     pub(super) fn is_private(meta: &fs::Metadata) -> bool {
         meta.permissions().mode() & 0o077 == 0
+    }
+
+    /// Same device and inode, and still a private regular file.
+    pub(super) fn same_file(inspected: &fs::Metadata, opened: &fs::Metadata) -> bool {
+        opened.file_type().is_file()
+            && is_private(opened)
+            && inspected.dev() == opened.dev()
+            && inspected.ino() == opened.ino()
     }
 
     /// Create a new file with mode `0600` (never follows or replaces an
@@ -489,7 +298,7 @@ mod platform {
 
     /// Persist the directory entry (best effort; the key file itself is synced).
     pub(super) fn sync_dir(dir: &Path) {
-        if let Ok(handle) = fs::File::open(dir) {
+        if let Ok(handle) = File::open(dir) {
             let _ = handle.sync_all();
         }
     }
@@ -501,9 +310,13 @@ mod platform {
     use std::io;
     use std::path::Path;
 
-    pub(super) const FILE_FALLBACK_SUPPORTED: bool = false;
+    pub(super) const FILE_STORE_SUPPORTED: bool = false;
 
     pub(super) fn is_private(_meta: &fs::Metadata) -> bool {
+        false
+    }
+
+    pub(super) fn same_file(_inspected: &fs::Metadata, _opened: &fs::Metadata) -> bool {
         false
     }
 
@@ -518,7 +331,6 @@ mod platform {
 mod tests {
     use super::*;
     use g9_domain::ErrorCategory;
-    use std::cell::{Cell, RefCell};
     use std::os::unix::fs::PermissionsExt;
 
     /// Deterministic byte source: 0, 1, 2, ... across calls.
@@ -550,37 +362,6 @@ mod tests {
         k
     }
 
-    /// In-memory keyring double.
-    #[derive(Default)]
-    struct MemoryStore {
-        secret: RefCell<Option<Vec<u8>>>,
-        read_fails: Option<StoreFailure>,
-        write_fails: Option<StoreFailure>,
-        corrupt_on_write: bool,
-        writes: Cell<u32>,
-    }
-
-    impl SecretStore for MemoryStore {
-        fn read(&self) -> Result<Option<Vec<u8>>, StoreFailure> {
-            match self.read_fails {
-                Some(f) => Err(f),
-                None => Ok(self.secret.borrow().clone()),
-            }
-        }
-        fn write(&self, secret: &[u8]) -> Result<(), StoreFailure> {
-            if let Some(f) = self.write_fails {
-                return Err(f);
-            }
-            self.writes.set(self.writes.get() + 1);
-            let mut stored = secret.to_vec();
-            if self.corrupt_on_write {
-                stored[0] ^= 0xff;
-            }
-            *self.secret.borrow_mut() = Some(stored);
-            Ok(())
-        }
-    }
-
     fn mode(path: &Path) -> u32 {
         fs::metadata(path).unwrap().permissions().mode() & 0o777
     }
@@ -589,37 +370,41 @@ mod tests {
         dir.path().join(KEY_FILE_NAME)
     }
 
+    fn names(dir: &tempfile::TempDir) -> Vec<String> {
+        let mut names: Vec<String> = fs::read_dir(dir.path())
+            .unwrap()
+            .map(|e| e.unwrap().file_name().into_string().unwrap())
+            .collect();
+        names.sort();
+        names
+    }
+
     #[test]
-    fn file_fallback_creates_0600_file_with_32_bytes_and_warns() {
+    fn creates_0600_file_with_32_bytes_and_warns() {
         let dir = tempfile::tempdir().unwrap();
         let mut random = counter();
-        let p = provision(Err(StoreFailure::Unavailable), dir.path(), &mut random).unwrap();
-        assert_eq!(p.source, KeySource::File);
+        let p = provision(dir.path(), &mut random).unwrap();
         assert_eq!(p.key, BindingKey::from_bytes(first_key()));
         let path = key_file(&dir);
         assert_eq!(fs::read(&path).unwrap(), first_key().to_vec());
         assert_eq!(mode(&path), 0o600);
         assert_eq!(p.warnings.len(), 1);
         assert!(p.warnings[0].starts_with("WARNING binding_key.file_fallback:"));
-        assert!(p.warnings[0].contains("keyring_unavailable"));
+        assert!(p.warnings[0].contains("<app data>/binding.key with mode 0600"));
         // No temporary file is left behind.
-        let names: Vec<_> = fs::read_dir(dir.path())
-            .unwrap()
-            .map(|e| e.unwrap().file_name().into_string().unwrap())
-            .collect();
-        assert_eq!(names, vec![KEY_FILE_NAME.to_string()]);
+        assert_eq!(names(&dir), vec![KEY_FILE_NAME.to_string()]);
     }
 
     #[test]
-    fn existing_file_key_is_reused_unchanged() {
+    fn existing_key_is_reused_unchanged_without_randomness() {
         let dir = tempfile::tempdir().unwrap();
         let mut random = counter();
-        let first = provision(Err(StoreFailure::Unavailable), dir.path(), &mut random).unwrap();
+        let first = provision(dir.path(), &mut random).unwrap();
         let mut never = no_random();
-        let second = provision(Err(StoreFailure::Unavailable), dir.path(), &mut never).unwrap();
+        let second = provision(dir.path(), &mut never).unwrap();
         assert_eq!(first.key, second.key);
-        assert_eq!(second.source, KeySource::File);
         assert_eq!(second.warnings.len(), 1, "only the fallback warning");
+        assert_eq!(fs::read(key_file(&dir)).unwrap(), first_key().to_vec());
     }
 
     #[test]
@@ -629,10 +414,11 @@ mod tests {
         fs::write(&path, [9u8; 32]).unwrap();
         fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
         let mut random = counter();
-        let p = provision(Err(StoreFailure::Unavailable), dir.path(), &mut random).unwrap();
+        let p = provision(dir.path(), &mut random).unwrap();
         assert_ne!(p.key, BindingKey::from_bytes([9u8; 32]));
         assert_eq!(p.key, BindingKey::from_bytes(first_key()));
         assert_eq!(mode(&path), 0o600);
+        assert_eq!(fs::read(&path).unwrap(), first_key().to_vec());
         assert!(p
             .warnings
             .iter()
@@ -648,9 +434,9 @@ mod tests {
             fs::write(&path, vec![5u8; len]).unwrap();
             fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
             let mut random = counter();
-            let p = provision(Err(StoreFailure::Unavailable), dir.path(), &mut random).unwrap();
+            let p = provision(dir.path(), &mut random).unwrap();
             assert_eq!(p.key, BindingKey::from_bytes(first_key()), "len {len}");
-            assert_eq!(fs::read(&path).unwrap().len(), 32);
+            assert_eq!(fs::read(&path).unwrap(), first_key().to_vec());
             assert!(p
                 .warnings
                 .iter()
@@ -666,7 +452,7 @@ mod tests {
         fs::set_permissions(&target, fs::Permissions::from_mode(0o600)).unwrap();
         std::os::unix::fs::symlink(&target, key_file(&dir)).unwrap();
         let mut random = counter();
-        let err = provision(Err(StoreFailure::Unavailable), dir.path(), &mut random).unwrap_err();
+        let err = provision(dir.path(), &mut random).unwrap_err();
         assert_eq!(err.category, ErrorCategory::DataCorruption);
         assert_eq!(err.code, "binding_key.file_not_regular");
         assert_eq!(
@@ -681,110 +467,49 @@ mod tests {
     }
 
     #[test]
-    fn keyring_key_is_preferred_and_stale_file_removed() {
+    fn directory_at_key_path_is_refused_and_left_in_place() {
         let dir = tempfile::tempdir().unwrap();
-        let path = key_file(&dir);
-        fs::write(&path, [3u8; 32]).unwrap();
-        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
-        let store = MemoryStore {
-            secret: RefCell::new(Some(vec![8u8; 32])),
-            ..MemoryStore::default()
-        };
-        let mut never = no_random();
-        let p = provision(Ok(&store), dir.path(), &mut never).unwrap();
-        assert_eq!(p.source, KeySource::OsKeyring);
-        assert_eq!(p.key, BindingKey::from_bytes([8u8; 32]));
-        assert!(p.warnings.is_empty());
-        assert!(!path.exists(), "unused fallback key removed");
-        assert_eq!(store.writes.get(), 0, "existing entry not rewritten");
-    }
-
-    #[test]
-    fn valid_file_key_moves_into_empty_keyring() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = key_file(&dir);
-        fs::write(&path, [4u8; 32]).unwrap();
-        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
-        let store = MemoryStore::default();
-        let mut never = no_random();
-        let p = provision(Ok(&store), dir.path(), &mut never).unwrap();
-        assert_eq!(p.source, KeySource::OsKeyring);
-        assert_eq!(p.key, BindingKey::from_bytes([4u8; 32]));
-        assert_eq!(store.secret.borrow().as_deref(), Some(&[4u8; 32][..]));
-        assert!(!path.exists());
-        assert!(p.warnings.is_empty());
-    }
-
-    #[test]
-    fn empty_keyring_gets_fresh_key_without_file() {
-        let dir = tempfile::tempdir().unwrap();
-        let store = MemoryStore::default();
+        fs::create_dir(key_file(&dir)).unwrap();
         let mut random = counter();
-        let p = provision(Ok(&store), dir.path(), &mut random).unwrap();
-        assert_eq!(p.source, KeySource::OsKeyring);
-        assert_eq!(p.key, BindingKey::from_bytes(first_key()));
-        assert_eq!(store.writes.get(), 1);
-        assert!(!key_file(&dir).exists());
-        assert!(p.warnings.is_empty());
+        let err = provision(dir.path(), &mut random).unwrap_err();
+        assert_eq!(err.category, ErrorCategory::DataCorruption);
+        assert!(key_file(&dir).is_dir());
     }
 
     #[test]
-    fn invalid_keyring_entry_is_replaced_with_warning() {
+    fn same_file_detects_a_swapped_inode() {
         let dir = tempfile::tempdir().unwrap();
-        let store = MemoryStore {
-            secret: RefCell::new(Some(vec![1u8; 7])),
-            ..MemoryStore::default()
-        };
-        let mut random = counter();
-        let p = provision(Ok(&store), dir.path(), &mut random).unwrap();
-        assert_eq!(p.source, KeySource::OsKeyring);
-        assert_eq!(p.key, BindingKey::from_bytes(first_key()));
-        assert!(p.warnings[0].starts_with("WARNING binding_key.keyring_rotated:"));
-    }
-
-    #[test]
-    fn keyring_failures_fall_back_to_file_with_reason() {
-        let cases = [
-            (
-                MemoryStore {
-                    read_fails: Some(StoreFailure::AccessDenied),
-                    ..MemoryStore::default()
-                },
-                "keyring_access_denied",
-            ),
-            (
-                MemoryStore {
-                    write_fails: Some(StoreFailure::Failed),
-                    ..MemoryStore::default()
-                },
-                "keyring_failed",
-            ),
-            (
-                MemoryStore {
-                    corrupt_on_write: true,
-                    ..MemoryStore::default()
-                },
-                "keyring_write_not_verified",
-            ),
-        ];
-        for (store, reason) in cases {
-            let dir = tempfile::tempdir().unwrap();
-            let mut random = counter();
-            let p = provision(Ok(&store), dir.path(), &mut random).unwrap();
-            assert_eq!(p.source, KeySource::File, "{reason}");
-            assert!(p.warnings[0].contains(reason), "{reason}: {:?}", p.warnings);
-            assert_eq!(mode(&key_file(&dir)), 0o600);
+        let a = dir.path().join("a");
+        let b = dir.path().join("b");
+        for p in [&a, &b] {
+            fs::write(p, [2u8; 32]).unwrap();
+            fs::set_permissions(p, fs::Permissions::from_mode(0o600)).unwrap();
         }
+        let meta_a = fs::symlink_metadata(&a).unwrap();
+        assert!(platform::same_file(
+            &meta_a,
+            &fs::File::open(&a).unwrap().metadata().unwrap()
+        ));
+        assert!(!platform::same_file(
+            &meta_a,
+            &fs::File::open(&b).unwrap().metadata().unwrap()
+        ));
+        // A swap that loosened the mode is refused even on the same inode.
+        fs::set_permissions(&a, fs::Permissions::from_mode(0o644)).unwrap();
+        assert!(!platform::same_file(
+            &meta_a,
+            &fs::File::open(&a).unwrap().metadata().unwrap()
+        ));
     }
 
     #[test]
     fn missing_randomness_is_resource_unavailable_and_creates_nothing() {
         let dir = tempfile::tempdir().unwrap();
         let mut never = no_random();
-        let err = provision(Err(StoreFailure::Unavailable), dir.path(), &mut never).unwrap_err();
+        let err = provision(dir.path(), &mut never).unwrap_err();
         assert_eq!(err.category, ErrorCategory::ResourceUnavailable);
         assert_eq!(err.code, "binding_key.os_random_unavailable");
-        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
+        assert!(names(&dir).is_empty());
     }
 
     #[test]
@@ -797,7 +522,25 @@ mod tests {
         let created = create_key_file(&path, &[7u8; 32], &mut random, &mut warnings).unwrap();
         assert!(!created);
         assert_eq!(fs::read(&path).unwrap(), vec![6u8; 32]);
-        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1, "temp removed");
+        assert_eq!(names(&dir), vec![KEY_FILE_NAME.to_string()], "temp removed");
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn foreign_file_at_temporary_path_is_not_deleted() {
+        let dir = tempfile::tempdir().unwrap();
+        // The counter stream yields nonce 00..07 for the first call.
+        let tmp = dir
+            .path()
+            .join(format!(".{KEY_FILE_NAME}.0001020304050607.tmp"));
+        fs::write(&tmp, b"not ours").unwrap();
+        let mut random = counter();
+        let mut warnings = Vec::new();
+        let err =
+            create_key_file(&key_file(&dir), &[7u8; 32], &mut random, &mut warnings).unwrap_err();
+        assert_eq!(err.code, "binding_key.file_create_failed");
+        assert_eq!(fs::read(&tmp).unwrap(), b"not ours".to_vec());
+        assert!(!key_file(&dir).exists());
     }
 
     #[test]
@@ -807,7 +550,7 @@ mod tests {
         fs::write(&path, [0xabu8; 32]).unwrap();
         fs::set_permissions(&path, fs::Permissions::from_mode(0o640)).unwrap();
         let mut random = counter();
-        let p = provision(Err(StoreFailure::Unavailable), dir.path(), &mut random).unwrap();
+        let p = provision(dir.path(), &mut random).unwrap();
         let dir_text = dir.path().to_string_lossy().to_string();
         for w in &p.warnings {
             assert!(!w.contains(&dir_text), "{w}");
@@ -816,6 +559,12 @@ mod tests {
         }
         assert_eq!(format!("{:?}", p.key), "BindingKey(<redacted>)");
         assert!(!format!("{p:?}").contains("171"));
+        // Errors carry no host path either.
+        fs::remove_file(&path).unwrap();
+        fs::create_dir(&path).unwrap();
+        let err = provision(dir.path(), &mut counter()).unwrap_err();
+        let text = serde_json::to_string(&err).unwrap();
+        assert!(!text.contains(&dir_text), "{text}");
     }
 
     #[test]

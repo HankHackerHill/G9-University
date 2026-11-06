@@ -103,7 +103,13 @@ impl ScenarioReport {
     }
 
     /// Record a boolean check.
-    pub fn check(&mut self, check: impl Into<String>, passed: bool, expected: Value, actual: Value) {
+    pub fn check(
+        &mut self,
+        check: impl Into<String>,
+        passed: bool,
+        expected: Value,
+        actual: Value,
+    ) {
         self.evidence.push(EvidenceCheck {
             check: check.into(),
             expected,
@@ -144,6 +150,16 @@ impl ScenarioReport {
         self
     }
 
+    /// Steps whose operation is `op`, in execution order.
+    pub fn steps_for(&self, op: &str) -> Vec<&ScenarioStep> {
+        self.steps.iter().filter(|s| s.op == op).collect()
+    }
+
+    /// The check with this exact label, if it ran.
+    pub fn evidence_for(&self, check: &str) -> Option<&EvidenceCheck> {
+        self.evidence.iter().find(|c| c.check == check)
+    }
+
     /// Checks that failed.
     pub fn failed_checks(&self) -> Vec<&EvidenceCheck> {
         self.evidence.iter().filter(|c| !c.passed).collect()
@@ -168,7 +184,21 @@ impl ScenarioReport {
             cell(&self.title),
             self.verdict()
         );
-        let _ = writeln!(out, "Gate: {}\n", self.gate);
+        let targets = test_targets(&self.id);
+        let _ = writeln!(
+            out,
+            "Gate: {} · Test: {}\n",
+            self.gate,
+            if targets.is_empty() {
+                "—".to_string()
+            } else {
+                targets
+                    .iter()
+                    .map(|t| format!("`{t}`"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            }
+        );
         let _ = writeln!(out, "| # | Operation | Decision | Outcome | Code |");
         let _ = writeln!(out, "|---|---|---|---|---|");
         for (i, s) in self.steps.iter().enumerate() {
@@ -200,7 +230,7 @@ impl ScenarioReport {
         if !self.notes.is_empty() {
             let _ = writeln!(out);
             for n in &self.notes {
-                let _ = writeln!(out, "- {}", cell(n));
+                let _ = writeln!(out, "- {}", n.replace(['\n', '\r'], " "));
             }
         }
         out
@@ -219,10 +249,59 @@ fn cell(s: &str) -> String {
 }
 
 fn compact(v: &Value) -> String {
-    match v {
+    let text = match v {
         Value::String(s) => s.clone(),
         other => other.to_string(),
+    };
+    scrub_uuids(&text)
+}
+
+fn is_uuid_at(bytes: &[u8], start: usize) -> bool {
+    const GROUPS: [usize; 5] = [8, 4, 4, 4, 12];
+    let mut pos = start;
+    for (i, len) in GROUPS.iter().enumerate() {
+        let Some(group) = bytes.get(pos..pos + len) else {
+            return false;
+        };
+        if !group.iter().all(u8::is_ascii_hexdigit) {
+            return false;
+        }
+        pos += len;
+        if i < GROUPS.len() - 1 {
+            if bytes.get(pos) != Some(&b'-') {
+                return false;
+            }
+            pos += 1;
+        }
     }
+    // Not the middle of a longer hex run.
+    !bytes.get(pos).is_some_and(u8::is_ascii_hexdigit)
+        && !(start > 0 && bytes.get(start - 1).is_some_and(u8::is_ascii_hexdigit))
+}
+
+/// Replace generated UUIDs (backend-assigned ids, UUIDv7 with a wall-clock
+/// component) by `<uuid>` so that the rendered evidence is identical across
+/// runs. Equality of ids is still checked on the raw values.
+pub fn scrub_uuids(text: &str) -> String {
+    const UUID_LEN: usize = 36;
+    let bytes = text.as_bytes();
+    let mut out = String::with_capacity(text.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if is_uuid_at(bytes, i) {
+            out.push_str("<uuid>");
+            i += UUID_LEN;
+        } else {
+            // Copy one UTF-8 character.
+            let ch_len = text
+                .get(i..)
+                .and_then(|rest| rest.chars().next())
+                .map_or(1, char::len_utf8);
+            out.push_str(text.get(i..i + ch_len).unwrap_or_default());
+            i += ch_len;
+        }
+    }
+    out
 }
 
 /// Static description of a gate for the evidence document.
@@ -232,8 +311,6 @@ pub struct GateInfo {
     pub gate: &'static str,
     /// What the gate requires (ARCHITECTURE.md §14).
     pub requirement: &'static str,
-    /// Test target in this crate.
-    pub target: &'static str,
 }
 
 /// Gates exercised by this harness, in order.
@@ -241,54 +318,78 @@ pub const GATES: &[GateInfo] = &[
     GateInfo {
         gate: "A01",
         requirement: "curriculum invariants / provenance",
-        target: "tests/integration/a01_gate.rs",
     },
     GateInfo {
         gate: "A03",
         requirement: "timer discontinuity (recovery path)",
-        target: "tests/recovery/a08_recovery_drill.rs",
     },
     GateInfo {
         gate: "A04",
         requirement: "finalized grade immutability",
-        target: "tests/integration/a04_a05_gate.rs",
     },
     GateInfo {
         gate: "A05",
         requirement: "competency replay/correction",
-        target: "tests/integration/a04_a05_gate.rs",
     },
     GateInfo {
         gate: "A06",
         requirement: "policy denies unapproved actions",
-        target: "tests/integration/a06_a07_gate.rs",
     },
     GateInfo {
         gate: "A07",
         requirement: "malicious note/skill cannot grant privilege",
-        target: "tests/integration/a06_a07_gate.rs, tests/adversarial/st_adversarial_catalogue.rs",
     },
     GateInfo {
         gate: "A08",
         requirement: "backup/restore/recovery",
-        target: "tests/recovery/a08_recovery_drill.rs",
     },
     GateInfo {
         gate: "A09",
         requirement: "model-down operation",
-        target: "tests/integration/a09_model_down.rs",
     },
     GateInfo {
         gate: "A10",
         requirement: "export/deletion propagation",
-        target: "tests/integration/a10_export_deletion.rs",
     },
     GateInfo {
         gate: "A11",
         requirement: "output validation",
-        target: "tests/integration/a11_output_validation.rs",
     },
 ];
+
+const ST_CATALOGUE_TARGET: &str = "tests/adversarial/st_adversarial_catalogue.rs";
+
+/// Test files (relative to the repository root) that run a scenario through
+/// `cargo test -p g9-evaluation`.
+pub fn test_targets(scenario_id: &str) -> Vec<&'static str> {
+    let gate_file = match scenario_id.get(..3) {
+        Some("A01") => Some("tests/integration/a01_gate.rs"),
+        Some("A04" | "A05") => Some("tests/integration/a04_a05_gate.rs"),
+        Some("A06") => Some("tests/integration/a06_a07_gate.rs"),
+        Some("A08") => Some("tests/recovery/a08_recovery_drill.rs"),
+        Some("A09") => Some("tests/integration/a09_model_down.rs"),
+        Some("A10") => Some("tests/integration/a10_export_deletion.rs"),
+        Some("A11") => Some("tests/integration/a11_output_validation.rs"),
+        _ => None,
+    };
+    match (gate_file, scenario_id) {
+        (Some(f), _) => vec![f],
+        // The A07 claims (malicious note, tampered package, hostile output)
+        // are also asserted by the A06/A07 gate file.
+        (None, "ST01" | "ST02" | "ST04") => {
+            vec!["tests/integration/a06_a07_gate.rs", ST_CATALOGUE_TARGET]
+        }
+        // Budget and cancellation boundaries are also asserted by the A11 gate file.
+        (None, "ST08" | "ST12") => {
+            vec![
+                "tests/integration/a11_output_validation.rs",
+                ST_CATALOGUE_TARGET,
+            ]
+        }
+        (None, id) if id.starts_with("ST") => vec![ST_CATALOGUE_TARGET],
+        (None, _) => Vec::new(),
+    }
+}
 
 /// Gates of ARCHITECTURE.md §14 this harness does not execute.
 pub const GATES_NOT_RUN_HERE: &[(&str, &str)] = &[
@@ -365,7 +466,10 @@ pub fn render_gate_evidence(reports: &[ScenarioReport]) -> String {
         "| Decision column | read back from the audit row the backend wrote for the request; `NO_AUDIT_ROW` = none written (allowed reads, requests refused before the pipeline) |\n"
     );
     let _ = writeln!(out, "## Summary\n");
-    let _ = writeln!(out, "| Gate | Requirement | Scenarios | Result | Test target |");
+    let _ = writeln!(
+        out,
+        "| Gate | Requirement | Scenarios | Result | Test target |"
+    );
     let _ = writeln!(out, "|---|---|---|---|---|");
     for g in GATES {
         let list = by_gate.get(g.gate).cloned().unwrap_or_default();
@@ -380,9 +484,11 @@ pub fn render_gate_evidence(reports: &[ScenarioReport]) -> String {
         } else {
             "FAIL"
         };
+        let targets: std::collections::BTreeSet<&str> =
+            list.iter().flat_map(|r| test_targets(&r.id)).collect();
         let _ = writeln!(
             out,
-            "| {} | {} | {} | {} | `{}` |",
+            "| {} | {} | {} | {} | {} |",
             g.gate,
             g.requirement,
             if ids.is_empty() {
@@ -391,7 +497,15 @@ pub fn render_gate_evidence(reports: &[ScenarioReport]) -> String {
                 ids.join(", ")
             },
             result,
-            g.target
+            if targets.is_empty() {
+                "—".to_string()
+            } else {
+                targets
+                    .iter()
+                    .map(|t| format!("`{t}`"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            }
         );
     }
     for (gate, why) in GATES_NOT_RUN_HERE {
@@ -404,6 +518,13 @@ pub fn render_gate_evidence(reports: &[ScenarioReport]) -> String {
         "\nScenarios: {total}; PASS {passed}; FAIL {}.\n",
         total - passed
     );
+    let _ = writeln!(out, "## Wave-1 gaps observed by the harness\n");
+    let _ = writeln!(out, "| # | Gap |");
+    let _ = writeln!(out, "|---|---|");
+    for (i, gap) in crate::WAVE1_GAPS.iter().enumerate() {
+        let _ = writeln!(out, "| G{} | {} |", i + 1, gap.replace('|', "\\|"));
+    }
+    let _ = writeln!(out);
     let _ = writeln!(out, "## Scenarios\n");
     let mut sorted: Vec<&ScenarioReport> = reports.iter().collect();
     sorted.sort_by(|a, b| a.id.cmp(&b.id));
@@ -434,7 +555,13 @@ mod tests {
     #[test]
     fn markdown_escapes_cells_and_lists_steps() {
         let mut r = ScenarioReport::new("ST99", "A07", "pipe | title");
-        r.boundary_step("registry:load", "REFUSED", "PRECONDITION_FAILED", None, json!({}));
+        r.boundary_step(
+            "registry:load",
+            "REFUSED",
+            "PRECONDITION_FAILED",
+            None,
+            json!({}),
+        );
         r.check_eq("x|y", "a\nb", "a\nb");
         let md = r.finish().to_markdown();
         assert!(md.contains("pipe \\| title"));
@@ -444,11 +571,74 @@ mod tests {
     }
 
     #[test]
+    fn every_scenario_family_maps_to_a_registered_test_file() {
+        let manifest = include_str!("../Cargo.toml");
+        for id in [
+            "A01-01", "A04-01", "A05-01", "A06-03", "A08-01", "A09-01", "A10-02", "A11-01", "ST01",
+            "ST07", "ST12",
+        ] {
+            let targets = test_targets(id);
+            assert!(!targets.is_empty(), "{id} has no test target");
+            for t in targets {
+                assert!(
+                    manifest.contains(&format!("path = \"../../{t}\"")),
+                    "{t} is not a [[test]] of g9-evaluation"
+                );
+            }
+        }
+        assert!(test_targets("X99").is_empty());
+    }
+
+    #[test]
+    fn uuids_are_scrubbed_from_rendered_values() {
+        assert_eq!(
+            scrub_uuids(r#"["0190f3a2-7c1d-7e2a-9b3c-1d2e3f405162","apr-x"]"#),
+            r#"["<uuid>","apr-x"]"#
+        );
+        assert_eq!(
+            scrub_uuids("no ids here: 1234-5678"),
+            "no ids here: 1234-5678"
+        );
+        assert_eq!(
+            scrub_uuids("é0190f3a2-7c1d-7e2a-9b3c-1d2e3f405162é"),
+            "é<uuid>é"
+        );
+        let mut r = ScenarioReport::new("X", "A04", "t");
+        r.check_eq(
+            "linked approval",
+            "0190f3a2-7c1d-7e2a-9b3c-1d2e3f405162",
+            "0190f3a2-7c1d-7e2a-9b3c-1d2e3f405162",
+        );
+        let md = r.finish().to_markdown();
+        assert!(md.contains("| linked approval | <uuid> | <uuid> | PASS |"));
+    }
+
+    #[test]
+    fn report_round_trips_through_json() {
+        let mut r = ScenarioReport::new("ST99", "A07", "t");
+        r.boundary_step(
+            "registry:load",
+            "REFUSED",
+            "PRECONDITION_FAILED",
+            Some("c".into()),
+            json!({ "k": 1 }),
+        );
+        r.check_eq("x", 1, 1);
+        let r = r.finish();
+        let text = serde_json::to_string(&r).unwrap();
+        let back: ScenarioReport = serde_json::from_str(&text).unwrap();
+        assert_eq!(back, r);
+        assert!(text.contains("\"outcome_category\":\"PRECONDITION_FAILED\""));
+    }
+
+    #[test]
     fn evidence_document_marks_unrun_gates() {
         let mut r = ScenarioReport::new("A01-01", "A01", "t");
         r.check_eq("ok", true, true);
         let doc = render_gate_evidence(&[r.finish()]);
-        assert!(doc.contains("| A01 | curriculum invariants / provenance | A01-01 PASS | PASS |"));
+        assert!(doc.contains(
+            "| A01 | curriculum invariants / provenance | A01-01 PASS | PASS | `tests/integration/a01_gate.rs` |"
+        ));
         assert!(doc.contains("| A09 | model-down operation | — | NOT RUN |"));
         assert!(doc.contains("| A12 |"));
         assert!(doc.contains("G9_WRITE_EVIDENCE=1"));

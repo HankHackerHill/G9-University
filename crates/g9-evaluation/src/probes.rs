@@ -167,7 +167,9 @@ pub fn session(h: &Harness, session_id: &str) -> Result<Value, G9Error> {
     )
 }
 
-/// Invocation metadata rows of one skill (newest first as stored).
+/// Invocation metadata rows of one skill, as `g9-storage` lists them
+/// (`requested_at` descending, ties by id). Assert on counts, not positions,
+/// when several invocations share an instant.
 pub fn invocations(h: &Harness, skill_name: &str) -> Result<Vec<Value>, G9Error> {
     let sid = SkillId::parse(skill_name)
         .map_err(|_| G9Error::invalid_input("probe.id_invalid", "skill id is not valid"))?;

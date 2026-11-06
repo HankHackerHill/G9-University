@@ -14,22 +14,22 @@
 //! | Concern | Where |
 //! |---|---|
 //! | Managed state | [`AppState`]: an `Arc<OnceLock<Bridge>>` managed before the window opens and filled once by `setup()`; commands that arrive earlier get `RESOURCE_UNAVAILABLE bridge.starting` |
-//! | Bootstrap | [`bootstrap`]: data layout (`0700`), binding key ([`keyring`]), `Database::open` of `<data>/g9.sqlite`, `AppContext::builder(..).open()` (which runs `g9_app::recovery`) |
+//! | Bootstrap | [`bootstrap`]: data layout (`0700`), binding key ([`keyring`]: `0600` file, OS keyring not used), `Database::open` of `<data>/g9.sqlite`, `AppContext::builder(..).open()` (which runs `g9_app::recovery::run`) |
 //! | Actor | fixed backend operator [`OPERATOR_ID`]; `g9_app::ipc::parse_meta` refuses any `actor` key in IPC metadata (ADR-0013, Addendum A.8) |
 //! | Errors | the serialized [`G9Error`] (closed 13 categories, secret-free) is the command's `Err` value; never a Rust error string |
-//! | Honest status | bridge facts the backend cannot see (key storage fallback, zone fallback, unpinned skills, read-only storage reason) are appended to `CommandOutcome.warnings` of `system.status` |
+//! | Honest status | bridge facts the backend cannot see (key file fallback, zone fallback, unpinned or refused skills, read-only storage reason) are appended to `CommandOutcome.warnings` of `system.status` |
 //!
 //! Capabilities: `capabilities/default.json` grants only `core:default` to the
 //! `main` window; no plugin is registered (no shell, fs, http, dialog, opener).
 //!
-//! STATUS: the Tauri wiring ([`run`]) cannot be compiled in the authoring
-//! sandbox (no webkit2gtk-4.1/GTK3 system libraries): NOT RUN. The Tauri-free
-//! part of this file and [`keyring`] are compiled and tested there through a
-//! harness that excludes the `shell` module; see `apps/desktop/README.md`.
+//! STATUS: the Tauri wiring (`run`, module `shell`) cannot be compiled in the
+//! authoring sandbox (no webkit2gtk-4.1/GTK3 system libraries): NOT RUN. The
+//! Tauri-free part of this file and [`keyring`] are compiled and tested there
+//! through a scratch harness that excludes the `shell` module; see
+//! `apps/desktop/README.md` "Verification status".
 
 pub mod keyring;
 
-use crate::keyring::{KeySource, SecretStore, StoreFailure};
 use g9_app::{AppConfig, AppContext, Transport};
 use g9_domain::{ActorId, G9Error, IanaZone};
 use g9_skills::Registry;
@@ -163,7 +163,6 @@ pub fn error_value(error: &G9Error) -> Value {
 pub struct Bridge {
     ctx: Result<Mutex<AppContext>, G9Error>,
     warnings: Vec<String>,
-    key_source: Option<KeySource>,
 }
 
 impl Bridge {
@@ -172,18 +171,12 @@ impl Bridge {
         Self {
             ctx: Err(error),
             warnings,
-            key_source: None,
         }
     }
 
     /// Warnings appended to `system.status`.
     pub fn warnings(&self) -> &[String] {
         &self.warnings
-    }
-
-    /// Where the binding key came from (`None` when startup failed before it).
-    pub fn key_source(&self) -> Option<KeySource> {
-        self.key_source
     }
 
     /// The startup error, when the backend is unavailable.
@@ -262,43 +255,28 @@ impl AppState {
 
 /// Bootstrap with the OS CSPRNG. Never fails: a startup error is kept in the
 /// returned [`Bridge`] and answered to every command.
-pub fn bootstrap(options: &BridgeOptions, store: Result<&dyn SecretStore, StoreFailure>) -> Bridge {
-    bootstrap_with(options, store, &mut keyring::os_random)
+pub fn bootstrap(options: &BridgeOptions) -> Bridge {
+    bootstrap_with(options, &mut keyring::os_random)
 }
 
 /// [`bootstrap`] with an injected random source (deterministic tests).
 pub fn bootstrap_with(
     options: &BridgeOptions,
-    store: Result<&dyn SecretStore, StoreFailure>,
     random: &mut dyn FnMut(&mut [u8]) -> Result<(), G9Error>,
 ) -> Bridge {
     let mut warnings = Vec::new();
-    let mut key_source = None;
-    match open_context(options, store, random, &mut warnings, &mut key_source) {
-        Ok(ctx) => Bridge {
-            ctx: Ok(Mutex::new(ctx)),
-            warnings,
-            key_source,
-        },
-        Err(error) => Bridge {
-            ctx: Err(error),
-            warnings,
-            key_source,
-        },
-    }
+    let ctx = open_context(options, random, &mut warnings).map(Mutex::new);
+    Bridge { ctx, warnings }
 }
 
 fn open_context(
     options: &BridgeOptions,
-    store: Result<&dyn SecretStore, StoreFailure>,
     random: &mut dyn FnMut(&mut [u8]) -> Result<(), G9Error>,
     warnings: &mut Vec<String>,
-    key_source: &mut Option<KeySource>,
 ) -> Result<AppContext, G9Error> {
     let layout = DataLayout::under(&options.data_dir)?;
     layout.prepare(warnings)?;
-    let provisioned = keyring::provision(store, &layout.root, random)?;
-    *key_source = Some(provisioned.source);
+    let provisioned = keyring::provision(&layout.root, random)?;
     warnings.extend(provisioned.warnings);
 
     let mut config = AppConfig::new(APP_VERSION)?;
@@ -480,7 +458,6 @@ mod shell {
     use super::{
         bootstrap, error_value, host_zone, AppState, Bridge, BridgeOptions, SKILLS_RESOURCE_DIR,
     };
-    use crate::keyring::{OsKeyring, SecretStore};
     use g9_domain::G9Error;
     use serde_json::Value;
     use tauri::Manager;
@@ -522,17 +499,12 @@ mod shell {
                     .ok()
                     .map(|dir| dir.join(SKILLS_RESOURCE_DIR))
                     .filter(|dir| dir.is_dir());
-                let keyring = OsKeyring::connect();
-                let store = match &keyring {
-                    Ok(keyring) => Ok(keyring as &dyn SecretStore),
-                    Err(failure) => Err(*failure),
-                };
                 let options = BridgeOptions {
                     data_dir,
                     skills_dir,
                     zone: host_zone(),
                 };
-                bootstrap(&options, store)
+                bootstrap(&options)
             }
             Err(_) => Bridge::unavailable(
                 G9Error::resource_unavailable(
@@ -565,7 +537,7 @@ pub use shell::run;
 #[cfg(all(test, unix))]
 mod tests {
     use super::*;
-    use crate::keyring::{SecretStore, StoreFailure, KEY_FILE_NAME};
+    use crate::keyring::KEY_FILE_NAME;
     use g9_domain::ErrorCategory;
     use std::os::unix::fs::PermissionsExt;
     use std::path::Path;
@@ -580,10 +552,6 @@ mod tests {
             }
             Ok(())
         }
-    }
-
-    fn no_keyring() -> Result<&'static dyn SecretStore, StoreFailure> {
-        Err(StoreFailure::Unavailable)
     }
 
     fn berlin() -> IanaZone {
@@ -601,7 +569,7 @@ mod tests {
     fn start_with(options: &BridgeOptions) -> AppState {
         let state = AppState::starting();
         state
-            .install(bootstrap_with(options, no_keyring(), &mut counter()))
+            .install(bootstrap_with(options, &mut counter()))
             .unwrap();
         state
     }
@@ -681,7 +649,6 @@ mod tests {
             "{:?}",
             bridge.startup_error()
         );
-        assert_eq!(bridge.key_source(), Some(KeySource::File));
         let data = dir.path().join("data");
         for sub in ["", ATTACHMENTS_DIR, BACKUPS_DIR, SCRATCH_DIR] {
             assert_eq!(mode(&data.join(sub)), 0o700, "{sub}");
@@ -812,11 +779,7 @@ mod tests {
             Ok(())
         };
         state
-            .install(bootstrap_with(
-                &options(dir.path()),
-                no_keyring(),
-                &mut other,
-            ))
+            .install(bootstrap_with(&options(dir.path()), &mut other))
             .unwrap();
         let refused = state
             .handle(
@@ -828,6 +791,87 @@ mod tests {
         g9_app::schemas::validate_error(&refused).unwrap();
         assert_eq!(refused["category"], "UNAUTHORIZED", "{refused}");
         assert!(approvals_in(&state, "4", "CONSUMED").is_empty());
+    }
+
+    #[test]
+    fn approval_is_not_usable_for_different_parameters() {
+        let dir = tempfile::tempdir().unwrap();
+        let state = start(dir.path());
+        let err = call(&state, "export.request", "1", export_payload()).unwrap_err();
+        let id = err["approval_id"].as_str().unwrap().to_string();
+        call(
+            &state,
+            "approvals.decide",
+            "2",
+            json!({ "approval_id": id, "decision": "APPROVE" }),
+        )
+        .unwrap();
+        // Same approval, wider export: refused, and the approval is not spent.
+        let wider = json!({
+            "domains": ["LEARNING", "PERSONAL"],
+            "format": "JSON",
+            "include_private": true,
+        });
+        let refused = state.handle(
+            "export.request",
+            meta("export.request", "3", Some(&id)),
+            wider,
+        );
+        assert_schema("export.request", &refused);
+        let refused = refused.unwrap_err();
+        assert_eq!(refused["category"], "UNAUTHORIZED", "{refused}");
+        assert_eq!(approvals_in(&state, "4", "APPROVED"), vec![id.clone()]);
+        assert!(approvals_in(&state, "5", "CONSUMED").is_empty());
+        // The approved parameters still succeed exactly once.
+        let ok = state
+            .handle(
+                "export.request",
+                meta("export.request", "6", Some(&id)),
+                export_payload(),
+            )
+            .unwrap();
+        assert_eq!(ok["result"]["state"], "REQUESTED");
+        assert_eq!(approvals_in(&state, "7", "CONSUMED"), vec![id]);
+    }
+
+    #[test]
+    fn idempotent_retry_replays_and_changed_retry_conflicts() {
+        let dir = tempfile::tempdir().unwrap();
+        let state = start(dir.path());
+        let note = json!({
+            "title": "Bridge note",
+            "body_markdown": "# heading",
+            "classification": "INTERNAL",
+            "domain": "LEARNING",
+        });
+        let first = call(&state, "notes.create", "1", note.clone()).unwrap();
+        assert_eq!(first["replayed"], false);
+        // Same idempotency key and request: the stored outcome is replayed.
+        let again = call(&state, "notes.create", "1", note.clone()).unwrap();
+        assert_eq!(again["replayed"], true);
+        assert_eq!(again["result"], first["result"]);
+        // Same key, different request: refused, nothing new is written.
+        let mut changed = note;
+        changed["title"] = json!("Another title");
+        let conflict = call(&state, "notes.create", "1", changed).unwrap_err();
+        assert_eq!(conflict["category"], "CONFLICT", "{conflict}");
+        // The replay survives a restart (idempotency records are persisted).
+        drop(state);
+        let restarted = start(dir.path());
+        let after = call(
+            &restarted,
+            "notes.create",
+            "1",
+            json!({
+                "title": "Bridge note",
+                "body_markdown": "# heading",
+                "classification": "INTERNAL",
+                "domain": "LEARNING",
+            }),
+        )
+        .unwrap();
+        assert_eq!(after["replayed"], true);
+        assert_eq!(after["result"], first["result"]);
     }
 
     #[test]
