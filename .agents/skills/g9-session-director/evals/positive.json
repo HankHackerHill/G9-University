@@ -1,0 +1,92 @@
+[
+  {
+    "id": "T01-POS-001",
+    "kind": "positive",
+    "title": "Operator starts the day and asks what to work on",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator starts the day and asks what to work on",
+    "input": {
+      "day_id": "D15",
+      "mode": "STUDY",
+      "include_due_reviews": true,
+      "include_open_interventions": true
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "objectives",
+        "prerequisites_status"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "T01-POS-002",
+    "kind": "positive",
+    "title": "A LAB session begins for a training day",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "A LAB session begins for a training day",
+    "input": {
+      "day_id": "D15",
+      "mode": "STUDY",
+      "include_due_reviews": true,
+      "include_open_interventions": true
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "objectives",
+        "prerequisites_status"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "T01-POS-003",
+    "kind": "positive",
+    "title": "Operator asks for today's brief after a missed day",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks for today's brief after a missed day",
+    "input": {
+      "day_id": "D15",
+      "mode": "STUDY",
+      "include_due_reviews": true,
+      "include_open_interventions": true
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "objectives",
+        "prerequisites_status"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

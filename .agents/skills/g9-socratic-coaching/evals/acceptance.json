@@ -1,0 +1,47 @@
+[
+  {
+    "id": "T04-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: Operator reports being stuck on a lab step",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator reports being stuck on a lab step",
+    "input": {
+      "attempt_context_ref": "evidence:lab-state-1",
+      "stuck_point": "cannot see why the query returns no rows"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "question",
+        "assistance_level"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "T04-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator reports being stuck on a lab step",
+    "input": {
+      "attempt_context_ref": "evidence:lab-state-1",
+      "stuck_point": "cannot see why the query returns no rows"
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]

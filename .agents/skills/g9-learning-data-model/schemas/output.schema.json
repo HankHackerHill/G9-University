@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-learning-data-model/output",
+  "title": "g9-learning-data-model result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "graph_report",
+    "replay_report"
+  ],
+  "properties": {
+    "graph_report": {
+      "type": "object",
+      "description": "Nodes, edges, cycles",
+      "additionalProperties": true
+    },
+    "replay_report": {
+      "type": "object",
+      "description": "Determinism and contradiction results",
+      "additionalProperties": true
+    },
+    "rule_proposals": {
+      "type": "array",
+      "description": "Proposed changes",
+      "items": {}
+    }
+  }
+}

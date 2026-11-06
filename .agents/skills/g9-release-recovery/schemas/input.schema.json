@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-release-recovery/input",
+  "title": "g9-release-recovery input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "stage"
+  ],
+  "properties": {
+    "stage": {
+      "type": "string",
+      "description": "Stage id"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "description": "Evidence refs of logs and reports",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

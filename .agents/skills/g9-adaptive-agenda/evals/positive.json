@@ -1,0 +1,89 @@
+[
+  {
+    "id": "P01-POS-001",
+    "kind": "positive",
+    "title": "Friday planning for next week",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Friday planning for next week",
+    "input": {
+      "period": "WEEK",
+      "start_date": "2026-11-09"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "blocks",
+        "unplaced"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE",
+        "READ"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "P01-POS-002",
+    "kind": "positive",
+    "title": "A skipped day needs a replan",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "A skipped day needs a replan",
+    "input": {
+      "period": "WEEK",
+      "start_date": "2026-11-09"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "blocks",
+        "unplaced"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE",
+        "READ"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "P01-POS-003",
+    "kind": "positive",
+    "title": "Operator asks to fit a transfer check into the week",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks to fit a transfer check into the week",
+    "input": {
+      "period": "WEEK",
+      "start_date": "2026-11-09"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "blocks",
+        "unplaced"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE",
+        "READ"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

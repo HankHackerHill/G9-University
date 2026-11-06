@@ -1,0 +1,787 @@
+{
+  "pack_id": "detection-soc-hunting",
+  "title": "Detection engineering, SOC and threat hunting",
+  "version": "0.1.0",
+  "status": "PROPOSED",
+  "nice_framework_version": "2.2.0",
+  "competencies": [
+    {
+      "id": "det.event-sources",
+      "name": "Event source inventory and coverage",
+      "description": "Inventory event sources, evaluate coverage gaps and design telemetry mapping.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 1,
+        "max": 3
+      },
+      "prerequisites": [],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "det.event-sources.m1",
+          "statement": "More sources equal more coverage",
+          "counterexample": "Coverage is per technique, not per source"
+        },
+        {
+          "id": "det.event-sources.m2",
+          "statement": "EDR replaces log collection",
+          "counterexample": "EDR gaps exist for identity and network"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "det.event-sources.lab1",
+          "description": "Isolated fixture for: Inventory event sources, evaluate coverage gaps and design telemetry mapping.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "det.event-sources.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: coverage map",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "det.event-sources.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for event source inventory and coverage with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 2
+        },
+        {
+          "id": "det.event-sources.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind event source inventory and coverage with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 1
+        }
+      ],
+      "detection_defense_visibility": "Coverage maps per data source, Sigma rule tests with positive and negative fixtures, false-positive estimates.",
+      "safety_boundaries": [
+        "Use licensed sample datasets only (note license per dataset)",
+        "Rules are tested on fixtures, never deployed to production SIEMs from the lab",
+        "No customer data"
+      ]
+    },
+    {
+      "id": "det.normalization",
+      "name": "Log normalization and enrichment",
+      "description": "Normalize events, validate time/source identity and assess enrichment.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 3
+      },
+      "prerequisites": [
+        "det.event-sources"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "det.normalization.m1",
+          "statement": "Normalized fields are trustworthy",
+          "counterexample": "Parser errors silently drop fields"
+        },
+        {
+          "id": "det.normalization.m2",
+          "statement": "UTC conversion is automatic",
+          "counterexample": "Source zones vary"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "det.normalization.lab1",
+          "description": "Isolated fixture for: Normalize events, validate time/source identity and assess enrichment.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "det.normalization.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: normalization report",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "det.normalization.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for log normalization and enrichment with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "det.normalization.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind log normalization and enrichment with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Coverage maps per data source, Sigma rule tests with positive and negative fixtures, false-positive estimates.",
+      "safety_boundaries": [
+        "Use licensed sample datasets only (note license per dataset)",
+        "Rules are tested on fixtures, never deployed to production SIEMs from the lab",
+        "No customer data"
+      ]
+    },
+    {
+      "id": "det.sigma-rules",
+      "name": "Sigma schema and detection hypotheses",
+      "description": "Understand Sigma, draft a detection hypothesis and test positive/negative fixtures.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 4
+      },
+      "prerequisites": [
+        "det.normalization"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "det.sigma-rules.m1",
+          "statement": "A rule that fires on the sample is done",
+          "counterexample": "Negative fixtures and FP estimates are required"
+        },
+        {
+          "id": "det.sigma-rules.m2",
+          "statement": "Sigma rules are vendor-neutral in practice",
+          "counterexample": "Backend conversions change semantics"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "det.sigma-rules.lab1",
+          "description": "Isolated fixture for: Understand Sigma, draft a detection hypothesis and test positive/negative fixtures.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "det.sigma-rules.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: Sigma test package",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "det.sigma-rules.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for sigma schema and detection hypotheses with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "det.sigma-rules.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind sigma schema and detection hypotheses with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Coverage maps per data source, Sigma rule tests with positive and negative fixtures, false-positive estimates.",
+      "safety_boundaries": [
+        "Use licensed sample datasets only (note license per dataset)",
+        "Rules are tested on fixtures, never deployed to production SIEMs from the lab",
+        "No customer data"
+      ]
+    },
+    {
+      "id": "det.correlation-timeline",
+      "name": "Correlation and investigation timeline",
+      "description": "Correlate sources, reconstruct a timeline and separate fact from inference.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 4
+      },
+      "prerequisites": [
+        "det.sigma-rules"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "det.correlation-timeline.m1",
+          "statement": "Timeline order equals causality",
+          "counterexample": "Clock skew and batching reorder events"
+        },
+        {
+          "id": "det.correlation-timeline.m2",
+          "statement": "Absence of logs means absence of activity",
+          "counterexample": "Coverage gaps hide activity"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "det.correlation-timeline.lab1",
+          "description": "Isolated fixture for: Correlate sources, reconstruct a timeline and separate fact from inference.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "det.correlation-timeline.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: investigation timeline",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "det.correlation-timeline.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for correlation and investigation timeline with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "det.correlation-timeline.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind correlation and investigation timeline with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Coverage maps per data source, Sigma rule tests with positive and negative fixtures, false-positive estimates.",
+      "safety_boundaries": [
+        "Use licensed sample datasets only (note license per dataset)",
+        "Rules are tested on fixtures, never deployed to production SIEMs from the lab",
+        "No customer data"
+      ]
+    },
+    {
+      "id": "det.criteria-fp",
+      "name": "Detection criteria and false-positive estimation",
+      "description": "Define detection criteria, estimate false positives and refine rules.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 4
+      },
+      "prerequisites": [
+        "det.sigma-rules"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "det.criteria-fp.m1",
+          "statement": "Low alert volume means low FP",
+          "counterexample": "It may mean low coverage"
+        },
+        {
+          "id": "det.criteria-fp.m2",
+          "statement": "Tuning is whitelisting",
+          "counterexample": "Whitelists create blind spots"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "det.criteria-fp.lab1",
+          "description": "Isolated fixture for: Define detection criteria, estimate false positives and refine rules.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "det.criteria-fp.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: detection validation report",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "det.criteria-fp.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for detection criteria and false-positive estimation with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "det.criteria-fp.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind detection criteria and false-positive estimation with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Coverage maps per data source, Sigma rule tests with positive and negative fixtures, false-positive estimates.",
+      "safety_boundaries": [
+        "Use licensed sample datasets only (note license per dataset)",
+        "Rules are tested on fixtures, never deployed to production SIEMs from the lab",
+        "No customer data"
+      ]
+    },
+    {
+      "id": "hunt.hypothesis",
+      "name": "Hunt hypothesis and approved telemetry",
+      "description": "Define a hunt hypothesis, examine approved telemetry and record findings/detections.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "det.correlation-timeline"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "hunt.hypothesis.m1",
+          "statement": "Hunting is searching for IOCs",
+          "counterexample": "Hunting tests behavioral hypotheses"
+        },
+        {
+          "id": "hunt.hypothesis.m2",
+          "statement": "No findings means a failed hunt",
+          "counterexample": "Negative results refine coverage"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "hunt.hypothesis.lab1",
+          "description": "Isolated fixture for: Define a hunt hypothesis, examine approved telemetry and record findings/detections.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "hunt.hypothesis.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: hunt report",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "hunt.hypothesis.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for hunt hypothesis and approved telemetry with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "hunt.hypothesis.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind hunt hypothesis and approved telemetry with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Coverage maps per data source, Sigma rule tests with positive and negative fixtures, false-positive estimates.",
+      "safety_boundaries": [
+        "Use licensed sample datasets only (note license per dataset)",
+        "Rules are tested on fixtures, never deployed to production SIEMs from the lab",
+        "No customer data"
+      ]
+    },
+    {
+      "id": "det.blind-telemetry",
+      "name": "Blind telemetry investigation",
+      "description": "Investigate blind telemetry, implement an evidence-based detection and report limitations.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "det.criteria-fp",
+        "hunt.hypothesis"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "det.blind-telemetry.m1",
+          "statement": "The detection must catch everything",
+          "counterexample": "Scoped detections with known limits are valid"
+        },
+        {
+          "id": "det.blind-telemetry.m2",
+          "statement": "Reporting limitations weakens the deliverable",
+          "counterexample": "Limits are evidence of rigor"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "det.blind-telemetry.lab1",
+          "description": "Isolated fixture for: Investigate blind telemetry, implement an evidence-based detection and report limitations.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "det.blind-telemetry.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: week-7 blind assessment",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "det.blind-telemetry.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for blind telemetry investigation with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "det.blind-telemetry.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind blind telemetry investigation with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Coverage maps per data source, Sigma rule tests with positive and negative fixtures, false-positive estimates.",
+      "safety_boundaries": [
+        "Use licensed sample datasets only (note license per dataset)",
+        "Rules are tested on fixtures, never deployed to production SIEMs from the lab",
+        "No customer data"
+      ]
+    },
+    {
+      "id": "det.sigma-backend-fidelity",
+      "name": "Backend conversion fidelity",
+      "description": "Verify Sigma-to-backend conversions preserve semantics with fixture tests.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 4,
+        "max": 5
+      },
+      "prerequisites": [
+        "det.sigma-rules"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "det.sigma-backend-fidelity.m1",
+          "statement": "Conversion is lossless",
+          "counterexample": "Modifiers and field names differ per backend"
+        },
+        {
+          "id": "det.sigma-backend-fidelity.m2",
+          "statement": "One fixture per rule suffices",
+          "counterexample": "Edge cases per modifier are needed"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "det.sigma-backend-fidelity.lab1",
+          "description": "Isolated fixture for: Verify Sigma-to-backend conversions preserve semantics with fixture tests.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "det.sigma-backend-fidelity.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: conversion fidelity test package",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "det.sigma-backend-fidelity.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for backend conversion fidelity with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "det.sigma-backend-fidelity.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind backend conversion fidelity with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 4
+        }
+      ],
+      "detection_defense_visibility": "Coverage maps per data source, Sigma rule tests with positive and negative fixtures, false-positive estimates.",
+      "safety_boundaries": [
+        "Use licensed sample datasets only (note license per dataset)",
+        "Rules are tested on fixtures, never deployed to production SIEMs from the lab",
+        "No customer data"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "title": "Sigma specification",
+      "organisation": "SigmaHQ",
+      "kind": "STANDARD",
+      "license_note": "DRL/Apache-2.0 (verify)",
+      "verification": "ASSUMED"
+    },
+    {
+      "title": "MITRE ATT&CK",
+      "organisation": "MITRE",
+      "kind": "STANDARD",
+      "license_note": "free with attribution",
+      "verification": "ASSUMED"
+    },
+    {
+      "title": "Splunk Boss of the SOC datasets",
+      "organisation": "Splunk",
+      "kind": "DATASET",
+      "license_note": "free download; redistribution terms must be verified",
+      "verification": "ASSUMED"
+    }
+  ],
+  "maintenance_policy": {
+    "review_interval_days": 90,
+    "owner_module": "M12"
+  }
+}

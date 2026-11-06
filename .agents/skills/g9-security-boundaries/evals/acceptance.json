@@ -1,0 +1,52 @@
+[
+  {
+    "id": "E06-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: A new IPC operation touches protected records",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A new IPC operation touches protected records",
+    "input": {
+      "change_description_ref": "evidence:feature-x",
+      "affected_resource_kinds": [
+        "Attempt"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "boundaries_affected",
+        "rule_gaps",
+        "negative_tests"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "E06-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A new IPC operation touches protected records",
+    "input": {
+      "change_description_ref": "evidence:feature-x",
+      "affected_resource_kinds": [
+        "Attempt"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]

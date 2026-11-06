@@ -1,0 +1,83 @@
+[
+  {
+    "id": "P05-POS-001",
+    "kind": "positive",
+    "title": "Monthly decision review",
+    "mode": "EXECUTIVE",
+    "actor_kind": "OPERATOR",
+    "intent": "Monthly decision review",
+    "input": {
+      "since_date": "2026-10-01"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "reviews",
+        "lessons"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "P05-POS-002",
+    "kind": "positive",
+    "title": "A decision's outcome was recorded",
+    "mode": "EXECUTIVE",
+    "actor_kind": "OPERATOR",
+    "intent": "A decision's outcome was recorded",
+    "input": {
+      "since_date": "2026-10-01"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "reviews",
+        "lessons"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "P05-POS-003",
+    "kind": "positive",
+    "title": "Operator asks what the last three decisions taught",
+    "mode": "EXECUTIVE",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks what the last three decisions taught",
+    "input": {
+      "since_date": "2026-10-01"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "reviews",
+        "lessons"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

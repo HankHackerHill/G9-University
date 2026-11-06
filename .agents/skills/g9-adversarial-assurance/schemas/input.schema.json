@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-adversarial-assurance/input",
+  "title": "g9-adversarial-assurance input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "change_ref"
+  ],
+  "properties": {
+    "change_ref": {
+      "type": "string",
+      "description": "Evidence ref of the change"
+    },
+    "scenario_ids": {
+      "type": "array",
+      "description": "ST ids to cover",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

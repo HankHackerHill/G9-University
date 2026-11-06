@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-release-recovery/output",
+  "title": "g9-release-recovery result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "gate_table",
+    "recommended_label"
+  ],
+  "properties": {
+    "gate_table": {
+      "type": "array",
+      "description": "Gate, tests, status",
+      "items": {}
+    },
+    "sbom_summary": {
+      "type": "object",
+      "description": "Dependency and license counts",
+      "additionalProperties": true
+    },
+    "advisories": {
+      "type": "array",
+      "description": "Open advisories",
+      "items": {}
+    },
+    "recommended_label": {
+      "type": "string",
+      "description": "Release label"
+    }
+  }
+}

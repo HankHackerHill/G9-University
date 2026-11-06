@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-adversarial-assurance/output",
+  "title": "g9-adversarial-assurance result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scenarios",
+    "results"
+  ],
+  "properties": {
+    "scenarios": {
+      "type": "array",
+      "description": "Scenario definitions",
+      "items": {}
+    },
+    "results": {
+      "type": "array",
+      "description": "Decision and final state per scenario or NOT_RUN",
+      "items": {}
+    },
+    "failures": {
+      "type": "array",
+      "description": "Failures with severity",
+      "items": {}
+    },
+    "mitigations": {
+      "type": "array",
+      "description": "Proposed mitigations",
+      "items": {}
+    }
+  }
+}

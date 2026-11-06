@@ -1,0 +1,83 @@
+[
+  {
+    "id": "L05-POS-001",
+    "kind": "positive",
+    "title": "Operator asks whether adaptive hints helped",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks whether adaptive hints helped",
+    "input": {
+      "experiment_id": "exp-3"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "design_check",
+        "effect_estimate"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "L05-POS-002",
+    "kind": "positive",
+    "title": "An intervention reached EVALUATED and needs a comparison",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "An intervention reached EVALUATED and needs a comparison",
+    "input": {
+      "experiment_id": "exp-3"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "design_check",
+        "effect_estimate"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "L05-POS-003",
+    "kind": "positive",
+    "title": "A pre-registration record must be drafted",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "A pre-registration record must be drafted",
+    "input": {
+      "experiment_id": "exp-3"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "design_check",
+        "effect_estimate"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

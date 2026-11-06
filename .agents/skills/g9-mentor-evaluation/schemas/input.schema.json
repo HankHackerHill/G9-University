@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-mentor-evaluation/input",
+  "title": "g9-mentor-evaluation input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "skill_name"
+  ],
+  "properties": {
+    "skill_name": {
+      "type": "string",
+      "description": "Skill under evaluation"
+    },
+    "suite_ref": {
+      "type": "string",
+      "description": "Evidence ref of the suite"
+    }
+  }
+}

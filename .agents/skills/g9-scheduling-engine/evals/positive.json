@@ -1,0 +1,98 @@
+[
+  {
+    "id": "E08-POS-001",
+    "kind": "positive",
+    "title": "Operator asks for next week's proposal",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks for next week's proposal",
+    "input": {
+      "week_start_date": "2026-11-09",
+      "timezone": "Europe/Berlin",
+      "task_refs": [
+        "task-1"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "placements",
+        "unplaced"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE",
+        "READ"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E08-POS-002",
+    "kind": "positive",
+    "title": "A skipped day requires a re-plan proposal with downstream consequences",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A skipped day requires a re-plan proposal with downstream consequences",
+    "input": {
+      "week_start_date": "2026-11-09",
+      "timezone": "Europe/Berlin",
+      "task_refs": [
+        "task-1"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "placements",
+        "unplaced"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE",
+        "READ"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E08-POS-003",
+    "kind": "positive",
+    "title": "Conflict check after an appointment is added",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "Conflict check after an appointment is added",
+    "input": {
+      "week_start_date": "2026-11-09",
+      "timezone": "Europe/Berlin",
+      "task_refs": [
+        "task-1"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "placements",
+        "unplaced"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE",
+        "READ"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-goal-decomposition/output",
+  "title": "g9-goal-decomposition result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "milestones",
+    "estimates"
+  ],
+  "properties": {
+    "milestones": {
+      "type": "array",
+      "description": "Milestones with acceptance criteria",
+      "items": {}
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "Dependencies",
+      "items": {}
+    },
+    "estimates": {
+      "type": "array",
+      "description": "Estimates with uncertainty",
+      "items": {}
+    }
+  }
+}

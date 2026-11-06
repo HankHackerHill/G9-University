@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-independent-examiner/input",
+  "title": "g9-independent-examiner input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "attempt_id",
+    "assessment_version"
+  ],
+  "properties": {
+    "attempt_id": {
+      "type": "string",
+      "description": "Attempt id"
+    },
+    "assessment_version": {
+      "type": "integer",
+      "description": "Version number"
+    }
+  }
+}

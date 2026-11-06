@@ -1,0 +1,46 @@
+[
+  {
+    "id": "L02-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: New observations were recorded from a finalized attempt",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "New observations were recorded from a finalized attempt",
+    "input": {
+      "competency_id": "net.tcp-states"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "state",
+        "per_dimension",
+        "evidence_refs"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "L02-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "New observations were recorded from a finalized attempt",
+    "input": {
+      "competency_id": "net.tcp-states"
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]

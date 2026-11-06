@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-socratic-coaching/input",
+  "title": "g9-socratic-coaching input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "attempt_context_ref"
+  ],
+  "properties": {
+    "attempt_context_ref": {
+      "type": "string",
+      "description": "Evidence ref of the current attempt state"
+    },
+    "stuck_point": {
+      "type": "string",
+      "description": "Learner's description"
+    }
+  }
+}

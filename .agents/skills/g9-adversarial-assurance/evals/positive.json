@@ -1,0 +1,95 @@
+[
+  {
+    "id": "E13-POS-001",
+    "kind": "positive",
+    "title": "A new skill output type is introduced",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A new skill output type is introduced",
+    "input": {
+      "change_ref": "evidence:feature-y",
+      "scenario_ids": [
+        "ST01",
+        "ST04"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "scenarios",
+        "results"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E13-POS-002",
+    "kind": "positive",
+    "title": "An approval flow changes",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "An approval flow changes",
+    "input": {
+      "change_ref": "evidence:feature-y",
+      "scenario_ids": [
+        "ST01",
+        "ST04"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "scenarios",
+        "results"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E13-POS-003",
+    "kind": "positive",
+    "title": "A regression suite needs a scenario for a new document importer",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A regression suite needs a scenario for a new document importer",
+    "input": {
+      "change_ref": "evidence:feature-y",
+      "scenario_ids": [
+        "ST01",
+        "ST04"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "scenarios",
+        "results"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

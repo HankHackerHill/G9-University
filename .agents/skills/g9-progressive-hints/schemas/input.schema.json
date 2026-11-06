@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-progressive-hints/input",
+  "title": "g9-progressive-hints input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_ref"
+  ],
+  "properties": {
+    "task_ref": {
+      "type": "string",
+      "description": "Evidence ref of the task"
+    },
+    "tier_requested": {
+      "type": "integer",
+      "description": "Tier 1-4 or 0 for next"
+    }
+  }
+}

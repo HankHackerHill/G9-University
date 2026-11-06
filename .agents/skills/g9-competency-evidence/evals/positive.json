@@ -1,0 +1,83 @@
+[
+  {
+    "id": "L02-POS-001",
+    "kind": "positive",
+    "title": "New observations were recorded from a finalized attempt",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "New observations were recorded from a finalized attempt",
+    "input": {
+      "competency_id": "net.tcp-states"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "state",
+        "per_dimension"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "L02-POS-002",
+    "kind": "positive",
+    "title": "Operator asks why a competency is GUIDED",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks why a competency is GUIDED",
+    "input": {
+      "competency_id": "net.tcp-states"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "state",
+        "per_dimension"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "L02-POS-003",
+    "kind": "positive",
+    "title": "A contradiction flag appeared",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "A contradiction flag appeared",
+    "input": {
+      "competency_id": "net.tcp-states"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "state",
+        "per_dimension"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

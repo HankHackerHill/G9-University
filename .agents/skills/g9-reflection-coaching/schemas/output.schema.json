@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-reflection-coaching/output",
+  "title": "g9-reflection-coaching result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "prompts"
+  ],
+  "properties": {
+    "prompts": {
+      "type": "array",
+      "description": "Reflection prompts",
+      "items": {}
+    },
+    "next_date": {
+      "type": "string",
+      "description": "Proposed next reflection date"
+    }
+  }
+}

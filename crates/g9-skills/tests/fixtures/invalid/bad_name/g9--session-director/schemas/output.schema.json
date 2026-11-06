@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-session-director/output",
+  "title": "g9-session-director result (v1.0)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["brief", "basis"],
+  "properties": {
+    "brief": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["day_id", "objectives", "due_reviews", "open_interventions", "risks"],
+      "properties": {
+        "day_id": { "type": "string" },
+        "objectives": { "type": "array", "items": { "type": "string" } },
+        "due_reviews": { "type": "array", "items": { "type": "string" } },
+        "open_interventions": { "type": "array", "items": { "type": "string" } },
+        "risks": { "type": "array", "items": { "type": "string", "maxLength": 500 } }
+      }
+    },
+    "basis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_refs", "unresolved_refs"],
+      "properties": {
+        "evidence_refs": { "type": "array", "items": { "type": "string" } },
+        "unresolved_refs": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

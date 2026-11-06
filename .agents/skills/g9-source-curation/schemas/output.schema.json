@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-source-curation/output",
+  "title": "g9-source-curation result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "credibility",
+    "license",
+    "recommendation"
+  ],
+  "properties": {
+    "credibility": {
+      "type": "object",
+      "description": "Assessment with evidence",
+      "additionalProperties": true
+    },
+    "freshness": {
+      "type": "object",
+      "description": "Version and date",
+      "additionalProperties": true
+    },
+    "license": {
+      "type": "object",
+      "description": "License and terms",
+      "additionalProperties": true
+    },
+    "recommendation": {
+      "type": "string",
+      "description": "APPROVE, REJECT or NEEDS_REVIEW"
+    }
+  }
+}

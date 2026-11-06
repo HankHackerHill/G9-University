@@ -1,0 +1,794 @@
+{
+  "pack_id": "web-api-appsec",
+  "title": "Web, API and application security",
+  "version": "0.1.0",
+  "status": "PROPOSED",
+  "nice_framework_version": "2.2.0",
+  "competencies": [
+    {
+      "id": "web.http-semantics",
+      "name": "HTTP semantics and browser trust boundaries",
+      "description": "Explain requests, cookies, origins and headers; map browser trust boundaries.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 1,
+        "max": 2
+      },
+      "prerequisites": [],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "web.http-semantics.m1",
+          "statement": "SameSite cookies stop all CSRF",
+          "counterexample": "Lax allows top-level GET navigations"
+        },
+        {
+          "id": "web.http-semantics.m2",
+          "statement": "HTTPS makes an application secure",
+          "counterexample": "Transport security says nothing about logic"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "web.http-semantics.lab1",
+          "description": "Isolated fixture for: Explain requests, cookies, origins and headers; map browser trust boundaries.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "web.http-semantics.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: HTTP analysis deliverable",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 2
+        },
+        {
+          "id": "web.http-semantics.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for http semantics and browser trust boundaries with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 2
+        },
+        {
+          "id": "web.http-semantics.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind http semantics and browser trust boundaries with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 1
+        }
+      ],
+      "detection_defense_visibility": "Application logs, WAF/proxy logs, authentication events; each vulnerability class maps to a detection signal and a verified fix.",
+      "safety_boundaries": [
+        "Only deliberately vulnerable lab applications (OWASP Juice Shop, PortSwigger labs); never production targets",
+        "No credential reuse between lab and real accounts",
+        "Keep exploit artifacts inside the lab evidence store, classified SECURITY_SENSITIVE"
+      ]
+    },
+    {
+      "id": "web.session-auth",
+      "name": "Authentication and session state",
+      "description": "Model authentication/session state and test mitigations for session defects.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 3
+      },
+      "prerequisites": [
+        "web.http-semantics"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "web.session-auth.m1",
+          "statement": "Long random session ids are enough",
+          "counterexample": "Fixation, scope and rotation after login matter"
+        },
+        {
+          "id": "web.session-auth.m2",
+          "statement": "JWTs cannot be revoked so they are stateless by design",
+          "counterexample": "Short lifetimes plus a denylist are required for logout"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "web.session-auth.lab1",
+          "description": "Isolated fixture for: Model authentication/session state and test mitigations for session defects.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "web.session-auth.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: session defect review with regression cases",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "web.session-auth.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for authentication and session state with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "web.session-auth.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind authentication and session state with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Application logs, WAF/proxy logs, authentication events; each vulnerability class maps to a detection signal and a verified fix.",
+      "safety_boundaries": [
+        "Only deliberately vulnerable lab applications (OWASP Juice Shop, PortSwigger labs); never production targets",
+        "No credential reuse between lab and real accounts",
+        "Keep exploit artifacts inside the lab evidence store, classified SECURITY_SENSITIVE"
+      ]
+    },
+    {
+      "id": "web.authz-idor",
+      "name": "Authorization and object-level access control",
+      "description": "Distinguish authn/authz; find and fix object-level access failures; build regressions.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 4
+      },
+      "prerequisites": [
+        "web.session-auth"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "web.authz-idor.m1",
+          "statement": "Unguessable ids prevent IDOR",
+          "counterexample": "Ids leak; authorization must be checked server-side"
+        },
+        {
+          "id": "web.authz-idor.m2",
+          "statement": "Role checks at the UI are sufficient",
+          "counterexample": "APIs are called directly"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "web.authz-idor.lab1",
+          "description": "Isolated fixture for: Distinguish authn/authz; find and fix object-level access failures; build regressions.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "web.authz-idor.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: access-control matrix and regression cases",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "web.authz-idor.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for authorization and object-level access control with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "web.authz-idor.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind authorization and object-level access control with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Application logs, WAF/proxy logs, authentication events; each vulnerability class maps to a detection signal and a verified fix.",
+      "safety_boundaries": [
+        "Only deliberately vulnerable lab applications (OWASP Juice Shop, PortSwigger labs); never production targets",
+        "No credential reuse between lab and real accounts",
+        "Keep exploit artifacts inside the lab evidence store, classified SECURITY_SENSITIVE"
+      ]
+    },
+    {
+      "id": "web.injection",
+      "name": "Injection root causes and prepared statements",
+      "description": "Explain injection root causes; validate prepared statements and encoding.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 4
+      },
+      "prerequisites": [
+        "web.http-semantics"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "web.injection.m1",
+          "statement": "Escaping quotes prevents SQL injection",
+          "counterexample": "Numeric contexts and second-order injection bypass it"
+        },
+        {
+          "id": "web.injection.m2",
+          "statement": "ORMs are immune",
+          "counterexample": "Raw query fragments and string concatenation persist"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "web.injection.lab1",
+          "description": "Isolated fixture for: Explain injection root causes; validate prepared statements and encoding.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "web.injection.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: injection remediation with proof",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "web.injection.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for injection root causes and prepared statements with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "web.injection.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind injection root causes and prepared statements with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Application logs, WAF/proxy logs, authentication events; each vulnerability class maps to a detection signal and a verified fix.",
+      "safety_boundaries": [
+        "Only deliberately vulnerable lab applications (OWASP Juice Shop, PortSwigger labs); never production targets",
+        "No credential reuse between lab and real accounts",
+        "Keep exploit artifacts inside the lab evidence store, classified SECURITY_SENSITIVE"
+      ]
+    },
+    {
+      "id": "web.xss-contexts",
+      "name": "XSS execution contexts and output encoding",
+      "description": "Model execution contexts and verify context-sensitive encoding.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 4
+      },
+      "prerequisites": [
+        "web.http-semantics"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "web.xss-contexts.m1",
+          "statement": "HTML-encoding everything is enough",
+          "counterexample": "Attribute, JS and URL contexts need different encoders"
+        },
+        {
+          "id": "web.xss-contexts.m2",
+          "statement": "CSP replaces encoding",
+          "counterexample": "CSP is defense in depth, not a fix"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "web.xss-contexts.lab1",
+          "description": "Isolated fixture for: Model execution contexts and verify context-sensitive encoding.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "web.xss-contexts.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: XSS report with verified encoding",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "web.xss-contexts.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for xss execution contexts and output encoding with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "web.xss-contexts.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind xss execution contexts and output encoding with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Application logs, WAF/proxy logs, authentication events; each vulnerability class maps to a detection signal and a verified fix.",
+      "safety_boundaries": [
+        "Only deliberately vulnerable lab applications (OWASP Juice Shop, PortSwigger labs); never production targets",
+        "No credential reuse between lab and real accounts",
+        "Keep exploit artifacts inside the lab evidence store, classified SECURITY_SENSITIVE"
+      ]
+    },
+    {
+      "id": "api.token-authz",
+      "name": "API identity, tokens and object-level authorization",
+      "description": "Map token/identity flows; check object-level authorization; define API tests.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 4
+      },
+      "prerequisites": [
+        "web.authz-idor"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "api.token-authz.m1",
+          "statement": "Bearer tokens are bound to the client",
+          "counterexample": "Without audience/resource binding they replay"
+        },
+        {
+          "id": "api.token-authz.m2",
+          "statement": "Rate limiting is an authorization control",
+          "counterexample": "It limits volume, not access"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "api.token-authz.lab1",
+          "description": "Isolated fixture for: Map token/identity flows; check object-level authorization; define API tests.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "api.token-authz.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: API security matrix",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "api.token-authz.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for api identity, tokens and object-level authorization with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "api.token-authz.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind api identity, tokens and object-level authorization with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Application logs, WAF/proxy logs, authentication events; each vulnerability class maps to a detection signal and a verified fix.",
+      "safety_boundaries": [
+        "Only deliberately vulnerable lab applications (OWASP Juice Shop, PortSwigger labs); never production targets",
+        "No credential reuse between lab and real accounts",
+        "Keep exploit artifacts inside the lab evidence store, classified SECURITY_SENSITIVE"
+      ]
+    },
+    {
+      "id": "web.ssrf-upload-deserialization",
+      "name": "SSRF, uploads and unsafe deserialization",
+      "description": "Explain SSRF trust boundaries, upload validation and deserialization risks; verify restrictions.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "api.token-authz",
+        "web.injection"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "web.ssrf-upload-deserialization.m1",
+          "statement": "Blocking 127.0.0.1 stops SSRF",
+          "counterexample": "Alternate encodings, redirects and DNS rebinding bypass denylists"
+        },
+        {
+          "id": "web.ssrf-upload-deserialization.m2",
+          "statement": "Checking the file extension validates an upload",
+          "counterexample": "Content type, magic bytes and processing path matter"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "web.ssrf-upload-deserialization.lab1",
+          "description": "Isolated fixture for: Explain SSRF trust boundaries, upload validation and deserialization risks; verify restrictions.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "web.ssrf-upload-deserialization.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: processing security review",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "web.ssrf-upload-deserialization.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for ssrf, uploads and unsafe deserialization with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "web.ssrf-upload-deserialization.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind ssrf, uploads and unsafe deserialization with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Application logs, WAF/proxy logs, authentication events; each vulnerability class maps to a detection signal and a verified fix.",
+      "safety_boundaries": [
+        "Only deliberately vulnerable lab applications (OWASP Juice Shop, PortSwigger labs); never production targets",
+        "No credential reuse between lab and real accounts",
+        "Keep exploit artifacts inside the lab evidence store, classified SECURITY_SENSITIVE"
+      ]
+    },
+    {
+      "id": "web.threat-model-logic",
+      "name": "Application threat modeling and business-logic invariants",
+      "description": "Draft data-flow models, assess business-logic and race conditions, rank and verify mitigations.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "web.ssrf-upload-deserialization"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "web.threat-model-logic.m1",
+          "statement": "Threat models are a one-time artifact",
+          "counterexample": "They change with every trust boundary"
+        },
+        {
+          "id": "web.threat-model-logic.m2",
+          "statement": "Race conditions are theoretical in web apps",
+          "counterexample": "Coupon reuse and double-spend races are common"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "web.threat-model-logic.lab1",
+          "description": "Isolated fixture for: Draft data-flow models, assess business-logic and race conditions, rank and verify mitigations.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "web.threat-model-logic.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: application threat model and week-4 blind API assessment",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "web.threat-model-logic.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for application threat modeling and business-logic invariants with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "web.threat-model-logic.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind application threat modeling and business-logic invariants with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Application logs, WAF/proxy logs, authentication events; each vulnerability class maps to a detection signal and a verified fix.",
+      "safety_boundaries": [
+        "Only deliberately vulnerable lab applications (OWASP Juice Shop, PortSwigger labs); never production targets",
+        "No credential reuse between lab and real accounts",
+        "Keep exploit artifacts inside the lab evidence store, classified SECURITY_SENSITIVE"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "title": "OWASP Web Security Testing Guide",
+      "organisation": "OWASP",
+      "kind": "STANDARD",
+      "license_note": "CC BY-SA 4.0",
+      "verification": "ASSUMED"
+    },
+    {
+      "title": "OWASP ASVS",
+      "organisation": "OWASP",
+      "kind": "STANDARD",
+      "license_note": "CC BY-SA 4.0",
+      "verification": "ASSUMED"
+    },
+    {
+      "title": "PortSwigger Web Security Academy",
+      "organisation": "PortSwigger",
+      "kind": "LAB",
+      "license_note": "free account; terms to verify before embedding",
+      "verification": "ASSUMED"
+    },
+    {
+      "title": "OWASP Juice Shop",
+      "organisation": "OWASP",
+      "kind": "LAB",
+      "license_note": "MIT",
+      "verification": "ASSUMED"
+    }
+  ],
+  "maintenance_policy": {
+    "review_interval_days": 90,
+    "owner_module": "M12"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-adaptive-instruction/output",
+  "title": "g9-adaptive-instruction result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lesson",
+    "citations",
+    "comprehension_checks"
+  ],
+  "properties": {
+    "lesson": {
+      "type": "object",
+      "description": "Sections: mechanism, example, misconception, checks",
+      "additionalProperties": true
+    },
+    "citations": {
+      "type": "array",
+      "description": "Chunk ids",
+      "items": {}
+    },
+    "comprehension_checks": {
+      "type": "array",
+      "description": "Questions with expected answers",
+      "items": {}
+    },
+    "next_step": {
+      "type": "string",
+      "description": "Proposed practice"
+    }
+  }
+}

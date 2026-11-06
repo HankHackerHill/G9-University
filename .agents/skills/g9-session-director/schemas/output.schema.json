@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-session-director/output",
+  "title": "g9-session-director result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "objectives",
+    "prerequisites_status",
+    "time_budget",
+    "next_step"
+  ],
+  "properties": {
+    "objectives": {
+      "type": "array",
+      "description": "Today's objectives with ids",
+      "items": {}
+    },
+    "prerequisites_status": {
+      "type": "array",
+      "description": "Prerequisite competency states",
+      "items": {}
+    },
+    "due_reviews": {
+      "type": "array",
+      "description": "Due review item ids",
+      "items": {}
+    },
+    "open_interventions": {
+      "type": "array",
+      "description": "Open intervention ids",
+      "items": {}
+    },
+    "time_budget": {
+      "type": "object",
+      "description": "Planned blocks and minutes",
+      "additionalProperties": true
+    },
+    "risks": {
+      "type": "array",
+      "description": "Risks with evidence",
+      "items": {}
+    },
+    "next_step": {
+      "type": "string",
+      "description": "Proposed first action"
+    }
+  }
+}

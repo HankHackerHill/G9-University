@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-learning-experiment/output",
+  "title": "g9-learning-experiment result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "design_check",
+    "effect_estimate",
+    "outcome"
+  ],
+  "properties": {
+    "design_check": {
+      "type": "object",
+      "description": "Matching, counterbalancing, washout",
+      "additionalProperties": true
+    },
+    "effect_estimate": {
+      "type": "object",
+      "description": "Estimate and interval",
+      "additionalProperties": true
+    },
+    "outcome": {
+      "type": "string",
+      "description": "EVIDENCE_OF_IMPROVEMENT, EVIDENCE_OF_NO_IMPROVEMENT or INCONCLUSIVE"
+    },
+    "confounders": {
+      "type": "array",
+      "description": "Declared confounders",
+      "items": {}
+    }
+  }
+}

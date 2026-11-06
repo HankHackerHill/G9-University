@@ -1,0 +1,780 @@
+{
+  "pack_id": "windows-identity-ad",
+  "title": "Windows, identity, Active Directory and access controls",
+  "version": "0.1.0",
+  "status": "PROPOSED",
+  "nice_framework_version": "2.2.0",
+  "competencies": [
+    {
+      "id": "win.principals-services",
+      "name": "Windows principals, services and event records",
+      "description": "Model principals and services; interpret event records; map privilege boundaries.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 1,
+        "max": 3
+      },
+      "prerequisites": [],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "win.principals-services.m1",
+          "statement": "Administrators are all-powerful by default",
+          "counterexample": "UAC split tokens and protected processes limit them"
+        },
+        {
+          "id": "win.principals-services.m2",
+          "statement": "Event 4624 alone proves interactive logon",
+          "counterexample": "Logon type distinguishes network, batch and interactive"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "win.principals-services.lab1",
+          "description": "Isolated fixture for: Model principals and services; interpret event records; map privilege boundaries.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "win.principals-services.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: Windows architecture review",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "win.principals-services.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for windows principals, services and event records with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 2
+        },
+        {
+          "id": "win.principals-services.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind windows principals, services and event records with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 1
+        }
+      ],
+      "detection_defense_visibility": "Windows event logs (4624/4625/4672/4768/4769/4776), Sysmon, service and task changes; identity misuse leaves ticket and logon artifacts.",
+      "safety_boundaries": [
+        "Isolated AD lab forest only; never domain-joined production machines",
+        "No real credentials or hashes in fixtures",
+        "Privilege-path analysis stays within the lab trust boundary"
+      ]
+    },
+    {
+      "id": "linux.privilege-boundaries",
+      "name": "Linux privilege boundaries: sudo, capabilities, services",
+      "description": "Explain sudo, capabilities and service permissions; analyze misconfiguration; verify hardening.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 4
+      },
+      "prerequisites": [
+        "linux-python-systems:linux.hardening-baseline"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "linux.privilege-boundaries.m1",
+          "statement": "sudo NOPASSWD for one binary is harmless",
+          "counterexample": "Binaries with shell escapes escalate"
+        },
+        {
+          "id": "linux.privilege-boundaries.m2",
+          "statement": "Capabilities are weaker than root",
+          "counterexample": "CAP_SYS_ADMIN is effectively root"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "linux.privilege-boundaries.lab1",
+          "description": "Isolated fixture for: Explain sudo, capabilities and service permissions; analyze misconfiguration; verify hardening.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "linux.privilege-boundaries.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: Linux privilege review",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "linux.privilege-boundaries.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for linux privilege boundaries: sudo, capabilities, services with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "linux.privilege-boundaries.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind linux privilege boundaries: sudo, capabilities, services with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Windows event logs (4624/4625/4672/4768/4769/4776), Sysmon, service and task changes; identity misuse leaves ticket and logon artifacts.",
+      "safety_boundaries": [
+        "Isolated AD lab forest only; never domain-joined production machines",
+        "No real credentials or hashes in fixtures",
+        "Privilege-path analysis stays within the lab trust boundary"
+      ]
+    },
+    {
+      "id": "win.token-service-controls",
+      "name": "Windows tokens and service controls",
+      "description": "Analyze token privileges and service permissions; investigate privilege failures; document detection.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 4
+      },
+      "prerequisites": [
+        "win.principals-services"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "win.token-service-controls.m1",
+          "statement": "SeImpersonate is a low-risk privilege",
+          "counterexample": "It enables token theft paths"
+        },
+        {
+          "id": "win.token-service-controls.m2",
+          "statement": "Service accounts cannot log on interactively",
+          "counterexample": "Depends on user rights assignments"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "win.token-service-controls.lab1",
+          "description": "Isolated fixture for: Analyze token privileges and service permissions; investigate privilege failures; document detection.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "win.token-service-controls.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: Windows privilege review",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "win.token-service-controls.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for windows tokens and service controls with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "win.token-service-controls.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind windows tokens and service controls with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Windows event logs (4624/4625/4672/4768/4769/4776), Sysmon, service and task changes; identity misuse leaves ticket and logon artifacts.",
+      "safety_boundaries": [
+        "Isolated AD lab forest only; never domain-joined production machines",
+        "No real credentials or hashes in fixtures",
+        "Privilege-path analysis stays within the lab trust boundary"
+      ]
+    },
+    {
+      "id": "host.persistence-telemetry",
+      "name": "Persistence mechanisms and telemetry",
+      "description": "Map persistence mechanisms, identify telemetry and propose detection checks.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 4
+      },
+      "prerequisites": [
+        "win.token-service-controls"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "host.persistence-telemetry.m1",
+          "statement": "Autoruns covers all persistence",
+          "counterexample": "WMI subscriptions and scheduled task hijacks need separate collection"
+        },
+        {
+          "id": "host.persistence-telemetry.m2",
+          "statement": "Persistence always survives reboot",
+          "counterexample": "Session-scoped persistence exists"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "host.persistence-telemetry.lab1",
+          "description": "Isolated fixture for: Map persistence mechanisms, identify telemetry and propose detection checks.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "host.persistence-telemetry.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: host visibility matrix",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "host.persistence-telemetry.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for persistence mechanisms and telemetry with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "host.persistence-telemetry.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind persistence mechanisms and telemetry with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Windows event logs (4624/4625/4672/4768/4769/4776), Sysmon, service and task changes; identity misuse leaves ticket and logon artifacts.",
+      "safety_boundaries": [
+        "Isolated AD lab forest only; never domain-joined production machines",
+        "No real credentials or hashes in fixtures",
+        "Privilege-path analysis stays within the lab trust boundary"
+      ]
+    },
+    {
+      "id": "ad.forest-trust-model",
+      "name": "Forest, domain and trust model",
+      "description": "Explain forests, domains and trusts; model principal relationships and trust boundaries.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 3
+      },
+      "prerequisites": [
+        "win.principals-services"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "ad.forest-trust-model.m1",
+          "statement": "A one-way trust is one-way for attackers",
+          "counterexample": "Trust direction and SID filtering decide"
+        },
+        {
+          "id": "ad.forest-trust-model.m2",
+          "statement": "Domain admins are forest-bounded",
+          "counterexample": "Enterprise admins and trust abuse cross boundaries"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "ad.forest-trust-model.lab1",
+          "description": "Isolated fixture for: Explain forests, domains and trusts; model principal relationships and trust boundaries.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "ad.forest-trust-model.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: identity diagram",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "ad.forest-trust-model.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for forest, domain and trust model with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "ad.forest-trust-model.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind forest, domain and trust model with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Windows event logs (4624/4625/4672/4768/4769/4776), Sysmon, service and task changes; identity misuse leaves ticket and logon artifacts.",
+      "safety_boundaries": [
+        "Isolated AD lab forest only; never domain-joined production machines",
+        "No real credentials or hashes in fixtures",
+        "Privilege-path analysis stays within the lab trust boundary"
+      ]
+    },
+    {
+      "id": "ad.kerberos",
+      "name": "Kerberos issuance and validation",
+      "description": "Explain ticket issuance/validation; interpret auth events; diagnose ticket failures.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 4
+      },
+      "prerequisites": [
+        "ad.forest-trust-model"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "ad.kerberos.m1",
+          "statement": "Kerberos tickets are bound to the client host",
+          "counterexample": "Tickets are bearer artifacts"
+        },
+        {
+          "id": "ad.kerberos.m2",
+          "statement": "Pre-auth failures always mean wrong passwords",
+          "counterexample": "Clock skew and missing SPNs cause them"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "ad.kerberos.lab1",
+          "description": "Isolated fixture for: Explain ticket issuance/validation; interpret auth events; diagnose ticket failures.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "ad.kerberos.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: Kerberos analysis",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "ad.kerberos.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for kerberos issuance and validation with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "ad.kerberos.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind kerberos issuance and validation with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Windows event logs (4624/4625/4672/4768/4769/4776), Sysmon, service and task changes; identity misuse leaves ticket and logon artifacts.",
+      "safety_boundaries": [
+        "Isolated AD lab forest only; never domain-joined production machines",
+        "No real credentials or hashes in fixtures",
+        "Privilege-path analysis stays within the lab trust boundary"
+      ]
+    },
+    {
+      "id": "ad.delegation-permissions",
+      "name": "Delegation types and excessive permissions",
+      "description": "Examine delegation types, excessive permissions and privilege paths; design defensive fixes.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "ad.kerberos"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "ad.delegation-permissions.m1",
+          "statement": "Unconstrained delegation is fine on member servers",
+          "counterexample": "It allows ticket harvesting"
+        },
+        {
+          "id": "ad.delegation-permissions.m2",
+          "statement": "ACL inheritance is safe",
+          "counterexample": "Inherited write rights create privilege paths"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "ad.delegation-permissions.lab1",
+          "description": "Isolated fixture for: Examine delegation types, excessive permissions and privilege paths; design defensive fixes.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "ad.delegation-permissions.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: identity exposure report",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "ad.delegation-permissions.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for delegation types and excessive permissions with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "ad.delegation-permissions.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind delegation types and excessive permissions with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Windows event logs (4624/4625/4672/4768/4769/4776), Sysmon, service and task changes; identity misuse leaves ticket and logon artifacts.",
+      "safety_boundaries": [
+        "Isolated AD lab forest only; never domain-joined production machines",
+        "No real credentials or hashes in fixtures",
+        "Privilege-path analysis stays within the lab trust boundary"
+      ]
+    },
+    {
+      "id": "ad.identity-detection",
+      "name": "Identity telemetry and detection",
+      "description": "Identify identity telemetry, build suspicious-behavior hypotheses and test hardening/detection.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "ad.delegation-permissions",
+        "host.persistence-telemetry"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "ad.identity-detection.m1",
+          "statement": "Failed logons are the main signal",
+          "counterexample": "Successful anomalous logons matter more"
+        },
+        {
+          "id": "ad.identity-detection.m2",
+          "statement": "Honey accounts generate noise",
+          "counterexample": "Any touch is high-signal"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "ad.identity-detection.lab1",
+          "description": "Isolated fixture for: Identify identity telemetry, build suspicious-behavior hypotheses and test hardening/detection.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "ad.identity-detection.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: week-6 blind identity case",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "ad.identity-detection.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for identity telemetry and detection with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "ad.identity-detection.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind identity telemetry and detection with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Windows event logs (4624/4625/4672/4768/4769/4776), Sysmon, service and task changes; identity misuse leaves ticket and logon artifacts.",
+      "safety_boundaries": [
+        "Isolated AD lab forest only; never domain-joined production machines",
+        "No real credentials or hashes in fixtures",
+        "Privilege-path analysis stays within the lab trust boundary"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "title": "Microsoft Learn: Windows security auditing",
+      "organisation": "Microsoft",
+      "kind": "DOC",
+      "license_note": "public documentation",
+      "verification": "ASSUMED"
+    },
+    {
+      "title": "MITRE ATT&CK Enterprise",
+      "organisation": "MITRE",
+      "kind": "STANDARD",
+      "license_note": "ATT&CK license (free use with attribution)",
+      "verification": "ASSUMED"
+    }
+  ],
+  "maintenance_policy": {
+    "review_interval_days": 90,
+    "owner_module": "M12"
+  }
+}

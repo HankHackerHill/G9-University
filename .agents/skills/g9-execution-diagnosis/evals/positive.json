@@ -1,0 +1,83 @@
+[
+  {
+    "id": "P04-POS-001",
+    "kind": "positive",
+    "title": "A milestone passed its due date",
+    "mode": "EXECUTIVE",
+    "actor_kind": "OPERATOR",
+    "intent": "A milestone passed its due date",
+    "input": {
+      "project_id": "proj-2"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "deltas",
+        "hypotheses"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "P04-POS-002",
+    "kind": "positive",
+    "title": "Retrospective after a project phase",
+    "mode": "EXECUTIVE",
+    "actor_kind": "OPERATOR",
+    "intent": "Retrospective after a project phase",
+    "input": {
+      "project_id": "proj-2"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "deltas",
+        "hypotheses"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "P04-POS-003",
+    "kind": "positive",
+    "title": "Operator asks why plans keep slipping",
+    "mode": "EXECUTIVE",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks why plans keep slipping",
+    "input": {
+      "project_id": "proj-2"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "deltas",
+        "hypotheses"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

@@ -1,0 +1,64 @@
+[
+  {
+    "id": "L04-NEG-001",
+    "kind": "negative",
+    "title": "EXAM mode",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "EXAM mode",
+    "input": {
+      "hypothesis_id": "hyp-7",
+      "capacity_minutes": 60
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "any state mutation",
+        "any recommended action beyond PROPOSE"
+      ]
+    },
+    "notes": "Negative trigger inside an allowed mode: the skill must not activate (or must abstain)."
+  },
+  {
+    "id": "L04-NEG-002",
+    "kind": "negative",
+    "title": "Requests to reserve calendar time directly",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Requests to reserve calendar time directly",
+    "input": {
+      "hypothesis_id": "hyp-7",
+      "capacity_minutes": 60
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "any state mutation",
+        "any recommended action beyond PROPOSE"
+      ]
+    },
+    "notes": "Negative trigger inside an allowed mode: the skill must not activate (or must abstain)."
+  },
+  {
+    "id": "L04-NEG-003",
+    "kind": "negative",
+    "title": "Out-of-mode request in LAB",
+    "mode": "LAB",
+    "actor_kind": "OPERATOR",
+    "intent": "A diagnosis ranked a procedure gap first",
+    "input": {
+      "hypothesis_id": "hyp-7",
+      "capacity_minutes": 60
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "activation outside g9-modes"
+      ]
+    },
+    "notes": "Mode outside g9-modes: activation must be false."
+  }
+]

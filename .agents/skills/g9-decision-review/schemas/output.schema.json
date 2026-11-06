@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-decision-review/output",
+  "title": "g9-decision-review result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reviews",
+    "lessons"
+  ],
+  "properties": {
+    "reviews": {
+      "type": "array",
+      "description": "Decision reviews with expected vs observed",
+      "items": {}
+    },
+    "lessons": {
+      "type": "array",
+      "description": "Lessons as hypotheses",
+      "items": {}
+    },
+    "follow_ups": {
+      "type": "array",
+      "description": "Proposed follow-ups",
+      "items": {}
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-adaptive-instruction/input",
+  "title": "g9-adaptive-instruction input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "objective_id"
+  ],
+  "properties": {
+    "objective_id": {
+      "type": "string",
+      "description": "Objective id"
+    },
+    "depth": {
+      "type": "string",
+      "description": "INTRO, STANDARD or DEEP"
+    }
+  }
+}

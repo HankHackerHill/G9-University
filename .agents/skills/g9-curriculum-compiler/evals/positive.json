@@ -1,0 +1,86 @@
+[
+  {
+    "id": "E03-POS-001",
+    "kind": "positive",
+    "title": "A new manifest file is dropped into data/curriculum",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A new manifest file is dropped into data/curriculum",
+    "input": {
+      "candidate_manifest_ref": "evidence:manifest-seed-v0",
+      "original_manifest_ref": "evidence:manifest-original"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "validation",
+        "promotion_allowed"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E03-POS-002",
+    "kind": "positive",
+    "title": "The operator supplies the original approved plan for reconciliation",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "The operator supplies the original approved plan for reconciliation",
+    "input": {
+      "candidate_manifest_ref": "evidence:manifest-seed-v0",
+      "original_manifest_ref": "evidence:manifest-original"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "validation",
+        "promotion_allowed"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E03-POS-003",
+    "kind": "positive",
+    "title": "A reference or resource in a day changes",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A reference or resource in a day changes",
+    "input": {
+      "candidate_manifest_ref": "evidence:manifest-seed-v0",
+      "original_manifest_ref": "evidence:manifest-original"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "validation",
+        "promotion_allowed"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

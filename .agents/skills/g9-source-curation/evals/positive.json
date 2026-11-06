@@ -1,0 +1,83 @@
+[
+  {
+    "id": "K01-POS-001",
+    "kind": "positive",
+    "title": "A quarantined document awaits evaluation",
+    "mode": "RESEARCH",
+    "actor_kind": "OPERATOR",
+    "intent": "A quarantined document awaits evaluation",
+    "input": {
+      "source_id": "src-42"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "credibility",
+        "license"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "K01-POS-002",
+    "kind": "positive",
+    "title": "A source version was superseded",
+    "mode": "RESEARCH",
+    "actor_kind": "OPERATOR",
+    "intent": "A source version was superseded",
+    "input": {
+      "source_id": "src-42"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "credibility",
+        "license"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "K01-POS-003",
+    "kind": "positive",
+    "title": "Operator asks whether a reference is current",
+    "mode": "RESEARCH",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks whether a reference is current",
+    "input": {
+      "source_id": "src-42"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "credibility",
+        "license"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

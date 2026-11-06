@@ -1,0 +1,45 @@
+[
+  {
+    "id": "P05-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: Monthly decision review",
+    "mode": "EXECUTIVE",
+    "actor_kind": "OPERATOR",
+    "intent": "Monthly decision review",
+    "input": {
+      "since_date": "2026-10-01"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "reviews",
+        "lessons"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "P05-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "EXECUTIVE",
+    "actor_kind": "OPERATOR",
+    "intent": "Monthly decision review",
+    "input": {
+      "since_date": "2026-10-01"
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]

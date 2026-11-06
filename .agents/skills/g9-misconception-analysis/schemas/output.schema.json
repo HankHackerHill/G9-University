@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-misconception-analysis/output",
+  "title": "g9-misconception-analysis result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "hypotheses",
+    "counterexamples"
+  ],
+  "properties": {
+    "hypotheses": {
+      "type": "array",
+      "description": "Misconception hypotheses with evidence",
+      "items": {}
+    },
+    "counterexamples": {
+      "type": "array",
+      "description": "Counterexamples",
+      "items": {}
+    },
+    "probe": {
+      "type": "string",
+      "description": "Discriminating probe"
+    }
+  }
+}

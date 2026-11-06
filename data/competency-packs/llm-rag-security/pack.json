@@ -1,0 +1,786 @@
+{
+  "pack_id": "llm-rag-security",
+  "title": "LLM applications, RAG, prompt injection and model evaluation",
+  "version": "0.1.0",
+  "status": "PROPOSED",
+  "nice_framework_version": "2.2.0",
+  "competencies": [
+    {
+      "id": "llm.app-mapping",
+      "name": "LLM application mapping and threat model",
+      "description": "Map an LLM application, identify data/tool boundaries and threat-model it.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 1,
+        "max": 3
+      },
+      "prerequisites": [],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "llm.app-mapping.m1",
+          "statement": "The model is the attack surface",
+          "counterexample": "The bridge between text and tools is"
+        },
+        {
+          "id": "llm.app-mapping.m2",
+          "statement": "System prompts are confidential",
+          "counterexample": "Assume extraction"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "llm.app-mapping.lab1",
+          "description": "Isolated fixture for: Map an LLM application, identify data/tool boundaries and threat-model it.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "llm.app-mapping.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: LLM threat model",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "llm.app-mapping.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for llm application mapping and threat model with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 2
+        },
+        {
+          "id": "llm.app-mapping.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind llm application mapping and threat model with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 1
+        }
+      ],
+      "detection_defense_visibility": "Prompt/response metadata logs, retrieval provenance, schema validation failures, tool-call audit; injection attempts become detection fixtures.",
+      "safety_boundaries": [
+        "Only local or explicitly approved models; no production API keys in the lab",
+        "Injection fixtures are data, never instructions for the mentor itself",
+        "No personal data in evaluation sets"
+      ]
+    },
+    {
+      "id": "rag.ingestion-provenance",
+      "name": "RAG ingestion, retrieval and source trust",
+      "description": "Explain ingestion/retrieval, analyze source trust and test provenance controls.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 4
+      },
+      "prerequisites": [
+        "llm.app-mapping"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "rag.ingestion-provenance.m1",
+          "statement": "Retrieved text is data the model will treat as data",
+          "counterexample": "Models follow instructions in retrieved text"
+        },
+        {
+          "id": "rag.ingestion-provenance.m2",
+          "statement": "Vector similarity implies relevance",
+          "counterexample": "Adversarial chunks rank high"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "rag.ingestion-provenance.lab1",
+          "description": "Isolated fixture for: Explain ingestion/retrieval, analyze source trust and test provenance controls.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "rag.ingestion-provenance.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: RAG review",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "rag.ingestion-provenance.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for rag ingestion, retrieval and source trust with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "rag.ingestion-provenance.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind rag ingestion, retrieval and source trust with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Prompt/response metadata logs, retrieval provenance, schema validation failures, tool-call audit; injection attempts become detection fixtures.",
+      "safety_boundaries": [
+        "Only local or explicitly approved models; no production API keys in the lab",
+        "Injection fixtures are data, never instructions for the mentor itself",
+        "No personal data in evaluation sets"
+      ]
+    },
+    {
+      "id": "llm.prompt-injection",
+      "name": "Prompt-injection entry classification",
+      "description": "Classify injection entry points, run controlled fixtures and test authorization boundaries.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 4
+      },
+      "prerequisites": [
+        "rag.ingestion-provenance"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "llm.prompt-injection.m1",
+          "statement": "Input filtering stops injection",
+          "counterexample": "Encodings and indirect channels bypass"
+        },
+        {
+          "id": "llm.prompt-injection.m2",
+          "statement": "A refusal is a security control",
+          "counterexample": "Only code-enforced authorization is"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "llm.prompt-injection.lab1",
+          "description": "Isolated fixture for: Classify injection entry points, run controlled fixtures and test authorization boundaries.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "llm.prompt-injection.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: injection evaluation",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "llm.prompt-injection.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for prompt-injection entry classification with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "llm.prompt-injection.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind prompt-injection entry classification with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Prompt/response metadata logs, retrieval provenance, schema validation failures, tool-call audit; injection attempts become detection fixtures.",
+      "safety_boundaries": [
+        "Only local or explicitly approved models; no production API keys in the lab",
+        "Injection fixtures are data, never instructions for the mentor itself",
+        "No personal data in evaluation sets"
+      ]
+    },
+    {
+      "id": "llm.output-schema-tools",
+      "name": "Output schema failures and tool safety",
+      "description": "Analyze schema failures, examine unsafe tools and define typed enforcement.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 4
+      },
+      "prerequisites": [
+        "llm.prompt-injection"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "llm.output-schema-tools.m1",
+          "statement": "JSON mode guarantees valid output",
+          "counterexample": "Validate against the schema every time"
+        },
+        {
+          "id": "llm.output-schema-tools.m2",
+          "statement": "Read-only tools are safe",
+          "counterexample": "They exfiltrate"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "llm.output-schema-tools.lab1",
+          "description": "Isolated fixture for: Analyze schema failures, examine unsafe tools and define typed enforcement.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "llm.output-schema-tools.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: tool safety matrix",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "llm.output-schema-tools.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for output schema failures and tool safety with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "llm.output-schema-tools.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind output schema failures and tool safety with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Prompt/response metadata logs, retrieval provenance, schema validation failures, tool-call audit; injection attempts become detection fixtures.",
+      "safety_boundaries": [
+        "Only local or explicitly approved models; no production API keys in the lab",
+        "Injection fixtures are data, never instructions for the mentor itself",
+        "No personal data in evaluation sets"
+      ]
+    },
+    {
+      "id": "llm.independent-eval",
+      "name": "Independent evaluation design",
+      "description": "Design independent eval cases, separate model from application security and report limits.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "llm.output-schema-tools"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "llm.independent-eval.m1",
+          "statement": "Benchmarks transfer to your app",
+          "counterexample": "Context and tools change behavior"
+        },
+        {
+          "id": "llm.independent-eval.m2",
+          "statement": "Self-evaluation by the model is evidence",
+          "counterexample": "Independent rubrics are required"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "llm.independent-eval.lab1",
+          "description": "Isolated fixture for: Design independent eval cases, separate model from application security and report limits.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "llm.independent-eval.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: LLM eval report",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "llm.independent-eval.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for independent evaluation design with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "llm.independent-eval.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind independent evaluation design with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Prompt/response metadata logs, retrieval provenance, schema validation failures, tool-call audit; injection attempts become detection fixtures.",
+      "safety_boundaries": [
+        "Only local or explicitly approved models; no production API keys in the lab",
+        "Injection fixtures are data, never instructions for the mentor itself",
+        "No personal data in evaluation sets"
+      ]
+    },
+    {
+      "id": "llm.trust-failure-diagnosis",
+      "name": "Trust failure diagnosis",
+      "description": "Diagnose a controlled trust failure in an AI application and verify mitigation.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "llm.independent-eval"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "llm.trust-failure-diagnosis.m1",
+          "statement": "The fix is a better prompt",
+          "counterexample": "Fix the authorization path"
+        },
+        {
+          "id": "llm.trust-failure-diagnosis.m2",
+          "statement": "One mitigation closes the class",
+          "counterexample": "Defense in depth is needed"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "llm.trust-failure-diagnosis.lab1",
+          "description": "Isolated fixture for: Diagnose a controlled trust failure in an AI application and verify mitigation.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "llm.trust-failure-diagnosis.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: week-9 blind evaluation",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "llm.trust-failure-diagnosis.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for trust failure diagnosis with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "llm.trust-failure-diagnosis.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind trust failure diagnosis with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Prompt/response metadata logs, retrieval provenance, schema validation failures, tool-call audit; injection attempts become detection fixtures.",
+      "safety_boundaries": [
+        "Only local or explicitly approved models; no production API keys in the lab",
+        "Injection fixtures are data, never instructions for the mentor itself",
+        "No personal data in evaluation sets"
+      ]
+    },
+    {
+      "id": "llm.data-leakage",
+      "name": "Data leakage and privacy exposure",
+      "description": "Assess privacy exposure through prompts, logs and retrieval.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 4
+      },
+      "prerequisites": [
+        "rag.ingestion-provenance"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "llm.data-leakage.m1",
+          "statement": "Logs are internal so they are safe",
+          "counterexample": "Prompts contain secrets; logs leak"
+        },
+        {
+          "id": "llm.data-leakage.m2",
+          "statement": "Anonymization is irreversible",
+          "counterexample": "Re-identification via context"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "llm.data-leakage.lab1",
+          "description": "Isolated fixture for: Assess privacy exposure through prompts, logs and retrieval.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "llm.data-leakage.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: privacy exposure review",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "llm.data-leakage.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for data leakage and privacy exposure with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "llm.data-leakage.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind data leakage and privacy exposure with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Prompt/response metadata logs, retrieval provenance, schema validation failures, tool-call audit; injection attempts become detection fixtures.",
+      "safety_boundaries": [
+        "Only local or explicitly approved models; no production API keys in the lab",
+        "Injection fixtures are data, never instructions for the mentor itself",
+        "No personal data in evaluation sets"
+      ]
+    },
+    {
+      "id": "llm.eval-leakage",
+      "name": "Benchmark leakage detection",
+      "description": "Detect training/retrieval contamination of evaluation sets.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "llm.independent-eval"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "llm.eval-leakage.m1",
+          "statement": "Held-out means unseen",
+          "counterexample": "Public write-ups are in pretraining"
+        },
+        {
+          "id": "llm.eval-leakage.m2",
+          "statement": "High scores prove capability",
+          "counterexample": "Contamination inflates"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "llm.eval-leakage.lab1",
+          "description": "Isolated fixture for: Detect training/retrieval contamination of evaluation sets.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "llm.eval-leakage.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: evaluation protocol",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "llm.eval-leakage.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for benchmark leakage detection with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "llm.eval-leakage.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind benchmark leakage detection with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Prompt/response metadata logs, retrieval provenance, schema validation failures, tool-call audit; injection attempts become detection fixtures.",
+      "safety_boundaries": [
+        "Only local or explicitly approved models; no production API keys in the lab",
+        "Injection fixtures are data, never instructions for the mentor itself",
+        "No personal data in evaluation sets"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "title": "OWASP Top 10 for LLM Applications 2026",
+      "organisation": "OWASP GenAI Security Project",
+      "kind": "STANDARD",
+      "license_note": "CC BY-SA 4.0 (verify)",
+      "verification": "ASSUMED"
+    },
+    {
+      "title": "NIST AI RMF and Generative AI Profile",
+      "organisation": "NIST",
+      "kind": "STANDARD",
+      "license_note": "public domain",
+      "verification": "ASSUMED"
+    },
+    {
+      "title": "MITRE ATLAS",
+      "organisation": "MITRE",
+      "kind": "STANDARD",
+      "license_note": "free with attribution",
+      "verification": "ASSUMED"
+    }
+  ],
+  "maintenance_policy": {
+    "review_interval_days": 90,
+    "owner_module": "M10"
+  }
+}

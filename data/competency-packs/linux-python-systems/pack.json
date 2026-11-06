@@ -1,0 +1,787 @@
+{
+  "pack_id": "linux-python-systems",
+  "title": "Linux, Python and systems engineering",
+  "version": "0.1.0",
+  "status": "PROPOSED",
+  "nice_framework_version": "2.2.0",
+  "competencies": [
+    {
+      "id": "lab.authorization",
+      "name": "Lab authorization and boundaries",
+      "description": "Define scope, authorization and host/guest isolation for all practical work.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 1,
+        "max": 2
+      },
+      "prerequisites": [],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "lab.authorization.m1",
+          "statement": "A home lab needs no written scope",
+          "counterexample": "Unscoped testing against a shared VM host can touch other tenants; the capstone charter still requires scope"
+        },
+        {
+          "id": "lab.authorization.m2",
+          "statement": "Snapshots make destructive actions safe",
+          "counterexample": "Snapshots do not protect data exfiltrated or leaked outside the VM"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "lab.authorization.lab1",
+          "description": "Isolated fixture for: Define scope, authorization and host/guest isolation for all practical work.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "lab.authorization.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: produce a lab charter with scope, isolation and evidence rules",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 2
+        },
+        {
+          "id": "lab.authorization.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for lab authorization and boundaries with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 2
+        },
+        {
+          "id": "lab.authorization.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind lab authorization and boundaries with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 1
+        }
+      ],
+      "detection_defense_visibility": "Host telemetry: auth/syslog/journald, process and file auditing (auditd), package and service state; every diagnostic leaves an evidence trail.",
+      "safety_boundaries": [
+        "Work only on the isolated lab VM; never run diagnostics on the G9 host without an approved operation",
+        "Preserve logs and baselines before changing state",
+        "No credentials in notes or fixtures"
+      ]
+    },
+    {
+      "id": "linux.filesystem",
+      "name": "Filesystem hierarchy, permissions and ownership",
+      "description": "Explain FHS, mode bits, ownership, special bits and ACLs; diagnose access failures.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 1,
+        "max": 3
+      },
+      "prerequisites": [
+        "lab.authorization"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "linux.filesystem.m1",
+          "statement": "chmod 777 fixes permission errors",
+          "counterexample": "It removes the control; the failing component usually needs a group or ACL change"
+        },
+        {
+          "id": "linux.filesystem.m2",
+          "statement": "The setuid bit makes any binary run as root",
+          "counterexample": "Only when the owner is root and the filesystem allows suid"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "linux.filesystem.lab1",
+          "description": "Isolated fixture for: Explain FHS, mode bits, ownership, special bits and ACLs; diagnose access failures.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "linux.filesystem.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: diagnose a controlled access failure and fix it with least privilege",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "linux.filesystem.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for filesystem hierarchy, permissions and ownership with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 2
+        },
+        {
+          "id": "linux.filesystem.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind filesystem hierarchy, permissions and ownership with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 1
+        }
+      ],
+      "detection_defense_visibility": "Host telemetry: auth/syslog/journald, process and file auditing (auditd), package and service state; every diagnostic leaves an evidence trail.",
+      "safety_boundaries": [
+        "Work only on the isolated lab VM; never run diagnostics on the G9 host without an approved operation",
+        "Preserve logs and baselines before changing state",
+        "No credentials in notes or fixtures"
+      ]
+    },
+    {
+      "id": "linux.processes-services",
+      "name": "Processes, services and logging",
+      "description": "Inspect processes, systemd units, journald and syslog; reproduce a troubleshooting workflow.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 3
+      },
+      "prerequisites": [
+        "linux.filesystem"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "linux.processes-services.m1",
+          "statement": "A stopped service means the binary is broken",
+          "counterexample": "Dependency ordering or a failed unit condition is more common; journalctl -u shows the reason"
+        },
+        {
+          "id": "linux.processes-services.m2",
+          "statement": "Logs are complete by default",
+          "counterexample": "Rate limiting and rotation drop lines; check journald limits"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "linux.processes-services.lab1",
+          "description": "Isolated fixture for: Inspect processes, systemd units, journald and syslog; reproduce a troubleshooting workflow.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "linux.processes-services.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: reproduce and document a service failure diagnosis",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "linux.processes-services.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for processes, services and logging with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "linux.processes-services.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind processes, services and logging with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Host telemetry: auth/syslog/journald, process and file auditing (auditd), package and service state; every diagnostic leaves an evidence trail.",
+      "safety_boundaries": [
+        "Work only on the isolated lab VM; never run diagnostics on the G9 host without an approved operation",
+        "Preserve logs and baselines before changing state",
+        "No credentials in notes or fixtures"
+      ]
+    },
+    {
+      "id": "python.secure-parsing",
+      "name": "Secure parsing of structured security records",
+      "description": "Parse JSON/CSV/log formats in Python with validation, malformed-input handling and fixtures.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 4
+      },
+      "prerequisites": [
+        "linux.processes-services"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "python.secure-parsing.m1",
+          "statement": "try/except around the whole parser is error handling",
+          "counterexample": "It hides which record failed; validate per record and report counts"
+        },
+        {
+          "id": "python.secure-parsing.m2",
+          "statement": "eval() is acceptable for trusted files",
+          "counterexample": "Trust is a property of provenance, not of the file name; use json/ast.literal_eval"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "python.secure-parsing.lab1",
+          "description": "Isolated fixture for: Parse JSON/CSV/log formats in Python with validation, malformed-input handling and fixtures.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "python.secure-parsing.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: write a parser with fixtures covering malformed input",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "python.secure-parsing.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for secure parsing of structured security records with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "python.secure-parsing.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind secure parsing of structured security records with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Host telemetry: auth/syslog/journald, process and file auditing (auditd), package and service state; every diagnostic leaves an evidence trail.",
+      "safety_boundaries": [
+        "Work only on the isolated lab VM; never run diagnostics on the G9 host without an approved operation",
+        "Preserve logs and baselines before changing state",
+        "No credentials in notes or fixtures"
+      ]
+    },
+    {
+      "id": "python.testing-fixtures",
+      "name": "Testing with fixtures and reproducible runbooks",
+      "description": "Write tests with fixtures, version-control the work and produce a reproducible runbook.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 4
+      },
+      "prerequisites": [
+        "python.secure-parsing"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "python.testing-fixtures.m1",
+          "statement": "A passing test proves correctness",
+          "counterexample": "It proves the fixture case; negative and malformed cases are needed"
+        },
+        {
+          "id": "python.testing-fixtures.m2",
+          "statement": "Runbooks are documentation only",
+          "counterexample": "A runbook is executable evidence; untested steps are assumptions"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "python.testing-fixtures.lab1",
+          "description": "Isolated fixture for: Write tests with fixtures, version-control the work and produce a reproducible runbook.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "python.testing-fixtures.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: deliver a tested parser plus a runbook another engineer can replay",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "python.testing-fixtures.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for testing with fixtures and reproducible runbooks with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "python.testing-fixtures.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind testing with fixtures and reproducible runbooks with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Host telemetry: auth/syslog/journald, process and file auditing (auditd), package and service state; every diagnostic leaves an evidence trail.",
+      "safety_boundaries": [
+        "Work only on the isolated lab VM; never run diagnostics on the G9 host without an approved operation",
+        "Preserve logs and baselines before changing state",
+        "No credentials in notes or fixtures"
+      ]
+    },
+    {
+      "id": "linux.evidence-completeness",
+      "name": "Evidence completeness assessment",
+      "description": "Judge whether collected host evidence supports a conclusion; identify gaps.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 4
+      },
+      "prerequisites": [
+        "linux.processes-services"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "linux.evidence-completeness.m1",
+          "statement": "More logs always mean better evidence",
+          "counterexample": "Unrelated volume hides gaps; evidence must map to the claim"
+        },
+        {
+          "id": "linux.evidence-completeness.m2",
+          "statement": "Timestamps are consistent across sources",
+          "counterexample": "Clock skew and zones differ; normalize before correlating"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "linux.evidence-completeness.lab1",
+          "description": "Isolated fixture for: Judge whether collected host evidence supports a conclusion; identify gaps.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "linux.evidence-completeness.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: report remediation and limitations from a blind troubleshooting case",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "linux.evidence-completeness.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for evidence completeness assessment with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "linux.evidence-completeness.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind evidence completeness assessment with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Host telemetry: auth/syslog/journald, process and file auditing (auditd), package and service state; every diagnostic leaves an evidence trail.",
+      "safety_boundaries": [
+        "Work only on the isolated lab VM; never run diagnostics on the G9 host without an approved operation",
+        "Preserve logs and baselines before changing state",
+        "No credentials in notes or fixtures"
+      ]
+    },
+    {
+      "id": "linux.hardening-baseline",
+      "name": "Hardened baseline and configuration verification",
+      "description": "Establish a baseline, prioritize host weaknesses and test configuration controls.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "linux.evidence-completeness"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "linux.hardening-baseline.m1",
+          "statement": "A benchmark score is a security posture",
+          "counterexample": "Controls must be verified in effect, not only configured"
+        },
+        {
+          "id": "linux.hardening-baseline.m2",
+          "statement": "Disabling services is always safe",
+          "counterexample": "Dependencies and monitoring agents may break; test and document"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "linux.hardening-baseline.lab1",
+          "description": "Isolated fixture for: Establish a baseline, prioritize host weaknesses and test configuration controls.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "linux.hardening-baseline.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: verify a hardening change with before/after evidence",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "linux.hardening-baseline.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for hardened baseline and configuration verification with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "linux.hardening-baseline.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind hardened baseline and configuration verification with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Host telemetry: auth/syslog/journald, process and file auditing (auditd), package and service state; every diagnostic leaves an evidence trail.",
+      "safety_boundaries": [
+        "Work only on the isolated lab VM; never run diagnostics on the G9 host without an approved operation",
+        "Preserve logs and baselines before changing state",
+        "No credentials in notes or fixtures"
+      ]
+    },
+    {
+      "id": "linux.blind-troubleshooting",
+      "name": "Blind Linux troubleshooting",
+      "description": "Diagnose an unfamiliar host fault end to end with evidence and a remediation report.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "linux.hardening-baseline",
+        "python.testing-fixtures"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "linux.blind-troubleshooting.m1",
+          "statement": "Reboot first",
+          "counterexample": "A reboot destroys volatile evidence; capture state first"
+        },
+        {
+          "id": "linux.blind-troubleshooting.m2",
+          "statement": "One cause explains all symptoms",
+          "counterexample": "Multiple faults coexist; keep competing hypotheses"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "linux.blind-troubleshooting.lab1",
+          "description": "Isolated fixture for: Diagnose an unfamiliar host fault end to end with evidence and a remediation report.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "linux.blind-troubleshooting.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: blind practical with rubric scoring on independent execution and root cause",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "linux.blind-troubleshooting.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for blind linux troubleshooting with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "linux.blind-troubleshooting.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind blind linux troubleshooting with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Host telemetry: auth/syslog/journald, process and file auditing (auditd), package and service state; every diagnostic leaves an evidence trail.",
+      "safety_boundaries": [
+        "Work only on the isolated lab VM; never run diagnostics on the G9 host without an approved operation",
+        "Preserve logs and baselines before changing state",
+        "No credentials in notes or fixtures"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "title": "Linux Filesystem Hierarchy Standard",
+      "organisation": "Linux Foundation",
+      "kind": "STANDARD",
+      "license_note": "freely available specification",
+      "verification": "ASSUMED"
+    },
+    {
+      "title": "Python 3 documentation",
+      "organisation": "Python Software Foundation",
+      "kind": "DOC",
+      "license_note": "PSF license, freely available",
+      "verification": "ASSUMED"
+    },
+    {
+      "title": "OverTheWire Bandit",
+      "organisation": "OverTheWire",
+      "kind": "LAB",
+      "license_note": "free public wargame; terms must be checked before embedding",
+      "verification": "ASSUMED"
+    }
+  ],
+  "maintenance_policy": {
+    "review_interval_days": 90,
+    "owner_module": "M12"
+  }
+}

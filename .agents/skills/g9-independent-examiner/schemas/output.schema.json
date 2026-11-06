@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-independent-examiner/output",
+  "title": "g9-independent-examiner result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "criterion_levels",
+    "gate_findings",
+    "grade_source"
+  ],
+  "properties": {
+    "criterion_levels": {
+      "type": "array",
+      "description": "Criterion, level, evidence refs",
+      "items": {}
+    },
+    "gate_findings": {
+      "type": "array",
+      "description": "Critical gate findings",
+      "items": {}
+    },
+    "advisory_total": {
+      "type": "number",
+      "description": "Weighted advisory total"
+    },
+    "grade_source": {
+      "type": "string",
+      "description": "Always MODEL_ADVISORY"
+    }
+  }
+}

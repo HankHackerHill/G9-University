@@ -1,0 +1,86 @@
+[
+  {
+    "id": "E05-POS-001",
+    "kind": "positive",
+    "title": "A new screen component is added",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A new screen component is added",
+    "input": {
+      "screen": "Mission Control",
+      "report_ref": "evidence:axe-run-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "defects",
+        "fix_proposals"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E05-POS-002",
+    "kind": "positive",
+    "title": "An axe or manual test reports a violation",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "An axe or manual test reports a violation",
+    "input": {
+      "screen": "Mission Control",
+      "report_ref": "evidence:axe-run-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "defects",
+        "fix_proposals"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E05-POS-003",
+    "kind": "positive",
+    "title": "The high-contrast theme changed",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "The high-contrast theme changed",
+    "input": {
+      "screen": "Mission Control",
+      "report_ref": "evidence:axe-run-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "defects",
+        "fix_proposals"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

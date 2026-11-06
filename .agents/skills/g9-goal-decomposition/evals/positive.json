@@ -1,0 +1,83 @@
+[
+  {
+    "id": "P03-POS-001",
+    "kind": "positive",
+    "title": "A new client project goal is entered",
+    "mode": "EXECUTIVE",
+    "actor_kind": "OPERATOR",
+    "intent": "A new client project goal is entered",
+    "input": {
+      "goal_id": "goal-9"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "milestones",
+        "estimates"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "P03-POS-002",
+    "kind": "positive",
+    "title": "Operator asks to split a quarter objective",
+    "mode": "EXECUTIVE",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks to split a quarter objective",
+    "input": {
+      "goal_id": "goal-9"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "milestones",
+        "estimates"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "P03-POS-003",
+    "kind": "positive",
+    "title": "A milestone needs acceptance criteria",
+    "mode": "EXECUTIVE",
+    "actor_kind": "OPERATOR",
+    "intent": "A milestone needs acceptance criteria",
+    "input": {
+      "goal_id": "goal-9"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "milestones",
+        "estimates"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

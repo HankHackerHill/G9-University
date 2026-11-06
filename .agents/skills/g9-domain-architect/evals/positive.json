@@ -1,0 +1,86 @@
+[
+  {
+    "id": "E04-POS-001",
+    "kind": "positive",
+    "title": "A new crate is proposed",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A new crate is proposed",
+    "input": {
+      "metadata_ref": "evidence:cargo-metadata-1",
+      "schema_root": "schemas/ipc"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "graph",
+        "cycles"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E04-POS-002",
+    "kind": "positive",
+    "title": "An IPC operation schema changed",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "An IPC operation schema changed",
+    "input": {
+      "metadata_ref": "evidence:cargo-metadata-1",
+      "schema_root": "schemas/ipc"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "graph",
+        "cycles"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E04-POS-003",
+    "kind": "positive",
+    "title": "cargo metadata shows a new edge between crates",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "cargo metadata shows a new edge between crates",
+    "input": {
+      "metadata_ref": "evidence:cargo-metadata-1",
+      "schema_root": "schemas/ipc"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "graph",
+        "cycles"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

@@ -1,0 +1,48 @@
+[
+  {
+    "id": "T05-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: Operator asks how to approach a lab task",
+    "mode": "LAB",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks how to approach a lab task",
+    "input": {
+      "fixture_id": "web.injection.lab1",
+      "last_output_ref": "evidence:lab-output-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "method",
+        "evidence_capture",
+        "recovery"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "T05-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "LAB",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks how to approach a lab task",
+    "input": {
+      "fixture_id": "web.injection.lab1",
+      "last_output_ref": "evidence:lab-output-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]

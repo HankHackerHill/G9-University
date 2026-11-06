@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-intervention-designer/output",
+  "title": "g9-intervention-designer result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "steps",
+    "time_budget_minutes",
+    "retest",
+    "acceptance"
+  ],
+  "properties": {
+    "steps": {
+      "type": "array",
+      "description": "Ordered steps with minutes",
+      "items": {}
+    },
+    "time_budget_minutes": {
+      "type": "integer",
+      "description": "Total minutes"
+    },
+    "retest": {
+      "type": "object",
+      "description": "Unseen variant and acceptance rule",
+      "additionalProperties": true
+    },
+    "acceptance": {
+      "type": "string",
+      "description": "Measurable acceptance"
+    }
+  }
+}

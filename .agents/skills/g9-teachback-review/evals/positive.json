@@ -1,0 +1,86 @@
+[
+  {
+    "id": "T07-POS-001",
+    "kind": "positive",
+    "title": "Operator submits a written explanation of a mechanism",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator submits a written explanation of a mechanism",
+    "input": {
+      "text_ref": "evidence:teachback-1",
+      "objective_id": "D15-O2"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "claims",
+        "misconceptions"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "T07-POS-002",
+    "kind": "positive",
+    "title": "A lab report's reasoning section is ready for review",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "A lab report's reasoning section is ready for review",
+    "input": {
+      "text_ref": "evidence:teachback-1",
+      "objective_id": "D15-O2"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "claims",
+        "misconceptions"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "T07-POS-003",
+    "kind": "positive",
+    "title": "Operator asks to check their understanding",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks to check their understanding",
+    "input": {
+      "text_ref": "evidence:teachback-1",
+      "objective_id": "D15-O2"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "claims",
+        "misconceptions"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

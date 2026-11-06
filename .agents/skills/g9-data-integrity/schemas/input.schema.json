@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-data-integrity/input",
+  "title": "g9-data-integrity input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "migration_ref"
+  ],
+  "properties": {
+    "migration_ref": {
+      "type": "string",
+      "description": "Evidence ref of the migration file"
+    },
+    "backup_manifest_ref": {
+      "type": "string",
+      "description": "Evidence ref of a backup manifest"
+    }
+  }
+}

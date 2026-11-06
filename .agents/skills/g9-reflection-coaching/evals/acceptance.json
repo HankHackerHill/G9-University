@@ -1,0 +1,44 @@
+[
+  {
+    "id": "P06-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: Operator opted into a weekly reflection",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator opted into a weekly reflection",
+    "input": {
+      "goal_id": "habit-3"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "prompts"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "P06-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator opted into a weekly reflection",
+    "input": {
+      "goal_id": "habit-3"
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]

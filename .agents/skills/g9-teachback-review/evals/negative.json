@@ -1,0 +1,64 @@
+[
+  {
+    "id": "T07-NEG-001",
+    "kind": "negative",
+    "title": "EXAM mode",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "EXAM mode",
+    "input": {
+      "text_ref": "evidence:teachback-1",
+      "objective_id": "D15-O2"
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "any state mutation",
+        "any recommended action beyond PROPOSE"
+      ]
+    },
+    "notes": "Negative trigger inside an allowed mode: the skill must not activate (or must abstain)."
+  },
+  {
+    "id": "T07-NEG-002",
+    "kind": "negative",
+    "title": "Requests to finalize a grade",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Requests to finalize a grade",
+    "input": {
+      "text_ref": "evidence:teachback-1",
+      "objective_id": "D15-O2"
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "any state mutation",
+        "any recommended action beyond PROPOSE"
+      ]
+    },
+    "notes": "Negative trigger inside an allowed mode: the skill must not activate (or must abstain)."
+  },
+  {
+    "id": "T07-NEG-003",
+    "kind": "negative",
+    "title": "Out-of-mode request in EXAM",
+    "mode": "EXAM",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator submits a written explanation of a mechanism",
+    "input": {
+      "text_ref": "evidence:teachback-1",
+      "objective_id": "D15-O2"
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "activation outside g9-modes"
+      ]
+    },
+    "notes": "Mode outside g9-modes: activation must be false."
+  }
+]

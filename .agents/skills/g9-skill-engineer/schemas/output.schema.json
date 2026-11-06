@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-skill-engineer/output",
+  "title": "g9-skill-engineer result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "package_diff",
+    "validator_summary"
+  ],
+  "properties": {
+    "package_diff": {
+      "type": "array",
+      "description": "Proposed file changes",
+      "items": {}
+    },
+    "validator_summary": {
+      "type": "object",
+      "description": "Validator pass/fail summary",
+      "additionalProperties": true
+    },
+    "dependency_map": {
+      "type": "array",
+      "description": "Declared dependencies",
+      "items": {}
+    }
+  }
+}

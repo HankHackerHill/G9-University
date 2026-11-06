@@ -1,0 +1,86 @@
+[
+  {
+    "id": "L03-POS-001",
+    "kind": "positive",
+    "title": "Daily recall block planning",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Daily recall block planning",
+    "input": {
+      "date": "2026-11-10",
+      "budget_minutes": 15
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "review_plan",
+        "transfer_checks"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "L03-POS-002",
+    "kind": "positive",
+    "title": "A competency's validity window expires",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "A competency's validity window expires",
+    "input": {
+      "date": "2026-11-10",
+      "budget_minutes": 15
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "review_plan",
+        "transfer_checks"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "L03-POS-003",
+    "kind": "positive",
+    "title": "Operator asks which reviews are overdue",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks which reviews are overdue",
+    "input": {
+      "date": "2026-11-10",
+      "budget_minutes": 15
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "review_plan",
+        "transfer_checks"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

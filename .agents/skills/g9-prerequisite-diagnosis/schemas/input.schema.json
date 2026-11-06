@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-prerequisite-diagnosis/input",
+  "title": "g9-prerequisite-diagnosis input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "observation_id",
+    "competency_id"
+  ],
+  "properties": {
+    "observation_id": {
+      "type": "string",
+      "description": "Failed observation id"
+    },
+    "competency_id": {
+      "type": "string",
+      "description": "Competency id"
+    }
+  }
+}

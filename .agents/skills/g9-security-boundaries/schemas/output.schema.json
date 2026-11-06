@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-security-boundaries/output",
+  "title": "g9-security-boundaries result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "boundaries_affected",
+    "rule_gaps",
+    "negative_tests"
+  ],
+  "properties": {
+    "boundaries_affected": {
+      "type": "array",
+      "description": "Trust boundaries crossed",
+      "items": {}
+    },
+    "rule_gaps": {
+      "type": "array",
+      "description": "Missing rules or tests",
+      "items": {}
+    },
+    "negative_tests": {
+      "type": "array",
+      "description": "Required ST ids",
+      "items": {}
+    },
+    "matrix_rows": {
+      "type": "array",
+      "description": "Threat-control matrix rows",
+      "items": {}
+    }
+  }
+}

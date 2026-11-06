@@ -1,0 +1,789 @@
+{
+  "pack_id": "networking-protocols-recon",
+  "title": "Networking, protocol analysis and scoped reconnaissance",
+  "version": "0.1.0",
+  "status": "PROPOSED",
+  "nice_framework_version": "2.2.0",
+  "competencies": [
+    {
+      "id": "net.layers-addressing",
+      "name": "Layers, addressing and subnetting",
+      "description": "Map OSI/TCP-IP layers, addressing and subnetting; diagram pathways.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 1,
+        "max": 2
+      },
+      "prerequisites": [],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "net.layers-addressing.m1",
+          "statement": "Layers are strictly separated",
+          "counterexample": "Encapsulation leaks: MTU and QoS cross layers"
+        },
+        {
+          "id": "net.layers-addressing.m2",
+          "statement": "A /24 always has 254 usable hosts",
+          "counterexample": "Point-to-point and reserved addresses change the count"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "net.layers-addressing.lab1",
+          "description": "Isolated fixture for: Map OSI/TCP-IP layers, addressing and subnetting; diagram pathways.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "net.layers-addressing.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: produce a network architecture map from captures",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 2
+        },
+        {
+          "id": "net.layers-addressing.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for layers, addressing and subnetting with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 2
+        },
+        {
+          "id": "net.layers-addressing.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind layers, addressing and subnetting with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 1
+        }
+      ],
+      "detection_defense_visibility": "Flow records, packet captures, firewall and DNS logs; scoped discovery produces an auditable target list and timing.",
+      "safety_boundaries": [
+        "Reconnaissance only against explicitly scoped lab targets",
+        "No scanning from the G9 host; use the isolated lab network",
+        "Capture files may contain credentials: classify PRIVATE"
+      ]
+    },
+    {
+      "id": "net.tcp-states",
+      "name": "TCP states and failure interpretation",
+      "description": "Explain TCP state transitions; interpret retransmission and failure in PCAPs.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 3
+      },
+      "prerequisites": [
+        "net.layers-addressing"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "net.tcp-states.m1",
+          "statement": "RST always means an attack",
+          "counterexample": "Closed ports and application resets are normal"
+        },
+        {
+          "id": "net.tcp-states.m2",
+          "statement": "Retransmissions prove packet loss on the link",
+          "counterexample": "Receiver stalls and middleboxes also cause them"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "net.tcp-states.lab1",
+          "description": "Isolated fixture for: Explain TCP state transitions; interpret retransmission and failure in PCAPs.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "net.tcp-states.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: diagnose lab connectivity from a PCAP",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "net.tcp-states.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for tcp states and failure interpretation with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "net.tcp-states.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind tcp states and failure interpretation with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Flow records, packet captures, firewall and DNS logs; scoped discovery produces an auditable target list and timing.",
+      "safety_boundaries": [
+        "Reconnaissance only against explicitly scoped lab targets",
+        "No scanning from the G9 host; use the isolated lab network",
+        "Capture files may contain credentials: classify PRIVATE"
+      ]
+    },
+    {
+      "id": "net.dns-resolution",
+      "name": "DNS resolution and caching",
+      "description": "Trace recursive/authoritative resolution; analyze cache and failure modes.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 3
+      },
+      "prerequisites": [
+        "net.layers-addressing"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "net.dns-resolution.m1",
+          "statement": "NXDOMAIN means the name never existed",
+          "counterexample": "Negative caching and split horizon produce it"
+        },
+        {
+          "id": "net.dns-resolution.m2",
+          "statement": "Flushing cache fixes DNS",
+          "counterexample": "Upstream TTLs and stale authoritative data persist"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "net.dns-resolution.lab1",
+          "description": "Isolated fixture for: Trace recursive/authoritative resolution; analyze cache and failure modes.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "net.dns-resolution.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: investigate a controlled DNS defect",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "net.dns-resolution.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for dns resolution and caching with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "net.dns-resolution.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind dns resolution and caching with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Flow records, packet captures, firewall and DNS logs; scoped discovery produces an auditable target list and timing.",
+      "safety_boundaries": [
+        "Reconnaissance only against explicitly scoped lab targets",
+        "No scanning from the G9 host; use the isolated lab network",
+        "Capture files may contain credentials: classify PRIVATE"
+      ]
+    },
+    {
+      "id": "net.routing-segmentation",
+      "name": "Routing, NAT and segmentation",
+      "description": "Explain route selection, NAT and firewall policy; verify segmentation.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 4
+      },
+      "prerequisites": [
+        "net.tcp-states"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "net.routing-segmentation.m1",
+          "statement": "Longest prefix always wins",
+          "counterexample": "Administrative distance and policy routing override"
+        },
+        {
+          "id": "net.routing-segmentation.m2",
+          "statement": "NAT is a security control",
+          "counterexample": "It hides addresses, not vulnerabilities"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "net.routing-segmentation.lab1",
+          "description": "Isolated fixture for: Explain route selection, NAT and firewall policy; verify segmentation.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "net.routing-segmentation.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: verify segmentation controls with evidence",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "net.routing-segmentation.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for routing, nat and segmentation with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "net.routing-segmentation.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind routing, nat and segmentation with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Flow records, packet captures, firewall and DNS logs; scoped discovery produces an auditable target list and timing.",
+      "safety_boundaries": [
+        "Reconnaissance only against explicitly scoped lab targets",
+        "No scanning from the G9 host; use the isolated lab network",
+        "Capture files may contain credentials: classify PRIVATE"
+      ]
+    },
+    {
+      "id": "recon.scope-definition",
+      "name": "Reconnaissance scope definition",
+      "description": "Define and document the scope, authorization and rules of engagement for discovery.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 3
+      },
+      "prerequisites": [
+        "linux-python-systems:lab.authorization"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "recon.scope-definition.m1",
+          "statement": "In-scope IP ranges imply in-scope services",
+          "counterexample": "Third-party hosted services need separate authorization"
+        },
+        {
+          "id": "recon.scope-definition.m2",
+          "statement": "Passive recon needs no scope",
+          "counterexample": "It still touches third-party data and terms"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "recon.scope-definition.lab1",
+          "description": "Isolated fixture for: Define and document the scope, authorization and rules of engagement for discovery.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "recon.scope-definition.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: write a scoped recon plan",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "recon.scope-definition.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for reconnaissance scope definition with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "recon.scope-definition.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind reconnaissance scope definition with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Flow records, packet captures, firewall and DNS logs; scoped discovery produces an auditable target list and timing.",
+      "safety_boundaries": [
+        "Reconnaissance only against explicitly scoped lab targets",
+        "No scanning from the G9 host; use the isolated lab network",
+        "Capture files may contain credentials: classify PRIVATE"
+      ]
+    },
+    {
+      "id": "recon.discovery-interpretation",
+      "name": "Discovery result interpretation",
+      "description": "Interpret discovery output and translate observations into risks.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 4
+      },
+      "prerequisites": [
+        "recon.scope-definition",
+        "net.routing-segmentation"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "recon.discovery-interpretation.m1",
+          "statement": "An open port is a vulnerability",
+          "counterexample": "Exposure plus a weakness plus impact is a risk"
+        },
+        {
+          "id": "recon.discovery-interpretation.m2",
+          "statement": "Version banners are accurate",
+          "counterexample": "Banners are often faked or backported"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "recon.discovery-interpretation.lab1",
+          "description": "Isolated fixture for: Interpret discovery output and translate observations into risks.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "recon.discovery-interpretation.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: scoped recon report with risk translation",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "recon.discovery-interpretation.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for discovery result interpretation with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "recon.discovery-interpretation.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind discovery result interpretation with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Flow records, packet captures, firewall and DNS logs; scoped discovery produces an auditable target list and timing.",
+      "safety_boundaries": [
+        "Reconnaissance only against explicitly scoped lab targets",
+        "No scanning from the G9 host; use the isolated lab network",
+        "Capture files may contain credentials: classify PRIVATE"
+      ]
+    },
+    {
+      "id": "net.pcap-analysis",
+      "name": "Unfamiliar PCAP analysis",
+      "description": "Analyze an unfamiliar capture and write an evidence-backed conclusion.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "net.tcp-states",
+        "net.dns-resolution"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "net.pcap-analysis.m1",
+          "statement": "The first anomaly is the root cause",
+          "counterexample": "Correlate timing across streams before concluding"
+        },
+        {
+          "id": "net.pcap-analysis.m2",
+          "statement": "Encrypted traffic cannot be analyzed",
+          "counterexample": "Metadata, SNI, timing and sizes carry evidence"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "net.pcap-analysis.lab1",
+          "description": "Isolated fixture for: Analyze an unfamiliar capture and write an evidence-backed conclusion.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "net.pcap-analysis.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: blind PCAP analysis assessment",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "net.pcap-analysis.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for unfamiliar pcap analysis with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "net.pcap-analysis.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind unfamiliar pcap analysis with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Flow records, packet captures, firewall and DNS logs; scoped discovery produces an auditable target list and timing.",
+      "safety_boundaries": [
+        "Reconnaissance only against explicitly scoped lab targets",
+        "No scanning from the G9 host; use the isolated lab network",
+        "Capture files may contain credentials: classify PRIVATE"
+      ]
+    },
+    {
+      "id": "net.failure-diagnosis",
+      "name": "Network failure diagnosis",
+      "description": "Diagnose a network failure end to end and document the evidence chain.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "net.pcap-analysis",
+        "recon.discovery-interpretation"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "net.failure-diagnosis.m1",
+          "statement": "Ping success means the path works",
+          "counterexample": "ICMP may be allowed while TCP is filtered"
+        },
+        {
+          "id": "net.failure-diagnosis.m2",
+          "statement": "MTU problems show as total loss",
+          "counterexample": "They show as hangs after the handshake"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "net.failure-diagnosis.lab1",
+          "description": "Isolated fixture for: Diagnose a network failure end to end and document the evidence chain.",
+          "isolation": "VM",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "net.failure-diagnosis.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: week-2 blind assessment",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "net.failure-diagnosis.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for network failure diagnosis with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "net.failure-diagnosis.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind network failure diagnosis with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Flow records, packet captures, firewall and DNS logs; scoped discovery produces an auditable target list and timing.",
+      "safety_boundaries": [
+        "Reconnaissance only against explicitly scoped lab targets",
+        "No scanning from the G9 host; use the isolated lab network",
+        "Capture files may contain credentials: classify PRIVATE"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "title": "RFC 793 / RFC 9293 TCP",
+      "organisation": "IETF",
+      "kind": "STANDARD",
+      "license_note": "public RFC",
+      "verification": "ASSUMED"
+    },
+    {
+      "title": "Wireshark User's Guide",
+      "organisation": "Wireshark Foundation",
+      "kind": "DOC",
+      "license_note": "GPL documentation",
+      "verification": "ASSUMED"
+    },
+    {
+      "title": "Nmap Reference Guide",
+      "organisation": "Nmap Project",
+      "kind": "DOC",
+      "license_note": "freely available; tool license is NPSL",
+      "verification": "ASSUMED"
+    }
+  ],
+  "maintenance_policy": {
+    "review_interval_days": 90,
+    "owner_module": "M12"
+  }
+}

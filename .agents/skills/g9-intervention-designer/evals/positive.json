@@ -1,0 +1,86 @@
+[
+  {
+    "id": "L04-POS-001",
+    "kind": "positive",
+    "title": "A diagnosis ranked a procedure gap first",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "A diagnosis ranked a procedure gap first",
+    "input": {
+      "hypothesis_id": "hyp-7",
+      "capacity_minutes": 60
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "steps",
+        "time_budget_minutes"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "L04-POS-002",
+    "kind": "positive",
+    "title": "Operator asks what to do about a failed criterion",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks what to do about a failed criterion",
+    "input": {
+      "hypothesis_id": "hyp-7",
+      "capacity_minutes": 60
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "steps",
+        "time_budget_minutes"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "L04-POS-003",
+    "kind": "positive",
+    "title": "A retest failed and the intervention must be revised",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "A retest failed and the intervention must be revised",
+    "input": {
+      "hypothesis_id": "hyp-7",
+      "capacity_minutes": 60
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "steps",
+        "time_budget_minutes"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

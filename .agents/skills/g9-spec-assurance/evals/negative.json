@@ -1,0 +1,70 @@
+[
+  {
+    "id": "E01-NEG-001",
+    "kind": "negative",
+    "title": "A request to grade an assessment attempt (T08 territory)",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A request to grade an assessment attempt (T08 territory)",
+    "input": {
+      "rtm_ref": "evidence:rtm-v6.1",
+      "changed_paths": [
+        "ARCHITECTURE.md"
+      ]
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "any state mutation",
+        "any recommended action beyond PROPOSE"
+      ]
+    },
+    "notes": "Negative trigger inside an allowed mode: the skill must not activate (or must abstain)."
+  },
+  {
+    "id": "E01-NEG-002",
+    "kind": "negative",
+    "title": "A request to change a requirement's priority without an ADR",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A request to change a requirement's priority without an ADR",
+    "input": {
+      "rtm_ref": "evidence:rtm-v6.1",
+      "changed_paths": [
+        "ARCHITECTURE.md"
+      ]
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "any state mutation",
+        "any recommended action beyond PROPOSE"
+      ]
+    },
+    "notes": "Negative trigger inside an allowed mode: the skill must not activate (or must abstain)."
+  },
+  {
+    "id": "E01-NEG-003",
+    "kind": "negative",
+    "title": "Out-of-mode request in STUDY",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks for an updated RTM after ARCHITECTURE.md changes",
+    "input": {
+      "rtm_ref": "evidence:rtm-v6.1",
+      "changed_paths": [
+        "ARCHITECTURE.md"
+      ]
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "activation outside g9-modes"
+      ]
+    },
+    "notes": "Mode outside g9-modes: activation must be false."
+  }
+]

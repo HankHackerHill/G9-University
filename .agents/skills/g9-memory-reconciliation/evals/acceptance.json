@@ -1,0 +1,45 @@
+[
+  {
+    "id": "K02-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: A new exam result contradicts an accepted strength hypothesis",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "A new exam result contradicts an accepted strength hypothesis",
+    "input": {
+      "since_observation_id": "obs-900"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "conflicts",
+        "corrections"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "K02-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "A new exam result contradicts an accepted strength hypothesis",
+    "input": {
+      "since_observation_id": "obs-900"
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]

@@ -1,0 +1,64 @@
+[
+  {
+    "id": "T04-NEG-001",
+    "kind": "negative",
+    "title": "EXAM mode",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "EXAM mode",
+    "input": {
+      "attempt_context_ref": "evidence:lab-state-1",
+      "stuck_point": "cannot see why the query returns no rows"
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "any state mutation",
+        "any recommended action beyond PROPOSE"
+      ]
+    },
+    "notes": "Negative trigger inside an allowed mode: the skill must not activate (or must abstain)."
+  },
+  {
+    "id": "T04-NEG-002",
+    "kind": "negative",
+    "title": "Requests for the final answer or a full solution",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Requests for the final answer or a full solution",
+    "input": {
+      "attempt_context_ref": "evidence:lab-state-1",
+      "stuck_point": "cannot see why the query returns no rows"
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "any state mutation",
+        "any recommended action beyond PROPOSE"
+      ]
+    },
+    "notes": "Negative trigger inside an allowed mode: the skill must not activate (or must abstain)."
+  },
+  {
+    "id": "T04-NEG-003",
+    "kind": "negative",
+    "title": "Out-of-mode request in EXAM",
+    "mode": "EXAM",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator reports being stuck on a lab step",
+    "input": {
+      "attempt_context_ref": "evidence:lab-state-1",
+      "stuck_point": "cannot see why the query returns no rows"
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "activation outside g9-modes"
+      ]
+    },
+    "notes": "Mode outside g9-modes: activation must be false."
+  }
+]

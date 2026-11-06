@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-ui-accessibility/output",
+  "title": "g9-ui-accessibility result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "defects",
+    "fix_proposals"
+  ],
+  "properties": {
+    "defects": {
+      "type": "array",
+      "description": "WCAG defects with criterion and reproduction",
+      "items": {}
+    },
+    "keyboard_paths": {
+      "type": "array",
+      "description": "Verified keyboard flows",
+      "items": {}
+    },
+    "fix_proposals": {
+      "type": "array",
+      "description": "Ranked fixes",
+      "items": {}
+    }
+  }
+}

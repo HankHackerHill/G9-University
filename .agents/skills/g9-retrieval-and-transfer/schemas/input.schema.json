@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-retrieval-and-transfer/input",
+  "title": "g9-retrieval-and-transfer input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "date"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "description": "ISO date"
+    },
+    "budget_minutes": {
+      "type": "integer",
+      "description": "Recall budget"
+    }
+  }
+}

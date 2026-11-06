@@ -1,0 +1,47 @@
+[
+  {
+    "id": "T02-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: A lab task scored below 70 unaided",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "A lab task scored below 70 unaided",
+    "input": {
+      "observation_id": "obs-123",
+      "competency_id": "web.injection"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "hypotheses",
+        "underdetermined"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "T02-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "A lab task scored below 70 unaided",
+    "input": {
+      "observation_id": "obs-123",
+      "competency_id": "web.injection"
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]

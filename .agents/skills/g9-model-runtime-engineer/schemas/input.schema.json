@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-model-runtime-engineer/input",
+  "title": "g9-model-runtime-engineer input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "model_id"
+  ],
+  "properties": {
+    "model_id": {
+      "type": "string",
+      "description": "Registry id"
+    },
+    "run_refs": {
+      "type": "array",
+      "description": "Evidence refs of benchmark runs",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

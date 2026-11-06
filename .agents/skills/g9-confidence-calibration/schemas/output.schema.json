@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-confidence-calibration/output",
+  "title": "g9-confidence-calibration result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "brier",
+    "bins",
+    "n"
+  ],
+  "properties": {
+    "brier": {
+      "type": "number",
+      "description": "Mean Brier score"
+    },
+    "bins": {
+      "type": "array",
+      "description": "Reliability bins",
+      "items": {}
+    },
+    "bias": {
+      "type": "string",
+      "description": "OVERCONFIDENT, UNDERCONFIDENT or CALIBRATED"
+    },
+    "n": {
+      "type": "integer",
+      "description": "Observations used"
+    }
+  }
+}

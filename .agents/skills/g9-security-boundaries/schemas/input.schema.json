@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-security-boundaries/input",
+  "title": "g9-security-boundaries input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "change_description_ref"
+  ],
+  "properties": {
+    "change_description_ref": {
+      "type": "string",
+      "description": "Evidence ref of the feature description"
+    },
+    "affected_resource_kinds": {
+      "type": "array",
+      "description": "Resource kinds touched",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

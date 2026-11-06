@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-decision-review/input",
+  "title": "g9-decision-review input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "since_date"
+  ],
+  "properties": {
+    "since_date": {
+      "type": "string",
+      "description": "ISO date"
+    }
+  }
+}

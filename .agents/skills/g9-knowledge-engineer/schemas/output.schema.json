@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-knowledge-engineer/output",
+  "title": "g9-knowledge-engineer result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "index_report",
+    "retrieval_metrics"
+  ],
+  "properties": {
+    "index_report": {
+      "type": "object",
+      "description": "Chunks, provenance coverage",
+      "additionalProperties": true
+    },
+    "retrieval_metrics": {
+      "type": "object",
+      "description": "Precision, recall, freshness",
+      "additionalProperties": true
+    },
+    "adversarial_results": {
+      "type": "array",
+      "description": "Poisoning test results",
+      "items": {}
+    },
+    "proposals": {
+      "type": "array",
+      "description": "Index change proposals",
+      "items": {}
+    }
+  }
+}

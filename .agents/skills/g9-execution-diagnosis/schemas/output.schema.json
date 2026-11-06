@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-execution-diagnosis/output",
+  "title": "g9-execution-diagnosis result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "deltas",
+    "hypotheses"
+  ],
+  "properties": {
+    "deltas": {
+      "type": "array",
+      "description": "Plan vs actual",
+      "items": {}
+    },
+    "hypotheses": {
+      "type": "array",
+      "description": "Ranked causes with evidence",
+      "items": {}
+    },
+    "corrective_actions": {
+      "type": "array",
+      "description": "Proposed actions",
+      "items": {}
+    }
+  }
+}

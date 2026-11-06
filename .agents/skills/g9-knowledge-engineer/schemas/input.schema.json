@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-knowledge-engineer/input",
+  "title": "g9-knowledge-engineer input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_ids"
+  ],
+  "properties": {
+    "source_ids": {
+      "type": "array",
+      "description": "Approved source ids",
+      "items": {
+        "type": "string"
+      }
+    },
+    "fixture_ref": {
+      "type": "string",
+      "description": "Evidence ref of the retrieval fixture set"
+    }
+  }
+}

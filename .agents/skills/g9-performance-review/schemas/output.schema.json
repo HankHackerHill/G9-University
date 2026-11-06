@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-performance-review/output",
+  "title": "g9-performance-review result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kpis",
+    "trends"
+  ],
+  "properties": {
+    "kpis": {
+      "type": "array",
+      "description": "KPI id, value or NO_DATA, n, evidence refs",
+      "items": {}
+    },
+    "trends": {
+      "type": "array",
+      "description": "Deltas vs previous window",
+      "items": {}
+    },
+    "issues": {
+      "type": "array",
+      "description": "Issues with evidence",
+      "items": {}
+    },
+    "focus_proposal": {
+      "type": "string",
+      "description": "Next week focus"
+    }
+  }
+}

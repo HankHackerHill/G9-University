@@ -1,0 +1,86 @@
+[
+  {
+    "id": "T08-POS-001",
+    "kind": "positive",
+    "title": "An attempt moved to SUBMITTED and advisory scoring is requested",
+    "mode": "EXAM",
+    "actor_kind": "OPERATOR",
+    "intent": "An attempt moved to SUBMITTED and advisory scoring is requested",
+    "input": {
+      "attempt_id": "attempt-42",
+      "assessment_version": 1
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "criterion_levels",
+        "gate_findings"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "T08-POS-002",
+    "kind": "positive",
+    "title": "A REVIEW session re-examines an attempt's evidence",
+    "mode": "EXAM",
+    "actor_kind": "OPERATOR",
+    "intent": "A REVIEW session re-examines an attempt's evidence",
+    "input": {
+      "attempt_id": "attempt-42",
+      "assessment_version": 1
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "criterion_levels",
+        "gate_findings"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "T08-POS-003",
+    "kind": "positive",
+    "title": "Operator asks for criterion-by-criterion advisory levels",
+    "mode": "EXAM",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks for criterion-by-criterion advisory levels",
+    "input": {
+      "attempt_id": "attempt-42",
+      "assessment_version": 1
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "criterion_levels",
+        "gate_findings"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

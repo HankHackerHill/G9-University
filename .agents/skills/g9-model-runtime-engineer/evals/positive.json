@@ -1,0 +1,92 @@
+[
+  {
+    "id": "E10-POS-001",
+    "kind": "positive",
+    "title": "A candidate model is proposed for evaluation",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A candidate model is proposed for evaluation",
+    "input": {
+      "model_id": "candidate-1",
+      "run_refs": [
+        "evidence:bench-1"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "metrics",
+        "license_assessment"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E10-POS-002",
+    "kind": "positive",
+    "title": "A benchmark run completed and must be recorded",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A benchmark run completed and must be recorded",
+    "input": {
+      "model_id": "candidate-1",
+      "run_refs": [
+        "evidence:bench-1"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "metrics",
+        "license_assessment"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E10-POS-003",
+    "kind": "positive",
+    "title": "A runtime version changes",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A runtime version changes",
+    "input": {
+      "model_id": "candidate-1",
+      "run_refs": [
+        "evidence:bench-1"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "metrics",
+        "license_assessment"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

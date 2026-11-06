@@ -1,0 +1,92 @@
+[
+  {
+    "id": "E14-POS-001",
+    "kind": "positive",
+    "title": "A stage report is requested",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A stage report is requested",
+    "input": {
+      "stage": "02",
+      "evidence_refs": [
+        "evidence:ci-run-1"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "gate_table",
+        "recommended_label"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E14-POS-002",
+    "kind": "positive",
+    "title": "cargo-deny or npm audit reports findings",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "cargo-deny or npm audit reports findings",
+    "input": {
+      "stage": "02",
+      "evidence_refs": [
+        "evidence:ci-run-1"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "gate_table",
+        "recommended_label"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E14-POS-003",
+    "kind": "positive",
+    "title": "A restore drill must be scheduled before release",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A restore drill must be scheduled before release",
+    "input": {
+      "stage": "02",
+      "evidence_refs": [
+        "evidence:ci-run-1"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "gate_table",
+        "recommended_label"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-socratic-coaching/output",
+  "title": "g9-socratic-coaching result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "question",
+    "assistance_level"
+  ],
+  "properties": {
+    "question": {
+      "type": "string",
+      "description": "The next Socratic question"
+    },
+    "rationale": {
+      "type": "string",
+      "description": "Why this question"
+    },
+    "assistance_level": {
+      "type": "string",
+      "description": "PROMPTED or HINTED"
+    },
+    "next_tier_recommended": {
+      "type": "boolean",
+      "description": "Whether to move to hints"
+    }
+  }
+}

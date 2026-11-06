@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-adaptive-agenda/input",
+  "title": "g9-adaptive-agenda input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "period",
+    "start_date"
+  ],
+  "properties": {
+    "period": {
+      "type": "string",
+      "description": "DAY or WEEK"
+    },
+    "start_date": {
+      "type": "string",
+      "description": "ISO date"
+    }
+  }
+}

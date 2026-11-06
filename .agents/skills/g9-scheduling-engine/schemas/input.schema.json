@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-scheduling-engine/input",
+  "title": "g9-scheduling-engine input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "week_start_date",
+    "timezone"
+  ],
+  "properties": {
+    "week_start_date": {
+      "type": "string",
+      "description": "ISO date of Monday"
+    },
+    "timezone": {
+      "type": "string",
+      "description": "IANA zone"
+    },
+    "task_refs": {
+      "type": "array",
+      "description": "Task ids to place",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

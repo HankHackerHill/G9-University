@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-prerequisite-diagnosis/output",
+  "title": "g9-prerequisite-diagnosis result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "hypotheses",
+    "underdetermined"
+  ],
+  "properties": {
+    "hypotheses": {
+      "type": "array",
+      "description": "Ranked hypotheses with evidence",
+      "items": {}
+    },
+    "underdetermined": {
+      "type": "boolean",
+      "description": "Whether a discriminating test is required"
+    },
+    "discriminating_test": {
+      "type": "string",
+      "description": "Proposed diagnostic"
+    },
+    "missing_prerequisites": {
+      "type": "array",
+      "description": "Unmet prerequisites",
+      "items": {}
+    }
+  }
+}

@@ -1,0 +1,64 @@
+[
+  {
+    "id": "E04-NEG-001",
+    "kind": "negative",
+    "title": "A request to add a dependency from g9-domain to g9-storage (violates the law) — report, do not design around it",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A request to add a dependency from g9-domain to g9-storage (violates the law) — report, do not design around it",
+    "input": {
+      "metadata_ref": "evidence:cargo-metadata-1",
+      "schema_root": "schemas/ipc"
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "any state mutation",
+        "any recommended action beyond PROPOSE"
+      ]
+    },
+    "notes": "Negative trigger inside an allowed mode: the skill must not activate (or must abstain)."
+  },
+  {
+    "id": "E04-NEG-002",
+    "kind": "negative",
+    "title": "Learner-facing teaching requests",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "Learner-facing teaching requests",
+    "input": {
+      "metadata_ref": "evidence:cargo-metadata-1",
+      "schema_root": "schemas/ipc"
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "any state mutation",
+        "any recommended action beyond PROPOSE"
+      ]
+    },
+    "notes": "Negative trigger inside an allowed mode: the skill must not activate (or must abstain)."
+  },
+  {
+    "id": "E04-NEG-003",
+    "kind": "negative",
+    "title": "Out-of-mode request in STUDY",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "A new crate is proposed",
+    "input": {
+      "metadata_ref": "evidence:cargo-metadata-1",
+      "schema_root": "schemas/ipc"
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "activation outside g9-modes"
+      ]
+    },
+    "notes": "Mode outside g9-modes: activation must be false."
+  }
+]

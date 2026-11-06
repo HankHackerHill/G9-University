@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-intervention-designer/input",
+  "title": "g9-intervention-designer input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "hypothesis_id"
+  ],
+  "properties": {
+    "hypothesis_id": {
+      "type": "string",
+      "description": "Diagnosis hypothesis id"
+    },
+    "capacity_minutes": {
+      "type": "integer",
+      "description": "Available minutes"
+    }
+  }
+}

@@ -1,0 +1,86 @@
+[
+  {
+    "id": "E09-POS-001",
+    "kind": "positive",
+    "title": "A knowledge pack adds competencies",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A knowledge pack adds competencies",
+    "input": {
+      "pack_id": "web-api-appsec",
+      "rules_ref": "evidence:rules-v1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "graph_report",
+        "replay_report"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E09-POS-002",
+    "kind": "positive",
+    "title": "A derivation threshold changes",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A derivation threshold changes",
+    "input": {
+      "pack_id": "web-api-appsec",
+      "rules_ref": "evidence:rules-v1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "graph_report",
+        "replay_report"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E09-POS-003",
+    "kind": "positive",
+    "title": "A synthetic replay test fails",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A synthetic replay test fails",
+    "input": {
+      "pack_id": "web-api-appsec",
+      "rules_ref": "evidence:rules-v1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "graph_report",
+        "replay_report"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

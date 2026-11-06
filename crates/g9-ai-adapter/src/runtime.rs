@@ -8,9 +8,11 @@
 //! Ollama-compatible, ...) is a separate adapter behind this trait, so a model or
 //! runtime can be swapped or rolled back without changing callers.
 
-use crate::cancel::CancelToken;
-use crate::validate::ValidationIssue;
-use g9_domain::{Classification, DurationMs, ErrorCategory, G9Error, InvocationId, ModelId, TrustClass};
+use crate::cancel::{CancelToken, Guard};
+use crate::validate::{validate_structured, ValidationIssue};
+use g9_domain::{
+    Classification, DurationMs, ErrorCategory, G9Error, InvocationId, ModelId, TrustClass,
+};
 use serde::{Deserialize, Serialize};
 
 /// Reference to the exact model artifact a runtime is serving. The optional
@@ -18,6 +20,7 @@ use serde::{Deserialize, Serialize};
 /// `model_registry` row even after a swap or rollback (R-013).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ModelRef {
+    /// Registry identifier of the model.
     pub model_id: ModelId,
     /// Lowercase hex SHA-256 of the loaded weights artifact, when known.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -25,6 +28,7 @@ pub struct ModelRef {
 }
 
 impl ModelRef {
+    /// Reference a model by id without pinning a checksum.
     pub fn new(model_id: ModelId) -> Self {
         Self {
             model_id,
@@ -32,6 +36,7 @@ impl ModelRef {
         }
     }
 
+    /// Pin the artifact checksum (lowercase hex SHA-256).
     pub fn with_checksum(mut self, checksum_sha256: impl Into<String>) -> Self {
         self.checksum_sha256 = Some(checksum_sha256.into());
         self
@@ -73,6 +78,7 @@ pub enum SegmentRole {
 }
 
 impl SegmentRole {
+    /// All roles in prompt order.
     pub const ALL: [SegmentRole; 5] = [
         SegmentRole::SystemPolicy,
         SegmentRole::SkillInstructions,
@@ -104,9 +110,13 @@ pub fn estimate_tokens(text: &str) -> u32 {
 /// One provenance-tagged piece of model context.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ContextSegment {
+    /// Role of the segment (decides ordering and admissible trust).
     pub role: SegmentRole,
+    /// The segment text. In memory only; never persisted.
     pub text: String,
+    /// Trust class of the source of `text`.
     pub trust: TrustClass,
+    /// Privacy classification of `text`; `Secret` is never admitted.
     pub classification: Classification,
     /// Stable reference to where the text came from (record id, template id, ...).
     pub source_ref: String,
@@ -140,13 +150,18 @@ impl ContextSegment {
 /// duration of the call; it is never persisted (ARCHITECTURE.md §10).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InferenceRequest {
+    /// Invocation this request belongs to (correlates the record).
     pub invocation_id: InvocationId,
+    /// Assembled, filtered, ordered context (see [`crate::context`]).
     pub segments: Vec<ContextSegment>,
+    /// Hard cap on generated tokens.
     pub max_output_tokens: u32,
+    /// Hard wall-clock limit for the whole generation.
     pub timeout: DurationMs,
     /// JSON Schema (draft 2020-12) the structured output must satisfy, if any.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub response_schema: Option<serde_json::Value>,
+    /// Sampling temperature in `[0, 2]`.
     pub temperature: f32,
     /// Version of the prompt template that produced the instruction segments.
     pub template_version: String,
@@ -202,9 +217,11 @@ impl InferenceRequest {
 
 /// Measured usage reported by the runtime. These are measurements for *this*
 /// invocation; they are never aggregated into performance claims by this crate.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Usage {
+    /// Prompt tokens as counted by the runtime's tokenizer.
     pub prompt_tokens: u32,
+    /// Generated tokens.
     pub output_tokens: u32,
     /// Time to first token.
     pub ttft_ms: DurationMs,
@@ -212,15 +229,17 @@ pub struct Usage {
     pub total_ms: DurationMs,
 }
 
-impl Default for DurationMsDefault {
+impl Default for Usage {
+    /// All-zero usage: "nothing measured" (failed calls, test doubles).
     fn default() -> Self {
-        Self(DurationMs::ZERO)
+        Self {
+            prompt_tokens: 0,
+            output_tokens: 0,
+            ttft_ms: DurationMs::ZERO,
+            total_ms: DurationMs::ZERO,
+        }
     }
 }
-
-/// Private helper so that `Usage` can derive `Default` (DurationMs has no Default).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct DurationMsDefault(DurationMs);
 
 /// Why generation stopped.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -242,12 +261,18 @@ pub enum FinishReason {
 /// caller validates `structured` against the request schema before use (A11).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InferenceResponse {
+    /// Raw model text. Advisory data, never an instruction.
     pub text: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    /// Structured output, present when the runtime produced/validated one.
     pub structured: Option<serde_json::Value>,
+    /// Measured usage for this call.
     pub usage: Usage,
+    /// Why generation stopped.
     pub finish: FinishReason,
+    /// The model that produced the response.
     pub model: ModelRef,
+    /// Prompt template version the request was built with.
     pub template_version: String,
 }
 
@@ -266,7 +291,11 @@ pub enum InferenceError {
     Cancelled,
     /// The request cannot be honoured within its budget.
     #[error("inference budget violated: {reason}")]
-    Budget { reason: String },
+    /// Secret-free explanation of which limit was violated.
+    Budget {
+        /// Which limit was violated (static wording, never prompt content).
+        reason: String,
+    },
     /// Runtime failure; the string is a local diagnostic and never leaves the process.
     #[error("runtime failure (redacted)")]
     Runtime(String),
@@ -333,10 +362,7 @@ impl From<InferenceError> for G9Error {
                 let err = G9Error::new(
                     category,
                     code,
-                    format!(
-                        "model output rejected: {} schema issue(s)",
-                        issues.len()
-                    ),
+                    format!("model output rejected: {} schema issue(s)", issues.len()),
                 );
                 match serde_json::to_value(&issues) {
                     Ok(details) => err.with_details(details),
@@ -369,6 +395,64 @@ pub trait InferenceRuntime: Send + Sync {
         req: InferenceRequest,
         cancel: &CancelToken,
     ) -> Result<InferenceResponse, InferenceError>;
+}
+
+/// Gateway entry point: the one path through which callers obtain a usable
+/// response (handoff §13 "reserve resource budget → invoke runtime → schema
+/// checks"). It applies, in order:
+///
+/// 1. cancelled-before-start → [`InferenceError::Cancelled`];
+/// 2. [`InferenceRequest::check_budget`] against [`InferenceRuntime::describe`];
+/// 3. [`InferenceRuntime::generate`];
+/// 4. the late-response rule: a response that arrives after cancellation is
+///    discarded through [`Guard::accept`] and reported as `Cancelled`;
+/// 5. `Cancelled`/`Timeout`/`Error` finish reasons become the matching error
+///    (partial output is never returned);
+/// 6. when the request carries `response_schema`, the structured output is
+///    validated (A11). The runtime's `structured` value is used when present;
+///    otherwise `text` must parse as one JSON document. Any violation is
+///    [`InferenceError::InvalidOutput`] with pointer paths — nothing is
+///    repaired, defaulted or coerced.
+///
+/// The returned response's `structured` field is `Some` iff a schema was
+/// requested and satisfied.
+pub fn run_inference(
+    runtime: &dyn InferenceRuntime,
+    req: InferenceRequest,
+    cancel: &CancelToken,
+) -> Result<InferenceResponse, InferenceError> {
+    if cancel.is_cancelled() {
+        return Err(InferenceError::Cancelled);
+    }
+    let info = runtime.describe();
+    req.check_budget(&info)?;
+    let schema = req.response_schema.clone();
+    let response = runtime.generate(req, cancel)?;
+    let mut response = Guard::accept(response, cancel).ok_or(InferenceError::Cancelled)?;
+    match response.finish {
+        FinishReason::Cancelled => return Err(InferenceError::Cancelled),
+        FinishReason::Timeout => return Err(InferenceError::Timeout),
+        FinishReason::Error => {
+            return Err(InferenceError::Runtime(
+                "runtime reported an error finish".to_string(),
+            ))
+        }
+        FinishReason::Stop | FinishReason::Length => {}
+    }
+    if let Some(schema) = schema {
+        let instance = match response.structured.take() {
+            Some(v) => v,
+            None => serde_json::from_str::<serde_json::Value>(&response.text).map_err(|_| {
+                InferenceError::InvalidOutput(vec![ValidationIssue::new(
+                    "",
+                    "output is not a single JSON document",
+                )])
+            })?,
+        };
+        validate_structured(&instance, &schema).map_err(InferenceError::InvalidOutput)?;
+        response.structured = Some(instance);
+    }
+    Ok(response)
 }
 
 #[cfg(test)]
@@ -420,19 +504,31 @@ mod tests {
         assert_eq!(seg.approx_tokens, 100);
 
         let r = request(vec![seg.clone()], 0);
-        assert!(matches!(r.check_budget(&info(1000)), Err(InferenceError::Budget { .. })));
+        assert!(matches!(
+            r.check_budget(&info(1000)),
+            Err(InferenceError::Budget { .. })
+        ));
 
         let mut r = request(vec![seg.clone()], 10);
         r.timeout = DurationMs::ZERO;
-        assert!(matches!(r.check_budget(&info(1000)), Err(InferenceError::Budget { .. })));
+        assert!(matches!(
+            r.check_budget(&info(1000)),
+            Err(InferenceError::Budget { .. })
+        ));
 
         let mut r = request(vec![seg.clone()], 10);
         r.temperature = 3.0;
-        assert!(matches!(r.check_budget(&info(1000)), Err(InferenceError::Budget { .. })));
+        assert!(matches!(
+            r.check_budget(&info(1000)),
+            Err(InferenceError::Budget { .. })
+        ));
 
         // 100 prompt + 50 output > 120 context.
         let r = request(vec![seg.clone()], 50);
-        assert!(matches!(r.check_budget(&info(120)), Err(InferenceError::Budget { .. })));
+        assert!(matches!(
+            r.check_budget(&info(120)),
+            Err(InferenceError::Budget { .. })
+        ));
         assert_eq!(r.check_budget(&info(150)), Ok(()));
         // Unknown context window (0) does not block.
         assert_eq!(r.check_budget(&info(0)), Ok(()));
@@ -441,26 +537,33 @@ mod tests {
     #[test]
     fn errors_map_to_closed_categories_and_redact_runtime_detail() {
         let cases = [
-            (InferenceError::ModelUnavailable, ErrorCategory::ResourceUnavailable),
+            (
+                InferenceError::ModelUnavailable,
+                ErrorCategory::ResourceUnavailable,
+            ),
             (InferenceError::Timeout, ErrorCategory::Timeout),
             (InferenceError::Cancelled, ErrorCategory::Cancelled),
             (
-                InferenceError::Budget {
-                    reason: "r".into(),
-                },
+                InferenceError::Budget { reason: "r".into() },
                 ErrorCategory::PreconditionFailed,
             ),
             (
                 InferenceError::Runtime("CUDA error at /secret/path".into()),
                 ErrorCategory::Internal,
             ),
-            (InferenceError::InvalidOutput(vec![]), ErrorCategory::PreconditionFailed),
+            (
+                InferenceError::InvalidOutput(vec![]),
+                ErrorCategory::PreconditionFailed,
+            ),
         ];
         for (err, cat) in cases {
             let g: G9Error = err.clone().into();
             assert_eq!(g.category, cat, "{err:?}");
             assert!(g.code.starts_with("ai."));
-            assert!(g.details.as_ref().is_none_or(|d| d.get("backtrace").is_none()));
+            assert!(g
+                .details
+                .as_ref()
+                .is_none_or(|d| d.get("backtrace").is_none()));
         }
         let g: G9Error = InferenceError::Runtime("CUDA error at /secret/path".into()).into();
         assert!(!g.message.contains("CUDA"));

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-retrieval-and-transfer/output",
+  "title": "g9-retrieval-and-transfer result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "review_plan",
+    "transfer_checks"
+  ],
+  "properties": {
+    "review_plan": {
+      "type": "object",
+      "description": "Scheduled and deferred items",
+      "additionalProperties": true
+    },
+    "transfer_checks": {
+      "type": "array",
+      "description": "Scheduled transfer checks",
+      "items": {}
+    },
+    "declarative_items": {
+      "type": "array",
+      "description": "FSRS-eligible item ids",
+      "items": {}
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-model-runtime-engineer/output",
+  "title": "g9-model-runtime-engineer result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "metrics",
+    "license_assessment",
+    "eligible"
+  ],
+  "properties": {
+    "metrics": {
+      "type": "object",
+      "description": "Recorded metrics or NOT_RUN",
+      "additionalProperties": true
+    },
+    "license_assessment": {
+      "type": "object",
+      "description": "License class and terms",
+      "additionalProperties": true
+    },
+    "eligible": {
+      "type": "boolean",
+      "description": "Eligibility per decision rule"
+    },
+    "rollback_candidate": {
+      "type": "string",
+      "description": "Previous eligible model id or empty"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-progressive-hints/output",
+  "title": "g9-progressive-hints result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tier",
+    "hint",
+    "assistance_level"
+  ],
+  "properties": {
+    "tier": {
+      "type": "integer",
+      "description": "Tier delivered"
+    },
+    "hint": {
+      "type": "string",
+      "description": "The hint"
+    },
+    "assistance_level": {
+      "type": "string",
+      "description": "Resulting assistance level"
+    },
+    "next_tier_preview": {
+      "type": "string",
+      "description": "What the next tier reveals"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-ui-accessibility/input",
+  "title": "g9-ui-accessibility input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "screen"
+  ],
+  "properties": {
+    "screen": {
+      "type": "string",
+      "description": "Screen name"
+    },
+    "report_ref": {
+      "type": "string",
+      "description": "Evidence ref of the test report"
+    }
+  }
+}

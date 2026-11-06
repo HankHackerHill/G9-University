@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-mentor-evaluation/output",
+  "title": "g9-mentor-evaluation result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "suite_plan",
+    "results",
+    "promotion_recommendation"
+  ],
+  "properties": {
+    "suite_plan": {
+      "type": "object",
+      "description": "Strata and case counts",
+      "additionalProperties": true
+    },
+    "results": {
+      "type": "object",
+      "description": "Metrics or NOT_RUN",
+      "additionalProperties": true
+    },
+    "leakage": {
+      "type": "array",
+      "description": "Holdout leakage findings",
+      "items": {}
+    },
+    "promotion_recommendation": {
+      "type": "string",
+      "description": "PROMOTE, BLOCK or INCONCLUSIVE"
+    }
+  }
+}

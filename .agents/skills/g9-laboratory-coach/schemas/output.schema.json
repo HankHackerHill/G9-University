@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-laboratory-coach/output",
+  "title": "g9-laboratory-coach result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "method",
+    "evidence_capture",
+    "recovery"
+  ],
+  "properties": {
+    "method": {
+      "type": "array",
+      "description": "Ordered method steps",
+      "items": {}
+    },
+    "expected_observations": {
+      "type": "array",
+      "description": "What success looks like",
+      "items": {}
+    },
+    "evidence_capture": {
+      "type": "array",
+      "description": "Artifacts to collect",
+      "items": {}
+    },
+    "pitfalls": {
+      "type": "array",
+      "description": "Common pitfalls",
+      "items": {}
+    },
+    "recovery": {
+      "type": "array",
+      "description": "Recovery steps",
+      "items": {}
+    }
+  }
+}

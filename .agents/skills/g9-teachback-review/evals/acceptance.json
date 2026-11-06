@@ -1,0 +1,47 @@
+[
+  {
+    "id": "T07-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: Operator submits a written explanation of a mechanism",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator submits a written explanation of a mechanism",
+    "input": {
+      "text_ref": "evidence:teachback-1",
+      "objective_id": "D15-O2"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "claims",
+        "misconceptions"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "T07-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator submits a written explanation of a mechanism",
+    "input": {
+      "text_ref": "evidence:teachback-1",
+      "objective_id": "D15-O2"
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]

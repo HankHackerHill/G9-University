@@ -1,0 +1,83 @@
+[
+  {
+    "id": "K03-POS-001",
+    "kind": "positive",
+    "title": "Capstone portfolio export requested",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "Capstone portfolio export requested",
+    "input": {
+      "milestone_id": "ms-capstone"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "manifest",
+        "excluded"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "K03-POS-002",
+    "kind": "positive",
+    "title": "A set of interventions is approved for the team playbook",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "A set of interventions is approved for the team playbook",
+    "input": {
+      "milestone_id": "ms-capstone"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "manifest",
+        "excluded"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "K03-POS-003",
+    "kind": "positive",
+    "title": "Operator asks which artifacts are export-eligible",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks which artifacts are export-eligible",
+    "input": {
+      "milestone_id": "ms-capstone"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "manifest",
+        "excluded"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

@@ -1,0 +1,24 @@
+[
+  {
+    "id": "T01-POS-001", "kind": "positive", "title": "Day start in STUDY mode with pending reviews",
+    "mode": "STUDY", "actor_kind": "OPERATOR", "intent": "Start my day",
+    "input": { "day_id": "D15", "mode": "STUDY", "learner_context_ref": "snapshot:week03-day15" },
+    "context_fixture": "data/fixtures/learner/week03-day15.json",
+    "expect": { "activate": true, "status": "COMPLETED", "must_include": ["objectives", "due_reviews"], "must_not": ["grade", "schedule mutation"], "approval_requirements": [], "recommended_action_kinds": ["Propose"] },
+    "notes": "baseline day-start brief"
+  },
+  {
+    "id": "T01-POS-002", "kind": "positive", "title": "LAB block start",
+    "mode": "LAB", "actor_kind": "OPERATOR", "intent": "Starting the guided lab block",
+    "input": { "day_id": "D16", "mode": "LAB", "learner_context_ref": "snapshot:week03-day16", "session_block": "guided_lab" },
+    "expect": { "activate": true, "status": "COMPLETED", "must_include": ["open_interventions"], "approval_requirements": [], "recommended_action_kinds": [] },
+    "notes": "block-level brief"
+  },
+  {
+    "id": "T01-POS-003", "kind": "positive", "title": "Operator priorities included",
+    "mode": "STUDY", "actor_kind": "OPERATOR", "intent": "Brief me; focus on packet analysis",
+    "input": { "day_id": "D20", "mode": "STUDY", "learner_context_ref": "snapshot:week04-day20", "operator_priorities": ["packet analysis"] },
+    "expect": { "activate": true, "status": "COMPLETED", "must_include": ["objectives"], "approval_requirements": [] },
+    "notes": "priorities are preferences, never scope changes"
+  }
+]

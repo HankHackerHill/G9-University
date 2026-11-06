@@ -1,0 +1,46 @@
+[
+  {
+    "id": "K01-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: A quarantined document awaits evaluation",
+    "mode": "RESEARCH",
+    "actor_kind": "OPERATOR",
+    "intent": "A quarantined document awaits evaluation",
+    "input": {
+      "source_id": "src-42"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "credibility",
+        "license",
+        "recommendation"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "K01-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "RESEARCH",
+    "actor_kind": "OPERATOR",
+    "intent": "A quarantined document awaits evaluation",
+    "input": {
+      "source_id": "src-42"
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]

@@ -1,0 +1,64 @@
+[
+  {
+    "id": "L01-NEG-001",
+    "kind": "negative",
+    "title": "EXAM mode",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "EXAM mode",
+    "input": {
+      "competency_id": "web.xss-contexts",
+      "window_days": 30
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "any state mutation",
+        "any recommended action beyond PROPOSE"
+      ]
+    },
+    "notes": "Negative trigger inside an allowed mode: the skill must not activate (or must abstain)."
+  },
+  {
+    "id": "L01-NEG-002",
+    "kind": "negative",
+    "title": "A single failure without pattern",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "A single failure without pattern",
+    "input": {
+      "competency_id": "web.xss-contexts",
+      "window_days": 30
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "any state mutation",
+        "any recommended action beyond PROPOSE"
+      ]
+    },
+    "notes": "Negative trigger inside an allowed mode: the skill must not activate (or must abstain)."
+  },
+  {
+    "id": "L01-NEG-003",
+    "kind": "negative",
+    "title": "Out-of-mode request in LAB",
+    "mode": "LAB",
+    "actor_kind": "OPERATOR",
+    "intent": "The same error class appears in three tasks",
+    "input": {
+      "competency_id": "web.xss-contexts",
+      "window_days": 30
+    },
+    "expect": {
+      "activate": false,
+      "status": "ABSTAINED",
+      "must_not": [
+        "activation outside g9-modes"
+      ]
+    },
+    "notes": "Mode outside g9-modes: activation must be false."
+  }
+]

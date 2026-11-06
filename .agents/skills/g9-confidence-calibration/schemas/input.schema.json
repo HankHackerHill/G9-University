@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-confidence-calibration/input",
+  "title": "g9-confidence-calibration input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "window_days"
+  ],
+  "properties": {
+    "window_days": {
+      "type": "integer",
+      "description": "Lookback window"
+    },
+    "competency_id": {
+      "type": "string",
+      "description": "Optional competency filter"
+    }
+  }
+}

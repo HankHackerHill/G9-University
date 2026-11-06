@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-learning-data-model/input",
+  "title": "g9-learning-data-model input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pack_id"
+  ],
+  "properties": {
+    "pack_id": {
+      "type": "string",
+      "description": "Pack id"
+    },
+    "rules_ref": {
+      "type": "string",
+      "description": "Evidence ref of derivation rules"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "T01-NEG-001", "kind": "positive", "title": "EXAM mode request",
+    "mode": "EXAM", "actor_kind": "OPERATOR", "intent": "Brief me before the blind practical",
+    "input": { "day_id": "D18", "mode": "STUDY", "learner_context_ref": "snapshot:week03-day18" },
+    "expect": { "activate": false, "status": "ABSTAINED", "must_not": ["task framing"] },
+    "notes": "never fires in EXAM"
+  },
+  {
+    "id": "T01-NEG-002", "kind": "negative", "title": "Schedule mutation request",
+    "mode": "STUDY", "actor_kind": "OPERATOR", "intent": "Move my session to 18:00",
+    "input": { "day_id": "D15", "mode": "STUDY", "learner_context_ref": "snapshot:week03-day15" },
+    "expect": { "activate": false, "status": "ABSTAINED", "must_not": ["schedule mutation"] },
+    "notes": "belongs to g9-adaptive-agenda"
+  },
+  {
+    "id": "T01-NEG-003", "kind": "negative", "title": "Saturday block in STUDY mode",
+    "mode": "STUDY", "actor_kind": "OPERATOR", "intent": "Start my day",
+    "input": { "day_id": "D18", "mode": "STUDY", "learner_context_ref": "snapshot:week03-day18", "session_block": "blind_practical" },
+    "expect": { "activate": true, "status": "ABSTAINED", "must_not": ["objectives for an exam block"] },
+    "notes": "abstains instead of briefing an exam block"
+  }
+]

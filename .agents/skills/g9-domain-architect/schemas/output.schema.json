@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-domain-architect/output",
+  "title": "g9-domain-architect result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "graph",
+    "cycles",
+    "contract_drift"
+  ],
+  "properties": {
+    "graph": {
+      "type": "array",
+      "description": "Crate edges",
+      "items": {}
+    },
+    "cycles": {
+      "type": "array",
+      "description": "Detected cycles",
+      "items": {}
+    },
+    "contract_drift": {
+      "type": "array",
+      "description": "Schema/handler mismatches",
+      "items": {}
+    },
+    "adr_drafts": {
+      "type": "array",
+      "description": "Proposed ADR texts",
+      "items": {}
+    }
+  }
+}

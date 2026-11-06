@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-memory-reconciliation/output",
+  "title": "g9-memory-reconciliation result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "conflicts",
+    "corrections"
+  ],
+  "properties": {
+    "conflicts": {
+      "type": "array",
+      "description": "Conflicts with evidence",
+      "items": {}
+    },
+    "corrections": {
+      "type": "array",
+      "description": "Proposed corrections",
+      "items": {}
+    },
+    "invalidations": {
+      "type": "array",
+      "description": "Derived records to revise",
+      "items": {}
+    }
+  }
+}

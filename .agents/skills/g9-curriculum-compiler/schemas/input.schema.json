@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-curriculum-compiler/input",
+  "title": "g9-curriculum-compiler input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidate_manifest_ref"
+  ],
+  "properties": {
+    "candidate_manifest_ref": {
+      "type": "string",
+      "description": "Evidence ref of the candidate manifest"
+    },
+    "original_manifest_ref": {
+      "type": "string",
+      "description": "Evidence ref of the original plan (optional)"
+    }
+  }
+}

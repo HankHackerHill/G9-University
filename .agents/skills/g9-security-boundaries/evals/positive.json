@@ -1,0 +1,92 @@
+[
+  {
+    "id": "E06-POS-001",
+    "kind": "positive",
+    "title": "A new IPC operation touches protected records",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A new IPC operation touches protected records",
+    "input": {
+      "change_description_ref": "evidence:feature-x",
+      "affected_resource_kinds": [
+        "Attempt"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "boundaries_affected",
+        "rule_gaps"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E06-POS-002",
+    "kind": "positive",
+    "title": "A skill requests a new capability",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A skill requests a new capability",
+    "input": {
+      "change_description_ref": "evidence:feature-x",
+      "affected_resource_kinds": [
+        "Attempt"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "boundaries_affected",
+        "rule_gaps"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E06-POS-003",
+    "kind": "positive",
+    "title": "A new import path for documents is added",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A new import path for documents is added",
+    "input": {
+      "change_description_ref": "evidence:feature-x",
+      "affected_resource_kinds": [
+        "Attempt"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "boundaries_affected",
+        "rule_gaps"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-curriculum-compiler/output",
+  "title": "g9-curriculum-compiler result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "validation",
+    "promotion_allowed"
+  ],
+  "properties": {
+    "validation": {
+      "type": "object",
+      "description": "Counts, violations, errors",
+      "additionalProperties": true
+    },
+    "reconciliation": {
+      "type": "object",
+      "description": "Per-day diff summary and checksums",
+      "additionalProperties": true
+    },
+    "promotion_allowed": {
+      "type": "boolean",
+      "description": "Whether promotion may be requested"
+    },
+    "approval_request": {
+      "type": "string",
+      "description": "Text of the approval request"
+    }
+  }
+}

@@ -1,0 +1,86 @@
+[
+  {
+    "id": "T05-POS-001",
+    "kind": "positive",
+    "title": "Operator asks how to approach a lab task",
+    "mode": "LAB",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks how to approach a lab task",
+    "input": {
+      "fixture_id": "web.injection.lab1",
+      "last_output_ref": "evidence:lab-output-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "method",
+        "evidence_capture"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "T05-POS-002",
+    "kind": "positive",
+    "title": "No progress for 20 minutes on a lab step",
+    "mode": "LAB",
+    "actor_kind": "OPERATOR",
+    "intent": "No progress for 20 minutes on a lab step",
+    "input": {
+      "fixture_id": "web.injection.lab1",
+      "last_output_ref": "evidence:lab-output-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "method",
+        "evidence_capture"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "T05-POS-003",
+    "kind": "positive",
+    "title": "Operator asks how to capture evidence for the deliverable",
+    "mode": "LAB",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks how to capture evidence for the deliverable",
+    "input": {
+      "fixture_id": "web.injection.lab1",
+      "last_output_ref": "evidence:lab-output-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "method",
+        "evidence_capture"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

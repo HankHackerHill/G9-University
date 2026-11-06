@@ -1,0 +1,86 @@
+[
+  {
+    "id": "E02-POS-001",
+    "kind": "positive",
+    "title": "Operator asks to draft a SKILL.md for a new runtime skill",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks to draft a SKILL.md for a new runtime skill",
+    "input": {
+      "skill_name": "g9-session-director",
+      "validator_report_ref": "evidence:validator-run-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "package_diff",
+        "validator_summary"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E02-POS-002",
+    "kind": "positive",
+    "title": "The validator reports failures for a package",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "The validator reports failures for a package",
+    "input": {
+      "skill_name": "g9-session-director",
+      "validator_report_ref": "evidence:validator-run-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "package_diff",
+        "validator_summary"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E02-POS-003",
+    "kind": "positive",
+    "title": "A skill's output schema must change after an ADR",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A skill's output schema must change after an ADR",
+    "input": {
+      "skill_name": "g9-session-director",
+      "validator_report_ref": "evidence:validator-run-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "package_diff",
+        "validator_summary"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

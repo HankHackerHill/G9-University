@@ -1,0 +1,48 @@
+[
+  {
+    "id": "T08-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: An attempt moved to SUBMITTED and advisory scoring is requested",
+    "mode": "EXAM",
+    "actor_kind": "OPERATOR",
+    "intent": "An attempt moved to SUBMITTED and advisory scoring is requested",
+    "input": {
+      "attempt_id": "attempt-42",
+      "assessment_version": 1
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "criterion_levels",
+        "gate_findings",
+        "grade_source"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "T08-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "EXAM",
+    "actor_kind": "OPERATOR",
+    "intent": "An attempt moved to SUBMITTED and advisory scoring is requested",
+    "input": {
+      "attempt_id": "attempt-42",
+      "assessment_version": 1
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]

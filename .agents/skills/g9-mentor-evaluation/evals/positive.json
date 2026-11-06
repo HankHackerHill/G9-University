@@ -1,0 +1,86 @@
+[
+  {
+    "id": "E12-POS-001",
+    "kind": "positive",
+    "title": "A skill reaches IMPLEMENTED and needs an evaluation plan",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A skill reaches IMPLEMENTED and needs an evaluation plan",
+    "input": {
+      "skill_name": "g9-adaptive-instruction",
+      "suite_ref": "evidence:suite-t03-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "suite_plan",
+        "results"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E12-POS-002",
+    "kind": "positive",
+    "title": "Rubric reviewers disagree beyond tolerance",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "Rubric reviewers disagree beyond tolerance",
+    "input": {
+      "skill_name": "g9-adaptive-instruction",
+      "suite_ref": "evidence:suite-t03-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "suite_plan",
+        "results"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E12-POS-003",
+    "kind": "positive",
+    "title": "A regression suite must be extended after a defect",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A regression suite must be extended after a defect",
+    "input": {
+      "skill_name": "g9-adaptive-instruction",
+      "suite_ref": "evidence:suite-t03-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "suite_plan",
+        "results"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

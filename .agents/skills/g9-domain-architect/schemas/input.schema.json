@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-domain-architect/input",
+  "title": "g9-domain-architect input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "metadata_ref"
+  ],
+  "properties": {
+    "metadata_ref": {
+      "type": "string",
+      "description": "Evidence ref of cargo metadata output"
+    },
+    "schema_root": {
+      "type": "string",
+      "description": "Path of the IPC schema directory"
+    }
+  }
+}

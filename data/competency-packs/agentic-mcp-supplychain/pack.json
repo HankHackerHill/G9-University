@@ -1,0 +1,789 @@
+{
+  "pack_id": "agentic-mcp-supplychain",
+  "title": "Agentic AI, MCP authorization, tool misuse and AI supply chain",
+  "version": "0.1.0",
+  "status": "PROPOSED",
+  "nice_framework_version": "2.2.0",
+  "competencies": [
+    {
+      "id": "agent.workflow-authority",
+      "name": "Agent workflow and authority crossings",
+      "description": "Map agent workflows, identify authority crossings and define bounded execution.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 3
+      },
+      "prerequisites": [
+        "llm-rag-security:llm.app-mapping"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "agent.workflow-authority.m1",
+          "statement": "Agents are just chat with tools",
+          "counterexample": "Each tool is an authority grant"
+        },
+        {
+          "id": "agent.workflow-authority.m2",
+          "statement": "Sandboxing the model sandboxes the agent",
+          "counterexample": "Tools run outside"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "agent.workflow-authority.lab1",
+          "description": "Isolated fixture for: Map agent workflows, identify authority crossings and define bounded execution.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "agent.workflow-authority.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: agent boundary diagram",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "agent.workflow-authority.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for agent workflow and authority crossings with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "agent.workflow-authority.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind agent workflow and authority crossings with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Tool-call audit trails, approval decision logs, token audience checks, package/model provenance records; excessive agency shows as unapproved actions.",
+      "safety_boundaries": [
+        "Agents run only in the isolated lab with mock tools",
+        "No real tokens; audience/resource binding tested with fixtures",
+        "Supply-chain experiments use quarantined packages, never installed on the host"
+      ]
+    },
+    {
+      "id": "agent.identity-scopes",
+      "name": "Identities, scopes and excessive agency",
+      "description": "Examine identities and scopes, identify excessive agency and design backend approvals.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 2,
+        "max": 4
+      },
+      "prerequisites": [
+        "agent.workflow-authority"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "agent.identity-scopes.m1",
+          "statement": "The agent acts as the user",
+          "counterexample": "It needs its own narrower identity"
+        },
+        {
+          "id": "agent.identity-scopes.m2",
+          "statement": "Approval prompts in the UI are a boundary",
+          "counterexample": "Backend-enforced approvals are"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "agent.identity-scopes.lab1",
+          "description": "Isolated fixture for: Examine identities and scopes, identify excessive agency and design backend approvals.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "agent.identity-scopes.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: authorization specification",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "agent.identity-scopes.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for identities, scopes and excessive agency with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 3
+        },
+        {
+          "id": "agent.identity-scopes.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind identities, scopes and excessive agency with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 2
+        }
+      ],
+      "detection_defense_visibility": "Tool-call audit trails, approval decision logs, token audience checks, package/model provenance records; excessive agency shows as unapproved actions.",
+      "safety_boundaries": [
+        "Agents run only in the isolated lab with mock tools",
+        "No real tokens; audience/resource binding tested with fixtures",
+        "Supply-chain experiments use quarantined packages, never installed on the host"
+      ]
+    },
+    {
+      "id": "mcp.transport-auth",
+      "name": "MCP transport, actors and token audience",
+      "description": "Analyze MCP transport and actors, token audience/exfiltration risk, define regression cases.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 4
+      },
+      "prerequisites": [
+        "agent.identity-scopes"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "mcp.transport-auth.m1",
+          "statement": "A valid token is valid for any server",
+          "counterexample": "Resource indicators bind audience"
+        },
+        {
+          "id": "mcp.transport-auth.m2",
+          "statement": "Local servers need no auth",
+          "counterexample": "Local sockets are reachable by malware"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "mcp.transport-auth.lab1",
+          "description": "Isolated fixture for: Analyze MCP transport and actors, token audience/exfiltration risk, define regression cases.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "mcp.transport-auth.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: MCP security report",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "mcp.transport-auth.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for mcp transport, actors and token audience with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "mcp.transport-auth.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind mcp transport, actors and token audience with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Tool-call audit trails, approval decision logs, token audience checks, package/model provenance records; excessive agency shows as unapproved actions.",
+      "safety_boundaries": [
+        "Agents run only in the isolated lab with mock tools",
+        "No real tokens; audience/resource binding tested with fixtures",
+        "Supply-chain experiments use quarantined packages, never installed on the host"
+      ]
+    },
+    {
+      "id": "agent.memory-integrity",
+      "name": "Persistent memory trust and poisoning",
+      "description": "Explain memory trust, evaluate poisoning fixtures and design correction/provenance.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 4
+      },
+      "prerequisites": [
+        "mcp.transport-auth"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "agent.memory-integrity.m1",
+          "statement": "Memory is the agent's own notes",
+          "counterexample": "It is untrusted input on the next run"
+        },
+        {
+          "id": "agent.memory-integrity.m2",
+          "statement": "Deleting poisoned entries fixes it",
+          "counterexample": "Derived state must be invalidated"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "agent.memory-integrity.lab1",
+          "description": "Isolated fixture for: Explain memory trust, evaluate poisoning fixtures and design correction/provenance.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "agent.memory-integrity.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: memory integrity plan",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "agent.memory-integrity.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for persistent memory trust and poisoning with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "agent.memory-integrity.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind persistent memory trust and poisoning with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Tool-call audit trails, approval decision logs, token audience checks, package/model provenance records; excessive agency shows as unapproved actions.",
+      "safety_boundaries": [
+        "Agents run only in the isolated lab with mock tools",
+        "No real tokens; audience/resource binding tested with fixtures",
+        "Supply-chain experiments use quarantined packages, never installed on the host"
+      ]
+    },
+    {
+      "id": "agent.redblue-experiment",
+      "name": "Bounded red/blue experiment",
+      "description": "Define a bounded experiment, observe behavior and verify defensive controls.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "agent.memory-integrity"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "agent.redblue-experiment.m1",
+          "statement": "Red teaming the model suffices",
+          "counterexample": "Test the app with tools"
+        },
+        {
+          "id": "agent.redblue-experiment.m2",
+          "statement": "One run proves safety",
+          "counterexample": "Variance requires repeated runs"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "agent.redblue-experiment.lab1",
+          "description": "Isolated fixture for: Define a bounded experiment, observe behavior and verify defensive controls.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "agent.redblue-experiment.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: agent evaluation",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "agent.redblue-experiment.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for bounded red/blue experiment with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "agent.redblue-experiment.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind bounded red/blue experiment with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Tool-call audit trails, approval decision logs, token audience checks, package/model provenance records; excessive agency shows as unapproved actions.",
+      "safety_boundaries": [
+        "Agents run only in the isolated lab with mock tools",
+        "No real tokens; audience/resource binding tested with fixtures",
+        "Supply-chain experiments use quarantined packages, never installed on the host"
+      ]
+    },
+    {
+      "id": "ai.threat-model-redteam",
+      "name": "AI asset threat modeling and adversarial fixtures",
+      "description": "Identify AI assets/threats, prioritize failure modes, build adversarial fixtures and report uncertainty.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "agent.redblue-experiment"
+      ],
+      "validity_window_days": 180,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "ai.threat-model-redteam.m1",
+          "statement": "Jailbreaks are the main threat",
+          "counterexample": "Data and tool authority are"
+        },
+        {
+          "id": "ai.threat-model-redteam.m2",
+          "statement": "A passing suite proves no attack exists",
+          "counterexample": "It bounds known classes"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "ai.threat-model-redteam.lab1",
+          "description": "Isolated fixture for: Identify AI assets/threats, prioritize failure modes, build adversarial fixtures and report uncertainty.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "ai.threat-model-redteam.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: AI threat model and red-team fixture set",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "ai.threat-model-redteam.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for ai asset threat modeling and adversarial fixtures with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "ai.threat-model-redteam.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind ai asset threat modeling and adversarial fixtures with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Tool-call audit trails, approval decision logs, token audience checks, package/model provenance records; excessive agency shows as unapproved actions.",
+      "safety_boundaries": [
+        "Agents run only in the isolated lab with mock tools",
+        "No real tokens; audience/resource binding tested with fixtures",
+        "Supply-chain experiments use quarantined packages, never installed on the host"
+      ]
+    },
+    {
+      "id": "ai.supply-chain",
+      "name": "Model and dependency provenance",
+      "description": "Trace model/dependency provenance, assess licensing/integrity and define acquisition controls.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "agent.identity-scopes"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "ai.supply-chain.m1",
+          "statement": "Downloaded weights are what the card says",
+          "counterexample": "Verify checksums and signatures"
+        },
+        {
+          "id": "ai.supply-chain.m2",
+          "statement": "Permissive licenses allow everything",
+          "counterexample": "Derivative and redistribution terms vary"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "ai.supply-chain.lab1",
+          "description": "Isolated fixture for: Trace model/dependency provenance, assess licensing/integrity and define acquisition controls.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "ai.supply-chain.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: supply-chain review",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "ai.supply-chain.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for model and dependency provenance with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "ai.supply-chain.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind model and dependency provenance with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Tool-call audit trails, approval decision logs, token audience checks, package/model provenance records; excessive agency shows as unapproved actions.",
+      "safety_boundaries": [
+        "Agents run only in the isolated lab with mock tools",
+        "No real tokens; audience/resource binding tested with fixtures",
+        "Supply-chain experiments use quarantined packages, never installed on the host"
+      ]
+    },
+    {
+      "id": "ai.data-governance-eval",
+      "name": "Data poisoning, privacy and evaluation protocol",
+      "description": "Evaluate poisoning and privacy exposure, define governance controls, metrics and regression criteria.",
+      "dimensions": [
+        "RECALL",
+        "UNDERSTANDING",
+        "APPLICATION",
+        "TRANSFER"
+      ],
+      "difficulty_band": {
+        "min": 3,
+        "max": 5
+      },
+      "prerequisites": [
+        "ai.supply-chain",
+        "llm-rag-security:llm.eval-leakage"
+      ],
+      "validity_window_days": 240,
+      "nice_refs": [
+        {
+          "kind": "KNOWLEDGE",
+          "id": "K-UNPINNED",
+          "confidence": "ASSUMED"
+        },
+        {
+          "kind": "SKILL",
+          "id": "S-UNPINNED",
+          "confidence": "ASSUMED"
+        }
+      ],
+      "misconceptions": [
+        {
+          "id": "ai.data-governance-eval.m1",
+          "statement": "More training data dilutes poison",
+          "counterexample": "Targeted poison survives"
+        },
+        {
+          "id": "ai.data-governance-eval.m2",
+          "statement": "Metrics are objective",
+          "counterexample": "Leakage and selection bias distort"
+        }
+      ],
+      "lab_fixtures": [
+        {
+          "id": "ai.data-governance-eval.lab1",
+          "description": "Isolated fixture for: Evaluate poisoning and privacy exposure, define governance controls, metrics and regression criteria.",
+          "isolation": "CONTAINER",
+          "data_license_note": "synthetic or lab-generated data; external datasets listed in the pack sources with their own license notes"
+        }
+      ],
+      "assessments": [
+        {
+          "id": "ai.data-governance-eval.blind",
+          "kind": "BLIND_PRACTICAL",
+          "description": "Blind practical: data security report and evaluation protocol",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification",
+            "detection_visibility",
+            "evidence_documentation",
+            "scope_compliance_reporting"
+          ],
+          "difficulty": 5
+        },
+        {
+          "id": "ai.data-governance-eval.transfer",
+          "kind": "TRANSFER_CHECK",
+          "description": "Unseen-context transfer check for data poisoning, privacy and evaluation protocol with changed surface features",
+          "rubric_focus": [
+            "independent_execution",
+            "root_cause_reasoning",
+            "remediation_verification"
+          ],
+          "difficulty": 4
+        },
+        {
+          "id": "ai.data-governance-eval.teachback",
+          "kind": "TEACHBACK",
+          "description": "Teach-back of the mechanism behind data poisoning, privacy and evaluation protocol with misconception probes",
+          "rubric_focus": [
+            "root_cause_reasoning",
+            "evidence_documentation"
+          ],
+          "difficulty": 3
+        }
+      ],
+      "detection_defense_visibility": "Tool-call audit trails, approval decision logs, token audience checks, package/model provenance records; excessive agency shows as unapproved actions.",
+      "safety_boundaries": [
+        "Agents run only in the isolated lab with mock tools",
+        "No real tokens; audience/resource binding tested with fixtures",
+        "Supply-chain experiments use quarantined packages, never installed on the host"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "title": "OWASP Top 10 for Agentic Applications 2026",
+      "organisation": "OWASP GenAI Security Project",
+      "kind": "STANDARD",
+      "license_note": "CC BY-SA 4.0 (verify)",
+      "verification": "ASSUMED"
+    },
+    {
+      "title": "Model Context Protocol authorization specification 2025-11-25",
+      "organisation": "MCP project",
+      "kind": "STANDARD",
+      "license_note": "MIT (verify)",
+      "verification": "ASSUMED"
+    },
+    {
+      "title": "Open Agent Skills specification",
+      "organisation": "agentskills.io",
+      "kind": "STANDARD",
+      "license_note": "open specification",
+      "verification": "VERIFIED"
+    }
+  ],
+  "maintenance_policy": {
+    "review_interval_days": 90,
+    "owner_module": "M16"
+  }
+}

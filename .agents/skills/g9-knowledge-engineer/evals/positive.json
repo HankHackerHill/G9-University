@@ -1,0 +1,92 @@
+[
+  {
+    "id": "E11-POS-001",
+    "kind": "positive",
+    "title": "A new approved reference pack is ingested",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A new approved reference pack is ingested",
+    "input": {
+      "source_ids": [
+        "src-owasp-wstg"
+      ],
+      "fixture_ref": "evidence:retrieval-fixtures-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "index_report",
+        "retrieval_metrics"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E11-POS-002",
+    "kind": "positive",
+    "title": "Retrieval precision drops on the fixture set",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "Retrieval precision drops on the fixture set",
+    "input": {
+      "source_ids": [
+        "src-owasp-wstg"
+      ],
+      "fixture_ref": "evidence:retrieval-fixtures-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "index_report",
+        "retrieval_metrics"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E11-POS-003",
+    "kind": "positive",
+    "title": "A source version is superseded",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A source version is superseded",
+    "input": {
+      "source_ids": [
+        "src-owasp-wstg"
+      ],
+      "fixture_ref": "evidence:retrieval-fixtures-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "index_report",
+        "retrieval_metrics"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

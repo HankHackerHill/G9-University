@@ -1,0 +1,92 @@
+[
+  {
+    "id": "E01-POS-001",
+    "kind": "positive",
+    "title": "Operator asks for an updated RTM after ARCHITECTURE.md changes",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks for an updated RTM after ARCHITECTURE.md changes",
+    "input": {
+      "rtm_ref": "evidence:rtm-v6.1",
+      "changed_paths": [
+        "ARCHITECTURE.md"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "orphans",
+        "conflicts"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E01-POS-002",
+    "kind": "positive",
+    "title": "A new ADR is accepted and must be linked to register rows",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A new ADR is accepted and must be linked to register rows",
+    "input": {
+      "rtm_ref": "evidence:rtm-v6.1",
+      "changed_paths": [
+        "ARCHITECTURE.md"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "orphans",
+        "conflicts"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "E01-POS-003",
+    "kind": "positive",
+    "title": "A gate test is renamed or removed and coverage must be re-checked",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "A gate test is renamed or removed and coverage must be re-checked",
+    "input": {
+      "rtm_ref": "evidence:rtm-v6.1",
+      "changed_paths": [
+        "ARCHITECTURE.md"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "orphans",
+        "conflicts"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

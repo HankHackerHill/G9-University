@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-session-director/input",
+  "title": "g9-session-director input_payload (v1.0)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["day_id", "mode", "learner_context_ref"],
+  "properties": {
+    "day_id": { "type": "string", "pattern": "^D(0[1-9]|[1-6][0-9]|7[0-2])$" },
+    "mode": { "type": "string", "enum": ["STUDY", "LAB"] },
+    "learner_context_ref": { "type": "string", "pattern": "^[a-z][a-z0-9_]*:[A-Za-z0-9._/@-]{1,120}$", "maxLength": 128 },
+    "include_due_reviews": { "type": "boolean", "default": true },
+    "include_open_interventions": { "type": "boolean", "default": true },
+    "session_block": { "type": "string", "enum": ["recall", "theory", "guided_lab", "independent_lab", "defense_verification", "evidence_reporting", "blind_practical", "remediation", "report", "performance_review"] },
+    "operator_priorities": { "type": "array", "maxItems": 5, "items": { "type": "string", "minLength": 1, "maxLength": 200 } }
+  }
+}

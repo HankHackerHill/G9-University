@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-adaptive-agenda/output",
+  "title": "g9-adaptive-agenda result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "blocks",
+    "unplaced",
+    "feasibility"
+  ],
+  "properties": {
+    "blocks": {
+      "type": "array",
+      "description": "Proposed blocks with rationale",
+      "items": {}
+    },
+    "unplaced": {
+      "type": "array",
+      "description": "Unplaced with reasons",
+      "items": {}
+    },
+    "feasibility": {
+      "type": "string",
+      "description": "FEASIBLE or INFEASIBLE"
+    }
+  }
+}

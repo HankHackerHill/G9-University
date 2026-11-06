@@ -1,0 +1,83 @@
+[
+  {
+    "id": "K02-POS-001",
+    "kind": "positive",
+    "title": "A new exam result contradicts an accepted strength hypothesis",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "A new exam result contradicts an accepted strength hypothesis",
+    "input": {
+      "since_observation_id": "obs-900"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "conflicts",
+        "corrections"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "K02-POS-002",
+    "kind": "positive",
+    "title": "Operator asks to review stale hypotheses",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks to review stale hypotheses",
+    "input": {
+      "since_observation_id": "obs-900"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "conflicts",
+        "corrections"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "K02-POS-003",
+    "kind": "positive",
+    "title": "A correction observation supersedes an earlier one",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "A correction observation supersedes an earlier one",
+    "input": {
+      "since_observation_id": "obs-900"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "conflicts",
+        "corrections"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

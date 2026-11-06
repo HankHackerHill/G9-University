@@ -1,0 +1,47 @@
+[
+  {
+    "id": "L03-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: Daily recall block planning",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Daily recall block planning",
+    "input": {
+      "date": "2026-11-10",
+      "budget_minutes": 15
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "review_plan",
+        "transfer_checks"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "L03-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Daily recall block planning",
+    "input": {
+      "date": "2026-11-10",
+      "budget_minutes": 15
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]

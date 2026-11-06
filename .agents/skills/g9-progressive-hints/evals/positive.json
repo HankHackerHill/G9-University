@@ -1,0 +1,86 @@
+[
+  {
+    "id": "T06-POS-001",
+    "kind": "positive",
+    "title": "Operator explicitly asks for a hint",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator explicitly asks for a hint",
+    "input": {
+      "task_ref": "evidence:task-1",
+      "tier_requested": 0
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "tier",
+        "hint"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "T06-POS-002",
+    "kind": "positive",
+    "title": "Stall timer fires on a lab task",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Stall timer fires on a lab task",
+    "input": {
+      "task_ref": "evidence:task-1",
+      "tier_requested": 0
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "tier",
+        "hint"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "T06-POS-003",
+    "kind": "positive",
+    "title": "Socratic coaching recommended moving to hints",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Socratic coaching recommended moving to hints",
+    "input": {
+      "task_ref": "evidence:task-1",
+      "tier_requested": 0
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "tier",
+        "hint"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

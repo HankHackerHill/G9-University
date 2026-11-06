@@ -1,0 +1,86 @@
+[
+  {
+    "id": "T03-POS-001",
+    "kind": "positive",
+    "title": "Operator asks for the theory block lesson of the day",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks for the theory block lesson of the day",
+    "input": {
+      "objective_id": "D15-O1",
+      "depth": "STANDARD"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "lesson",
+        "citations"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "T03-POS-002",
+    "kind": "positive",
+    "title": "A diagnosed understanding gap needs an explanation",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "A diagnosed understanding gap needs an explanation",
+    "input": {
+      "objective_id": "D15-O1",
+      "depth": "STANDARD"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "lesson",
+        "citations"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "T03-POS-003",
+    "kind": "positive",
+    "title": "Operator asks to go deeper on a mechanism",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks to go deeper on a mechanism",
+    "input": {
+      "objective_id": "D15-O1",
+      "depth": "STANDARD"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "lesson",
+        "citations"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

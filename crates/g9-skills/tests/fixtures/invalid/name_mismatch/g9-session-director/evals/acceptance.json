@@ -1,0 +1,16 @@
+[
+  {
+    "id": "T01-ACC-001", "kind": "acceptance", "title": "Day-start brief cites objectives and reviews",
+    "mode": "STUDY", "actor_kind": "OPERATOR", "intent": "Start my day",
+    "input": { "day_id": "D15", "mode": "STUDY", "learner_context_ref": "snapshot:week03-day15" },
+    "expect": { "activate": true, "status": "COMPLETED", "must_include": ["objectives", "due_reviews", "evidence_refs"], "approval_requirements": [] },
+    "notes": "measurable: every listed item has an evidence ref"
+  },
+  {
+    "id": "T01-ACC-002", "kind": "acceptance", "title": "LAB block brief lists open interventions",
+    "mode": "LAB", "actor_kind": "OPERATOR", "intent": "Starting the independent lab block",
+    "input": { "day_id": "D16", "mode": "LAB", "learner_context_ref": "snapshot:week03-day16", "session_block": "independent_lab" },
+    "expect": { "activate": true, "status": "COMPLETED", "must_include": ["open_interventions"], "approval_requirements": [] },
+    "notes": "measurable: interventions listed with ids"
+  }
+]

@@ -1,0 +1,83 @@
+[
+  {
+    "id": "L06-POS-001",
+    "kind": "positive",
+    "title": "A week of calibration observations is available",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "A week of calibration observations is available",
+    "input": {
+      "window_days": 28
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "brier",
+        "bins"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "L06-POS-002",
+    "kind": "positive",
+    "title": "Operator asks whether they are overconfident on a pack",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks whether they are overconfident on a pack",
+    "input": {
+      "window_days": 28
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "brier",
+        "bins"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "L06-POS-003",
+    "kind": "positive",
+    "title": "A new mapping table for a rating scale must be validated",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "A new mapping table for a rating scale must be validated",
+    "input": {
+      "window_days": 28
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "brier",
+        "bins"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

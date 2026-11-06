@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-teachback-review/output",
+  "title": "g9-teachback-review result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "claims",
+    "misconceptions"
+  ],
+  "properties": {
+    "claims": {
+      "type": "array",
+      "description": "Claims with verdict and evidence",
+      "items": {}
+    },
+    "misconceptions": {
+      "type": "array",
+      "description": "Misconceptions with counterexamples",
+      "items": {}
+    },
+    "observation_draft": {
+      "type": "object",
+      "description": "Advisory understanding observation",
+      "additionalProperties": true
+    },
+    "follow_up": {
+      "type": "string",
+      "description": "Proposed check"
+    }
+  }
+}

@@ -1,0 +1,83 @@
+[
+  {
+    "id": "P02-POS-001",
+    "kind": "positive",
+    "title": "Saturday performance review block",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "Saturday performance review block",
+    "input": {
+      "window_weeks": 4
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "kpis",
+        "trends"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "P02-POS-002",
+    "kind": "positive",
+    "title": "Operator asks for the last four weeks' trend",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks for the last four weeks' trend",
+    "input": {
+      "window_weeks": 4
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "kpis",
+        "trends"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "P02-POS-003",
+    "kind": "positive",
+    "title": "Milestone reliability review",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "Milestone reliability review",
+    "input": {
+      "window_weeks": 4
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "kpis",
+        "trends"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "E02-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: Operator asks to draft a SKILL.md for a new runtime skill",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks to draft a SKILL.md for a new runtime skill",
+    "input": {
+      "skill_name": "g9-session-director",
+      "validator_report_ref": "evidence:validator-run-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "package_diff",
+        "validator_summary"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "E02-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks to draft a SKILL.md for a new runtime skill",
+    "input": {
+      "skill_name": "g9-session-director",
+      "validator_report_ref": "evidence:validator-run-1"
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]

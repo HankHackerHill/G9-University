@@ -1,0 +1,47 @@
+[
+  {
+    "id": "L01-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: The same error class appears in three tasks",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "The same error class appears in three tasks",
+    "input": {
+      "competency_id": "web.xss-contexts",
+      "window_days": 30
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "hypotheses",
+        "counterexamples"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "L01-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "The same error class appears in three tasks",
+    "input": {
+      "competency_id": "web.xss-contexts",
+      "window_days": 30
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]

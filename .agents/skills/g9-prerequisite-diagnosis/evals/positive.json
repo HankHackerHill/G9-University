@@ -1,0 +1,86 @@
+[
+  {
+    "id": "T02-POS-001",
+    "kind": "positive",
+    "title": "A lab task scored below 70 unaided",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "A lab task scored below 70 unaided",
+    "input": {
+      "observation_id": "obs-123",
+      "competency_id": "web.injection"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "hypotheses",
+        "underdetermined"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "T02-POS-002",
+    "kind": "positive",
+    "title": "A weekly assessment criterion failed and the operator asks why",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "A weekly assessment criterion failed and the operator asks why",
+    "input": {
+      "observation_id": "obs-123",
+      "competency_id": "web.injection"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "hypotheses",
+        "underdetermined"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "T02-POS-003",
+    "kind": "positive",
+    "title": "Repeated failure on the same objective",
+    "mode": "STUDY",
+    "actor_kind": "OPERATOR",
+    "intent": "Repeated failure on the same objective",
+    "input": {
+      "observation_id": "obs-123",
+      "competency_id": "web.injection"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "hypotheses",
+        "underdetermined"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

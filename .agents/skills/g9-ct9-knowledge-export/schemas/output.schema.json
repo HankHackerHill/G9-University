@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-ct9-knowledge-export/output",
+  "title": "g9-ct9-knowledge-export result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifest",
+    "excluded"
+  ],
+  "properties": {
+    "manifest": {
+      "type": "array",
+      "description": "Artifacts with license, classification, approval ref, hash",
+      "items": {}
+    },
+    "excluded": {
+      "type": "array",
+      "description": "Excluded artifacts with reasons",
+      "items": {}
+    }
+  }
+}

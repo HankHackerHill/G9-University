@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-laboratory-coach/input",
+  "title": "g9-laboratory-coach input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "fixture_id"
+  ],
+  "properties": {
+    "fixture_id": {
+      "type": "string",
+      "description": "Lab fixture id"
+    },
+    "last_output_ref": {
+      "type": "string",
+      "description": "Evidence ref of last output"
+    }
+  }
+}

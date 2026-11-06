@@ -1,0 +1,80 @@
+[
+  {
+    "id": "P06-POS-001",
+    "kind": "positive",
+    "title": "Operator opted into a weekly reflection",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator opted into a weekly reflection",
+    "input": {
+      "goal_id": "habit-3"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "prompts"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "P06-POS-002",
+    "kind": "positive",
+    "title": "Operator asks for a reflection on a self-defined goal",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks for a reflection on a self-defined goal",
+    "input": {
+      "goal_id": "habit-3"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "prompts"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  },
+  {
+    "id": "P06-POS-003",
+    "kind": "positive",
+    "title": "A protected-rest goal is reviewed",
+    "mode": "REVIEW",
+    "actor_kind": "OPERATOR",
+    "intent": "A protected-rest goal is reviewed",
+    "input": {
+      "goal_id": "habit-3"
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "prompts"
+      ],
+      "must_not": [
+        "fabricated evidence"
+      ],
+      "approval_requirements": [],
+      "recommended_action_kinds": [
+        "PROPOSE"
+      ]
+    },
+    "notes": "Positive activation: the intent matches a declared positive trigger inside an allowed mode."
+  }
+]

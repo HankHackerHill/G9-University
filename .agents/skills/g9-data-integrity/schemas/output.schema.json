@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-data-integrity/output",
+  "title": "g9-data-integrity result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "risks",
+    "test_plan"
+  ],
+  "properties": {
+    "risks": {
+      "type": "array",
+      "description": "Silent-loss risks with table and fix",
+      "items": {}
+    },
+    "backup_findings": {
+      "type": "array",
+      "description": "Backup/restore findings",
+      "items": {}
+    },
+    "test_plan": {
+      "type": "array",
+      "description": "Proposed integrity tests",
+      "items": {}
+    }
+  }
+}

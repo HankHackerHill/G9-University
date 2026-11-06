@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-spec-assurance/input",
+  "title": "g9-spec-assurance input_payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "rtm_ref"
+  ],
+  "properties": {
+    "rtm_ref": {
+      "type": "string",
+      "description": "Evidence ref of the current RTM document"
+    },
+    "changed_paths": {
+      "type": "array",
+      "description": "Repository paths that changed",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

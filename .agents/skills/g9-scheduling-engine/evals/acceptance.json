@@ -1,0 +1,56 @@
+[
+  {
+    "id": "E08-ACC-001",
+    "kind": "acceptance",
+    "title": "Baseline task: Operator asks for next week's proposal",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks for next week's proposal",
+    "input": {
+      "week_start_date": "2026-11-09",
+      "timezone": "Europe/Berlin",
+      "task_refs": [
+        "task-1"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "COMPLETED",
+      "must_include": [
+        "placements",
+        "unplaced",
+        "feasibility",
+        "constraint_trace"
+      ],
+      "recommended_action_kinds": [
+        "PROPOSE",
+        "READ"
+      ]
+    },
+    "notes": "Representative baseline: every required result field is present and every claim carries evidence refs."
+  },
+  {
+    "id": "E08-ACC-002",
+    "kind": "acceptance",
+    "title": "Model unavailable fallback",
+    "mode": "MAINTENANCE",
+    "actor_kind": "OPERATOR",
+    "intent": "Operator asks for next week's proposal",
+    "input": {
+      "week_start_date": "2026-11-09",
+      "timezone": "Europe/Berlin",
+      "task_refs": [
+        "task-1"
+      ]
+    },
+    "expect": {
+      "activate": true,
+      "status": "ERROR",
+      "must_not": [
+        "fabricated output",
+        "silent success"
+      ]
+    },
+    "notes": "With the model runtime down the orchestrator reports RESOURCE_UNAVAILABLE; deterministic features remain usable (A09)."
+  }
+]
