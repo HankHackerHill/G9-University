@@ -1,0 +1,540 @@
+//! Session and timer commands (M04; ARCHITECTURE.md §7 "Timer ledger"; gate A03).
+//!
+//! State changes go through `SessionState::transition` (pure) and
+//! `g9_storage::repos::sessions::transition_session` (revision-checked,
+//! appends the immutable `session_events` row). Focused time is measured by the
+//! `g9_calendar::Ledger` from **monotonic** readings: `start`/`resume` open an
+//! interval, `pause`/`complete` close it `VERIFIED`; credited time is always
+//! recomputed from the ledger (verified intervals plus operator corrections;
+//! `UNCERTAIN` time is never credited without a correction). Monotonic
+//! readings are comparable only within one process lifetime: intervals opened
+//! by this process belong to epoch 1, every stored interval from an earlier
+//! process to epoch 0 (recovery closed those `UNCERTAIN` at open).
+
+use super::{decode, new_id, parse_id, rc, scope_of, tail, to_value};
+use crate::context::{AppContext, Services};
+use crate::ops::OpSpec;
+use crate::pipeline::{self, Command, EventSpec, Facts, Mutation};
+use g9_calendar::{Continuity, Ledger, ManualCorrection, SessionEventRow, TimerError};
+use g9_domain::state::SessionEvent;
+use g9_domain::{
+    Actor, CommandMeta, CommandOutcome, DurationMs, G9Error, ResourceKind, ResourceRef, SessionId,
+    SessionState, UtcMillis,
+};
+use g9_storage::repos::curriculum as curriculum_repo;
+use g9_storage::repos::sessions::{
+    self as repo, ClosedBy, ManualTimeCorrectionRow, StudySessionRow,
+};
+use g9_storage::repos::ReadScope;
+use rusqlite::Connection;
+use serde::Deserialize;
+use serde_json::{json, Value};
+
+/// Map a timer ledger refusal onto the closed category set.
+pub(crate) fn timer_err(e: TimerError) -> G9Error {
+    let code = e.code();
+    match e {
+        TimerError::AlreadyRunning { .. } => G9Error::conflict(code, e.to_string()),
+        TimerError::IntervalNotFound(_) => G9Error::not_found(code, e.to_string()),
+        TimerError::ActorNotOperator => G9Error::unauthorized(code, e.to_string()),
+        TimerError::EmptyReason | TimerError::DuplicateCorrectionId => {
+            G9Error::invalid_input(code, e.to_string())
+        }
+        _ => G9Error::precondition_failed(code, e.to_string()),
+    }
+}
+
+fn illegal(from: SessionState, event: SessionEvent) -> G9Error {
+    G9Error::precondition_failed(
+        "session.illegal_transition",
+        format!("session: event {event:?} is not allowed in state {from}"),
+    )
+    .with_details(json!({ "machine": "session", "from": from, "event": event }))
+}
+
+/// Rebuild the timer ledger of one session from storage (see module docs on epochs).
+pub(crate) fn ledger_for(
+    conn: &Connection,
+    svc: &Services,
+    session: &SessionId,
+) -> Result<Ledger, G9Error> {
+    let rows = repo::list_intervals(conn, session)?;
+    let mut ledger = Ledger::new();
+    ledger.process_epoch = 1;
+    let mut index = std::collections::BTreeMap::new();
+    for (i, row) in rows.iter().enumerate() {
+        let mut record = row.record.clone();
+        record.process_epoch = u64::from(svc.epoch_intervals.contains(&row.id));
+        ledger.intervals.push(record);
+        index.insert(row.id.clone(), i);
+    }
+    for c in repo::list_corrections(conn, session)? {
+        let Some(interval_index) = c.interval_id.as_ref().and_then(|id| index.get(id)) else {
+            continue;
+        };
+        ledger.corrections.push(ManualCorrection {
+            id: c.id,
+            interval_index: *interval_index,
+            credited_ms: DurationMs::new(c.delta_ms.max(0)).unwrap_or(DurationMs::ZERO),
+            reason: c.reason,
+            actor: Actor::operator(c.corrected_by),
+            recorded_at: c.corrected_at,
+        });
+    }
+    Ok(ledger)
+}
+
+/// `SessionView` (operations.ts) from storage.
+pub(crate) fn session_view(
+    conn: &Connection,
+    svc: &Services,
+    row: &StudySessionRow,
+) -> Result<Value, G9Error> {
+    let ledger = ledger_for(conn, svc, &row.id)?;
+    let credit = ledger.credited(&row.id);
+    let block = match &row.study_block_id {
+        Some(id) => curriculum_repo::get_study_block(conn, id)?,
+        None => None,
+    };
+    let day_source = row
+        .training_day_id
+        .clone()
+        .or_else(|| block.as_ref().map(|b| b.training_day_id.clone()));
+    let day_id = day_source
+        .as_deref()
+        .map(tail)
+        .unwrap_or("UNLINKED")
+        .to_string();
+    let (block_code, block_seq) = match &block {
+        // A session not linked to a curriculum block (wave-1 rows created
+        // outside the planner) is labelled as such; block_seq must be >= 1.
+        Some(b) => (b.block_code.clone(), b.ordinal.max(1)),
+        None => ("UNLINKED".to_string(), 1),
+    };
+    let rows = repo::list_intervals(conn, &row.id)?;
+    let intervals: Vec<Value> = rows
+        .iter()
+        .map(|r| {
+            json!({
+                "interval_id": r.id,
+                "start_utc": r.record.start_wall,
+                "end_utc": r.record.end_wall,
+                "continuity": r.record.continuity,
+            })
+        })
+        .collect();
+    let corrections: Vec<Value> = repo::list_corrections(conn, &row.id)?
+        .into_iter()
+        .filter_map(|c| {
+            let interval_id = c.interval_id?;
+            Some(json!({
+                "correction_id": c.id,
+                "interval_id": interval_id,
+                "credited_ms": c.delta_ms.max(0),
+                "reason": c.reason,
+                "corrected_at": c.corrected_at,
+            }))
+        })
+        .collect();
+    let open_start = rows
+        .iter()
+        .find(|r| r.record.is_open())
+        .map(|r| r.record.start_wall);
+    let requires_correction =
+        row.state == SessionState::Interrupted || ledger.has_uncorrected_uncertain(&row.id);
+    let view = json!({
+        "session_id": row.id,
+        "state": row.state,
+        "day_id": day_id,
+        "block": block_code,
+        "block_seq": block_seq,
+        "planned_ms": i64::from(row.planned_minutes) * 60_000,
+        "credited_ms": credit.total_credited_ms,
+        "uncertain_ms": credit.uncertain_ms,
+        "started_at": row.started_at,
+        "open_interval_started_at": open_start,
+        "requires_correction": requires_correction,
+        "intervals": intervals,
+        "corrections": corrections,
+        "revision": row.revision,
+    });
+    to_value(&view)
+}
+
+fn load(conn: &Connection, scope: &ReadScope, id: &SessionId) -> Result<StudySessionRow, G9Error> {
+    repo::get_session(conn, scope, id)?.ok_or_else(|| {
+        G9Error::not_found("session.not_found", "session not found")
+            .with_details(json!({ "session_id": id }))
+    })
+}
+
+fn civil_date(instant: UtcMillis, svc: &Services) -> Option<String> {
+    let c = g9_calendar::to_civil(instant, &svc.config.zone).ok()?;
+    Some(format!("{:04}-{:02}-{:02}", c.year, c.month, c.day))
+}
+
+#[derive(Debug, Deserialize)]
+struct ListRequest {
+    date: Option<String>,
+}
+
+/// `session.list`.
+pub fn list(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    let req: ListRequest = decode(payload)?;
+    let resource = ResourceRef::new(ResourceKind::StudySession, "sessions");
+    let scope = scope_of(meta);
+    pipeline::execute(
+        ctx,
+        meta,
+        Command {
+            spec,
+            resource: &resource,
+            payload,
+        },
+        |_, _| {
+            Ok(Facts::new_record(rc(
+                meta.scope.domain,
+                g9_domain::Classification::Internal,
+                false,
+            )))
+        },
+        |env| {
+            let mut sessions = Vec::new();
+            for row in repo::list_sessions(env.conn, &scope, None)? {
+                if let Some(date) = &req.date {
+                    let at = row.planned_start_utc.unwrap_or(row.created_at);
+                    if civil_date(at, env.svc).as_deref() != Some(date.as_str()) {
+                        continue;
+                    }
+                }
+                sessions.push(session_view(env.conn, env.svc, &row)?);
+            }
+            Ok(Mutation::new(json!({ "sessions": sessions }), None))
+        },
+    )
+}
+
+#[derive(Debug, Deserialize)]
+struct SessionRequest {
+    session_id: String,
+}
+
+fn transition(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+    event: SessionEvent,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    let req: SessionRequest = decode(payload)?;
+    let id: SessionId = parse_id(&req.session_id, "session_id")?;
+    let resource = ResourceRef::new(ResourceKind::StudySession, id.as_str());
+    let scope = scope_of(meta);
+    let facts_id = id.clone();
+    pipeline::execute(
+        ctx,
+        meta,
+        Command {
+            spec,
+            resource: &resource,
+            payload,
+        },
+        move |conn, _| {
+            let row = load(conn, &scope, &facts_id)?;
+            Ok(Facts::existing(
+                rc(row.data_domain, row.classification, row.state.is_terminal()),
+                row.revision,
+            ))
+        },
+        move |env| {
+            let row = load(env.conn, &scope, &id)?;
+            let next = row
+                .state
+                .transition(event)
+                .map_err(|_| illegal(row.state, event))?;
+            let mut ledger = ledger_for(env.conn, env.svc, &id)?;
+            let mono = env.svc.mono();
+            let mut details = json!({ "from": row.state, "to": next });
+            match event {
+                SessionEvent::Start | SessionEvent::Resume => {
+                    ledger.start(id.clone(), env.now, mono).map_err(timer_err)?;
+                    let interval_id = new_id("ti");
+                    repo::open_interval(env.conn, &interval_id, &id, env.now, mono, env.now)?;
+                    env.svc.epoch_intervals.insert(interval_id.clone());
+                    details["interval_id"] = json!(interval_id);
+                }
+                SessionEvent::Pause | SessionEvent::Complete => {
+                    let open = repo::list_intervals(env.conn, &id)?
+                        .into_iter()
+                        .find(|r| r.record.is_open());
+                    if let Some(open) = open {
+                        ledger.stop(&id, env.now, mono).map_err(timer_err)?;
+                        repo::close_interval(
+                            env.conn,
+                            &open.id,
+                            open.revision,
+                            env.now,
+                            Some(mono),
+                            Continuity::Verified,
+                            if event == SessionEvent::Pause {
+                                ClosedBy::Operator
+                            } else {
+                                ClosedBy::System
+                            },
+                            env.now,
+                        )?;
+                        details["interval_id"] = json!(open.id);
+                    }
+                }
+                _ => {}
+            }
+            let seq =
+                u32::try_from(repo::list_session_events(env.conn, &id)?.len()).unwrap_or(u32::MAX);
+            let revision = repo::transition_session(
+                env.conn,
+                &new_id("se"),
+                &SessionEventRow {
+                    seq,
+                    session_id: id.clone(),
+                    event,
+                    from: row.state,
+                    to: next,
+                    actor: env.meta.actor.clone(),
+                    occurred_at: env.now,
+                },
+                Some(&details),
+                row.revision,
+            )?;
+            let credit = ledger_for(env.conn, env.svc, &id)?.credited(&id);
+            let revision = repo::update_session_credit(
+                env.conn,
+                &id,
+                revision,
+                credit.total_credited_ms,
+                credit.uncertain_ms,
+                env.now,
+            )?;
+            let stored = load(env.conn, &ReadScope::cross_domain(row.data_domain), &id)?;
+            let view = session_view(env.conn, env.svc, &stored)?;
+            let kind = match event {
+                SessionEvent::Prepare => "session.prepared",
+                SessionEvent::Start => "session.started",
+                SessionEvent::Pause => "session.paused",
+                SessionEvent::Resume => "session.resumed",
+                SessionEvent::Complete => "session.completed",
+                _ => "session.transitioned",
+            };
+            Ok(
+                Mutation::new(view, Some(revision)).with_event(EventSpec::learning(
+                    kind,
+                    json!({
+                        "session_id": id,
+                        "from": row.state,
+                        "to": next,
+                        "credited_ms": credit.total_credited_ms,
+                        "uncertain_ms": credit.uncertain_ms,
+                    }),
+                )),
+            )
+        },
+    )
+}
+
+/// `session.prepare` (PLANNED → READY).
+pub fn prepare(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    transition(ctx, spec, meta, payload, SessionEvent::Prepare)
+}
+
+/// `session.start` (READY → RUNNING; opens a monotonic interval).
+pub fn start(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    transition(ctx, spec, meta, payload, SessionEvent::Start)
+}
+
+/// `session.pause` (RUNNING → PAUSED; closes the interval VERIFIED).
+pub fn pause(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    transition(ctx, spec, meta, payload, SessionEvent::Pause)
+}
+
+/// `session.resume` (PAUSED → RUNNING; opens a new interval).
+pub fn resume(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    transition(ctx, spec, meta, payload, SessionEvent::Resume)
+}
+
+/// `session.complete` (RUNNING/PAUSED/INTERRUPTED → COMPLETED; credit from the ledger).
+pub fn complete(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    transition(ctx, spec, meta, payload, SessionEvent::Complete)
+}
+
+#[derive(Debug, Deserialize)]
+struct CorrectRequest {
+    session_id: String,
+    interval_id: String,
+    credited_ms: i64,
+    reason: String,
+}
+
+/// `session.correct_time`: an operator correction is a new
+/// `manual_time_corrections` row that supersedes the credit of one closed
+/// `UNCERTAIN` interval; the interval itself is never edited. An
+/// `INTERRUPTED` session recovers to `PAUSED`.
+pub fn correct_time(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    let req: CorrectRequest = decode(payload)?;
+    let id: SessionId = parse_id(&req.session_id, "session_id")?;
+    let resource = ResourceRef::new(ResourceKind::TimeInterval, req.interval_id.as_str());
+    let scope = scope_of(meta);
+    let facts_id = id.clone();
+    pipeline::execute(
+        ctx,
+        meta,
+        Command {
+            spec,
+            resource: &resource,
+            payload,
+        },
+        move |conn, _| {
+            let row = load(conn, &scope, &facts_id)?;
+            Ok(Facts::existing(
+                rc(row.data_domain, row.classification, row.state.is_terminal()),
+                row.revision,
+            ))
+        },
+        move |env| {
+            let row = load(env.conn, &scope, &id)?;
+            let mut ledger = ledger_for(env.conn, env.svc, &id)?;
+            let intervals = repo::list_intervals(env.conn, &id)?;
+            let (index, interval) = intervals
+                .iter()
+                .enumerate()
+                .find(|(_, r)| r.id == req.interval_id)
+                .ok_or_else(|| {
+                    G9Error::not_found("interval.not_found", "time interval not found")
+                        .with_details(json!({ "interval_id": req.interval_id }))
+                })?;
+            if interval.record.continuity != Continuity::Uncertain || interval.record.is_open() {
+                return Err(G9Error::precondition_failed(
+                    "interval.not_correctable",
+                    "only closed UNCERTAIN intervals accept a correction",
+                ));
+            }
+            let max = interval.record.wall_estimate();
+            let credited = DurationMs::new(req.credited_ms).map_err(|_| {
+                G9Error::invalid_input("correction.negative", "credited time must be non-negative")
+            })?;
+            if credited > max {
+                return Err(G9Error::invalid_input(
+                    "correction.exceeds_interval",
+                    "credited time cannot exceed the uncertain interval length",
+                )
+                .with_details(json!({ "max_ms": max })));
+            }
+            let correction_id = new_id("tc");
+            ledger
+                .correct(ManualCorrection {
+                    id: correction_id.clone(),
+                    interval_index: index,
+                    credited_ms: credited,
+                    reason: req.reason.clone(),
+                    actor: env.meta.actor.clone(),
+                    recorded_at: env.now,
+                })
+                .map_err(timer_err)?;
+            repo::append_manual_correction(
+                env.conn,
+                &ManualTimeCorrectionRow {
+                    id: correction_id.clone(),
+                    session_id: id.clone(),
+                    interval_id: Some(req.interval_id.clone()),
+                    corrected_start_utc: None,
+                    corrected_end_utc: None,
+                    delta_ms: credited.as_millis(),
+                    reason: req.reason.clone(),
+                    corrected_by: env.meta.actor.id.clone(),
+                    corrected_at: env.now,
+                    approval_id: env.consumed.as_ref().map(|c| c.approval_id.clone()),
+                    created_at: env.now,
+                },
+            )?;
+            let mut revision = row.revision;
+            if row.state == SessionState::Interrupted {
+                let next = row
+                    .state
+                    .transition(SessionEvent::Recover)
+                    .map_err(|_| illegal(row.state, SessionEvent::Recover))?;
+                let seq = u32::try_from(repo::list_session_events(env.conn, &id)?.len())
+                    .unwrap_or(u32::MAX);
+                revision = repo::transition_session(
+                    env.conn,
+                    &new_id("se"),
+                    &SessionEventRow {
+                        seq,
+                        session_id: id.clone(),
+                        event: SessionEvent::Recover,
+                        from: row.state,
+                        to: next,
+                        actor: env.meta.actor.clone(),
+                        occurred_at: env.now,
+                    },
+                    Some(&json!({ "correction_id": correction_id })),
+                    revision,
+                )?;
+            }
+            let credit = ledger_for(env.conn, env.svc, &id)?.credited(&id);
+            let revision = repo::update_session_credit(
+                env.conn,
+                &id,
+                revision,
+                credit.total_credited_ms,
+                credit.uncertain_ms,
+                env.now,
+            )?;
+            let stored = load(env.conn, &ReadScope::cross_domain(row.data_domain), &id)?;
+            let view = session_view(env.conn, env.svc, &stored)?;
+            Ok(
+                Mutation::new(view, Some(revision)).with_event(EventSpec::learning(
+                    "session.time_corrected",
+                    json!({
+                        "session_id": id,
+                        "interval_id": req.interval_id,
+                        "correction_id": correction_id,
+                        "credited_ms": credited,
+                    }),
+                )),
+            )
+        },
+    )
+}

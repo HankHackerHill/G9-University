@@ -39,7 +39,12 @@ const fn op(
 
 /// Every routed IPC operation (35: the 34 UI operations plus `curriculum.promote`).
 pub const OPERATIONS: &[OpSpec] = &[
-    op("system.status", false, Action::Read, ResourceKind::AppSetting),
+    op(
+        "system.status",
+        false,
+        Action::Read,
+        ResourceKind::AppSetting,
+    ),
     op(
         "curriculum.validate",
         false,
@@ -126,9 +131,24 @@ pub const OPERATIONS: &[OpSpec] = &[
     ),
     op("notes.create", true, Action::Create, ResourceKind::Note),
     op("notes.revise", true, Action::Update, ResourceKind::Note),
-    op("assessment.list", false, Action::Read, ResourceKind::Attempt),
-    op("assessment.begin", true, Action::Update, ResourceKind::Attempt),
-    op("assessment.submit", true, Action::Update, ResourceKind::Attempt),
+    op(
+        "assessment.list",
+        false,
+        Action::Read,
+        ResourceKind::Attempt,
+    ),
+    op(
+        "assessment.begin",
+        true,
+        Action::Update,
+        ResourceKind::Attempt,
+    ),
+    op(
+        "assessment.submit",
+        true,
+        Action::Update,
+        ResourceKind::Attempt,
+    ),
     op(
         "assessment.review_evidence",
         true,
@@ -153,15 +173,30 @@ pub const OPERATIONS: &[OpSpec] = &[
         Action::Read,
         ResourceKind::Competency,
     ),
-    op("retention.due", false, Action::Read, ResourceKind::ReviewItem),
+    op(
+        "retention.due",
+        false,
+        Action::Read,
+        ResourceKind::ReviewItem,
+    ),
     op(
         "interventions.list",
         false,
         Action::Read,
         ResourceKind::Intervention,
     ),
-    op("approvals.list", false, Action::Read, ResourceKind::Approval),
-    op("approvals.decide", true, Action::Approve, ResourceKind::Approval),
+    op(
+        "approvals.list",
+        false,
+        Action::Read,
+        ResourceKind::Approval,
+    ),
+    op(
+        "approvals.decide",
+        true,
+        Action::Approve,
+        ResourceKind::Approval,
+    ),
     op(
         "audit.recent",
         false,
@@ -170,7 +205,12 @@ pub const OPERATIONS: &[OpSpec] = &[
     ),
     op("backup.create", true, Action::Create, ResourceKind::Backup),
     op("backup.verify", true, Action::Update, ResourceKind::Backup),
-    op("backup.restore_test", true, Action::Update, ResourceKind::Backup),
+    op(
+        "backup.restore_test",
+        true,
+        Action::Update,
+        ResourceKind::Backup,
+    ),
     op("skills.invoke", true, Action::Invoke, ResourceKind::Skill),
     op("export.request", true, Action::Export, ResourceKind::Export),
     op("deletion.request", true, Action::Delete, ResourceKind::Note),

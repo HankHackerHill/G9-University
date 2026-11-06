@@ -21,7 +21,7 @@
 use crate::recovery::{self, RecoveryReport};
 use g9_ai_adapter::{InferenceRuntime, NullRuntime};
 use g9_domain::{
-    Actor, ActorId, ApprovalId, ApprovalState, BackupId, CurriculumId, G9Error, IanaZone,
+    Actor, ActorId, ApprovalId, ApprovalState, AuditRef, BackupId, CurriculumId, G9Error, IanaZone,
     Revision, UtcMillis,
 };
 use g9_evidence::ApprovedRoots;
@@ -30,7 +30,7 @@ use g9_skills::Registry;
 use g9_storage::approvals_store::{self, ApprovalRequestRow};
 use g9_storage::{BackupManifest, Database};
 use rusqlite::Connection;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -272,6 +272,10 @@ pub struct Services {
     pub epoch_intervals: BTreeSet<String>,
     /// Recovery outcome of the last open.
     pub recovery: RecoveryReport,
+    /// Whether the database runs in WAL mode (observed PRAGMA at open).
+    pub storage_wal: bool,
+    /// Audit rows appended by this process, oldest first (bounded).
+    pub recent_audit: VecDeque<AuditRef>,
     last_monotonic: AtomicU64,
 }
 
@@ -291,7 +295,18 @@ impl fmt::Debug for Services {
     }
 }
 
+/// Bound of [`Services::recent_audit`].
+pub const RECENT_AUDIT_CAP: usize = 1_000;
+
 impl Services {
+    /// Remember an audit row appended by this process (for `audit.recent`).
+    pub fn note_audit(&mut self, audit_ref: AuditRef) {
+        if self.recent_audit.len() >= RECENT_AUDIT_CAP {
+            self.recent_audit.pop_front();
+        }
+        self.recent_audit.push_back(audit_ref);
+    }
+
     /// Current wall-clock instant.
     pub fn now(&self) -> UtcMillis {
         (self.clock)()
@@ -458,6 +473,8 @@ impl AppContextBuilder {
             backups: BTreeMap::new(),
             epoch_intervals: BTreeSet::new(),
             recovery: RecoveryReport::default(),
+            storage_wal: self.db.profile().journal_mode.eq_ignore_ascii_case("wal"),
+            recent_audit: VecDeque::new(),
             last_monotonic: AtomicU64::new(0),
         };
         let mut db = self.db;
