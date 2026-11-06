@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/competency.projection.response",
+  "title": "competency.projection response (v1.0)",
+  "description": "`result` of CommandOutcome for `competency.projection` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "derived_at": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "projections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "competency_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "name": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "UNASSESSED",
+              "INTRODUCED",
+              "GUIDED",
+              "INDEPENDENT",
+              "VALIDATED",
+              "RETEST_DUE"
+            ]
+          },
+          "provisional": {
+            "type": "boolean"
+          },
+          "per_dimension": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "RECALL": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "score_estimate": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "n_unaided": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "last_observed_at": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "description": "UTC instant, integer epoch milliseconds."
+                  },
+                  "uncertainty": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "score_estimate",
+                  "n_unaided",
+                  "last_observed_at",
+                  "uncertainty"
+                ]
+              },
+              "UNDERSTANDING": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "score_estimate": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "n_unaided": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "last_observed_at": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "description": "UTC instant, integer epoch milliseconds."
+                  },
+                  "uncertainty": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "score_estimate",
+                  "n_unaided",
+                  "last_observed_at",
+                  "uncertainty"
+                ]
+              },
+              "APPLICATION": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "score_estimate": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "n_unaided": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "last_observed_at": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "description": "UTC instant, integer epoch milliseconds."
+                  },
+                  "uncertainty": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "score_estimate",
+                  "n_unaided",
+                  "last_observed_at",
+                  "uncertainty"
+                ]
+              },
+              "TRANSFER": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "score_estimate": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "n_unaided": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "last_observed_at": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "description": "UTC instant, integer epoch milliseconds."
+                  },
+                  "uncertainty": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "score_estimate",
+                  "n_unaided",
+                  "last_observed_at",
+                  "uncertainty"
+                ]
+              }
+            },
+            "required": [
+              "RECALL",
+              "UNDERSTANDING",
+              "APPLICATION",
+              "TRANSFER"
+            ]
+          },
+          "contradictions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+            }
+          },
+          "objective_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+            }
+          }
+        },
+        "required": [
+          "competency_id",
+          "name",
+          "state",
+          "provisional",
+          "per_dimension",
+          "contradictions",
+          "evidence_refs",
+          "objective_ids"
+        ]
+      }
+    }
+  },
+  "required": [
+    "derived_at",
+    "projections"
+  ]
+}

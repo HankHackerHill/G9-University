@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/approvals.decide.response",
+  "title": "approvals.decide response (v1.0)",
+  "description": "`result` of CommandOutcome for `approvals.decide` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "APPROVED",
+        "REJECTED",
+        "EXPIRED",
+        "CONSUMED",
+        "REVOKED"
+      ]
+    },
+    "operation_name": {
+      "type": "string"
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "READ",
+            "CREATE",
+            "UPDATE",
+            "DELETE",
+            "EXPORT",
+            "IMPORT",
+            "PROMOTE_CANONICAL",
+            "PROPOSE",
+            "APPROVE",
+            "APPLY",
+            "FINALIZE",
+            "INVOKE",
+            "EXECUTE",
+            "CONNECT",
+            "LOAD",
+            "CORRECT"
+          ]
+        },
+        "resource": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "CURRICULUM",
+                "CURRICULUM_VERSION",
+                "CALENDAR_EVENT",
+                "SCHEDULE_PROPOSAL",
+                "STUDY_SESSION",
+                "TIME_INTERVAL",
+                "NOTE",
+                "ATTACHMENT",
+                "EVIDENCE_ITEM",
+                "ASSESSMENT_DEFINITION",
+                "ATTEMPT",
+                "GRADE_DECISION",
+                "COMPETENCY",
+                "OBSERVATION",
+                "LEARNER_HYPOTHESIS",
+                "REVIEW_ITEM",
+                "INTERVENTION",
+                "EXPERIMENT",
+                "GOAL",
+                "PROJECT",
+                "MILESTONE",
+                "DECISION",
+                "RESEARCH_SOURCE",
+                "KNOWLEDGE_DOCUMENT",
+                "MODEL",
+                "SKILL",
+                "SKILL_INVOCATION",
+                "APPROVAL",
+                "BACKUP",
+                "POLICY",
+                "EXPORT",
+                "FILESYSTEM_PATH",
+                "NETWORK_HOST",
+                "PROCESS",
+                "APP_SETTING",
+                "AUDIT_METADATA"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+            }
+          },
+          "required": [
+            "kind",
+            "id"
+          ],
+          "description": "Reference to a protected resource (ResourceRef)."
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "domain": {
+              "type": "string",
+              "enum": [
+                "LEARNING",
+                "BUSINESS",
+                "PERSONAL",
+                "SECURITY_SENSITIVE",
+                "SYSTEM"
+              ]
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "STUDY",
+                "LAB",
+                "EXAM",
+                "REVIEW",
+                "EXECUTIVE",
+                "RESEARCH",
+                "MAINTENANCE"
+              ]
+            }
+          },
+          "required": [
+            "domain",
+            "mode"
+          ],
+          "description": "Privacy domain and interaction mode (Scope)."
+        },
+        "parameters_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of canonical JSON of the full operation parameters; approvals bind to it."
+        }
+      },
+      "required": [
+        "action",
+        "resource",
+        "scope",
+        "parameters_sha256"
+      ],
+      "description": "OperationDescriptor"
+    },
+    "requested_by": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "requested_at": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "expires_at": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "expected_revision": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Optimistic-concurrency revision (u64)."
+    },
+    "decided_at": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "consumed_at": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "summary": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Optimistic-concurrency revision (u64)."
+    }
+  },
+  "required": [
+    "approval_id",
+    "state",
+    "operation_name",
+    "operation",
+    "requested_by",
+    "requested_at",
+    "expires_at",
+    "expected_revision",
+    "decided_at",
+    "consumed_at",
+    "summary",
+    "revision"
+  ]
+}

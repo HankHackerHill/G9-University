@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/command-outcome",
+  "title": "CommandOutcome<T> envelope",
+  "description": "Success envelope. `result` is validated against <op>.response.schema.json. `warnings` is omitted when empty.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "description": "Operation-specific result (see per-operation response schema).",
+      "type": [
+        "object",
+        "array",
+        "string",
+        "number",
+        "boolean",
+        "null"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Optimistic-concurrency revision (u64)."
+    },
+    "audit_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "replayed": {
+      "type": "boolean",
+      "description": "True when replayed from the idempotency store."
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "result",
+    "replayed"
+  ]
+}

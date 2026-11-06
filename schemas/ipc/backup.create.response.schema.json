@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/backup.create.response",
+  "title": "backup.create response (v1.0)",
+  "description": "`result` of CommandOutcome for `backup.create` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "backup_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "REQUESTED",
+        "SNAPSHOT_CREATED",
+        "CHECKED",
+        "RESTORE_TESTED",
+        "RETAINED",
+        "EXPIRED",
+        "FAILED"
+      ]
+    },
+    "label": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "created_at": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "size_bytes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "integrity": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN",
+        "OK",
+        "FAILED"
+      ]
+    },
+    "restore_tested_at": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "manifest_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Hex SHA-256."
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Optimistic-concurrency revision (u64)."
+    }
+  },
+  "required": [
+    "backup_id",
+    "state",
+    "label",
+    "created_at",
+    "size_bytes",
+    "integrity",
+    "restore_tested_at",
+    "manifest_sha256",
+    "revision"
+  ]
+}

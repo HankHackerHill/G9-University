@@ -27,8 +27,10 @@ export type IanaZone = string;
 export type Revision = number;
 
 /** Plain JSON value (`serde_json::Value`). */
-export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
-export type JsonObject = { [key: string]: JsonValue };
+export type JsonValue = string | number | boolean | null | JsonValue[] | JsonObject;
+export interface JsonObject {
+  [key: string]: JsonValue;
+}
 
 // ---------------------------------------------------------------------------
 // Privacy (privacy.rs) and mode (mode.rs)
@@ -119,10 +121,15 @@ export function schemaAccepts(reader: SchemaVersion, payload: SchemaVersion): bo
   return reader.major === payload.major && payload.minor <= reader.minor;
 }
 
-/** Required metadata on every command (handoff §6). */
-export interface CommandMeta {
+/**
+ * Metadata the UI sends with every command (handoff §6, ADR-0013, ARCHITECTURE Addendum A.8).
+ *
+ * The wire shape deliberately has NO `actor`: incoming IPC meta never sets identity. The
+ * backend (`g9-app`) assigns the operator actor from the session and refuses payloads that
+ * try to carry one. `schemas/ipc/command-meta.schema.json` describes exactly this shape.
+ */
+export interface ClientCommandMeta {
   request_id: Id;
-  actor: Actor;
   /** Operation name, e.g. `session.start`. */
   operation: string;
   resource?: ResourceRef;
@@ -133,6 +140,15 @@ export interface CommandMeta {
   approval_id?: Id;
   trace_id: Id;
   issued_at: UtcMillis;
+}
+
+/**
+ * Full command metadata as the backend sees it after assigning the actor
+ * (`g9_domain::envelope::CommandMeta`). The UI never constructs this type for sending;
+ * the mock transport builds it internally to mirror `g9-app`.
+ */
+export interface CommandMeta extends ClientCommandMeta {
+  actor: Actor;
 }
 
 /** Success envelope. `warnings` is omitted by the backend when empty. */

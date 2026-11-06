@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/curriculum.daily_plan.response",
+  "title": "curriculum.daily_plan response (v1.0)",
+  "description": "`result` of CommandOutcome for `curriculum.daily_plan` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Civil date `YYYY-MM-DD`."
+    },
+    "zone": {
+      "type": "string",
+      "minLength": 1,
+      "description": "IANA zone identifier, e.g. Europe/Berlin."
+    },
+    "day_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "week_number": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "week_title": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "unscheduled": {
+      "type": "boolean"
+    },
+    "is_assessment_day": {
+      "type": "boolean"
+    },
+    "planned_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "evidence_artifact": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "objectives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "objective_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "seq": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "text": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PLANNED",
+              "IN_PROGRESS",
+              "VERIFIED"
+            ]
+          }
+        },
+        "required": [
+          "objective_id",
+          "seq",
+          "text",
+          "status"
+        ]
+      }
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "block": {
+            "type": "string"
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          }
+        },
+        "required": [
+          "seq",
+          "block",
+          "minutes",
+          "session_id"
+        ]
+      }
+    }
+  },
+  "required": [
+    "date",
+    "zone",
+    "day_id",
+    "week_number",
+    "week_title",
+    "unscheduled",
+    "is_assessment_day",
+    "planned_minutes",
+    "evidence_artifact",
+    "objectives",
+    "blocks"
+  ]
+}

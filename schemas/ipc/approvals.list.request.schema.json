@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/approvals.list.request",
+  "title": "approvals.list request (v1.0)",
+  "description": "Request payload for `approvals.list`. Validated by g9-app at pipeline step 1 against payload_schema_version 1.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "APPROVED",
+        "REJECTED",
+        "EXPIRED",
+        "CONSUMED",
+        "REVOKED"
+      ]
+    }
+  },
+  "required": []
+}

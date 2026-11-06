@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/curriculum.validate.request",
+  "title": "curriculum.validate request (v1.0)",
+  "description": "Request payload for `curriculum.validate`. Validated by g9-app at pipeline step 1 against payload_schema_version 1.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "manifest": {
+      "description": "Curriculum manifest to validate.",
+      "type": [
+        "object",
+        "array",
+        "string",
+        "number",
+        "boolean",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "manifest"
+  ]
+}

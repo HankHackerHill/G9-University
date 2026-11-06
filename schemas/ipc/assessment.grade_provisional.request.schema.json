@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/assessment.grade_provisional.request",
+  "title": "assessment.grade_provisional request (v1.0)",
+  "description": "Request payload for `assessment.grade_provisional`. Validated by g9-app at pipeline step 1 against payload_schema_version 1.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "attempt_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "criterion_code": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "DETERMINISTIC_CHECKER",
+              "HUMAN_REVIEWER",
+              "MODEL_ADVISORY"
+            ]
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+            }
+          }
+        },
+        "required": [
+          "criterion_code",
+          "score",
+          "source",
+          "evidence_refs"
+        ]
+      }
+    }
+  },
+  "required": [
+    "attempt_id",
+    "criteria"
+  ]
+}

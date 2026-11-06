@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/retention.due.response",
+  "title": "retention.due response (v1.0)",
+  "description": "`result` of CommandOutcome for `retention.due` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "as_of": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "budget_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Non-negative duration in integer milliseconds."
+    },
+    "due": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "review_item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "competency_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "objective_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "DECLARATIVE",
+              "PRACTICAL_TRANSFER"
+            ]
+          },
+          "due_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "UTC instant, integer epoch milliseconds."
+          },
+          "last_success_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "UTC instant, integer epoch milliseconds."
+          },
+          "offset_days": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "estimated_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Non-negative duration in integer milliseconds."
+          }
+        },
+        "required": [
+          "review_item_id",
+          "competency_id",
+          "objective_id",
+          "prompt",
+          "kind",
+          "due_at",
+          "last_success_at",
+          "offset_days",
+          "estimated_ms"
+        ]
+      }
+    },
+    "overdue": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "review_item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "competency_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "objective_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "DECLARATIVE",
+              "PRACTICAL_TRANSFER"
+            ]
+          },
+          "due_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "UTC instant, integer epoch milliseconds."
+          },
+          "last_success_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "UTC instant, integer epoch milliseconds."
+          },
+          "offset_days": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "estimated_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Non-negative duration in integer milliseconds."
+          }
+        },
+        "required": [
+          "review_item_id",
+          "competency_id",
+          "objective_id",
+          "prompt",
+          "kind",
+          "due_at",
+          "last_success_at",
+          "offset_days",
+          "estimated_ms"
+        ]
+      }
+    },
+    "overflow": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "review_item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "competency_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "objective_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "DECLARATIVE",
+              "PRACTICAL_TRANSFER"
+            ]
+          },
+          "due_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "UTC instant, integer epoch milliseconds."
+          },
+          "last_success_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "UTC instant, integer epoch milliseconds."
+          },
+          "offset_days": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "estimated_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Non-negative duration in integer milliseconds."
+          }
+        },
+        "required": [
+          "review_item_id",
+          "competency_id",
+          "objective_id",
+          "prompt",
+          "kind",
+          "due_at",
+          "last_success_at",
+          "offset_days",
+          "estimated_ms"
+        ]
+      }
+    }
+  },
+  "required": [
+    "as_of",
+    "budget_ms",
+    "due",
+    "overdue",
+    "overflow"
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/calendar.apply.response",
+  "title": "calendar.apply response (v1.0)",
+  "description": "`result` of CommandOutcome for `calendar.apply` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "proposal_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "applied": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "title": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "STUDY_BLOCK",
+              "ASSESSMENT",
+              "REVIEW",
+              "APPOINTMENT",
+              "PROTECTED_REST",
+              "BUSINESS"
+            ]
+          },
+          "start": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "UTC instant, integer epoch milliseconds."
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "UTC instant, integer epoch milliseconds."
+          },
+          "all_day": {
+            "type": "boolean"
+          },
+          "immutable": {
+            "type": "boolean"
+          },
+          "day_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "block": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "adjusted": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "GAP",
+              "OVERLAP",
+              null
+            ],
+            "description": "DST adjustment applied when resolving the civil time (ARCHITECTURE §7)."
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "OPERATOR",
+              "SYSTEM_DETERMINISTIC",
+              "APPROVED_REFERENCE",
+              "IMPORTED_DOCUMENT",
+              "SKILL_PACKAGE",
+              "MODEL_OUTPUT",
+              "UNKNOWN"
+            ]
+          }
+        },
+        "required": [
+          "event_id",
+          "title",
+          "kind",
+          "start",
+          "end",
+          "all_day",
+          "immutable",
+          "day_id",
+          "block",
+          "session_id",
+          "adjusted",
+          "provenance"
+        ]
+      }
+    }
+  },
+  "required": [
+    "proposal_id",
+    "applied",
+    "events"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/curriculum.import.request",
+  "title": "curriculum.import request (v1.0)",
+  "description": "Request payload for `curriculum.import`. Validated by g9-app at pipeline step 1 against payload_schema_version 1.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "manifest": {
+      "description": "Any JSON value (serde_json::Value).",
+      "type": [
+        "object",
+        "array",
+        "string",
+        "number",
+        "boolean",
+        "null"
+      ]
+    },
+    "provenance": {
+      "type": "string",
+      "enum": [
+        "PROPOSED_SEED",
+        "RECONCILED_CANDIDATE"
+      ],
+      "description": "APPROVED_CANONICAL is reached only through PROMOTE_CANONICAL."
+    }
+  },
+  "required": [
+    "manifest",
+    "provenance"
+  ]
+}

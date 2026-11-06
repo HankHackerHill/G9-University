@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/session.correct_time.response",
+  "title": "session.correct_time response (v1.0)",
+  "description": "`result` of CommandOutcome for `session.correct_time` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "PLANNED",
+        "READY",
+        "RUNNING",
+        "PAUSED",
+        "COMPLETED",
+        "REVIEWED",
+        "CLOSED",
+        "INTERRUPTED",
+        "CANCELLED"
+      ]
+    },
+    "day_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "block": {
+      "type": "string"
+    },
+    "block_seq": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "planned_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Non-negative duration in integer milliseconds."
+    },
+    "credited_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Sum of VERIFIED intervals plus accepted corrections; backend-computed."
+    },
+    "uncertain_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Sum of UNCERTAIN intervals awaiting correction."
+    },
+    "started_at": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "open_interval_started_at": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "requires_correction": {
+      "type": "boolean"
+    },
+    "intervals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "interval_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "start_utc": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "UTC instant, integer epoch milliseconds."
+          },
+          "end_utc": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "UTC instant, integer epoch milliseconds."
+          },
+          "continuity": {
+            "type": "string",
+            "enum": [
+              "VERIFIED",
+              "UNCERTAIN"
+            ]
+          }
+        },
+        "required": [
+          "interval_id",
+          "start_utc",
+          "end_utc",
+          "continuity"
+        ]
+      }
+    },
+    "corrections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "correction_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "interval_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "credited_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Non-negative duration in integer milliseconds."
+          },
+          "reason": {
+            "type": "string"
+          },
+          "corrected_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "UTC instant, integer epoch milliseconds."
+          }
+        },
+        "required": [
+          "correction_id",
+          "interval_id",
+          "credited_ms",
+          "reason",
+          "corrected_at"
+        ]
+      }
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Optimistic-concurrency revision (u64)."
+    }
+  },
+  "required": [
+    "session_id",
+    "state",
+    "day_id",
+    "block",
+    "block_seq",
+    "planned_ms",
+    "credited_ms",
+    "uncertain_ms",
+    "started_at",
+    "open_interval_started_at",
+    "requires_correction",
+    "intervals",
+    "corrections",
+    "revision"
+  ]
+}

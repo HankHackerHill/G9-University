@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/assessment.begin.request",
+  "title": "assessment.begin request (v1.0)",
+  "description": "Request payload for `assessment.begin`. Validated by g9-app at pipeline step 1 against payload_schema_version 1.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "assessment_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "retake_of": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    }
+  },
+  "required": [
+    "assessment_id"
+  ]
+}

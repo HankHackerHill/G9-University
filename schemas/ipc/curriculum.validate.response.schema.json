@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/curriculum.validate.response",
+  "title": "curriculum.validate response (v1.0)",
+  "description": "`result` of CommandOutcome for `curriculum.validate` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "valid": {
+      "type": "boolean"
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "path",
+          "message"
+        ]
+      }
+    },
+    "checksum_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Hex SHA-256."
+    },
+    "provenance": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "PROPOSED_SEED",
+        "RECONCILED_CANDIDATE",
+        "APPROVED_CANONICAL",
+        null
+      ]
+    }
+  },
+  "required": [
+    "valid",
+    "violations",
+    "checksum_sha256",
+    "provenance"
+  ]
+}

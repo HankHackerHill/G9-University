@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/calendar.list.request",
+  "title": "calendar.list request (v1.0)",
+  "description": "Request payload for `calendar.list`. Validated by g9-app at pipeline step 1 against payload_schema_version 1.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "from": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "to": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "zone": {
+      "type": "string",
+      "minLength": 1,
+      "description": "IANA zone identifier, e.g. Europe/Berlin."
+    }
+  },
+  "required": [
+    "from",
+    "to"
+  ]
+}

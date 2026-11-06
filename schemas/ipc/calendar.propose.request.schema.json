@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/calendar.propose.request",
+  "title": "calendar.propose request (v1.0)",
+  "description": "Request payload for `calendar.propose`. Validated by g9-app at pipeline step 1 against payload_schema_version 1.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "from": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "to": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "intent": {
+      "type": "string",
+      "enum": [
+        "FILL_CURRICULUM",
+        "ADD_REVIEWS",
+        "RESCHEDULE"
+      ]
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "intent"
+  ]
+}

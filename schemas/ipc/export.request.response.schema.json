@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/export.request.response",
+  "title": "export.request response (v1.0)",
+  "description": "`result` of CommandOutcome for `export.request` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "export_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "REQUESTED",
+        "READY",
+        "FAILED"
+      ]
+    },
+    "domains": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "LEARNING",
+          "BUSINESS",
+          "PERSONAL",
+          "SECURITY_SENSITIVE",
+          "SYSTEM"
+        ]
+      }
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "JSON",
+        "CSV"
+      ]
+    },
+    "requested_at": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    }
+  },
+  "required": [
+    "export_id",
+    "state",
+    "domains",
+    "format",
+    "requested_at"
+  ]
+}

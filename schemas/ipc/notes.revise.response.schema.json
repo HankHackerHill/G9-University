@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/notes.revise.response",
+  "title": "notes.revise response (v1.0)",
+  "description": "`result` of CommandOutcome for `notes.revise` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "note_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "title": {
+      "type": "string"
+    },
+    "body_markdown": {
+      "type": "string"
+    },
+    "content_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Hex SHA-256."
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "PUBLIC",
+        "INTERNAL",
+        "PRIVATE",
+        "SECRET"
+      ]
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "LEARNING",
+        "BUSINESS",
+        "PERSONAL",
+        "SECURITY_SENSITIVE",
+        "SYSTEM"
+      ]
+    },
+    "objective_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+      }
+    },
+    "version_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "created_at": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "updated_at": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Optimistic-concurrency revision (u64)."
+    }
+  },
+  "required": [
+    "note_id",
+    "title",
+    "body_markdown",
+    "content_sha256",
+    "classification",
+    "domain",
+    "objective_id",
+    "evidence_refs",
+    "version_count",
+    "created_at",
+    "updated_at",
+    "revision"
+  ]
+}

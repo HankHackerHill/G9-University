@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/skills.invoke.response",
+  "title": "skills.invoke response (v1.0)",
+  "description": "`result` of CommandOutcome for `skills.invoke` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "invocation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "skill_code": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "REQUESTED",
+        "PREFLIGHT",
+        "AUTHORIZED",
+        "RUNNING",
+        "VALIDATING",
+        "COMPLETED",
+        "ERROR",
+        "DENIED",
+        "TIMED_OUT",
+        "CANCELLED"
+      ]
+    },
+    "output": {
+      "description": "Validated structured output or null.",
+      "type": [
+        "object",
+        "array",
+        "string",
+        "number",
+        "boolean",
+        "null"
+      ]
+    },
+    "recommended_actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "operation": {
+            "type": "string"
+          },
+          "payload": {
+            "description": "Any JSON value (serde_json::Value).",
+            "type": [
+              "object",
+              "array",
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          },
+          "rationale": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "payload",
+          "rationale"
+        ]
+      }
+    },
+    "provenance": {
+      "type": "string",
+      "enum": [
+        "OPERATOR",
+        "SYSTEM_DETERMINISTIC",
+        "APPROVED_REFERENCE",
+        "IMPORTED_DOCUMENT",
+        "SKILL_PACKAGE",
+        "MODEL_OUTPUT",
+        "UNKNOWN"
+      ]
+    },
+    "validation": {
+      "type": "string",
+      "enum": [
+        "VALID",
+        "INVALID",
+        "NOT_RUN"
+      ]
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tokens_used": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "elapsed_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Non-negative duration in integer milliseconds."
+        },
+        "tool_calls": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "tokens_used",
+        "elapsed_ms",
+        "tool_calls"
+      ]
+    }
+  },
+  "required": [
+    "invocation_id",
+    "skill_code",
+    "state",
+    "output",
+    "recommended_actions",
+    "provenance",
+    "validation",
+    "budget"
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/export.request.request",
+  "title": "export.request request (v1.0)",
+  "description": "Request payload for `export.request`. Validated by g9-app at pipeline step 1 against payload_schema_version 1.0. Protected: the backend answers APPROVAL_REQUIRED until a bound approval_id is supplied in command-meta.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "domains": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": [
+          "LEARNING",
+          "BUSINESS",
+          "PERSONAL",
+          "SECURITY_SENSITIVE",
+          "SYSTEM"
+        ]
+      }
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "JSON",
+        "CSV"
+      ]
+    },
+    "include_private": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "domains",
+    "format",
+    "include_private"
+  ]
+}

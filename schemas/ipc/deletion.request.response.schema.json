@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/deletion.request.response",
+  "title": "deletion.request response (v1.0)",
+  "description": "`result` of CommandOutcome for `deletion.request` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "deletion_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "REQUESTED",
+        "APPLIED",
+        "REFUSED"
+      ]
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "CURRICULUM",
+            "CURRICULUM_VERSION",
+            "CALENDAR_EVENT",
+            "SCHEDULE_PROPOSAL",
+            "STUDY_SESSION",
+            "TIME_INTERVAL",
+            "NOTE",
+            "ATTACHMENT",
+            "EVIDENCE_ITEM",
+            "ASSESSMENT_DEFINITION",
+            "ATTEMPT",
+            "GRADE_DECISION",
+            "COMPETENCY",
+            "OBSERVATION",
+            "LEARNER_HYPOTHESIS",
+            "REVIEW_ITEM",
+            "INTERVENTION",
+            "EXPERIMENT",
+            "GOAL",
+            "PROJECT",
+            "MILESTONE",
+            "DECISION",
+            "RESEARCH_SOURCE",
+            "KNOWLEDGE_DOCUMENT",
+            "MODEL",
+            "SKILL",
+            "SKILL_INVOCATION",
+            "APPROVAL",
+            "BACKUP",
+            "POLICY",
+            "EXPORT",
+            "FILESYSTEM_PATH",
+            "NETWORK_HOST",
+            "PROCESS",
+            "APP_SETTING",
+            "AUDIT_METADATA"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "description": "Reference to a protected resource (ResourceRef)."
+    },
+    "tombstone_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Hex SHA-256."
+    },
+    "requested_at": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    }
+  },
+  "required": [
+    "deletion_id",
+    "state",
+    "resource",
+    "tombstone_sha256",
+    "requested_at"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/retention.due.request",
+  "title": "retention.due request (v1.0)",
+  "description": "Request payload for `retention.due`. Validated by g9-app at pipeline step 1 against payload_schema_version 1.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "as_of": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "budget_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Non-negative duration in integer milliseconds."
+    }
+  },
+  "required": []
+}

@@ -16,8 +16,8 @@ import type {
 
 export interface TransitionTable<S extends string, E extends string> {
   readonly machine: string;
-  readonly transitions: ReadonlyArray<readonly [S, E, S]>;
-  readonly terminal: ReadonlyArray<S>;
+  readonly transitions: readonly (readonly [S, E, S])[];
+  readonly terminal: readonly S[];
 }
 
 export interface TransitionRefusal {

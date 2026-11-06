@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/g9-error",
+  "title": "G9Error (closed 13-category set)",
+  "description": "The only error type that crosses the IPC boundary. Never carries secrets or backtraces.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "category": {
+      "type": "string",
+      "enum": [
+        "INVALID_INPUT",
+        "UNAUTHORIZED",
+        "APPROVAL_REQUIRED",
+        "STALE_REVISION",
+        "PRECONDITION_FAILED",
+        "NOT_FOUND",
+        "CONFLICT",
+        "RESOURCE_UNAVAILABLE",
+        "TIMEOUT",
+        "CANCELLED",
+        "RETRYABLE_STORAGE",
+        "DATA_CORRUPTION",
+        "INTERNAL"
+      ]
+    },
+    "code": {
+      "type": "string",
+      "description": "Machine-readable code, e.g. curriculum.invariant_violated."
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable, secret-free."
+    },
+    "details": {
+      "description": "Optional structured, secret-free details.",
+      "type": [
+        "object",
+        "array",
+        "string",
+        "number",
+        "boolean",
+        "null"
+      ]
+    },
+    "approval_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Set when category is APPROVAL_REQUIRED and a request was created."
+    }
+  },
+  "required": [
+    "category",
+    "code",
+    "message"
+  ]
+}

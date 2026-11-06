@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/skills.invoke.request",
+  "title": "skills.invoke request (v1.0)",
+  "description": "Request payload for `skills.invoke`. Validated by g9-app at pipeline step 1 against payload_schema_version 1.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "skill_code": {
+      "type": "string"
+    },
+    "input": {
+      "description": "Any JSON value (serde_json::Value).",
+      "type": [
+        "object",
+        "array",
+        "string",
+        "number",
+        "boolean",
+        "null"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "STUDY",
+        "LAB",
+        "EXAM",
+        "REVIEW",
+        "EXECUTIVE",
+        "RESEARCH",
+        "MAINTENANCE"
+      ]
+    }
+  },
+  "required": [
+    "skill_code",
+    "input"
+  ]
+}

@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/command-meta",
+  "title": "IPC command metadata (ClientCommandMeta, ADR-0013)",
+  "description": "Metadata the UI sends with every command. Deliberately has no `actor`: incoming IPC meta never sets identity; g9-app assigns the operator actor from the session (ARCHITECTURE Addendum A.8).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "operation": {
+      "type": "string",
+      "description": "Operation name, e.g. session.start."
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "CURRICULUM",
+            "CURRICULUM_VERSION",
+            "CALENDAR_EVENT",
+            "SCHEDULE_PROPOSAL",
+            "STUDY_SESSION",
+            "TIME_INTERVAL",
+            "NOTE",
+            "ATTACHMENT",
+            "EVIDENCE_ITEM",
+            "ASSESSMENT_DEFINITION",
+            "ATTEMPT",
+            "GRADE_DECISION",
+            "COMPETENCY",
+            "OBSERVATION",
+            "LEARNER_HYPOTHESIS",
+            "REVIEW_ITEM",
+            "INTERVENTION",
+            "EXPERIMENT",
+            "GOAL",
+            "PROJECT",
+            "MILESTONE",
+            "DECISION",
+            "RESEARCH_SOURCE",
+            "KNOWLEDGE_DOCUMENT",
+            "MODEL",
+            "SKILL",
+            "SKILL_INVOCATION",
+            "APPROVAL",
+            "BACKUP",
+            "POLICY",
+            "EXPORT",
+            "FILESYSTEM_PATH",
+            "NETWORK_HOST",
+            "PROCESS",
+            "APP_SETTING",
+            "AUDIT_METADATA"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "description": "Reference to a protected resource (ResourceRef)."
+    },
+    "expected_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Optimistic-concurrency revision (u64)."
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "domain": {
+          "type": "string",
+          "enum": [
+            "LEARNING",
+            "BUSINESS",
+            "PERSONAL",
+            "SECURITY_SENSITIVE",
+            "SYSTEM"
+          ]
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "STUDY",
+            "LAB",
+            "EXAM",
+            "REVIEW",
+            "EXECUTIVE",
+            "RESEARCH",
+            "MAINTENANCE"
+          ]
+        }
+      },
+      "required": [
+        "domain",
+        "mode"
+      ],
+      "description": "Privacy domain and interaction mode (Scope)."
+    },
+    "payload_schema_version": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "major": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "u16"
+        },
+        "minor": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "u16"
+        }
+      },
+      "required": [
+        "major",
+        "minor"
+      ],
+      "description": "Payload schema version (SchemaVersion)."
+    },
+    "approval_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "trace_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "issued_at": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    }
+  },
+  "required": [
+    "request_id",
+    "operation",
+    "idempotency_key",
+    "scope",
+    "payload_schema_version",
+    "trace_id",
+    "issued_at"
+  ]
+}

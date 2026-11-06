@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/assessment.approve_final.response",
+  "title": "assessment.approve_final response (v1.0)",
+  "description": "`result` of CommandOutcome for `assessment.approve_final` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "attempt_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "assessment_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "title": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "AVAILABLE",
+        "STARTED",
+        "SUBMITTED",
+        "EVIDENCE_REVIEW",
+        "GRADED_PROVISIONAL",
+        "APPROVED_FINAL",
+        "VOIDED"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "STUDY",
+        "LAB",
+        "EXAM",
+        "REVIEW",
+        "EXECUTIVE",
+        "RESEARCH",
+        "MAINTENANCE"
+      ]
+    },
+    "variant": {
+      "type": "string"
+    },
+    "retake_of": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "started_at": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "submitted_at": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "finalized_at": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "UTC instant, integer epoch milliseconds."
+    },
+    "grade": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "total": {
+          "type": "number"
+        },
+        "pass": {
+          "type": "boolean"
+        },
+        "gate_failures": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "criteria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "criterion_code": {
+                "type": "string"
+              },
+              "weight": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "score": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4,
+                "description": "Anchored level 0-4."
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "DETERMINISTIC_CHECKER",
+                  "HUMAN_REVIEWER",
+                  "MODEL_ADVISORY"
+                ]
+              },
+              "evidence_refs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9._:-]+$",
+                  "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+                }
+              }
+            },
+            "required": [
+              "criterion_code",
+              "weight",
+              "score",
+              "source",
+              "evidence_refs"
+            ]
+          }
+        },
+        "reliability_class": {
+          "type": "string",
+          "enum": [
+            "DETERMINISTIC",
+            "EXTERNAL_REVIEW",
+            "SELF_ADJUDICATED"
+          ]
+        },
+        "final": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "total",
+        "pass",
+        "gate_failures",
+        "criteria",
+        "reliability_class",
+        "final"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Optimistic-concurrency revision (u64)."
+    }
+  },
+  "required": [
+    "attempt_id",
+    "assessment_id",
+    "title",
+    "state",
+    "mode",
+    "variant",
+    "retake_of",
+    "started_at",
+    "submitted_at",
+    "finalized_at",
+    "grade",
+    "revision"
+  ]
+}

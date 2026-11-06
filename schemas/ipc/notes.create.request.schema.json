@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/notes.create.request",
+  "title": "notes.create request (v1.0)",
+  "description": "Request payload for `notes.create`. Validated by g9-app at pipeline step 1 against payload_schema_version 1.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "body_markdown": {
+      "type": "string"
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "PUBLIC",
+        "INTERNAL",
+        "PRIVATE",
+        "SECRET"
+      ]
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "LEARNING",
+        "BUSINESS",
+        "PERSONAL",
+        "SECURITY_SENSITIVE",
+        "SYSTEM"
+      ]
+    },
+    "objective_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+      }
+    }
+  },
+  "required": [
+    "title",
+    "body_markdown",
+    "classification",
+    "domain"
+  ]
+}

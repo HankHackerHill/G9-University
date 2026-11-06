@@ -26,7 +26,7 @@ function toJson(value: unknown): JsonValue {
       if (Array.isArray(value)) {
         return value.map((v: unknown) => toJson(v));
       }
-      const out: { [key: string]: JsonValue } = {};
+      const out: Record<string, JsonValue> = {};
       for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
         if (v !== undefined) {
           out[k] = toJson(v);
@@ -39,6 +39,8 @@ function toJson(value: unknown): JsonValue {
     case 'symbol':
     case 'bigint':
       throw new TypeError(`canonical JSON: unsupported value of type ${typeof value}`);
+    default:
+      throw new TypeError('canonical JSON: unsupported value');
   }
 }
 

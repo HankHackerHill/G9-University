@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/session.correct_time.request",
+  "title": "session.correct_time request (v1.0)",
+  "description": "Request payload for `session.correct_time`. Validated by g9-app at pipeline step 1 against payload_schema_version 1.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "interval_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "credited_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Non-negative duration in integer milliseconds."
+    },
+    "reason": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "interval_id",
+    "credited_ms",
+    "reason"
+  ]
+}

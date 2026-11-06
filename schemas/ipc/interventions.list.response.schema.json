@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/interventions.list.response",
+  "title": "interventions.list response (v1.0)",
+  "description": "`result` of CommandOutcome for `interventions.list` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "interventions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "intervention_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "HYPOTHESIS",
+              "PROPOSED",
+              "REVIEWED",
+              "APPROVED",
+              "REJECTED",
+              "SCHEDULED",
+              "APPLIED",
+              "RETESTED",
+              "EVALUATED",
+              "RETAINED",
+              "REVISED",
+              "RETIRED"
+            ]
+          },
+          "hypothesis_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "statement": {
+            "type": "string"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "time_budget_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Non-negative duration in integer milliseconds."
+          },
+          "acceptance": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "OPERATOR",
+              "SYSTEM_DETERMINISTIC",
+              "APPROVED_REFERENCE",
+              "IMPORTED_DOCUMENT",
+              "SKILL_PACKAGE",
+              "MODEL_OUTPUT",
+              "UNKNOWN"
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "UTC instant, integer epoch milliseconds."
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Optimistic-concurrency revision (u64)."
+          }
+        },
+        "required": [
+          "intervention_id",
+          "state",
+          "hypothesis_id",
+          "statement",
+          "steps",
+          "time_budget_ms",
+          "acceptance",
+          "provenance",
+          "created_at",
+          "revision"
+        ]
+      }
+    }
+  },
+  "required": [
+    "interventions"
+  ]
+}

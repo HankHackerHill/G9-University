@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/system.status.response",
+  "title": "system.status response (v1.0)",
+  "description": "`result` of CommandOutcome for `system.status` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "app_version": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "major": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "u16"
+        },
+        "minor": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "u16"
+        }
+      },
+      "required": [
+        "major",
+        "minor"
+      ],
+      "description": "Payload schema version (SchemaVersion)."
+    },
+    "storage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "READY",
+            "MIGRATING",
+            "UNAVAILABLE",
+            "READ_ONLY"
+          ]
+        },
+        "migrations_applied": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "state",
+        "migrations_applied",
+        "wal"
+      ]
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "NO_RUNTIME_CONFIGURED",
+            "RUNTIME_ERROR",
+            "LOADING",
+            "BUDGET_EXHAUSTED"
+          ],
+          "description": "Present only when available is false."
+        },
+        "model_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "available"
+      ]
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "egress_allowed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "egress_allowed"
+      ]
+    },
+    "clock": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "now": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "UTC instant, integer epoch milliseconds."
+        },
+        "zone": {
+          "type": "string",
+          "minLength": 1,
+          "description": "IANA zone identifier, e.g. Europe/Berlin."
+        },
+        "monotonic_ok": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "now",
+        "zone",
+        "monotonic_ok"
+      ]
+    },
+    "transport": {
+      "type": "string",
+      "enum": [
+        "mock",
+        "tauri"
+      ]
+    },
+    "pending_approvals": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "last_backup": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "backup_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "REQUESTED",
+            "SNAPSHOT_CREATED",
+            "CHECKED",
+            "RESTORE_TESTED",
+            "RETAINED",
+            "EXPIRED",
+            "FAILED"
+          ]
+        },
+        "created_at": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "UTC instant, integer epoch milliseconds."
+        }
+      },
+      "required": [
+        "backup_id",
+        "state",
+        "created_at"
+      ]
+    }
+  },
+  "required": [
+    "app_version",
+    "schema_version",
+    "storage",
+    "model",
+    "network",
+    "clock",
+    "transport",
+    "pending_approvals",
+    "last_backup"
+  ]
+}
