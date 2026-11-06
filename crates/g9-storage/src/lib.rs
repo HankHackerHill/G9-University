@@ -31,10 +31,11 @@
 //!
 //! ## Boundaries
 //!
-//! This crate depends on `g9-domain` only. It never evaluates policy, never
-//! interprets model output and never touches the network. Repositories for the
-//! pure domain crates (row ↔ type mapping) land in a later wave; the modules here
-//! are the storage primitives those repositories compose.
+//! This crate depends on `g9-domain` and the pure domain crates (for row ↔ type
+//! mapping in [`repos`]). It never evaluates policy, never interprets model
+//! output and never touches the network. [`repos`] holds the typed repositories
+//! (one module per table group) that `g9-app` composes so that no SQL is written
+//! outside this crate; the other modules are the storage primitives.
 //!
 //! ## Determinism
 //!
@@ -58,6 +59,7 @@ pub mod error;
 pub mod events;
 pub mod idempotency;
 pub mod migrations;
+pub mod repos;
 pub(crate) mod sql;
 
 pub use audit::{AuditChain, AuditDecision, AuditEntry, AuditOutcome, AuditRecord, ChainReport};
@@ -70,3 +72,4 @@ pub use migrations::{
     AppliedMigration, ChecksumReport, DryRunReport, Migration, MigrationReport, Migrator,
     CURRENT_SCHEMA_VERSION, EMBEDDED_MIGRATIONS,
 };
+pub use repos::{ReadScope, RepoError, RepoResult};

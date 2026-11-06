@@ -1458,7 +1458,8 @@ fn a08_dry_run_migration_on_copy() {
     // the default policy never migrates an existing database behind the operator's back:
     // the open succeeds, reports the pending versions, and leaves the schema at 5
     let mut guarded = open_file(&path);
-    assert_eq!(guarded.pending_migrations(), &[6, 7, 8, 9]);
+    let pending: Vec<u32> = (6..=CURRENT_SCHEMA_VERSION).collect();
+    assert_eq!(guarded.pending_migrations(), pending.as_slice());
     assert!(guarded.migration_report().is_none());
     assert_eq!(Migrator::schema_version(guarded.conn()).unwrap(), 5);
     // after backup + dry run the application migrates explicitly

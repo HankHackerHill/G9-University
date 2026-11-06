@@ -1267,7 +1267,14 @@ dependencies = [
 name = "g9-storage"
 version = "0.1.0"
 dependencies = [
+ "chrono",
+ "g9-assessment",
+ "g9-calendar",
+ "g9-competency",
+ "g9-curriculum",
  "g9-domain",
+ "g9-evidence",
+ "g9-retention",
  "hex",
  "pretty_assertions",
  "rusqlite",

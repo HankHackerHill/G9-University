@@ -425,7 +425,15 @@ pub fn verify_and_advance(
         .clone()
         .ok_or_else(|| StorageError::Precondition("manifest has no snapshot path".to_string()))?;
     let current_sha = sha256_of_file(&path)?;
-    let mut report = verify_snapshot(&path, options)?;
+    // A snapshot that cannot even be opened or checked is a failed verification:
+    // the manifest is driven to `Failed` before the error is returned.
+    let mut report = match verify_snapshot(&path, options) {
+        Ok(report) => report,
+        Err(e) => {
+            manifest.fail("verification failed")?;
+            return Err(e);
+        }
+    };
     if current_sha != manifest.sha256_of_file {
         report
             .errors

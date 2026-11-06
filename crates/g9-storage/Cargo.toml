@@ -9,10 +9,17 @@ repository.workspace = true
 
 [dependencies]
 g9-domain = { workspace = true }
+g9-curriculum = { workspace = true }
+g9-calendar = { workspace = true }
+g9-evidence = { workspace = true }
+g9-competency = { workspace = true }
+g9-assessment = { workspace = true }
+g9-retention = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 rusqlite = { workspace = true }
+chrono = { workspace = true }
 sha2 = { workspace = true }
 hex = { workspace = true }
 tracing = { workspace = true }

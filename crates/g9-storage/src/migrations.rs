@@ -88,10 +88,15 @@ pub const EMBEDDED_MIGRATIONS: &[Migration] = &[
         name: "0009_business",
         sql: include_str!("migrations/0009_business.sql"),
     },
+    Migration {
+        version: 10,
+        name: "0010_intervention_review_and_reliability",
+        sql: include_str!("migrations/0010_intervention_review_and_reliability.sql"),
+    },
 ];
 
 /// Highest embedded migration version.
-pub const CURRENT_SCHEMA_VERSION: u32 = 9;
+pub const CURRENT_SCHEMA_VERSION: u32 = 10;
 
 const BOOTSTRAP_SQL: &str = "CREATE TABLE IF NOT EXISTS schema_migrations (
   version     INTEGER PRIMARY KEY NOT NULL CHECK (version >= 1),
