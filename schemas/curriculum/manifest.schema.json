@@ -1,0 +1,238 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/curriculum/manifest",
+  "title": "G9 curriculum manifest (format v1.0.0)",
+  "description": "Machine-readable curriculum manifest (ARCHITECTURE.md M02; handoff section 8 'Structural contract' and Appendix A 'Importer proof obligations'). Mirrors the serde types in crates/g9-curriculum/src/manifest.rs (deny_unknown_fields at every level). The seed data/curriculum/g9-ct9-480.seed.v0.json is the reference instance. Structural constants are encoded directly: 12 weeks x 6 days x 3 objectives, 420-minute weekdays, 300-minute Saturdays, Sunday unscheduled. Cross-field rules the schema cannot express (day ids D01..D72 in order, objective ids <day>-O<seq>, block sums, Saturday = assessment day, canonical block lists per day type, duplicate ids) are enforced by g9_curriculum::validate and recomputed by scripts/check_curriculum_seed.py. Optional extensions absent in the seed: objective.competency_ids, day.resources, top-level reconciliation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifest_schema_version",
+    "curriculum_id",
+    "name",
+    "version",
+    "provenance",
+    "structure",
+    "weekday_blocks",
+    "saturday_blocks",
+    "weeks"
+  ],
+  "properties": {
+    "manifest_schema_version": {
+      "type": "string",
+      "pattern": "^1\\.0\\.[0-9]+$",
+      "description": "Format version MAJOR.MINOR.PATCH; readers at 1.0 accept 1.0.x only."
+    },
+    "curriculum_id": {
+      "$ref": "#/$defs/slug_id",
+      "description": "Stable curriculum slug, e.g. g9-ct9-480."
+    },
+    "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Content version of this manifest instance, e.g. 0.1.0-seed."
+    },
+    "provenance": {
+      "type": "string",
+      "enum": ["PROPOSED_SEED", "RECONCILED_CANDIDATE", "APPROVED_CANONICAL"],
+      "description": "Only APPROVED_CANONICAL may drive official scheduling and assessment records. Any value other than PROPOSED_SEED requires a complete reconciliation block."
+    },
+    "provenance_note": { "type": "string", "maxLength": 2000 },
+    "structure": { "$ref": "#/$defs/structure" },
+    "weekday_blocks": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": { "$ref": "#/$defs/block_spec" },
+      "description": "Canonical weekday list: recall 15, theory 45, guided_lab 120, independent_lab 120, defense_verification 60, evidence_reporting 60."
+    },
+    "saturday_blocks": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "$ref": "#/$defs/block_spec" },
+      "description": "Canonical Saturday list: blind_practical 120, remediation 60, report 60, performance_review 60."
+    },
+    "weeks": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": { "$ref": "#/$defs/week" }
+    },
+    "reconciliation": { "$ref": "#/$defs/reconciliation" }
+  },
+  "if": {
+    "required": ["provenance"],
+    "properties": { "provenance": { "enum": ["RECONCILED_CANDIDATE", "APPROVED_CANONICAL"] } }
+  },
+  "then": { "required": ["reconciliation"] },
+  "$defs": {
+    "slug_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+      "description": "g9_domain typed-id character set."
+    },
+    "sha256_hex": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "structure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "weeks",
+        "days_per_week",
+        "objectives_per_day",
+        "weekday_minutes",
+        "saturday_minutes",
+        "weekly_minutes",
+        "total_minutes",
+        "sunday"
+      ],
+      "properties": {
+        "weeks": { "type": "integer", "const": 12 },
+        "days_per_week": { "type": "integer", "const": 6 },
+        "objectives_per_day": { "type": "integer", "const": 3 },
+        "weekday_minutes": { "type": "integer", "const": 420 },
+        "saturday_minutes": { "type": "integer", "const": 300 },
+        "weekly_minutes": { "type": "integer", "const": 2400 },
+        "total_minutes": { "type": "integer", "const": 28800 },
+        "sunday": { "type": "string", "const": "unscheduled" }
+      }
+    },
+    "block_name": {
+      "type": "string",
+      "enum": [
+        "recall",
+        "theory",
+        "guided_lab",
+        "independent_lab",
+        "defense_verification",
+        "evidence_reporting",
+        "blind_practical",
+        "remediation",
+        "report",
+        "performance_review"
+      ]
+    },
+    "block_spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["block", "minutes"],
+      "properties": {
+        "block": { "$ref": "#/$defs/block_name" },
+        "minutes": { "type": "integer", "minimum": 1, "maximum": 420 }
+      }
+    },
+    "week": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["week_number", "title", "days"],
+      "properties": {
+        "week_number": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "days": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": { "$ref": "#/$defs/day" }
+        }
+      }
+    },
+    "day": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "day_id",
+        "day_of_week",
+        "planned_minutes",
+        "objectives",
+        "evidence_artifact",
+        "blocks",
+        "is_assessment_day"
+      ],
+      "properties": {
+        "day_id": { "type": "string", "pattern": "^D(0[1-9]|[1-6][0-9]|7[0-2])$" },
+        "day_of_week": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6,
+          "description": "1 = Monday .. 6 = Saturday; Sunday (7) is unscheduled and not allowed."
+        },
+        "planned_minutes": { "type": "integer", "enum": [420, 300] },
+        "objectives": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": { "$ref": "#/$defs/objective" }
+        },
+        "evidence_artifact": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "blocks": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 6,
+          "items": { "$ref": "#/$defs/block" }
+        },
+        "is_assessment_day": { "type": "boolean" },
+        "resources": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/resource" }
+        }
+      }
+    },
+    "objective": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seq", "objective_id", "text"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "objective_id": { "type": "string", "pattern": "^D(0[1-9]|[1-6][0-9]|7[0-2])-O[1-3]$" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "competency_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/slug_id" }
+        }
+      }
+    },
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seq", "block", "minutes"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "block": { "$ref": "#/$defs/block_name" },
+        "minutes": { "type": "integer", "minimum": 1, "maximum": 420 }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "kind"],
+      "properties": {
+        "ref": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "kind": { "type": "string", "enum": ["EXTERNAL", "INTERNAL"] },
+        "license_note": { "type": "string", "maxLength": 1000 },
+        "version": { "type": "string", "minLength": 1, "maxLength": 128 }
+      },
+      "if": { "properties": { "kind": { "const": "EXTERNAL" } }, "required": ["kind"] },
+      "then": { "required": ["version"] }
+    },
+    "reconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["original_checksum", "diff_checksum", "approved_by", "approved_at"],
+      "properties": {
+        "original_checksum": { "$ref": "#/$defs/sha256_hex" },
+        "diff_checksum": { "$ref": "#/$defs/sha256_hex" },
+        "approved_by": { "$ref": "#/$defs/slug_id" },
+        "approved_at": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "UTC epoch milliseconds."
+        }
+      }
+    }
+  }
+}

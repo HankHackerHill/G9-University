@@ -84,7 +84,7 @@ impl BaselineSchedule {
                 reason: "offsets must not be empty".into(),
             });
         }
-        if self.offsets_days.iter().any(|d| *d == 0) {
+        if self.offsets_days.contains(&0) {
             return Err(RetentionError::InvalidSchedule {
                 reason: "offsets must be positive".into(),
             });
@@ -112,17 +112,24 @@ impl BaselineSchedule {
     ) -> Result<ItemState, RetentionError> {
         self.validate()?;
         let last = self.offsets_days.len() - 1;
-        let (stage, lapses, successes) = match outcome {
-            ReviewOutcome::Success => (
-                (state.stage_index + 1).min(last),
-                state.lapses,
-                state.successes + 1,
+        // Success: the interval is the offset of the stage just completed, then the
+        // stage advances (capped). Failure: back to the reset stage and its offset.
+        let (stage, offset_days, lapses, successes) = match outcome {
+            ReviewOutcome::Success => {
+                let current = state.stage_index.min(last);
+                (
+                    (current + 1).min(last),
+                    self.offsets_days[current],
+                    state.lapses,
+                    state.successes + 1,
+                )
+            }
+            ReviewOutcome::Fail => (
+                self.fail_reset_index,
+                self.offsets_days[self.fail_reset_index],
+                state.lapses + 1,
+                state.successes,
             ),
-            ReviewOutcome::Fail => (self.fail_reset_index, state.lapses + 1, state.successes),
-        };
-        let offset_days = match outcome {
-            ReviewOutcome::Success => self.offsets_days[stage],
-            ReviewOutcome::Fail => self.offsets_days[self.fail_reset_index],
         };
         let due_at = UtcMillis::from_millis(
             now.as_millis()
@@ -164,6 +171,7 @@ mod tests {
             now = st.due_at;
         }
         assert_eq!(st.stage_index, 4, "capped at the last stage");
+        assert_eq!(prev_gap, 60 * DAY_MS, "steady state uses the last offset");
         let failed = s.next_after(&st, ReviewOutcome::Fail, now).unwrap();
         assert_eq!(failed.stage_index, 0);
         assert_eq!(failed.lapses, 1);
