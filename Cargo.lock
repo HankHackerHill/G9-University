@@ -1109,9 +1109,12 @@ dependencies = [
  "g9-retention",
  "g9-skills",
  "g9-storage",
+ "jsonschema",
  "pretty_assertions",
+ "rusqlite",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.21",
  "tracing",
 ]
