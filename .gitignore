@@ -12,3 +12,5 @@ dist
 /apps/desktop/src-tauri/target
 coverage
 *.tsbuildinfo
+__pycache__/
+*.pyc
