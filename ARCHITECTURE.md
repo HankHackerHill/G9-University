@@ -182,3 +182,20 @@ Unexecuted tests are reported NOT RUN, never PASS (`docs/release/stage-report.md
 ## 15. Repository layout
 
 See `README.md` → "Repository map". Executable scripts under `scripts/` are proposals and are not run by any build step except where CI explicitly lists them.
+
+---
+
+## Addendum A (2026-11-06): corrections adopted from the Stage 00 audit
+
+The independent audit (`docs/audit/defect-register.md`, `docs/audit/stage00-triple-audit.md`) produced corrections that refine the sections above. They are binding; where code does not yet implement them the row in `docs/audit/improvement-backlog.md` names the stage.
+
+1. **Assessment pass rule (ADR-0012, LRN-10):** PASS iff total ≥ 80 **and** every criterion ≥ 50 % of its weight **and** no gate failure. Gates: out-of-scope target/action; unsafe or destructive unauthorized action; fabricated or altered evidence; time limit exceeded without submission. Criteria use anchored 0–4 levels stored with the assessment version.
+2. **Reliability class (ADR-0005/0012, LRN-11):** every grade decision records `reliability_class ∈ {DETERMINISTIC, EXTERNAL_REVIEW, SELF_ADJUDICATED}`; validation evidence derived from a SELF_ADJUDICATED decision yields at most `Independent` with a `provisional` flag; official blind practicals target ≥ 60 % machine-checkable weight.
+3. **Exposure ledger and variants (LRN-13):** exam items have fixture families and variants; `exposure_log` records DISPLAYED / AI_CONTEXT / PUBLIC_SOURCE_DECLARED; an item is blind-eligible only without prior exposure for this learner; retakes use a different variant and are reported separately (`first_attempt_pass_rate` vs `eventual_pass_rate`).
+4. **Scheduler-independent recall KPI (LRN-19):** 7/21-day recall is measured on seeded random probes regardless of due date (`docs/evaluations/kpi-definitions.md`).
+5. **Executable B-gates and KPI definitions (LRN-22/23):** `docs/evaluations/effectiveness-gates.md`, `docs/evaluations/kpi-definitions.md`.
+6. **Pre-registered experiments (ADR-0007, LRN-21):** `method_experiments` stores design, unit of randomization, allocation seed/sequence, outcomes, analysis query and stop rule before data collection.
+7. **Trusted confirmation surface (ADR-0014, SEC-03):** protected operations additionally require a native confirmation raised from Rust; the webview can request, not grant.
+8. **Backend-assigned actor (ADR-0013, SEC-01):** incoming IPC meta never sets identity; `g9-app` sets the operator actor from the session.
+9. **Competency summary state (LRN-09):** per-dimension estimates are first-class; the summary state follows the APPLICATION dimension and `Validated` requires EXAM-mode unaided evidence (Application or Transfer); the diagnostic calibration may create `Independent` directly from unaided evidence without altering the canonical curriculum.
+10. **Platform facts (PLT, maintainer-verified):** target host Ubuntu 26.04.1 LTS (Wayland); CI runner `ubuntu-26.04`; Tauri 2.12.5; rusqlite 0.41.1; FullCalendar excluded (ADR-0008).
