@@ -53,7 +53,9 @@ impl ErrorCategory {
     pub const fn is_retryable(self) -> bool {
         matches!(
             self,
-            ErrorCategory::RetryableStorage | ErrorCategory::Timeout | ErrorCategory::ResourceUnavailable
+            ErrorCategory::RetryableStorage
+                | ErrorCategory::Timeout
+                | ErrorCategory::ResourceUnavailable
         )
     }
 }
@@ -75,7 +77,11 @@ pub struct G9Error {
 }
 
 impl G9Error {
-    pub fn new(category: ErrorCategory, code: impl Into<String>, message: impl Into<String>) -> Self {
+    pub fn new(
+        category: ErrorCategory,
+        code: impl Into<String>,
+        message: impl Into<String>,
+    ) -> Self {
         Self {
             category,
             code: code.into(),
@@ -154,7 +160,11 @@ impl G9Error {
     /// Internal error with a redacted message. The real cause must be logged
     /// locally (metadata-only) and never returned to the UI.
     pub fn internal_redacted(code: impl Into<String>) -> Self {
-        Self::new(ErrorCategory::Internal, code, "internal error; see local operation log")
+        Self::new(
+            ErrorCategory::Internal,
+            code,
+            "internal error; see local operation log",
+        )
     }
 }
 

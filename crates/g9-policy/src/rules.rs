@@ -64,10 +64,14 @@ impl ActorKindMatcher {
         ActorKindMatcher::Model,
     ];
     /// Proposal-only actors (never authoritative).
-    pub const SKILL_OR_MODEL: [ActorKindMatcher; 2] = [ActorKindMatcher::Skill, ActorKindMatcher::Model];
+    pub const SKILL_OR_MODEL: [ActorKindMatcher; 2] =
+        [ActorKindMatcher::Skill, ActorKindMatcher::Model];
     /// Everyone except the operator.
-    pub const NON_OPERATOR: [ActorKindMatcher; 3] =
-        [ActorKindMatcher::System, ActorKindMatcher::Skill, ActorKindMatcher::Model];
+    pub const NON_OPERATOR: [ActorKindMatcher; 3] = [
+        ActorKindMatcher::System,
+        ActorKindMatcher::Skill,
+        ActorKindMatcher::Model,
+    ];
 
     /// Whether this matcher applies to the given actor kind.
     pub fn matches(self, kind: &ActorKind) -> bool {
@@ -98,7 +102,11 @@ impl ActorKindMatcher {
 
 /// Effect of a matching rule.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(tag = "kind", content = "capability", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "kind",
+    content = "capability",
+    rename_all = "SCREAMING_SNAKE_CASE"
+)]
 pub enum Effect {
     /// The operation may proceed without a separate approval.
     Allow,
@@ -238,7 +246,12 @@ pub struct PolicyRule {
 
 impl PolicyRule {
     /// Whether the rule applies to the actor kind, operation and context.
-    pub fn matches(&self, actor_kind: &ActorKind, op: &OperationDescriptor, ctx: &ResourceContext) -> bool {
+    pub fn matches(
+        &self,
+        actor_kind: &ActorKind,
+        op: &OperationDescriptor,
+        ctx: &ResourceContext,
+    ) -> bool {
         self.actor_kinds.iter().any(|m| m.matches(actor_kind))
             && self.actions.contains(&op.action)
             && (self.resource_kinds.is_empty() || self.resource_kinds.contains(&op.resource.kind))
@@ -288,7 +301,9 @@ pub enum RuleSetError {
     #[error("rule {0} has no actions")]
     EmptyActions(String),
     /// A rule would grant an operator-only capability to a non-operator actor.
-    #[error("rule {rule_id} grants operator-only capability {capability:?} to a non-operator actor")]
+    #[error(
+        "rule {rule_id} grants operator-only capability {capability:?} to a non-operator actor"
+    )]
     OperatorOnlyCapabilityForNonOperator {
         /// Offending rule.
         rule_id: String,
@@ -381,11 +396,15 @@ pub const ALL_ACTIONS: [Action; 16] = [
 pub const NATIVE_ACTIONS: [Action; 3] = [Action::Execute, Action::Connect, Action::Load];
 
 /// Native host resource kinds.
-pub const NATIVE_RESOURCES: [ResourceKind; 3] =
-    [ResourceKind::FilesystemPath, ResourceKind::Process, ResourceKind::NetworkHost];
+pub const NATIVE_RESOURCES: [ResourceKind; 3] = [
+    ResourceKind::FilesystemPath,
+    ResourceKind::Process,
+    ResourceKind::NetworkHost,
+];
 
 /// Resource kinds that are self-modification targets.
-pub const SELF_MODIFICATION_RESOURCES: [ResourceKind; 2] = [ResourceKind::Policy, ResourceKind::AppSetting];
+pub const SELF_MODIFICATION_RESOURCES: [ResourceKind; 2] =
+    [ResourceKind::Policy, ResourceKind::AppSetting];
 
 /// Resource kinds that carry proposals (model/skill output lands here).
 pub const PROPOSAL_RESOURCES: [ResourceKind; 5] = [
@@ -397,7 +416,8 @@ pub const PROPOSAL_RESOURCES: [ResourceKind; 5] = [
 ];
 
 /// Teaching content: never proposed by skills/model in EXAM mode.
-pub const TEACHING_RESOURCES: [ResourceKind; 2] = [ResourceKind::Intervention, ResourceKind::KnowledgeDocument];
+pub const TEACHING_RESOURCES: [ResourceKind; 2] =
+    [ResourceKind::Intervention, ResourceKind::KnowledgeDocument];
 
 /// Evidentiary records (storage uses `ON DELETE RESTRICT`).
 pub const EVIDENTIARY_RESOURCES: [ResourceKind; 5] = [
@@ -1138,7 +1158,10 @@ impl RuleSet {
         op: &OperationDescriptor,
         ctx: &ResourceContext,
     ) -> Vec<&'a PolicyRule> {
-        self.rules.iter().filter(|r| r.matches(actor_kind, op, ctx)).collect()
+        self.rules
+            .iter()
+            .filter(|r| r.matches(actor_kind, op, ctx))
+            .collect()
     }
 
     /// The winning rule (highest priority, then most restrictive, then smallest id).
@@ -1148,12 +1171,14 @@ impl RuleSet {
         op: &OperationDescriptor,
         ctx: &ResourceContext,
     ) -> Option<&'a PolicyRule> {
-        self.matching(actor_kind, op, ctx).into_iter().min_by(|a, b| {
-            b.priority
-                .cmp(&a.priority)
-                .then_with(|| b.effect.restrictiveness().cmp(&a.effect.restrictiveness()))
-                .then_with(|| a.id.cmp(&b.id))
-        })
+        self.matching(actor_kind, op, ctx)
+            .into_iter()
+            .min_by(|a, b| {
+                b.priority
+                    .cmp(&a.priority)
+                    .then_with(|| b.effect.restrictiveness().cmp(&a.effect.restrictiveness()))
+                    .then_with(|| a.id.cmp(&b.id))
+            })
     }
 
     /// Ids of every rule, in table order.
@@ -1173,7 +1198,8 @@ impl RuleSet {
 
     /// Parse and validate a JSON rendering.
     pub fn from_json(json: &str) -> Result<RuleSet, RuleSetError> {
-        let set: RuleSet = serde_json::from_str(json).map_err(|e| RuleSetError::Malformed(e.to_string()))?;
+        let set: RuleSet =
+            serde_json::from_str(json).map_err(|e| RuleSetError::Malformed(e.to_string()))?;
         set.validate()?;
         Ok(set)
     }
@@ -1184,7 +1210,12 @@ mod tests {
     use super::*;
     use g9_domain::ResourceRef;
 
-    fn op(action: Action, kind: ResourceKind, mode: InteractionMode, domain: DataDomain) -> OperationDescriptor {
+    fn op(
+        action: Action,
+        kind: ResourceKind,
+        mode: InteractionMode,
+        domain: DataDomain,
+    ) -> OperationDescriptor {
         OperationDescriptor {
             action,
             resource: ResourceRef::new(kind, "r1"),
@@ -1218,11 +1249,17 @@ mod tests {
         let mut set = RuleSet::builtin_v1();
         let dup = set.rules[0].clone();
         set.rules.push(dup);
-        assert!(matches!(set.validate(), Err(RuleSetError::DuplicateRuleId(_))));
+        assert!(matches!(
+            set.validate(),
+            Err(RuleSetError::DuplicateRuleId(_))
+        ));
 
         let mut set = RuleSet::builtin_v1();
         set.rules[0].actor_kinds.clear();
-        assert!(matches!(set.validate(), Err(RuleSetError::EmptyActorKinds(_))));
+        assert!(matches!(
+            set.validate(),
+            Err(RuleSetError::EmptyActorKinds(_))
+        ));
 
         let mut set = RuleSet::builtin_v1();
         set.rules[0].actions.clear();
@@ -1271,7 +1308,10 @@ mod tests {
             &NO_CONDITIONS,
             "evil",
         ));
-        assert!(matches!(set.validate(), Err(RuleSetError::NativeActionAllowed { .. })));
+        assert!(matches!(
+            set.validate(),
+            Err(RuleSetError::NativeActionAllowed { .. })
+        ));
 
         let mut set = RuleSet::builtin_v1();
         set.rules.push(rule(
@@ -1286,7 +1326,10 @@ mod tests {
             &NO_CONDITIONS,
             "evil",
         ));
-        assert!(matches!(set.validate(), Err(RuleSetError::NativeActionForNonOperator { .. })));
+        assert!(matches!(
+            set.validate(),
+            Err(RuleSetError::NativeActionForNonOperator { .. })
+        ));
     }
 
     #[test]
@@ -1333,10 +1376,26 @@ mod tests {
             ],
         };
         let ctx = ResourceContext::new(DataDomain::Learning, Classification::Internal, false);
-        let note = op(Action::Read, ResourceKind::Note, InteractionMode::Study, DataDomain::Learning);
-        assert_eq!(set.select(&ActorKind::Operator, &note, &ctx).unwrap().id, "c.allow");
-        let goal = op(Action::Read, ResourceKind::Goal, InteractionMode::Study, DataDomain::Learning);
-        assert_eq!(set.select(&ActorKind::Operator, &goal, &ctx).unwrap().id, "a.deny");
+        let note = op(
+            Action::Read,
+            ResourceKind::Note,
+            InteractionMode::Study,
+            DataDomain::Learning,
+        );
+        assert_eq!(
+            set.select(&ActorKind::Operator, &note, &ctx).unwrap().id,
+            "c.allow"
+        );
+        let goal = op(
+            Action::Read,
+            ResourceKind::Goal,
+            InteractionMode::Study,
+            DataDomain::Learning,
+        );
+        assert_eq!(
+            set.select(&ActorKind::Operator, &goal, &ctx).unwrap().id,
+            "a.deny"
+        );
         assert!(set.select(&ActorKind::Model, &goal, &ctx).is_none());
     }
 
@@ -1373,7 +1432,9 @@ mod tests {
         assert_eq!(distinct.len(), 16, "g9_domain::Action has 16 variants");
         let writes: BTreeSet<String> = WRITE_ACTIONS.iter().map(|a| format!("{a:?}")).collect();
         assert!(!writes.contains("Read"));
-        assert!(WRITE_ACTIONS.iter().all(|a| *a != Action::Propose && *a != Action::Read));
+        assert!(WRITE_ACTIONS
+            .iter()
+            .all(|a| *a != Action::Propose && *a != Action::Read));
         assert_eq!(WRITE_ACTIONS.len() + 2, ALL_ACTIONS.len());
     }
 }

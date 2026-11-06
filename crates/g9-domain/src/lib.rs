@@ -38,8 +38,8 @@ pub use curriculum::{
     CurriculumCounts, DayOfWeek, InvariantViolation, ManifestProvenance, CURRICULUM_INVARIANTS,
 };
 pub use envelope::{
-    CommandMeta, CommandOutcome, CommandResult, ErrorCategory, G9Error, ResourceRef,
-    SchemaVersion, Scope,
+    CommandMeta, CommandOutcome, CommandResult, ErrorCategory, G9Error, ResourceRef, SchemaVersion,
+    Scope,
 };
 pub use events::EventHeader;
 pub use ids::*;

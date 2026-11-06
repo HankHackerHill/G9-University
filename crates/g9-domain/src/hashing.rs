@@ -52,7 +52,10 @@ mod tests {
         let a = json!({"b": 1, "a": {"y": [1, {"k": 2, "j": 3}], "x": 2}});
         let b = json!({"a": {"x": 2, "y": [1, {"j": 3, "k": 2}]}, "b": 1});
         assert_eq!(sha256_json(&a), sha256_json(&b));
-        assert_eq!(canonical_json(&a), r#"{"a":{"x":2,"y":[1,{"j":3,"k":2}]},"b":1}"#);
+        assert_eq!(
+            canonical_json(&a),
+            r#"{"a":{"x":2,"y":[1,{"j":3,"k":2}]},"b":1}"#
+        );
     }
 
     #[test]

@@ -41,9 +41,9 @@ impl PolicyError {
     /// The decision record to persist, if the error came from an evaluation.
     pub fn record(&self) -> Option<&PolicyDecisionRecord> {
         match self {
-            PolicyError::Denied { record } | PolicyError::ApprovalRequired { record, .. } | PolicyError::Approval { record, .. } => {
-                Some(record)
-            }
+            PolicyError::Denied { record }
+            | PolicyError::ApprovalRequired { record, .. }
+            | PolicyError::Approval { record, .. } => Some(record),
             PolicyError::InvalidRuleSet(_) => None,
         }
     }
@@ -82,23 +82,30 @@ impl From<ApprovalError> for G9Error {
         let message = e.to_string();
         match e {
             ApprovalError::NotFound => G9Error::not_found(code, message),
-            ApprovalError::NotApproved { .. } | ApprovalError::Expired => G9Error::approval_required(code, message),
+            ApprovalError::NotApproved { .. } | ApprovalError::Expired => {
+                G9Error::approval_required(code, message)
+            }
             ApprovalError::OperationMismatch
             | ApprovalError::ResourceMismatch
             | ApprovalError::AlreadyConsumed
             | ApprovalError::MacInvalid
             | ApprovalError::CapabilityMismatch { .. }
+            | ApprovalError::RequesterMismatch
             | ApprovalError::DeciderNotOperator
             | ApprovalError::OperatorOnlyCapability { .. } => G9Error::unauthorized(code, message),
             ApprovalError::RevisionMismatch { expected, bound } => {
-                G9Error::new(ErrorCategory::StaleRevision, code, message).with_details(serde_json::json!({
-                    "expected": expected.map(g9_domain::Revision::get),
-                    "bound": bound.map(g9_domain::Revision::get),
-                }))
+                G9Error::new(ErrorCategory::StaleRevision, code, message).with_details(
+                    serde_json::json!({
+                        "expected": expected.map(g9_domain::Revision::get),
+                        "bound": bound.map(g9_domain::Revision::get),
+                    }),
+                )
             }
             ApprovalError::AlreadyExists => G9Error::conflict(code, message),
             ApprovalError::InvalidTransition { .. } => G9Error::precondition_failed(code, message),
-            ApprovalError::InvalidExpiry | ApprovalError::Binding(_) => G9Error::invalid_input(code, message),
+            ApprovalError::InvalidExpiry | ApprovalError::Binding(_) => {
+                G9Error::invalid_input(code, message)
+            }
         }
     }
 }
@@ -119,10 +126,34 @@ mod tests {
                 ErrorCategory::ApprovalRequired,
             ),
             (ApprovalError::Expired, ErrorCategory::ApprovalRequired),
-            (ApprovalError::OperationMismatch, ErrorCategory::Unauthorized),
+            (
+                ApprovalError::OperationMismatch,
+                ErrorCategory::Unauthorized,
+            ),
             (ApprovalError::ResourceMismatch, ErrorCategory::Unauthorized),
             (ApprovalError::AlreadyConsumed, ErrorCategory::Unauthorized),
             (ApprovalError::MacInvalid, ErrorCategory::Unauthorized),
+            (
+                ApprovalError::RequesterMismatch,
+                ErrorCategory::Unauthorized,
+            ),
+            (
+                ApprovalError::CapabilityMismatch {
+                    required: Capability::DataExport,
+                    granted: Capability::DataDelete,
+                },
+                ErrorCategory::Unauthorized,
+            ),
+            (
+                ApprovalError::DeciderNotOperator,
+                ErrorCategory::Unauthorized,
+            ),
+            (
+                ApprovalError::OperatorOnlyCapability {
+                    capability: Capability::ShellExec,
+                },
+                ErrorCategory::Unauthorized,
+            ),
             (
                 ApprovalError::RevisionMismatch {
                     expected: Some(Revision::new(2)),

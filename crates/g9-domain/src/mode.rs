@@ -28,7 +28,10 @@ impl InteractionMode {
 
     /// Teaching assistance (hints, Socratic prompts, lessons) is permitted.
     pub const fn teaching_allowed(self) -> bool {
-        matches!(self, InteractionMode::Study | InteractionMode::Lab | InteractionMode::Review)
+        matches!(
+            self,
+            InteractionMode::Study | InteractionMode::Lab | InteractionMode::Review
+        )
     }
 
     /// Hints are never allowed in EXAM mode.

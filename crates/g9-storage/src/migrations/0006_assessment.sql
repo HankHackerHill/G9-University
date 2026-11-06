@@ -208,3 +208,11 @@ CREATE TRIGGER trg_exposure_log_no_update BEFORE UPDATE ON exposure_log
 BEGIN SELECT RAISE(ABORT, 'IMMUTABLE: exposure_log rows cannot be updated'); END;
 CREATE TRIGGER trg_exposure_log_no_delete BEFORE DELETE ON exposure_log
 BEGIN SELECT RAISE(ABORT, 'IMMUTABLE: exposure_log rows cannot be deleted'); END;
+
+-- Foreign-key columns not covered by an earlier index. SQLite evaluates ON DELETE RESTRICT / SET NULL on the
+-- parent by scanning the child column, so every FK column carries a leading index (checked by
+-- every_foreign_key_column_is_index_covered).
+CREATE INDEX idx_assessment_definitions_training_day_id ON assessment_definitions (training_day_id);
+CREATE INDEX idx_criterion_results_supersedes ON criterion_results (supersedes);
+CREATE INDEX idx_grade_decisions_supersedes ON grade_decisions (supersedes);
+CREATE INDEX idx_grade_decisions_approval_id ON grade_decisions (approval_id);

@@ -80,7 +80,11 @@ impl PartialEq for BindingKey {
 impl Eq for BindingKey {}
 
 /// The canonical message that is MACed.
-pub fn binding_message(operation: &OperationDescriptor, approval_id: &ApprovalId, expected_revision: Option<Revision>) -> Vec<u8> {
+pub fn binding_message(
+    operation: &OperationDescriptor,
+    approval_id: &ApprovalId,
+    expected_revision: Option<Revision>,
+) -> Vec<u8> {
     let value = serde_json::json!({
         "approval_id": approval_id,
         "expected_revision": expected_revision.map(Revision::get),
@@ -164,25 +168,49 @@ mod tests {
     fn verify_rejects_tampering() {
         let id = ApprovalId::parse("apr-1").unwrap();
         let mac = sign(&key(1), &op(), &id, Some(Revision::new(3))).unwrap();
-        assert!(!verify(&key(2), &op(), &id, Some(Revision::new(3)), &mac), "wrong key");
-        assert!(!verify(&key(1), &op(), &id, Some(Revision::new(4)), &mac), "wrong revision");
+        assert!(
+            !verify(&key(2), &op(), &id, Some(Revision::new(3)), &mac),
+            "wrong key"
+        );
+        assert!(
+            !verify(&key(1), &op(), &id, Some(Revision::new(4)), &mac),
+            "wrong revision"
+        );
         assert!(!verify(&key(1), &op(), &id, None, &mac), "missing revision");
         let other = ApprovalId::parse("apr-2").unwrap();
-        assert!(!verify(&key(1), &op(), &other, Some(Revision::new(3)), &mac), "wrong id");
+        assert!(
+            !verify(&key(1), &op(), &other, Some(Revision::new(3)), &mac),
+            "wrong id"
+        );
         let mut op2 = op();
         op2.parameters_sha256 = "22".repeat(32);
-        assert!(!verify(&key(1), &op2, &id, Some(Revision::new(3)), &mac), "wrong params");
+        assert!(
+            !verify(&key(1), &op2, &id, Some(Revision::new(3)), &mac),
+            "wrong params"
+        );
         let mut flipped = mac.clone();
         flipped.replace_range(0..1, if &mac[0..1] == "a" { "b" } else { "a" });
-        assert!(!verify(&key(1), &op(), &id, Some(Revision::new(3)), &flipped), "flipped nibble");
-        assert!(!verify(&key(1), &op(), &id, Some(Revision::new(3)), "zz"), "not hex");
-        assert!(!verify(&key(1), &op(), &id, Some(Revision::new(3)), ""), "empty");
+        assert!(
+            !verify(&key(1), &op(), &id, Some(Revision::new(3)), &flipped),
+            "flipped nibble"
+        );
+        assert!(
+            !verify(&key(1), &op(), &id, Some(Revision::new(3)), "zz"),
+            "not hex"
+        );
+        assert!(
+            !verify(&key(1), &op(), &id, Some(Revision::new(3)), ""),
+            "empty"
+        );
     }
 
     #[test]
     fn key_is_redacted_and_length_checked() {
         assert_eq!(format!("{:?}", key(9)), "BindingKey(<redacted>)");
-        assert_eq!(BindingKey::try_from_slice(&[0u8; 31]).unwrap_err(), BindingError::KeyLength);
+        assert_eq!(
+            BindingKey::try_from_slice(&[0u8; 31]).unwrap_err(),
+            BindingError::KeyLength
+        );
         assert!(BindingKey::try_from_slice(&[0u8; 32]).is_ok());
         assert_eq!(key(1), key(1));
         assert_ne!(key(1), key(2));
@@ -192,7 +220,8 @@ mod tests {
     fn message_is_canonical_json_with_three_parts() {
         let id = ApprovalId::parse("apr-1").unwrap();
         let msg = String::from_utf8(binding_message(&op(), &id, None)).unwrap();
-        assert!(msg.starts_with("{\"approval_id\":\"apr-1\",\"expected_revision\":null,\"operation\":{"));
+        assert!(msg
+            .starts_with("{\"approval_id\":\"apr-1\",\"expected_revision\":null,\"operation\":{"));
         assert!(ct_str_eq("abc", "abc"));
         assert!(!ct_str_eq("abc", "abd"));
         assert!(!ct_str_eq("abc", "ab"));

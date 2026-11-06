@@ -184,3 +184,12 @@ CREATE TRIGGER trg_manual_time_corrections_no_update BEFORE UPDATE ON manual_tim
 BEGIN SELECT RAISE(ABORT, 'IMMUTABLE: manual_time_corrections rows cannot be updated'); END;
 CREATE TRIGGER trg_manual_time_corrections_no_delete BEFORE DELETE ON manual_time_corrections
 BEGIN SELECT RAISE(ABORT, 'IMMUTABLE: manual_time_corrections rows cannot be deleted'); END;
+
+-- Foreign-key columns not covered by an earlier index. SQLite evaluates ON DELETE RESTRICT / SET NULL on the
+-- parent by scanning the child column, so every FK column carries a leading index (checked by
+-- every_foreign_key_column_is_index_covered).
+CREATE INDEX idx_calendar_events_objective_id ON calendar_events (objective_id);
+CREATE INDEX idx_schedule_decisions_approval_id ON schedule_decisions (approval_id);
+CREATE INDEX idx_study_sessions_calendar_event_id ON study_sessions (calendar_event_id);
+CREATE INDEX idx_study_sessions_objective_id ON study_sessions (objective_id);
+CREATE INDEX idx_manual_time_corrections_approval_id ON manual_time_corrections (approval_id);

@@ -62,7 +62,9 @@ impl SkillCode {
             _ => 0,
         };
         if n == 0 || n > max {
-            return Err(format!("skill code {s} out of range for family {fam} (1..={max})"));
+            return Err(format!(
+                "skill code {s} out of range for family {fam} (1..={max})"
+            ));
         }
         Ok(Self(s.to_string()))
     }
@@ -104,11 +106,16 @@ pub fn validate_skill_name(name: &str) -> Result<(), String> {
     if name.is_empty() || name.len() > 64 {
         return Err("skill name must be 1..=64 characters".into());
     }
-    if !name.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') {
+    if !name
+        .chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+    {
         return Err("skill name must use only lowercase letters, digits and hyphens".into());
     }
     if name.starts_with('-') || name.ends_with('-') || name.contains("--") {
-        return Err("skill name must not start/end with a hyphen or contain consecutive hyphens".into());
+        return Err(
+            "skill name must not start/end with a hyphen or contain consecutive hyphens".into(),
+        );
     }
     Ok(())
 }
@@ -123,7 +130,9 @@ pub struct ResourceBudget {
 
 impl ResourceBudget {
     pub const fn is_within(&self, used: &ResourceUsage) -> bool {
-        used.tokens <= self.max_tokens && used.seconds <= self.max_seconds && used.tool_calls <= self.max_tool_calls
+        used.tokens <= self.max_tokens
+            && used.seconds <= self.max_seconds
+            && used.tool_calls <= self.max_tool_calls
     }
 }
 
@@ -245,7 +254,10 @@ mod tests {
         assert_eq!(n, SkillCode::TOTAL);
         assert!(SkillCode::parse("X01").is_err());
         assert!(SkillCode::parse("E00").is_err());
-        assert_eq!(SkillCode::parse("T03").unwrap().family(), SkillFamily::Teaching);
+        assert_eq!(
+            SkillCode::parse("T03").unwrap().family(),
+            SkillFamily::Teaching
+        );
     }
 
     #[test]
@@ -259,8 +271,20 @@ mod tests {
 
     #[test]
     fn budget_enforced() {
-        let b = ResourceBudget { max_tokens: 10, max_seconds: 5, max_tool_calls: 1 };
-        assert!(b.is_within(&ResourceUsage { tokens: 10, seconds: 5, tool_calls: 1 }));
-        assert!(!b.is_within(&ResourceUsage { tokens: 11, seconds: 0, tool_calls: 0 }));
+        let b = ResourceBudget {
+            max_tokens: 10,
+            max_seconds: 5,
+            max_tool_calls: 1,
+        };
+        assert!(b.is_within(&ResourceUsage {
+            tokens: 10,
+            seconds: 5,
+            tool_calls: 1
+        }));
+        assert!(!b.is_within(&ResourceUsage {
+            tokens: 11,
+            seconds: 0,
+            tool_calls: 0
+        }));
     }
 }

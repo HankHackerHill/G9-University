@@ -23,12 +23,48 @@ pub struct BaselineRubric;
 
 impl BaselineRubric {
     pub const CRITERIA: [RubricCriterion; 6] = [
-        RubricCriterion { code: "independent_execution", title: "Independent execution", weight: 25, machine_checkable: true, critical_gate: false },
-        RubricCriterion { code: "root_cause_reasoning", title: "Root-cause reasoning", weight: 20, machine_checkable: false, critical_gate: false },
-        RubricCriterion { code: "remediation_verification", title: "Remediation and verification", weight: 20, machine_checkable: true, critical_gate: false },
-        RubricCriterion { code: "detection_visibility", title: "Detection and visibility", weight: 15, machine_checkable: false, critical_gate: false },
-        RubricCriterion { code: "evidence_documentation", title: "Evidence/documentation", weight: 10, machine_checkable: false, critical_gate: false },
-        RubricCriterion { code: "scope_compliance_reporting", title: "Scope compliance and reporting", weight: 10, machine_checkable: false, critical_gate: true },
+        RubricCriterion {
+            code: "independent_execution",
+            title: "Independent execution",
+            weight: 25,
+            machine_checkable: true,
+            critical_gate: false,
+        },
+        RubricCriterion {
+            code: "root_cause_reasoning",
+            title: "Root-cause reasoning",
+            weight: 20,
+            machine_checkable: false,
+            critical_gate: false,
+        },
+        RubricCriterion {
+            code: "remediation_verification",
+            title: "Remediation and verification",
+            weight: 20,
+            machine_checkable: true,
+            critical_gate: false,
+        },
+        RubricCriterion {
+            code: "detection_visibility",
+            title: "Detection and visibility",
+            weight: 15,
+            machine_checkable: false,
+            critical_gate: false,
+        },
+        RubricCriterion {
+            code: "evidence_documentation",
+            title: "Evidence/documentation",
+            weight: 10,
+            machine_checkable: false,
+            critical_gate: false,
+        },
+        RubricCriterion {
+            code: "scope_compliance_reporting",
+            title: "Scope compliance and reporting",
+            weight: 10,
+            machine_checkable: false,
+            critical_gate: true,
+        },
     ];
 
     pub const fn total_weight() -> u32 {
@@ -54,7 +90,10 @@ pub enum GradeSource {
 
 impl GradeSource {
     pub const fn may_contribute_to_final(self) -> bool {
-        matches!(self, GradeSource::DeterministicChecker | GradeSource::HumanReviewer)
+        matches!(
+            self,
+            GradeSource::DeterministicChecker | GradeSource::HumanReviewer
+        )
     }
 }
 

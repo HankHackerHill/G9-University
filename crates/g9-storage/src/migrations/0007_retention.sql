@@ -215,3 +215,17 @@ CREATE TRIGGER trg_calibration_observations_no_update BEFORE UPDATE ON calibrati
 BEGIN SELECT RAISE(ABORT, 'IMMUTABLE: calibration_observations rows cannot be updated'); END;
 CREATE TRIGGER trg_calibration_observations_no_delete BEFORE DELETE ON calibration_observations
 BEGIN SELECT RAISE(ABORT, 'IMMUTABLE: calibration_observations rows cannot be deleted'); END;
+
+-- Foreign-key columns not covered by an earlier index. SQLite evaluates ON DELETE RESTRICT / SET NULL on the
+-- parent by scanning the child column, so every FK column carries a leading index (checked by
+-- every_foreign_key_column_is_index_covered).
+CREATE INDEX idx_review_items_objective_id ON review_items (objective_id);
+CREATE INDEX idx_review_attempts_session_id ON review_attempts (session_id);
+CREATE INDEX idx_practical_transfer_checks_competency_id ON practical_transfer_checks (competency_id);
+CREATE INDEX idx_practical_transfer_checks_attempt_id ON practical_transfer_checks (attempt_id);
+CREATE INDEX idx_learning_episodes_objective_id ON learning_episodes (objective_id);
+CREATE INDEX idx_interventions_competency_id ON interventions (competency_id);
+CREATE INDEX idx_interventions_approval_id ON interventions (approval_id);
+CREATE INDEX idx_method_experiments_intervention_id ON method_experiments (intervention_id);
+CREATE INDEX idx_calibration_observations_attempt_id ON calibration_observations (attempt_id);
+CREATE INDEX idx_calibration_observations_review_attempt_id ON calibration_observations (review_attempt_id);

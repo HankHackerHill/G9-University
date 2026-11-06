@@ -192,7 +192,10 @@ mod tests {
         assert!(SkillId::parse("g9-session-director").is_ok());
         let id = SessionId::new_v7();
         assert!(SessionId::parse(id.as_str()).is_ok());
-        assert_eq!(uuid::Uuid::parse_str(id.as_str()).map(|u| u.get_version_num()), Ok(7));
+        assert_eq!(
+            uuid::Uuid::parse_str(id.as_str()).map(|u| u.get_version_num()),
+            Ok(7)
+        );
     }
 
     #[test]
@@ -209,7 +212,10 @@ mod tests {
         assert!(ok.is_ok());
         let bad: Result<DayId, _> = serde_json::from_str("\"bad id\"");
         assert!(bad.is_err());
-        assert_eq!(serde_json::to_string(&DayId::parse("D01").unwrap()).unwrap(), "\"D01\"");
+        assert_eq!(
+            serde_json::to_string(&DayId::parse("D01").unwrap()).unwrap(),
+            "\"D01\""
+        );
     }
 
     #[test]

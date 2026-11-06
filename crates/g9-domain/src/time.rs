@@ -292,6 +292,9 @@ mod tests {
             t.duration_since(UtcMillis::from_millis(1_762_300_000_000)),
             Some(DurationMs::new(800_000).unwrap())
         );
-        assert_eq!(UtcMillis::from_millis(5).duration_since(UtcMillis::from_millis(10)), None);
+        assert_eq!(
+            UtcMillis::from_millis(5).duration_since(UtcMillis::from_millis(10)),
+            None
+        );
     }
 }

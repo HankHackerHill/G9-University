@@ -162,3 +162,9 @@ CREATE TABLE content_classifications (
   created_at     INTEGER NOT NULL
 ) STRICT;
 CREATE INDEX idx_content_classifications_record ON content_classifications (record_table, record_id, classified_at);
+
+-- Foreign-key columns not covered by an earlier index. SQLite evaluates ON DELETE RESTRICT / SET NULL on the
+-- parent by scanning the child column, so every FK column carries a leading index (checked by
+-- every_foreign_key_column_is_index_covered).
+CREATE INDEX idx_notes_erasure_request_id ON notes (erasure_request_id);
+CREATE INDEX idx_attachments_erasure_request_id ON attachments (erasure_request_id);

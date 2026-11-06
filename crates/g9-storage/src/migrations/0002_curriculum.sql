@@ -148,3 +148,9 @@ CREATE TABLE deliverable_definitions (
   UNIQUE (training_day_id, code)
 ) STRICT;
 CREATE INDEX idx_deliverable_definitions_day ON deliverable_definitions (training_day_id);
+
+-- Foreign-key columns not covered by an earlier index. SQLite evaluates ON DELETE RESTRICT / SET NULL on the
+-- parent by scanning the child column, so every FK column carries a leading index (checked by
+-- every_foreign_key_column_is_index_covered).
+CREATE INDEX idx_curriculum_versions_approval_id ON curriculum_versions (approval_id);
+CREATE INDEX idx_deliverable_definitions_objective_id ON deliverable_definitions (objective_id);

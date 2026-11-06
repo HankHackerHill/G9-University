@@ -150,8 +150,16 @@ impl CurriculumCounts {
         };
         check("curriculum.weeks", inv.weeks, self.weeks);
         check("curriculum.days", inv.total_days, self.days);
-        check("curriculum.objectives", inv.total_objectives, self.objectives);
-        check("curriculum.total_minutes", inv.total_minutes, self.total_minutes);
+        check(
+            "curriculum.objectives",
+            inv.total_objectives,
+            self.objectives,
+        );
+        check(
+            "curriculum.total_minutes",
+            inv.total_minutes,
+            self.total_minutes,
+        );
         check("curriculum.weekday_days", inv.weeks * 5, self.weekday_days);
         check("curriculum.saturday_days", inv.weeks, self.saturday_days);
         v
@@ -170,8 +178,14 @@ mod tests {
         assert_eq!(5 * i.weekday_minutes + i.saturday_minutes, i.weekly_minutes);
         assert_eq!(i.weekly_minutes * i.weeks, i.total_minutes);
         assert_eq!(i.total_minutes, 480 * 60);
-        assert_eq!(WEEKDAY_BLOCKS.iter().map(|b| b.1).sum::<u32>(), i.weekday_minutes);
-        assert_eq!(SATURDAY_BLOCKS.iter().map(|b| b.1).sum::<u32>(), i.saturday_minutes);
+        assert_eq!(
+            WEEKDAY_BLOCKS.iter().map(|b| b.1).sum::<u32>(),
+            i.weekday_minutes
+        );
+        assert_eq!(
+            SATURDAY_BLOCKS.iter().map(|b| b.1).sum::<u32>(),
+            i.saturday_minutes
+        );
     }
 
     #[test]
@@ -185,7 +199,10 @@ mod tests {
             saturday_days: 12,
         };
         assert!(ok.violations().is_empty());
-        let bad = CurriculumCounts { objectives: 72, ..ok };
+        let bad = CurriculumCounts {
+            objectives: 72,
+            ..ok
+        };
         let v = bad.violations();
         assert_eq!(v.len(), 1);
         assert_eq!(v[0].code, "curriculum.objectives");

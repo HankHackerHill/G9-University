@@ -16,7 +16,11 @@ pub struct TransitionError {
     pub event: String,
 }
 
-fn refuse<S: fmt::Debug, E: fmt::Debug>(machine: &'static str, from: &S, event: &E) -> TransitionError {
+fn refuse<S: fmt::Debug, E: fmt::Debug>(
+    machine: &'static str,
+    from: &S,
+    event: &E,
+) -> TransitionError {
     TransitionError {
         machine,
         from: format!("{from:?}"),
@@ -291,7 +295,10 @@ mod tests {
         let s = s.transition(SessionEvent::Resume).unwrap();
         let s = s.transition(SessionEvent::Interrupt).unwrap();
         assert_eq!(s, SessionState::Interrupted);
-        assert!(s.transition(SessionEvent::Resume).is_err(), "interrupted sessions need recovery");
+        assert!(
+            s.transition(SessionEvent::Resume).is_err(),
+            "interrupted sessions need recovery"
+        );
         let s = s.transition(SessionEvent::Recover).unwrap();
         assert_eq!(s, SessionState::Paused);
         let s = s.transition(SessionEvent::Complete).unwrap();
@@ -315,14 +322,22 @@ mod tests {
         ] {
             assert!(s.transition(ev).is_err(), "{ev:?}");
         }
-        assert!(AssessmentAttemptState::Started.transition(AssessmentEvent::ApproveFinal).is_err());
-        assert!(AssessmentAttemptState::Submitted.transition(AssessmentEvent::ApproveFinal).is_err());
+        assert!(AssessmentAttemptState::Started
+            .transition(AssessmentEvent::ApproveFinal)
+            .is_err());
+        assert!(AssessmentAttemptState::Submitted
+            .transition(AssessmentEvent::ApproveFinal)
+            .is_err());
     }
 
     #[test]
     fn skill_invocation_cannot_skip_preflight_or_loop() {
-        assert!(SkillInvocationState::Requested.transition(SkillInvocationEvent::Run).is_err());
-        assert!(SkillInvocationState::Requested.transition(SkillInvocationEvent::Authorize).is_err());
+        assert!(SkillInvocationState::Requested
+            .transition(SkillInvocationEvent::Run)
+            .is_err());
+        assert!(SkillInvocationState::Requested
+            .transition(SkillInvocationEvent::Authorize)
+            .is_err());
         for (_, _, to) in SkillInvocationState::TRANSITIONS {
             if *to == SkillInvocationState::Running {
                 // The only way into Running is from Authorized.
@@ -338,41 +353,66 @@ mod tests {
 
     #[test]
     fn approval_is_single_use() {
-        let a = ApprovalState::Pending.transition(ApprovalEvent::Approve).unwrap();
+        let a = ApprovalState::Pending
+            .transition(ApprovalEvent::Approve)
+            .unwrap();
         let c = a.transition(ApprovalEvent::Consume).unwrap();
         assert_eq!(c, ApprovalState::Consumed);
         assert!(c.transition(ApprovalEvent::Consume).is_err());
-        assert!(ApprovalState::Pending.transition(ApprovalEvent::Consume).is_err());
+        assert!(ApprovalState::Pending
+            .transition(ApprovalEvent::Consume)
+            .is_err());
     }
 
     #[test]
     fn competency_never_jumps_to_validated_without_independent_evidence() {
-        assert!(CompetencyState::Unassessed.transition(CompetencyEvent::Validate).is_err());
-        assert!(CompetencyState::Guided.transition(CompetencyEvent::Validate).is_err());
-        assert!(CompetencyState::Independent.transition(CompetencyEvent::Validate).is_ok());
+        assert!(CompetencyState::Unassessed
+            .transition(CompetencyEvent::Validate)
+            .is_err());
+        assert!(CompetencyState::Guided
+            .transition(CompetencyEvent::Validate)
+            .is_err());
+        assert!(CompetencyState::Independent
+            .transition(CompetencyEvent::Validate)
+            .is_ok());
     }
 
     #[test]
     fn backup_retained_only_after_restore_test() {
-        assert!(BackupState::Checked.transition(BackupEvent::Retain).is_err());
-        assert!(BackupState::RestoreTested.transition(BackupEvent::Retain).is_ok());
+        assert!(BackupState::Checked
+            .transition(BackupEvent::Retain)
+            .is_err());
+        assert!(BackupState::RestoreTested
+            .transition(BackupEvent::Retain)
+            .is_ok());
     }
 
     #[test]
     fn every_non_terminal_state_has_an_outgoing_edge() {
         for s in SessionState::ALL {
             if !s.is_terminal() {
-                assert!(SessionState::TRANSITIONS.iter().any(|(f, _, _)| f == s), "{s:?}");
+                assert!(
+                    SessionState::TRANSITIONS.iter().any(|(f, _, _)| f == s),
+                    "{s:?}"
+                );
             }
         }
         for s in InterventionState::ALL {
             if !s.is_terminal() {
-                assert!(InterventionState::TRANSITIONS.iter().any(|(f, _, _)| f == s), "{s:?}");
+                assert!(
+                    InterventionState::TRANSITIONS
+                        .iter()
+                        .any(|(f, _, _)| f == s),
+                    "{s:?}"
+                );
             }
         }
         for s in SourceState::ALL {
             if !s.is_terminal() {
-                assert!(SourceState::TRANSITIONS.iter().any(|(f, _, _)| f == s), "{s:?}");
+                assert!(
+                    SourceState::TRANSITIONS.iter().any(|(f, _, _)| f == s),
+                    "{s:?}"
+                );
             }
         }
     }
@@ -380,6 +420,9 @@ mod tests {
     #[test]
     fn display_uses_screaming_snake_case() {
         assert_eq!(SessionState::Running.to_string(), "RUNNING");
-        assert_eq!(AssessmentAttemptState::GradedProvisional.to_string(), "GRADED_PROVISIONAL");
+        assert_eq!(
+            AssessmentAttemptState::GradedProvisional.to_string(),
+            "GRADED_PROVISIONAL"
+        );
     }
 }

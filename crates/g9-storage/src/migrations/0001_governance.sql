@@ -287,3 +287,9 @@ CREATE TRIGGER trg_domain_events_no_update BEFORE UPDATE ON domain_events
 BEGIN SELECT RAISE(ABORT, 'IMMUTABLE: domain_events rows cannot be updated'); END;
 CREATE TRIGGER trg_domain_events_no_delete BEFORE DELETE ON domain_events
 BEGIN SELECT RAISE(ABORT, 'IMMUTABLE: domain_events rows cannot be deleted'); END;
+
+-- Foreign-key columns not covered by an earlier index. SQLite evaluates ON DELETE RESTRICT / SET NULL on the
+-- parent by scanning the child column, so every FK column carries a leading index (checked by
+-- every_foreign_key_column_is_index_covered).
+CREATE INDEX idx_deletion_requests_approval_id ON deletion_requests (approval_id);
+CREATE INDEX idx_deletion_tombstones_deletion_request_id ON deletion_tombstones (deletion_request_id);
