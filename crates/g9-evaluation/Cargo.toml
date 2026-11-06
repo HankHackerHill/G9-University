@@ -6,6 +6,7 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
+publish.workspace = true
 
 # The harness sits above g9-app: it drives every scenario through
 # `g9_app::dispatch` and reads final backend state through the g9-storage
@@ -65,6 +66,10 @@ path = "../../tests/integration/a10_export_deletion.rs"
 [[test]]
 name = "a11_output_validation"
 path = "../../tests/integration/a11_output_validation.rs"
+
+[[test]]
+name = "layering_gate"
+path = "../../tests/integration/layering_gate.rs"
 
 [[test]]
 name = "st_adversarial_catalogue"
