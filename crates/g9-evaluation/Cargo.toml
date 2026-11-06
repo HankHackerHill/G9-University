@@ -7,15 +7,65 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
+# The harness sits above g9-app: it drives every scenario through
+# `g9_app::dispatch` and reads final backend state through the g9-storage
+# repositories (no SQL is written here). Nothing depends on this crate, so no
+# cycle is possible (ARCHITECTURE.md §2 rule 7).
 [dependencies]
 g9-domain = { workspace = true }
 g9-app = { workspace = true }
+g9-policy = { workspace = true }
+g9-storage = { workspace = true }
+g9-skills = { workspace = true }
+g9-ai-adapter = { workspace = true }
+g9-evidence = { workspace = true }
+g9-competency = { workspace = true }
+g9-assessment = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-thiserror = { workspace = true }
+# Fixture files are validated against their JSON Schema before deserialization
+# (file/http `$ref` resolution disabled: default-features = false).
+jsonschema = { workspace = true }
+# Disposable approved roots (backup/scratch directories) and temp copies of the
+# real skill packages for tamper scenarios.
+tempfile = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 
 [lints]
 workspace = true
+
+# Cross-crate gate tests live under tests/ at the repository root and are
+# compiled as integration tests of this crate (`cargo test -p g9-evaluation`).
+[[test]]
+name = "a01_gate"
+path = "../../tests/integration/a01_gate.rs"
+
+[[test]]
+name = "a04_a05_gate"
+path = "../../tests/integration/a04_a05_gate.rs"
+
+[[test]]
+name = "a06_a07_gate"
+path = "../../tests/integration/a06_a07_gate.rs"
+
+[[test]]
+name = "a08_recovery_drill"
+path = "../../tests/recovery/a08_recovery_drill.rs"
+
+[[test]]
+name = "a09_model_down"
+path = "../../tests/integration/a09_model_down.rs"
+
+[[test]]
+name = "a10_export_deletion"
+path = "../../tests/integration/a10_export_deletion.rs"
+
+[[test]]
+name = "a11_output_validation"
+path = "../../tests/integration/a11_output_validation.rs"
+
+[[test]]
+name = "st_adversarial_catalogue"
+path = "../../tests/adversarial/st_adversarial_catalogue.rs"

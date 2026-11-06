@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/fixtures/learner-history",
+  "title": "Synthetic learner history fixture (g9-evaluation)",
+  "description": "A slice of synthetic learner history seeded by crates/g9-evaluation/src/fixtures.rs. Records without an IPC creation path (competencies, assessment definitions, study sessions, observations) are inserted through the g9-storage repositories; everything else is driven through g9_app::dispatch. Synthetic only: no real names, no secrets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fixture_kind", "fixture_id", "synthetic", "description", "program_week", "competencies", "assessments", "sessions", "notes", "attempts", "observations"],
+  "properties": {
+    "fixture_kind": { "const": "LEARNER_HISTORY" },
+    "fixture_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,63}$" },
+    "synthetic": { "const": true },
+    "description": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "program_week": { "type": "integer", "minimum": 1, "maximum": 12 },
+    "competencies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "code", "name", "pack", "description", "validity_window_days"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^comp-[a-z0-9-]{1,60}$" },
+          "code": { "type": "string", "pattern": "^[A-Z0-9-]{2,40}$" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "pack": { "type": "string", "pattern": "^[a-z0-9-]{1,60}$" },
+          "description": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "validity_window_days": { "type": "integer", "minimum": 1, "maximum": 3650 }
+        }
+      }
+    },
+    "assessments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "code", "title", "version_id", "rubric_id", "task_statement", "task_ref", "competency_id", "kind", "difficulty", "equivalence_group"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^ad-[a-z0-9-]{1,60}$" },
+          "code": { "type": "string", "pattern": "^[A-Z0-9-]{2,40}$" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "version_id": { "type": "string", "pattern": "^av-[a-z0-9-]{1,60}$" },
+          "rubric_id": { "type": "string", "pattern": "^rub-[a-z0-9-]{1,60}$" },
+          "task_statement": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "task_ref": { "type": "string", "pattern": "^evi-[a-z0-9-]{1,60}$" },
+          "competency_id": { "type": "string", "pattern": "^comp-[a-z0-9-]{1,60}$" },
+          "kind": { "description": "WEEKLY_ASSESSMENT and DIAGNOSTIC_CALIBRATION have no storage mapping in wave 1 (g9-storage answers *.not_implemented).", "enum": ["BLIND_PRACTICAL", "TRANSFER_CHECK", "CAPSTONE"] },
+          "difficulty": { "type": "integer", "minimum": 1, "maximum": 5 },
+          "equivalence_group": { "type": "string", "pattern": "^[A-Z0-9-]{1,40}$" }
+        }
+      }
+    },
+    "sessions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "day", "planned_minutes", "start_offset_minutes", "focus_minutes", "complete"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^ses-[a-z0-9-]{1,60}$" },
+          "day": { "type": "string", "pattern": "^D[0-9]{2}$" },
+          "planned_minutes": { "type": "integer", "minimum": 1, "maximum": 420 },
+          "start_offset_minutes": { "type": "integer", "minimum": 0, "maximum": 20160 },
+          "focus_minutes": {
+            "description": "Focused stretches: start, then pause/resume between stretches. Empty = prepared only.",
+            "type": "array",
+            "maxItems": 8,
+            "items": { "type": "integer", "minimum": 1, "maximum": 240 }
+          },
+          "complete": { "type": "boolean" }
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["alias", "title", "body_markdown", "classification", "domain"],
+        "properties": {
+          "alias": { "type": "string", "pattern": "^[a-z0-9-]{1,40}$" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "body_markdown": { "type": "string", "minLength": 1, "maxLength": 4000 },
+          "classification": { "enum": ["PUBLIC", "INTERNAL", "PRIVATE"] },
+          "domain": { "enum": ["LEARNING", "BUSINESS", "PERSONAL"] }
+        }
+      }
+    },
+    "attempts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["alias", "assessment_id", "criteria_level", "source", "target_state"],
+        "properties": {
+          "alias": { "type": "string", "pattern": "^[a-z0-9-]{1,40}$" },
+          "assessment_id": { "type": "string", "pattern": "^ad-[a-z0-9-]{1,60}$" },
+          "criteria_level": { "type": "integer", "minimum": 0, "maximum": 4 },
+          "source": { "enum": ["DETERMINISTIC_CHECKER", "HUMAN_REVIEWER"] },
+          "target_state": { "enum": ["SUBMITTED", "EVIDENCE_REVIEW", "GRADED_PROVISIONAL", "APPROVED_FINAL"] }
+        }
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "competency_id", "attempt", "dimension", "mode", "difficulty", "assistance", "score", "environment", "observed_offset_minutes"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^obs-[a-z0-9-]{1,60}$" },
+          "competency_id": { "type": "string", "pattern": "^comp-[a-z0-9-]{1,60}$" },
+          "attempt": { "type": "string", "pattern": "^[a-z0-9-]{1,40}$" },
+          "dimension": { "enum": ["RECALL", "UNDERSTANDING", "APPLICATION", "TRANSFER"] },
+          "mode": { "enum": ["STUDY", "LAB", "EXAM", "REVIEW"] },
+          "difficulty": { "type": "integer", "minimum": 1, "maximum": 5 },
+          "assistance": { "enum": ["UNAIDED", "PROMPTED", "HINTED", "GUIDED", "SHOWN"] },
+          "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "environment": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "observed_offset_minutes": { "type": "integer", "minimum": 0, "maximum": 20160 }
+        }
+      }
+    }
+  }
+}

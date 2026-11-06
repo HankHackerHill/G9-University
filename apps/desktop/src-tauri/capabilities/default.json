@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Main window only. Tauri core defaults; no plugin permissions (no shell, fs, http, dialog, opener, updater, deep-link, sql). The app's single command g9_command is reachable from the local origin only; remote origins are refused because no remote capability exists.",
+  "local": true,
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

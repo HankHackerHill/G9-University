@@ -20,6 +20,19 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 g9-domain = { workspace = true }
 g9-app = { workspace = true }
+# Bootstrap composition only (no SQL, no policy decisions here): `Database::open`,
+# `BindingKey`, `Registry::load` are the types `g9_app::AppContext::builder` takes.
+g9-policy = { workspace = true }
+g9-storage = { workspace = true }
+g9-skills = { workspace = true }
+# Approval binding key (src/keyring.rs). Exact pins; both build without system
+# libraries. getrandom 0.4.3 is already locked (uuid); keyring 4.2.0 reaches the
+# Secret Service over zbus (pure Rust, async-io executor, no libdbus).
+getrandom = "=0.4.3"
+os-keyring = { package = "keyring", version = "=4.2.0" }
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true

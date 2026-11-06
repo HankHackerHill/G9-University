@@ -1,0 +1,84 @@
+{
+  "fixture_kind": "LEARNER_HISTORY",
+  "fixture_id": "week03-learner-history",
+  "synthetic": true,
+  "description": "Synthetic week-3 slice for the evaluation harness: three study sessions (D13-D15), two notes, two assessment attempts (one finalized through an operator approval, one left provisional) and four competency observations. Invented content; no real names, no secrets, no real hosts.",
+  "program_week": 3,
+  "competencies": [
+    {
+      "id": "comp-net-path-diagnosis",
+      "code": "NET-PATH-DIAG",
+      "name": "Network path diagnosis",
+      "pack": "networking",
+      "description": "Locate a broken hop with ping, traceroute and the routing table, then restore reachability.",
+      "validity_window_days": 90
+    },
+    {
+      "id": "comp-linux-service-triage",
+      "code": "LINUX-SVC-TRIAGE",
+      "name": "Linux service triage",
+      "pack": "linux",
+      "description": "Recover a failed service unit from its journal entries and unit file.",
+      "validity_window_days": 90
+    }
+  ],
+  "assessments": [
+    {
+      "id": "ad-w03-net-practical",
+      "code": "W03-NET-PRACTICAL",
+      "title": "Week 3 network path practical",
+      "version_id": "av-w03-net-1",
+      "rubric_id": "rub-w03-net-1",
+      "task_statement": "Restore reachability from the lab workstation to the isolated service subnet and document the faulty hop.",
+      "task_ref": "evi-w03-net-task",
+      "competency_id": "comp-net-path-diagnosis",
+      "kind": "BLIND_PRACTICAL",
+      "difficulty": 3,
+      "equivalence_group": "W03-NET"
+    },
+    {
+      "id": "ad-w03-svc-check",
+      "code": "W03-SVC-CHECK",
+      "title": "Week 3 service triage transfer check",
+      "version_id": "av-w03-svc-1",
+      "rubric_id": "rub-w03-svc-1",
+      "task_statement": "Bring the stopped lab web service back and explain the journal entry that identified the cause.",
+      "task_ref": "evi-w03-svc-task",
+      "competency_id": "comp-linux-service-triage",
+      "kind": "TRANSFER_CHECK",
+      "difficulty": 2,
+      "equivalence_group": "W03-SVC"
+    }
+  ],
+  "sessions": [
+    { "id": "ses-w03-d13-1", "day": "D13", "planned_minutes": 90, "start_offset_minutes": 60, "focus_minutes": [50, 30], "complete": true },
+    { "id": "ses-w03-d14-1", "day": "D14", "planned_minutes": 90, "start_offset_minutes": 1500, "focus_minutes": [90], "complete": true },
+    { "id": "ses-w03-d15-1", "day": "D15", "planned_minutes": 60, "start_offset_minutes": 2940, "focus_minutes": [40], "complete": false }
+  ],
+  "notes": [
+    {
+      "alias": "note-route-table",
+      "title": "Reading the routing table",
+      "body_markdown": "The default route pointed at the decommissioned gateway. `ip route` listed it first; traceroute stopped at hop 2. Replaced the route and re-ran the reachability check.",
+      "classification": "PRIVATE",
+      "domain": "LEARNING"
+    },
+    {
+      "alias": "note-week-reflection",
+      "title": "Week 3 reflection",
+      "body_markdown": "Hints were needed for the first route fault; the second one was solved unaided. Next week: read journal output before restarting units.",
+      "classification": "PRIVATE",
+      "domain": "LEARNING"
+    }
+  ],
+  "attempts": [
+    { "alias": "att-net", "assessment_id": "ad-w03-net-practical", "criteria_level": 4, "source": "HUMAN_REVIEWER", "target_state": "APPROVED_FINAL" },
+    { "alias": "att-svc", "assessment_id": "ad-w03-svc-check", "criteria_level": 2, "source": "HUMAN_REVIEWER", "target_state": "GRADED_PROVISIONAL" }
+  ],
+  "observations": [
+    { "id": "obs-w03-net-1", "competency_id": "comp-net-path-diagnosis", "attempt": "att-net", "dimension": "APPLICATION", "mode": "LAB", "difficulty": 3, "assistance": "HINTED", "score": 64, "environment": "lab-net-01", "observed_offset_minutes": 120 },
+    { "id": "obs-w03-net-2", "competency_id": "comp-net-path-diagnosis", "attempt": "att-net", "dimension": "APPLICATION", "mode": "LAB", "difficulty": 3, "assistance": "UNAIDED", "score": 74, "environment": "lab-net-01", "observed_offset_minutes": 1560 },
+    { "id": "obs-w03-net-3", "competency_id": "comp-net-path-diagnosis", "attempt": "att-net", "dimension": "APPLICATION", "mode": "LAB", "difficulty": 3, "assistance": "UNAIDED", "score": 78, "environment": "lab-net-02", "observed_offset_minutes": 2990 },
+    { "id": "obs-w03-svc-1", "competency_id": "comp-linux-service-triage", "attempt": "att-svc", "dimension": "RECALL", "mode": "STUDY", "difficulty": 2, "assistance": "UNAIDED", "score": 70, "environment": "lab-linux-01", "observed_offset_minutes": 2995 }
+  ]
+}
