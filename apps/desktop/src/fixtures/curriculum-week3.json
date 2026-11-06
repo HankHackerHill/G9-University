@@ -1,0 +1,397 @@
+{
+  "fixture_note": "Week-3 slice copied from data/curriculum/g9-ct9-480.seed.v0.json for the mock transport. PROPOSED_SEED provenance; not canonical. Do not edit by hand without re-copying from the seed.",
+  "manifest_schema_version": "1.0.0",
+  "curriculum_id": "g9-ct9-480",
+  "curriculum_version_id": "g9-ct9-480:0.1.0-seed",
+  "name": "G9/CT9 480-hour cybersecurity and AI-security program",
+  "version": "0.1.0-seed",
+  "provenance": "PROPOSED_SEED",
+  "structure": {
+    "weeks": 12,
+    "days_per_week": 6,
+    "objectives_per_day": 3,
+    "weekday_minutes": 420,
+    "saturday_minutes": 300,
+    "weekly_minutes": 2400,
+    "total_minutes": 28800,
+    "sunday": "unscheduled"
+  },
+  "weekday_blocks": [
+    {
+      "block": "recall",
+      "minutes": 15
+    },
+    {
+      "block": "theory",
+      "minutes": 45
+    },
+    {
+      "block": "guided_lab",
+      "minutes": 120
+    },
+    {
+      "block": "independent_lab",
+      "minutes": 120
+    },
+    {
+      "block": "defense_verification",
+      "minutes": 60
+    },
+    {
+      "block": "evidence_reporting",
+      "minutes": 60
+    }
+  ],
+  "saturday_blocks": [
+    {
+      "block": "blind_practical",
+      "minutes": 120
+    },
+    {
+      "block": "remediation",
+      "minutes": 60
+    },
+    {
+      "block": "report",
+      "minutes": 60
+    },
+    {
+      "block": "performance_review",
+      "minutes": 60
+    }
+  ],
+  "program_start_date": "2026-11-02",
+  "zone": "Europe/Berlin",
+  "week": {
+    "week_number": 3,
+    "title": "Web application fundamentals",
+    "days": [
+      {
+        "day_id": "D13",
+        "day_of_week": 1,
+        "planned_minutes": 420,
+        "objectives": [
+          {
+            "seq": 1,
+            "objective_id": "D13-O1",
+            "text": "Explain HTTP request semantics"
+          },
+          {
+            "seq": 2,
+            "objective_id": "D13-O2",
+            "text": "Analyze cookies, origins and headers"
+          },
+          {
+            "seq": 3,
+            "objective_id": "D13-O3",
+            "text": "Map browser trust boundaries"
+          }
+        ],
+        "evidence_artifact": "HTTP analysis",
+        "blocks": [
+          {
+            "seq": 1,
+            "block": "recall",
+            "minutes": 15
+          },
+          {
+            "seq": 2,
+            "block": "theory",
+            "minutes": 45
+          },
+          {
+            "seq": 3,
+            "block": "guided_lab",
+            "minutes": 120
+          },
+          {
+            "seq": 4,
+            "block": "independent_lab",
+            "minutes": 120
+          },
+          {
+            "seq": 5,
+            "block": "defense_verification",
+            "minutes": 60
+          },
+          {
+            "seq": 6,
+            "block": "evidence_reporting",
+            "minutes": 60
+          }
+        ],
+        "is_assessment_day": false
+      },
+      {
+        "day_id": "D14",
+        "day_of_week": 2,
+        "planned_minutes": 420,
+        "objectives": [
+          {
+            "seq": 1,
+            "objective_id": "D14-O1",
+            "text": "Model authentication/session state"
+          },
+          {
+            "seq": 2,
+            "objective_id": "D14-O2",
+            "text": "Analyze controlled session defects"
+          },
+          {
+            "seq": 3,
+            "objective_id": "D14-O3",
+            "text": "Test session mitigations"
+          }
+        ],
+        "evidence_artifact": "Session review",
+        "blocks": [
+          {
+            "seq": 1,
+            "block": "recall",
+            "minutes": 15
+          },
+          {
+            "seq": 2,
+            "block": "theory",
+            "minutes": 45
+          },
+          {
+            "seq": 3,
+            "block": "guided_lab",
+            "minutes": 120
+          },
+          {
+            "seq": 4,
+            "block": "independent_lab",
+            "minutes": 120
+          },
+          {
+            "seq": 5,
+            "block": "defense_verification",
+            "minutes": 60
+          },
+          {
+            "seq": 6,
+            "block": "evidence_reporting",
+            "minutes": 60
+          }
+        ],
+        "is_assessment_day": false
+      },
+      {
+        "day_id": "D15",
+        "day_of_week": 3,
+        "planned_minutes": 420,
+        "objectives": [
+          {
+            "seq": 1,
+            "objective_id": "D15-O1",
+            "text": "Distinguish authentication/authorization"
+          },
+          {
+            "seq": 2,
+            "objective_id": "D15-O2",
+            "text": "Examine object access failure"
+          },
+          {
+            "seq": 3,
+            "objective_id": "D15-O3",
+            "text": "Build regression cases"
+          }
+        ],
+        "evidence_artifact": "Access-control matrix",
+        "blocks": [
+          {
+            "seq": 1,
+            "block": "recall",
+            "minutes": 15
+          },
+          {
+            "seq": 2,
+            "block": "theory",
+            "minutes": 45
+          },
+          {
+            "seq": 3,
+            "block": "guided_lab",
+            "minutes": 120
+          },
+          {
+            "seq": 4,
+            "block": "independent_lab",
+            "minutes": 120
+          },
+          {
+            "seq": 5,
+            "block": "defense_verification",
+            "minutes": 60
+          },
+          {
+            "seq": 6,
+            "block": "evidence_reporting",
+            "minutes": 60
+          }
+        ],
+        "is_assessment_day": false
+      },
+      {
+        "day_id": "D16",
+        "day_of_week": 4,
+        "planned_minutes": 420,
+        "objectives": [
+          {
+            "seq": 1,
+            "objective_id": "D16-O1",
+            "text": "Explain injection root causes"
+          },
+          {
+            "seq": 2,
+            "objective_id": "D16-O2",
+            "text": "Analyze vulnerable controlled fixture"
+          },
+          {
+            "seq": 3,
+            "objective_id": "D16-O3",
+            "text": "Validate prepared statements"
+          }
+        ],
+        "evidence_artifact": "Injection remediation",
+        "blocks": [
+          {
+            "seq": 1,
+            "block": "recall",
+            "minutes": 15
+          },
+          {
+            "seq": 2,
+            "block": "theory",
+            "minutes": 45
+          },
+          {
+            "seq": 3,
+            "block": "guided_lab",
+            "minutes": 120
+          },
+          {
+            "seq": 4,
+            "block": "independent_lab",
+            "minutes": 120
+          },
+          {
+            "seq": 5,
+            "block": "defense_verification",
+            "minutes": 60
+          },
+          {
+            "seq": 6,
+            "block": "evidence_reporting",
+            "minutes": 60
+          }
+        ],
+        "is_assessment_day": false
+      },
+      {
+        "day_id": "D17",
+        "day_of_week": 5,
+        "planned_minutes": 420,
+        "objectives": [
+          {
+            "seq": 1,
+            "objective_id": "D17-O1",
+            "text": "Model XSS execution contexts"
+          },
+          {
+            "seq": 2,
+            "objective_id": "D17-O2",
+            "text": "Inspect controlled XSS"
+          },
+          {
+            "seq": 3,
+            "objective_id": "D17-O3",
+            "text": "Verify context-sensitive output encoding"
+          }
+        ],
+        "evidence_artifact": "XSS report",
+        "blocks": [
+          {
+            "seq": 1,
+            "block": "recall",
+            "minutes": 15
+          },
+          {
+            "seq": 2,
+            "block": "theory",
+            "minutes": 45
+          },
+          {
+            "seq": 3,
+            "block": "guided_lab",
+            "minutes": 120
+          },
+          {
+            "seq": 4,
+            "block": "independent_lab",
+            "minutes": 120
+          },
+          {
+            "seq": 5,
+            "block": "defense_verification",
+            "minutes": 60
+          },
+          {
+            "seq": 6,
+            "block": "evidence_reporting",
+            "minutes": 60
+          }
+        ],
+        "is_assessment_day": false
+      },
+      {
+        "day_id": "D18",
+        "day_of_week": 6,
+        "planned_minutes": 300,
+        "objectives": [
+          {
+            "seq": 1,
+            "objective_id": "D18-O1",
+            "text": "Analyze blind web task"
+          },
+          {
+            "seq": 2,
+            "objective_id": "D18-O2",
+            "text": "Diagnose security failure"
+          },
+          {
+            "seq": 3,
+            "objective_id": "D18-O3",
+            "text": "Verify remediation and document evidence"
+          }
+        ],
+        "evidence_artifact": "Week 3 assessment",
+        "blocks": [
+          {
+            "seq": 1,
+            "block": "blind_practical",
+            "minutes": 120
+          },
+          {
+            "seq": 2,
+            "block": "remediation",
+            "minutes": 60
+          },
+          {
+            "seq": 3,
+            "block": "report",
+            "minutes": 60
+          },
+          {
+            "seq": 4,
+            "block": "performance_review",
+            "minutes": 60
+          }
+        ],
+        "is_assessment_day": true
+      }
+    ]
+  }
+}

@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+# Runner image: Ubuntu 26.04 LTS (the G9 OS base). GitHub published ubuntu-26.04 hosted-runner
+# images as a public preview from 2026-06-28 (actions/runner-images "ubuntu26/*" releases);
+# the label is INFERRED from the naming convention and must be confirmed on first CI run.
+# Target host for the product is Ubuntu 26.04.1 LTS (point release 2026-08-06).
+
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-D warnings"
@@ -15,7 +20,7 @@ env:
 jobs:
   rust:
     name: rust (fmt, clippy, test, deny)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -41,7 +46,7 @@ jobs:
 
   desktop-shell:
     name: tauri shell (Linux build with system webkit)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -57,7 +62,7 @@ jobs:
 
   frontend:
     name: frontend (typecheck, lint, test, build)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     defaults:
       run:
         working-directory: apps/desktop
@@ -78,7 +83,7 @@ jobs:
 
   content-gates:
     name: curriculum + skills + schema gates
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

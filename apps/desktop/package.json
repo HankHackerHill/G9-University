@@ -1,0 +1,48 @@
+{
+  "name": "g9-mentor-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "G9 MENTOR desktop UI (React 19 + strict TypeScript). Every screen renders and is testable without Tauri and without a model (R-002, A09).",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "dompurify": "3.4.17",
+    "marked": "18.1.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-router-dom": "7.18.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@tauri-apps/api": "2.12.4",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "5.2.0",
+    "ajv": "8.20.0",
+    "eslint": "9.39.5",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.14.0",
+    "jsdom": "29.1.1",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
+    "vite": "7.3.7",
+    "vitest": "4.0.18"
+  }
+}

@@ -80,4 +80,4 @@ See `docs/release/stage-report.md` for the executed-test evidence. Summary label
 
 ## Target environment (ASSUMED until inspected)
 
-Ubuntu 26.04 LTS based G9 OS (VERIFIED released 23 Apr 2026; ships Wayland-only GNOME, KDE/Wayland on the host still to verify), RTX 5080 16 GB GDDR7 (VERIFIED hardware spec; host presence/driver unverified), 64 GB RAM (ASSUMED). No model is pre-selected; see `docs/evaluations/model-benchmark-protocol.md`.
+Ubuntu 26.04.1 LTS based G9 OS (VERIFIED: 26.04 released 23 Apr 2026, 26.04.1 point release 6 Aug 2026; ships Wayland-only GNOME, KDE/Wayland on the host still to verify), RTX 5080 16 GB GDDR7 (VERIFIED hardware spec; host presence/driver unverified), 64 GB RAM (ASSUMED). No model is pre-selected; see `docs/evaluations/model-benchmark-protocol.md`.

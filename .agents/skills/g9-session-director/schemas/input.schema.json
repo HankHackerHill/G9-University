@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/skills/g9-session-director/input",
+  "title": "g9-session-director input_payload (v1.0)",
+  "description": "Skill-specific input_payload for T01. The runtime wraps it in the G9 invocation envelope; the envelope carries actor, approved_scope, evidence_refs, policy_context and budgets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["day_id", "mode", "learner_context_ref"],
+  "properties": {
+    "day_id": {
+      "type": "string",
+      "pattern": "^D(0[1-9]|[1-6][0-9]|7[0-2])$",
+      "description": "Curriculum day id D01-D72 (12 weeks x 6 days). Sunday has no day id; a request for an unscheduled day never reaches the skill."
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["STUDY", "LAB"],
+      "description": "Interaction mode of the session being briefed. EXAM, REVIEW, EXECUTIVE, RESEARCH and MAINTENANCE are negative triggers."
+    },
+    "learner_context_ref": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*:[A-Za-z0-9._/@-]{1,120}$",
+      "maxLength": 128,
+      "description": "Reference to the learner context snapshot (competency observations, derived readiness, due review items, interventions, session ledger) assembled deterministically by the runtime. Expected kind prefix: `snapshot:`. Any other kind is treated as unresolvable and reported in basis.unresolved_refs."
+    },
+    "include_due_reviews": {
+      "type": "boolean",
+      "default": true,
+      "description": "When false, brief.due_reviews is left empty and the omission is stated in brief.risks only if reviews are overdue."
+    },
+    "include_open_interventions": {
+      "type": "boolean",
+      "default": true,
+      "description": "When false, brief.open_interventions is left empty; interventions that block the day still raise a risk."
+    },
+    "session_block": {
+      "type": "string",
+      "enum": [
+        "recall", "theory", "guided_lab", "independent_lab", "defense_verification", "evidence_reporting",
+        "blind_practical", "remediation", "report", "performance_review"
+      ],
+      "description": "Present for a session-block start (for example a LAB session starting at guided_lab). Absent for a day-start brief. Saturday blocks (blind_practical, remediation, report, performance_review) belong to EXAM/REVIEW mode days and cause abstention in STUDY/LAB."
+    },
+    "operator_priorities": {
+      "type": "array",
+      "maxItems": 5,
+      "items": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "description": "Priorities typed by the operator for today (TrustClass Operator). The only free text the skill may treat as a preference; it never widens scope or capabilities."
+    }
+  }
+}

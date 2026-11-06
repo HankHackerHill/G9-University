@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/competency-pack",
+  "title": "G9 competency pack (v1.0)",
+  "description": "One of the eight domain knowledge packs (handoff section 11): competency map, NICE references with pinned release identifier, misconceptions, lab fixtures, independent assessments, detection/defense visibility, safety boundaries and a versioned maintenance policy. Validated by scripts/check_competency_packs.py, which also resolves prerequisites (within the pack, or `pack_id:competency_id` across packs) and rejects cycles.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pack_id", "title", "version", "status", "nice_framework_version",
+    "competencies", "sources", "maintenance_policy"
+  ],
+  "properties": {
+    "pack_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Stable slug; must equal the pack directory name under data/competency-packs/."
+    },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of the pack content."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PROPOSED", "APPROVED"],
+      "description": "APPROVED requires every source and NICE reference to be VERIFIED (checked by the script)."
+    },
+    "nice_framework_version": {
+      "type": "string",
+      "const": "2.2.0",
+      "description": "Pinned release identifier of the NIST NICE Framework Components used for nice_refs (NICE Framework Components v2.2.0, released 28 April 2026, handoff Appendix C entry 27). Bump only together with a re-verification of every nice_refs entry."
+    },
+    "competencies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id", "name", "description", "dimensions", "difficulty_band", "prerequisites",
+          "validity_window_days", "nice_refs", "misconceptions", "lab_fixtures", "assessments",
+          "detection_defense_visibility", "safety_boundaries"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)*$",
+            "maxLength": 128,
+            "description": "Competency id, unique within the pack; dotted segments express a hierarchy (e.g. web.authz.idor)."
+          },
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "dimensions": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "enum": ["RECALL", "UNDERSTANDING", "APPLICATION", "TRANSFER"] },
+            "description": "Learning dimensions in which this competency is tracked (g9_domain::competency::LearningDimension)."
+          },
+          "difficulty_band": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["min", "max"],
+            "properties": {
+              "min": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "max": { "type": "integer", "minimum": 1, "maximum": 5 }
+            },
+            "description": "Ordinal 1-5 difficulty band; min <= max is checked by the script."
+          },
+          "prerequisites": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^([a-z0-9-]+:)?[a-z0-9-]+(\\.[a-z0-9-]+)*$",
+              "maxLength": 193
+            },
+            "description": "Competency ids this one depends on. Unqualified ids resolve within this pack; `pack_id:competency_id` resolves to another pack. No cycles."
+          },
+          "validity_window_days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650,
+            "description": "Days after which an observation no longer counts as current evidence for this competency."
+          },
+          "nice_refs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "id", "confidence"],
+              "properties": {
+                "kind": { "type": "string", "enum": ["TASK", "KNOWLEDGE", "SKILL"] },
+                "id": { "type": "string", "minLength": 1, "maxLength": 32, "description": "NICE Framework Components v2.2.0 identifier (e.g. T1234, K0004, S0001)." },
+                "confidence": { "type": "string", "enum": ["VERIFIED", "ASSUMED"] }
+              }
+            }
+          },
+          "misconceptions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "statement", "counterexample"],
+              "properties": {
+                "id": { "type": "string", "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)*$", "maxLength": 128 },
+                "statement": { "type": "string", "minLength": 1, "maxLength": 1000 },
+                "counterexample": { "type": "string", "minLength": 1, "maxLength": 2000 }
+              }
+            }
+          },
+          "lab_fixtures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "description", "isolation", "data_license_note"],
+              "properties": {
+                "id": { "type": "string", "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)*$", "maxLength": 128 },
+                "description": { "type": "string", "minLength": 1, "maxLength": 2000 },
+                "isolation": { "type": "string", "enum": ["VM", "CONTAINER", "STATIC_FILE"] },
+                "data_license_note": { "type": "string", "minLength": 1, "maxLength": 1000 }
+              }
+            }
+          },
+          "assessments": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "kind", "description", "rubric_focus", "difficulty"],
+              "properties": {
+                "id": { "type": "string", "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)*$", "maxLength": 128 },
+                "kind": { "type": "string", "enum": ["BLIND_PRACTICAL", "TRANSFER_CHECK", "RECALL_ITEM", "TEACHBACK"] },
+                "description": { "type": "string", "minLength": 1, "maxLength": 2000 },
+                "rubric_focus": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "independent_execution", "root_cause_reasoning", "remediation_verification",
+                      "detection_visibility", "evidence_documentation", "scope_compliance_reporting"
+                    ]
+                  },
+                  "description": "Criterion codes of g9_domain::assessment::BaselineRubric. BLIND_PRACTICAL and TRANSFER_CHECK need at least one (script rule)."
+                },
+                "difficulty": { "type": "integer", "minimum": 1, "maximum": 5 }
+              }
+            }
+          },
+          "detection_defense_visibility": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "What a defender sees when this competency is exercised (logs, alerts, artifacts) and what remains invisible."
+          },
+          "safety_boundaries": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1, "maxLength": 1000 }
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "organisation", "kind", "license_note", "verification"],
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+          "organisation": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "kind": { "type": "string", "enum": ["STANDARD", "DOC", "DATASET", "LAB"] },
+          "license_note": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "verification": { "type": "string", "enum": ["VERIFIED", "ASSUMED"] },
+          "url": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 2048, "description": "Optional; omit rather than guess." }
+        }
+      }
+    },
+    "maintenance_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["review_interval_days", "owner_module"],
+      "properties": {
+        "review_interval_days": { "type": "integer", "minimum": 1, "maximum": 3650 },
+        "owner_module": { "type": "string", "pattern": "^M(0[1-9]|1[0-7])$" }
+      }
+    }
+  }
+}
