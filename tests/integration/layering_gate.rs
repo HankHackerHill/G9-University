@@ -206,11 +206,10 @@ fn layering_every_member_has_a_declared_layer() {
     }
 }
 
-#[test]
-fn layering_internal_edges_follow_the_dependency_law() {
-    let manifests = load();
+/// Internal edges not permitted by [`allowed`].
+fn forbidden_edges(manifests: &BTreeMap<String, Manifest>) -> Vec<String> {
     let mut violations = Vec::new();
-    for (name, m) in &manifests {
+    for (name, m) in manifests {
         let Some(ok) = allowed(name) else { continue };
         for dep in m.deps.iter().filter(|d| d.starts_with("g9-")) {
             if !ok.contains(dep.as_str()) {
@@ -218,21 +217,12 @@ fn layering_internal_edges_follow_the_dependency_law() {
             }
         }
     }
-    assert!(violations.is_empty(), "forbidden edges: {violations:?}");
+    violations
 }
 
-#[test]
-fn layering_nothing_depends_on_the_harness_or_the_shell() {
-    for (name, m) in load() {
-        for top in ["g9-evaluation", "g9-mentor-desktop"] {
-            assert!(!m.deps.contains(top), "{name} depends on {top}");
-        }
-    }
-}
-
-#[test]
-fn layering_graph_is_acyclic() {
-    let manifests = load();
+/// Kahn's algorithm over the internal edges: `true` iff every node can be
+/// removed, i.e. there is no cycle.
+fn is_acyclic(manifests: &BTreeMap<String, Manifest>) -> bool {
     let graph: BTreeMap<&str, Vec<&str>> = manifests
         .iter()
         .map(|(n, m)| {
@@ -246,7 +236,6 @@ fn layering_graph_is_acyclic() {
             )
         })
         .collect();
-    // Kahn's algorithm: every node must be removable.
     let mut indegree: BTreeMap<&str, usize> = graph.keys().map(|k| (*k, 0)).collect();
     for deps in graph.values() {
         for d in deps {
@@ -269,7 +258,69 @@ fn layering_graph_is_acyclic() {
             }
         }
     }
-    assert_eq!(removed, graph.len(), "dependency cycle among {graph:?}");
+    removed == graph.len()
+}
+
+fn synthetic(edges: &[(&str, &[&str])]) -> BTreeMap<String, Manifest> {
+    edges
+        .iter()
+        .map(|(name, deps)| {
+            (
+                (*name).to_string(),
+                Manifest {
+                    name: (*name).to_string(),
+                    deps: deps.iter().map(|d| (*d).to_string()).collect(),
+                },
+            )
+        })
+        .collect()
+}
+
+#[test]
+fn layering_internal_edges_follow_the_dependency_law() {
+    let violations = forbidden_edges(&load());
+    assert!(violations.is_empty(), "forbidden edges: {violations:?}");
+}
+
+#[test]
+fn layering_nothing_depends_on_the_harness_or_the_shell() {
+    for (name, m) in load() {
+        for top in ["g9-evaluation", "g9-mentor-desktop"] {
+            assert!(!m.deps.contains(top), "{name} depends on {top}");
+        }
+    }
+}
+
+#[test]
+fn layering_graph_is_acyclic() {
+    assert!(
+        is_acyclic(&load()),
+        "dependency cycle among workspace members"
+    );
+}
+
+#[test]
+fn layering_checks_detect_a_forbidden_edge_and_a_cycle() {
+    // Rule 2 and rule 4 violations are reported by name.
+    let bad = synthetic(&[
+        ("g9-domain", &[]),
+        ("g9-storage", &["g9-domain", "g9-app"]),
+        ("g9-skills", &["g9-domain", "g9-storage"]),
+        ("g9-app", &["g9-domain", "g9-storage"]),
+    ]);
+    assert_eq!(
+        forbidden_edges(&bad),
+        vec!["g9-skills -> g9-storage", "g9-storage -> g9-app"]
+    );
+    // storage -> app -> storage is a cycle.
+    assert!(!is_acyclic(&bad));
+    let good = synthetic(&[
+        ("g9-domain", &[]),
+        ("g9-storage", &["g9-domain"]),
+        ("g9-app", &["g9-domain", "g9-storage"]),
+    ]);
+    assert!(forbidden_edges(&good).is_empty());
+    assert!(is_acyclic(&good));
 }
 
 #[test]
