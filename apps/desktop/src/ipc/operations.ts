@@ -378,6 +378,24 @@ export interface Operations {
     };
   };
   'curriculum.daily_plan': { request: { date: string; zone?: IanaZone }; response: DailyPlan };
+  'curriculum.promote': {
+    request: { curriculum_version_id: Id; candidate_manifest: JsonValue; original_manifest: JsonValue };
+    response: {
+      curriculum_version_id: Id;
+      provenance: ManifestProvenance;
+      promotion_allowed: boolean;
+      original_checksum: string;
+      candidate_checksum: string;
+      diff_checksum: string;
+      summary: {
+        unchanged: number;
+        changed: number;
+        missing_in_candidate: number;
+        added_in_candidate: number;
+        metadata_changes: string[];
+      };
+    };
+  };
 
   'calendar.list': { request: { from: UtcMillis; to: UtcMillis; zone?: IanaZone }; response: { zone: IanaZone; events: CalendarEvent[] } };
   'calendar.propose': {
@@ -498,6 +516,7 @@ export const OPERATIONS: Readonly<Record<OperationName, OperationSpec>> = {
   'curriculum.validate': spec('curriculum.validate', 'READ', 'CURRICULUM', { mutating: false }),
   'curriculum.import': spec('curriculum.import', 'IMPORT', 'CURRICULUM_VERSION', { defaultMode: 'MAINTENANCE' }),
   'curriculum.daily_plan': spec('curriculum.daily_plan', 'READ', 'CURRICULUM_VERSION', { mutating: false }),
+  'curriculum.promote': spec('curriculum.promote', 'PROMOTE_CANONICAL', 'CURRICULUM_VERSION', { defaultMode: 'MAINTENANCE', approvalExpected: true }),
 
   'calendar.list': spec('calendar.list', 'READ', 'CALENDAR_EVENT', { mutating: false }),
   'calendar.propose': spec('calendar.propose', 'PROPOSE', 'SCHEDULE_PROPOSAL'),

@@ -296,3 +296,59 @@ describe('mock transport: model-down, audit and retention', () => {
     expect(err(await client.invoke('curriculum.daily_plan', { date: 'yesterday' })).category).toBe('INVALID_INPUT');
   });
 });
+
+describe('mock transport: curriculum promotion', () => {
+  function manifest(provenance: string, overrideDay?: { id: string; text: string }) {
+    const weeks = Array.from({ length: 12 }, (_, w) => ({
+      week_number: w + 1,
+      days: Array.from({ length: 6 }, (_, d) => {
+        const n = w * 6 + d + 1;
+        const id = `D${String(n).padStart(2, '0')}`;
+        const text = overrideDay?.id === id ? overrideDay.text : `objective for ${id}`;
+        return { day_id: id, objectives: [1, 2, 3].map((seq) => ({ seq, objective_id: `${id}-O${String(seq)}`, text })) };
+      }),
+    }));
+    return {
+      curriculum_id: 'g9-ct9-480',
+      version: '0.2.0',
+      provenance,
+      structure: { weeks: 12, days_per_week: 6, objectives_per_day: 3, weekday_minutes: 420, saturday_minutes: 300, weekly_minutes: 2400, total_minutes: 28800 },
+      weeks,
+    };
+  }
+
+  it('refuses promotion when the candidate does not reconcile with the original plan, before any approval is created', async () => {
+    const { client } = harness();
+    const r = err(
+      await client.invoke('curriculum.promote', {
+        curriculum_version_id: 'g9-ct9-480:0.2.0',
+        candidate_manifest: manifest('RECONCILED_CANDIDATE', { id: 'D15', text: 'silently changed objective' }),
+        original_manifest: manifest('APPROVED_CANONICAL'),
+      }),
+    );
+    expect(r.category).toBe('PRECONDITION_FAILED');
+    expect(r.code).toBe('curriculum.reconciliation_blocks_promotion');
+    const pending = ok(await client.invoke('approvals.list', { state: 'PENDING' })).result.approvals;
+    expect(pending.some((a) => a.operation_name === 'curriculum.promote')).toBe(false);
+  });
+
+  it('requires a hash-bound CURRICULUM_PROMOTE approval and returns APPROVED_CANONICAL with checksums once approved', async () => {
+    const { client } = harness();
+    const payload = {
+      curriculum_version_id: 'g9-ct9-480:0.2.0',
+      candidate_manifest: manifest('RECONCILED_CANDIDATE'),
+      original_manifest: manifest('RECONCILED_CANDIDATE'),
+    };
+    const first = err(await client.invoke('curriculum.promote', payload));
+    expect(first.category).toBe('APPROVAL_REQUIRED');
+    const approvalId = first.approval_id ?? '';
+    ok(await client.invoke('approvals.decide', { approval_id: approvalId, decision: 'APPROVE' }));
+    const other = err(await client.invoke('curriculum.promote', { ...payload, curriculum_version_id: 'g9-ct9-480:9.9.9' }, { approvalId }));
+    expect(other.category).toBe('UNAUTHORIZED');
+    const done = ok(await client.invoke('curriculum.promote', payload, { approvalId })).result;
+    expect(done.provenance).toBe('APPROVED_CANONICAL');
+    expect(done.promotion_allowed).toBe(true);
+    expect(done.summary).toEqual({ unchanged: 72, changed: 0, missing_in_candidate: 0, added_in_candidate: 0, metadata_changes: [] });
+    expect(done.candidate_checksum).toMatch(/^[0-9a-f]{64}$/);
+  });
+});

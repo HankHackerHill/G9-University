@@ -24,11 +24,24 @@ The workspace manifests currently declare `Apache-2.0` as a **PROPOSED** placeho
 | react-router-dom | 7.x | MIT | routing |
 | Vite / @vitejs/plugin-react | 7.x | MIT | build |
 | TypeScript | 5.9 | Apache-2.0 | types |
-| vitest / testing-library / jsdom | latest stable | MIT | tests |
+| vitest / testing-library / jsdom | vitest 4.1.12; others pinned in package.json | MIT | tests (dev only) |
 | eslint, typescript-eslint, eslint-plugin-jsx-a11y, eslint-plugin-react-hooks | 9.x | MIT | lint |
-| marked / DOMPurify | latest stable | MIT / Apache-2.0 OR MPL-2.0 | sanitized Markdown |
-| @tauri-apps/api | 2.x | Apache-2.0 OR MIT | IPC transport (dynamic import) |
+| marked / DOMPurify | pinned in package.json | MIT (plus the original Markdown BSD-style notice) / Apache-2.0 OR MPL-2.0 | sanitized Markdown |
+| @tauri-apps/api | 2.12.4 (runtime dependency; bundled) | Apache-2.0 OR MIT | IPC transport (dynamic import) |
 
 Not used by decision: **FullCalendar** (Standard is MIT, but v7 Premium is AGPLv3/commercial; an in-house accessible grid avoids the licensing boundary — see `docs/adr/`). **fsrs-rs** (BSD-3-Clause) is not used because it pulls a full ML training stack; `rs-fsrs` (scheduler only) is sufficient.
 
 External training resources (HTB, PortSwigger Academy, CyberDefenders, OverTheWire, Splunk BOTS, LetsDefend) are **ASSUMED** free-tier/licensed for individual use until verified per resource during curriculum reconciliation (`docs/curriculum/`). The full SBOM is produced by `cargo-deny`/`cargo tree` and `npm ls` in CI.
+
+## Transitive licences outside the direct list (cargo-deny, linux target, 2026-11-06)
+
+- `MIT-0`: `borrow-or-share` (via `jsonschema → referencing → fluent-uri`). Allowed in `deny.toml`.
+- `rs-fsrs` ships a LICENSE file without an SPDX field; `deny.toml` clarifies it as MIT and pins the text hash.
+- The Tauri Linux shell links the distribution's WebKitGTK, GTK3, glib and libsoup3 (LGPL family) dynamically; no obligation arises while they come from the OS packages. Bundling them (AppImage) would create LGPL obligations, which is why the `.deb` against Ubuntu 26.04.1 is the packaging default (PLT-12).
+- The shipped frontend bundle strips legal comments; a `THIRD_PARTY_NOTICES` file generated from the SBOM must accompany releases (PLT-10, Stage 14).
+
+## Corrections to v5.1 licensing statements
+
+- "Open weights (GPL/MIT)": wrong. Mainstream open-weight models are Apache-2.0, MIT or community licences with acceptable-use policies; none is GPL (PLT-06). See the model licence classes in `docs/release/dependency-policy.md`.
+- "Impacket (LGPL2/MS-PL)": wrong. Impacket uses a modified Apache Software License 1.1 (PLT-15).
+- "Wasmtime or llama.cpp for model": Wasmtime is a WebAssembly runtime, not an LLM inference runtime.

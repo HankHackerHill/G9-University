@@ -1,11 +1,16 @@
 # cargo-deny configuration (A12: SBOM/license/advisory gate)
 [graph]
 all-features = true
+# Linux is the only shipping platform (Ubuntu 26.04.1 LTS). Without targets cargo-deny resolves
+# Tauri's Android/iOS-only dependencies (reqwest/hyper) and the HTTP-stack ban fires falsely (PLT-02).
+targets = ["x86_64-unknown-linux-gnu"]
 
 [advisories]
 version = 2
 yanked = "deny"
-ignore = []
+ignore = [
+  { id = "RUSTSEC-2024-0370", reason = "proc-macro-error (unmaintained, build-time proc-macro) via gtk-rs 0.18 glib-macros in Tauri's Linux stack; no safe upgrade exists; re-review at every Tauri minor (PLT-08)" },
+]
 
 [licenses]
 version = 2
@@ -13,6 +18,7 @@ allow = [
   "Apache-2.0",
   "Apache-2.0 WITH LLVM-exception",
   "MIT",
+  "MIT-0",
   "BSD-2-Clause",
   "BSD-3-Clause",
   "ISC",
@@ -29,6 +35,8 @@ confidence-threshold = 0.9
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"
+# Internal path dependencies are versionless; allowed because every workspace member is publish = false (PLT-02).
+allow-wildcard-paths = true
 deny = [
   # Network/shell capabilities must not enter the mentor runtime crates.
   { crate = "reqwest", reason = "network egress is off by default; research adapter is a separately approved module" },
@@ -39,3 +47,10 @@ deny = [
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+
+# rs-fsrs declares license-file instead of an SPDX expression; pin the expression and the
+# LICENSE text hash so a silent licence change fails the gate (PLT-17).
+[[licenses.clarify]]
+crate = "rs-fsrs"
+expression = "MIT"
+license-files = [{ path = "LICENSE", hash = 0x260b1e30 }]

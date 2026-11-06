@@ -671,6 +671,8 @@ class MockState {
         return { result: this.curriculumImport(payload) };
       case 'curriculum.daily_plan':
         return { result: this.dailyPlan(payload) };
+      case 'curriculum.promote':
+        return this.curriculumPromote(payload, meta);
       case 'calendar.list':
         return { result: this.calendarList(payload) };
       case 'calendar.propose':
@@ -875,6 +877,76 @@ class MockState {
       weeks: weeks.length,
       days,
       objectives,
+    };
+  }
+
+  /**
+   * Mock of `curriculum.promote`. Mirrors the backend contract: approval-gated
+   * (CURRICULUM_PROMOTE), both manifests must satisfy the invariants, and
+   * promotion is allowed only when the day-by-day reconciliation shows no
+   * changed, missing or added days. The mock never invents a canonical manifest.
+   */
+  private curriculumPromote(payload: unknown, meta: CommandMeta): Handled<ResponseOf<'curriculum.promote'>> {
+    const op = 'curriculum.promote';
+    const rec = asRecord(payload, op);
+    const versionId = str(rec, 'curriculum_version_id', op);
+    const candidate = json(rec, 'candidate_manifest', op);
+    const original = json(rec, 'original_manifest', op);
+    for (const [label, m] of [['candidate_manifest', candidate], ['original_manifest', original]] as const) {
+      const violations = validateManifest(m);
+      if (violations.length > 0) {
+        throw fail('INVALID_INPUT', 'curriculum.invariant_violated', `${label} violates curriculum invariants`, {
+          field: label,
+          violations: violations.map((x): JsonValue => ({ code: x.code, path: x.path, message: x.message })),
+        });
+      }
+    }
+    const daysOf = (m: JsonValue): Map<string, string> => {
+      const out = new Map<string, string>();
+      const weeks = typeof m === 'object' && m !== null && !Array.isArray(m) && Array.isArray(m.weeks) ? m.weeks : [];
+      for (const w of weeks) {
+        const ds = typeof w === 'object' && w !== null && !Array.isArray(w) && Array.isArray(w.days) ? w.days : [];
+        for (const d of ds) {
+          if (typeof d === 'object' && d !== null && !Array.isArray(d) && typeof d.day_id === 'string') {
+            out.set(d.day_id, canonicalJson(d));
+          }
+        }
+      }
+      return out;
+    };
+    const o = daysOf(original);
+    const c = daysOf(candidate);
+    let unchanged = 0;
+    let changed = 0;
+    let missing = 0;
+    for (const [id, body] of o) {
+      const cb = c.get(id);
+      if (cb === undefined) missing += 1;
+      else if (cb === body) unchanged += 1;
+      else changed += 1;
+    }
+    const added = [...c.keys()].filter((id) => !o.has(id)).length;
+    const summary = { unchanged, changed, missing_in_candidate: missing, added_in_candidate: added, metadata_changes: [] as string[] };
+    const promotionAllowed = changed === 0 && missing === 0 && added === 0;
+    const resource: ResourceRef = { kind: 'CURRICULUM_VERSION', id: versionId };
+    if (!promotionAllowed) {
+      throw fail('PRECONDITION_FAILED', 'curriculum.reconciliation_blocks_promotion', 'candidate does not reconcile with the original plan', {
+        summary: { unchanged, changed, missing_in_candidate: missing, added_in_candidate: added },
+      });
+    }
+    this.requireApproval(op, { curriculum_version_id: versionId }, resource, 'CURRICULUM_PROMOTE', meta, `Promote ${versionId} to APPROVED_CANONICAL`);
+    const originalChecksum = sha256Hex(canonicalJson(original));
+    const candidateChecksum = sha256Hex(canonicalJson(candidate));
+    return {
+      result: {
+        curriculum_version_id: versionId,
+        provenance: 'APPROVED_CANONICAL',
+        promotion_allowed: true,
+        original_checksum: originalChecksum,
+        candidate_checksum: candidateChecksum,
+        diff_checksum: sha256Hex(canonicalJson({ original: originalChecksum, candidate: candidateChecksum, summary })),
+        summary,
+      },
     };
   }
 
