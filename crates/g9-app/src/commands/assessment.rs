@@ -4,28 +4,44 @@
 //!   table); `APPROVED_FINAL` has no outgoing edge, and the policy invariant
 //!   `invariant.immutable_finalized` plus the storage triggers refuse any later
 //!   update.
-//! * `assessment.grade_provisional` records anchored levels 0–4 per criterion
-//!   (stored as `level × 25` on the crate's 0–100 scale); results are
-//!   append-only, a re-grade supersedes.
+//! * `assessment.grade_provisional` records anchored levels 0–4 per criterion,
+//!   converted with the rubric's explicit level scale (ADR-0012, LRN-10;
+//!   standard 0/25/50/80/100) to the crate's 0–100 scale; a level above 4 is
+//!   `INVALID_INPUT`. Results are append-only, a re-grade supersedes.
 //! * `assessment.approve_final` requires `Capability::GradeFinalize` (a
-//!   consumed operator approval), calls `g9_assessment::finalize` with the
-//!   backend-assigned operator as reviewer (`GradeSource::ModelAdvisory` can
-//!   never finalize), appends the immutable `grade_decisions` row with a
-//!   reliability class, and finalizes the attempt in the same transaction.
+//!   consumed operator approval), calls `g9_assessment::finalize_decision`
+//!   with the backend-assigned operator as reviewer (`GradeSource::ModelAdvisory`
+//!   can never finalize), appends the immutable `grade_decisions` row with the
+//!   reliability class the crate classified, and finalizes the attempt in the
+//!   same transaction. Attempts store no learner column; in the MVP the
+//!   operator takes every attempt, so the operator is the learner and an
+//!   operator finalization is `SELF_ADJUDICATED` (ADR-0012, LRN-11).
+//! * `assessment.begin` with `retake_of` starts the retake on the newest
+//!   version that differs from the original's (LRN-13: a retake uses a
+//!   different variant). When the assessment has no other version the retake
+//!   reuses the original variant and the outcome carries the warning
+//!   `assessment.retake_same_variant` (the item is no longer blind-eligible).
 //!
-//! Observation derivation from a final decision (`observations_from_decision`)
-//! needs the version difficulty, which `assessment_versions` does not persist
-//! (wave-1 gap): it is PROPOSED and reported as a warning, never guessed.
+//! PROPOSED (not wired, reported): gate failures (ADR-0012) cannot be declared
+//! through IPC (`assessment.approve_final` carries only `attempt_id`) and
+//! `grade_decisions` has no gate-failure column, so finalization here records
+//! none; observation derivation from a final decision
+//! (`observations_from_decision`) needs the version difficulty, which
+//! `assessment_versions` does not persist (wave-1 gap): it is reported as a
+//! warning, never guessed.
 
 use super::{decode, new_id, parse_id, rc, scope_of, tail, to_value};
 use crate::context::AppContext;
 use crate::ops::OpSpec;
 use crate::pipeline::{self, Command, EventSpec, Facts, Mutation};
-use g9_assessment::{finalize, score_breakdown, Attempt, CriterionResult, Rubric};
+use g9_assessment::{
+    finalize_decision, score_breakdown, Attempt, CriterionResult, DecisionInput, GradeDecision,
+    ReliabilityClass as DecisionClass, Rubric,
+};
 use g9_domain::hashing::sha256_json;
 use g9_domain::state::AssessmentEvent;
 use g9_domain::{
-    Actor, AssessmentAttemptState, AssessmentId, AttemptId, Classification, CommandMeta,
+    Actor, ActorId, AssessmentAttemptState, AssessmentId, AttemptId, Classification, CommandMeta,
     CommandOutcome, Difficulty, EvidenceId, G9Error, GradeDecisionId, GradeSource, ResourceKind,
     ResourceRef, Revision, UtcMillis,
 };
@@ -39,9 +55,6 @@ use g9_storage::repos::ReadScope;
 use rusqlite::Connection;
 use serde::Deserialize;
 use serde_json::{json, Value};
-
-/// Anchored level 0–4 ↔ crate score 0–100 (ADR-0012 anchored levels).
-const LEVEL_STEP: u8 = 25;
 
 struct Loaded {
     attempt: AttemptRow,
@@ -116,21 +129,42 @@ fn results(conn: &Connection, attempt: &AttemptId) -> Result<Vec<CriterionResult
         .collect()
 }
 
-fn reliability(results: &[CriterionResult]) -> ReliabilityClass {
-    if !results.is_empty()
-        && results
-            .iter()
-            .filter(|r| r.source != GradeSource::ModelAdvisory)
-            .all(|r| r.source == GradeSource::DeterministicChecker)
-    {
-        ReliabilityClass::Deterministic
-    } else {
-        // The operator is the learner: their own grading is self-adjudicated (LRN-11).
-        ReliabilityClass::SelfAdjudicated
+/// Storage form of the crate's reliability class.
+const fn stored_class(class: DecisionClass) -> ReliabilityClass {
+    match class {
+        DecisionClass::Deterministic => ReliabilityClass::Deterministic,
+        DecisionClass::ExternalReview => ReliabilityClass::ExternalReview,
+        DecisionClass::SelfAdjudicated => ReliabilityClass::SelfAdjudicated,
     }
 }
 
-fn grade_view(conn: &Connection, loaded: &Loaded) -> Result<Value, G9Error> {
+/// Finalize with the crate rules. `operator` is both the learner (MVP: the
+/// operator takes every attempt; attempts store no learner) and the reviewer.
+/// No gate failure can be declared through IPC yet (PROPOSED).
+fn decide_final(
+    conn: &Connection,
+    loaded: &Loaded,
+    operator: &Actor,
+    now: UtcMillis,
+) -> Result<(GradeDecision, Vec<CriterionResult>), G9Error> {
+    let attempt = domain_attempt(loaded, operator)?;
+    let rubric = rubric(&loaded.criteria)?;
+    let results = results(conn, &loaded.attempt.id)?;
+    let decision = finalize_decision(
+        GradeDecisionId::new_v7(),
+        DecisionInput {
+            attempt: &attempt,
+            rubric: &rubric,
+            results: &results,
+            gate_failures: &[],
+            reviewer: operator,
+            now,
+        },
+    )?;
+    Ok((decision, results))
+}
+
+fn grade_view(conn: &Connection, loaded: &Loaded, operator: &ActorId) -> Result<Value, G9Error> {
     let stored = repo::effective_criterion_results(conn, &loaded.attempt.id)?;
     if stored.is_empty() {
         return Ok(Value::Null);
@@ -153,7 +187,7 @@ fn grade_view(conn: &Connection, loaded: &Loaded) -> Result<Value, G9Error> {
             json!({
                 "criterion_code": r.criterion_code,
                 "weight": weight,
-                "score": r.row.score / LEVEL_STEP,
+                "score": rubric.level_for_score(r.row.score).get(),
                 "source": r.row.source,
                 "evidence_refs": r.row.evidence_refs,
             })
@@ -172,12 +206,16 @@ fn grade_view(conn: &Connection, loaded: &Loaded) -> Result<Value, G9Error> {
             d.reliability_class,
             true,
         ),
+        // The class an operator finalization would record now: the operator
+        // is the learner (MVP), so it is SELF_ADJUDICATED (LRN-11).
         None => (
             breakdown
                 .weighted_total
                 .map_or(0.0, |t| (t * 100.0).round() / 100.0),
             breakdown.pass_recommendation.unwrap_or(false),
-            reliability(&domain),
+            stored_class(DecisionClass::classify(
+                operator, operator, &rubric, &domain,
+            )),
             false,
         ),
     };
@@ -191,7 +229,7 @@ fn grade_view(conn: &Connection, loaded: &Loaded) -> Result<Value, G9Error> {
     }))
 }
 
-fn attempt_view(conn: &Connection, loaded: &Loaded) -> Result<Value, G9Error> {
+fn attempt_view(conn: &Connection, loaded: &Loaded, operator: &ActorId) -> Result<Value, G9Error> {
     let a = &loaded.attempt;
     to_value(&json!({
         "attempt_id": a.id,
@@ -204,18 +242,18 @@ fn attempt_view(conn: &Connection, loaded: &Loaded) -> Result<Value, G9Error> {
         "started_at": a.started_at,
         "submitted_at": a.submitted_at,
         "finalized_at": a.finalized_at,
-        "grade": grade_view(conn, loaded)?,
+        "grade": grade_view(conn, loaded, operator)?,
         "revision": a.revision,
     }))
 }
 
-fn reload_view(conn: &Connection, loaded: &Loaded) -> Result<Value, G9Error> {
+fn reload_view(conn: &Connection, loaded: &Loaded, operator: &ActorId) -> Result<Value, G9Error> {
     let fresh = load(
         conn,
         &ReadScope::cross_domain(loaded.attempt.data_domain),
         &loaded.attempt.id,
     )?;
-    attempt_view(conn, &fresh)
+    attempt_view(conn, &fresh, operator)
 }
 
 /// `assessment.list` (read-only).
@@ -261,7 +299,7 @@ pub fn list(
                     attempts.push((
                         row.started_at,
                         row.id.as_str().to_string(),
-                        attempt_view(env.conn, &loaded)?,
+                        attempt_view(env.conn, &loaded, &env.meta.actor.id)?,
                     ));
                 }
             }
@@ -324,9 +362,10 @@ pub fn begin(
             })?;
             let mut versions = repo::list_versions(env.conn, &def.id)?;
             versions.sort_by_key(|v| v.version_number().unwrap_or(0));
-            let version = versions.last().cloned().ok_or_else(|| {
+            let mut version = versions.last().cloned().ok_or_else(|| {
                 G9Error::precondition_failed("assessment.no_version", "assessment has no version")
             })?;
+            let mut same_variant = false;
             for v in &versions {
                 if let Some(open) = repo::list_attempts_for_version(
                     env.conn,
@@ -357,6 +396,15 @@ pub fn begin(
                         "assessment.retake_definition_mismatch",
                         "retake_of belongs to another assessment",
                     ));
+                }
+                // LRN-13: a retake uses a different variant (the newest other version).
+                match versions
+                    .iter()
+                    .rev()
+                    .find(|v| v.id != orig.assessment_version_id)
+                {
+                    Some(other) => version = other.clone(),
+                    None => same_variant = true,
                 }
             }
             let state = AssessmentAttemptState::Available
@@ -416,8 +464,27 @@ pub fn begin(
                 &ReadScope::cross_domain(def.data_domain),
                 &attempt_id,
             )?;
-            Ok(Mutation::new(attempt_view(env.conn, &loaded)?, Some(revision))
-                .with_event(EventSpec::learning("assessment.attempt.started", json!({ "attempt_id": attempt_id, "assessment_id": def.id, "retake_of": retake_of }))))
+            let mutation = Mutation::new(
+                attempt_view(env.conn, &loaded, &env.meta.actor.id)?,
+                Some(revision),
+            )
+            .with_event(EventSpec::learning(
+                "assessment.attempt.started",
+                json!({
+                    "attempt_id": attempt_id,
+                    "assessment_id": def.id,
+                    "retake_of": retake_of,
+                    "variant": version.version_label,
+                    "retake_same_variant": same_variant,
+                }),
+            ));
+            Ok(if same_variant {
+                mutation.with_warning(
+                    "assessment.retake_same_variant: the assessment has no other variant; this retake reuses the original variant, which is no longer blind-eligible (LRN-13)",
+                )
+            } else {
+                mutation
+            })
         },
     )
 }
@@ -472,7 +539,7 @@ fn transition(
             }
             let revision =
                 repo::update_attempt(env.conn, &attempt_id, a.revision, &patch, env.now)?;
-            let view = reload_view(env.conn, &loaded)?;
+            let view = reload_view(env.conn, &loaded, &env.meta.actor.id)?;
             Ok(Mutation::new(view, Some(revision)).with_event(EventSpec::learning(
                 "assessment.attempt.transitioned",
                 json!({ "attempt_id": attempt_id, "from": a.state, "to": next, "event": event }),
@@ -594,6 +661,8 @@ pub fn grade_provisional(
                         "assessment version has no rubric",
                     )
                 })?;
+            // Anchored level -> score through the rubric's explicit scale (ADR-0012).
+            let scale = rubric(&loaded.criteria)?;
             for input in &req.criteria {
                 if !loaded
                     .criteria
@@ -605,6 +674,16 @@ pub fn grade_provisional(
                         "criterion is not part of this rubric",
                     )
                     .with_details(json!({ "criterion_code": input.criterion_code })));
+                }
+                if scale.score_for_level(input.score).is_err() {
+                    return Err(G9Error::invalid_input(
+                        "grade.level_out_of_range",
+                        "criterion score is an anchored level 0..=4",
+                    )
+                    .with_details(json!({
+                        "criterion_code": input.criterion_code,
+                        "level": input.score,
+                    })));
                 }
             }
             let existing = repo::effective_criterion_results(env.conn, &loaded.attempt.id)?;
@@ -636,13 +715,14 @@ pub fn grade_provisional(
                     .iter()
                     .find(|r| r.criterion_code == c.code && r.row.source == input.source)
                     .map(|r| r.row.id.clone());
+                let score = scale.score_for_level(input.score)?;
                 repo::append_criterion_result(
                     env.conn,
                     &CriterionResultRow {
                         id: new_id("cr"),
                         attempt_id: loaded.attempt.id.clone(),
                         criterion_id,
-                        score: input.score.saturating_mul(LEVEL_STEP),
+                        score,
                         source: input.source,
                         evidence_refs: evidence,
                         rationale: None,
@@ -708,15 +788,7 @@ pub fn approve_final(
                 if a.state != AssessmentAttemptState::GradedProvisional {
                     return Err(illegal(a.state, AssessmentEvent::ApproveFinal));
                 }
-                let attempt = domain_attempt(&loaded, &svc.operator)?;
-                finalize(
-                    GradeDecisionId::new_v7(),
-                    &attempt,
-                    &rubric(&loaded.criteria)?,
-                    &results(conn, &a.id)?,
-                    &svc.operator,
-                    svc.now(),
-                )?;
+                decide_final(conn, &loaded, &svc.operator, svc.now())?;
             }
             Ok(Facts::existing(
                 rc(a.data_domain, a.classification, finalized),
@@ -731,18 +803,11 @@ pub fn approve_final(
                     "finalization requires a consumed operator approval",
                 )
             })?;
+            // The backend-assigned operator is the reviewer and, in the MVP, the
+            // learner: the crate classifies the decision SELF_ADJUDICATED.
             let reviewer = env.meta.actor.clone();
+            let (decision, results) = decide_final(env.conn, &loaded, &reviewer, env.now)?;
             let mut attempt = domain_attempt(&loaded, &reviewer)?;
-            let rubric = rubric(&loaded.criteria)?;
-            let results = results(env.conn, &attempt_id)?;
-            let decision = finalize(
-                GradeDecisionId::new_v7(),
-                &attempt,
-                &rubric,
-                &results,
-                &reviewer,
-                env.now,
-            )?;
             attempt.approve_final(&reviewer, env.now)?;
             let results_sha = sha256_json(
                 &serde_json::to_value(&results)
@@ -753,7 +818,7 @@ pub fn approve_final(
                 Some(consumed.approval_id.clone()),
                 Some(results_sha),
             )?
-            .with_reliability_class(reliability(&results));
+            .with_reliability_class(stored_class(decision.reliability_class()));
             repo::append_grade_decision(env.conn, &row)?;
             let a = &loaded.attempt;
             let patch = AttemptPatch {
@@ -763,7 +828,9 @@ pub fn approve_final(
             };
             let revision =
                 repo::update_attempt(env.conn, &attempt_id, a.revision, &patch, env.now)?;
-            let view = reload_view(env.conn, &loaded)?;
+            let view = reload_view(env.conn, &loaded, &reviewer.id)?;
+            let gate_failures: Vec<&str> =
+                decision.gate_failures().iter().map(|g| g.code()).collect();
             Ok(Mutation::new(view, Some(revision))
                 .with_event(EventSpec::learning(
                     "assessment.attempt.finalized",
@@ -772,6 +839,7 @@ pub fn approve_final(
                         "grade_decision_id": decision.id,
                         "passed": decision.pass,
                         "reliability_class": row.reliability_class,
+                        "gate_failures": gate_failures,
                         "approval_id": consumed.approval_id,
                     }),
                 ))

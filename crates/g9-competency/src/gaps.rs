@@ -125,6 +125,7 @@ mod tests {
             evidence_refs: Vec::new(),
             derived_at: day(10),
             rules_hash: "test".to_string(),
+            provisional: false,
         }
     }
 

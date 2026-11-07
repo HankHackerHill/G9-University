@@ -1,14 +1,25 @@
 //! Competency observation drafts derived from final grade decisions
-//! (ARCHITECTURE.md §8 "Observations"; handoff §9 "Learning dimensions").
+//! (ARCHITECTURE.md §8 "Observations" and Addendum A item 2; handoff §9
+//! "Learning dimensions"; ADR-0005/0012).
 //!
 //! One draft per `(competency, dimension)` pair: the score is the weighted mean
 //! of the criteria mapped to that dimension, using the decision's best
 //! non-advisory scores. Assistance and mode are carried verbatim from the
-//! attempt so that `g9-competency` can apply independence weights and decide
-//! whether the evidence counts as validated (blind EXAM) evidence.
+//! attempt so that `g9-competency` can apply independence weights.
+//!
+//! Every draft carries the decision's [`ReliabilityClass`] and a
+//! `validation_eligible` flag. A draft is validation-eligible only when the
+//! decision passed, the attempt was blind (EXAM, unaided, no key/hint
+//! exposure) and the decision is not `SELF_ADJUDICATED`. A caller that turns
+//! a draft with `validation_eligible == false` into a
+//! `g9_competency::CompetencyObservation` must pass that observation's id in
+//! the `validation_ineligible` set of
+//! `g9_competency::derive_state_excluding_validation`, which then never uses
+//! it as validation evidence (state at most `Independent`, `provisional`
+//! flag set).
 
 use crate::attempt::Attempt;
-use crate::grading::{GradeDecision, Score};
+use crate::grading::{GateFailure, GradeDecision, ReliabilityClass, Score};
 use crate::rubric::Rubric;
 use g9_domain::{
     ActorId, AssistanceLevel, AttemptId, CompetencyId, Difficulty, G9Error, GradeDecisionId,
@@ -93,6 +104,16 @@ pub struct ObservationDraft {
     pub criterion_codes: Vec<String>,
     /// Whether the attempt was blind (EXAM, unaided, no key/hint exposure).
     pub blind: bool,
+    /// Reliability class of the decision (ADR-0012).
+    pub reliability_class: ReliabilityClass,
+    /// Whether the decision passed under the ADR-0012 rule.
+    pub decision_passed: bool,
+    /// Gate failures recorded on the decision.
+    pub gate_failures: Vec<GateFailure>,
+    /// May be used as validation evidence: decision passed, attempt blind,
+    /// class not `SELF_ADJUDICATED`. `g9-competency` must never treat a draft
+    /// with `false` as validation evidence.
+    pub validation_eligible: bool,
     /// Reviewer who decided.
     pub reviewer: ActorId,
     /// Decision instant.
@@ -167,6 +188,9 @@ pub fn observations_from_decision(
             .push(&cs.code, def.weight, score);
     }
     let blind = attempt.is_blind();
+    let reliability_class = decision.reliability_class();
+    let validation_eligible =
+        decision.pass && blind && reliability_class.satisfies_validation_evidence();
     let mut drafts = Vec::with_capacity(attempt.competency_ids().len() * groups.len());
     for competency_id in attempt.competency_ids() {
         for dimension in LearningDimension::ALL {
@@ -185,6 +209,10 @@ pub fn observations_from_decision(
                 decision_id: decision.id.clone(),
                 criterion_codes: acc.codes.clone(),
                 blind,
+                reliability_class,
+                decision_passed: decision.pass,
+                gate_failures: decision.gate_failures().to_vec(),
+                validation_eligible,
                 reviewer: decision.decided_by.clone(),
                 observed_at: decision.decided_at,
                 provenance: provenance.clone(),

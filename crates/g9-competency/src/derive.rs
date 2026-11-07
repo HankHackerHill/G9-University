@@ -24,7 +24,7 @@ use g9_domain::{
     UtcMillis,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Milliseconds per day, used to turn day-based windows into instants.
 const DAY_MS: i64 = 86_400_000;
@@ -78,6 +78,13 @@ pub struct CompetencyProjection {
     pub derived_at: UtcMillis,
     /// `DerivationRules::hash()` of the rules that produced this projection.
     pub rules_hash: String,
+    /// Validation-level evidence exists but was excluded because it is not
+    /// validation-eligible (e.g. derived from a `SELF_ADJUDICATED` grade
+    /// decision, ADR-0005/0012, Addendum A item 2), and the state is not
+    /// `Validated`: the competency stays at most `Independent`, flagged
+    /// provisional. Always `false` from [`derive_state`].
+    #[serde(default)]
+    pub provisional: bool,
 }
 
 impl CompetencyProjection {
@@ -99,6 +106,28 @@ pub fn derive_state(
     rules: &DerivationRules,
     now: UtcMillis,
 ) -> CompetencyProjection {
+    derive_state_excluding_validation(competency, observations, rules, now, &BTreeSet::new())
+}
+
+/// [`derive_state`] where the observations named in `validation_ineligible`
+/// never count as validation evidence (ADR-0005/0012, ARCHITECTURE.md
+/// Addendum A item 2). The caller lists every observation derived from a
+/// grade decision that is not validation-eligible — in particular every
+/// decision with reliability class `SELF_ADJUDICATED`
+/// (`g9_assessment::ObservationDraft::validation_eligible == false`). Such
+/// observations still count toward `Guided`/`Independent`; when one of them
+/// would otherwise qualify as validation evidence and the state is not
+/// `Validated`, the projection is flagged `provisional`.
+pub fn derive_state_excluding_validation(
+    competency: &Competency,
+    observations: &[CompetencyObservation],
+    rules: &DerivationRules,
+    now: UtcMillis,
+    validation_ineligible: &BTreeSet<ObservationId>,
+) -> CompetencyProjection {
+    let validates = |o: &CompetencyObservation| {
+        qualifies_validation(o, rules) && !validation_ineligible.contains(&o.id)
+    };
     let retained = retained_for(&competency.id, observations);
     let validity_ms = days_to_ms(rules.validity_window_days_for(competency));
     let window_ms = days_to_ms(rules.independent_window_days);
@@ -140,17 +169,21 @@ pub fn derive_state(
         if state.can(CompetencyEvent::Validate)
             && scope
                 .iter()
-                .any(|o| qualifies_validation(o, rules) && within(o.observed_at, t, validity_ms))
+                .any(|o| validates(o) && within(o.observed_at, t, validity_ms))
         {
             state = step(state, CompetencyEvent::Validate);
         }
 
-        if qualifies_validation(obs, rules) {
+        if validates(obs) {
             latest_validation_at = Some(t);
         }
     }
 
     state = apply_retest_due(state, latest_validation_at, validity_ms, now);
+    let provisional = state != CompetencyState::Validated
+        && retained
+            .iter()
+            .any(|o| qualifies_validation(o, rules) && validation_ineligible.contains(&o.id));
 
     CompetencyProjection {
         competency_id: competency.id.clone(),
@@ -160,6 +193,7 @@ pub fn derive_state(
         evidence_refs: retained.iter().map(|o| o.id.clone()).collect(),
         derived_at: now,
         rules_hash: rules.hash(),
+        provisional,
     }
 }
 
@@ -528,6 +562,67 @@ mod tests {
             derive_state(&c, &far, &rules(), day(71)).state,
             CompetencyState::Guided
         );
+    }
+
+    #[test]
+    fn self_adjudicated_exam_evidence_caps_at_independent_with_provisional_flag() {
+        // ADR-0005/0012, Addendum A item 2: evidence from a SELF_ADJUDICATED
+        // grade decision never validates; the state stays Independent and the
+        // projection is flagged provisional.
+        let c = competency("c1");
+        let mut obs = independent_pair();
+        obs.push(
+            Obs::app("exam", "c1", 95, day(6))
+                .mode(InteractionMode::Exam)
+                .build(),
+        );
+        let self_adjudicated: BTreeSet<ObservationId> = [oid("exam")].into_iter().collect();
+
+        let open = derive_state(&c, &obs, &rules(), day(7));
+        assert_eq!(open.state, CompetencyState::Validated);
+        assert!(!open.provisional);
+
+        let capped =
+            derive_state_excluding_validation(&c, &obs, &rules(), day(7), &self_adjudicated);
+        assert_eq!(capped.state, CompetencyState::Independent);
+        assert!(capped.provisional);
+        // The evidence is retained, never erased.
+        assert!(capped.evidence_refs.contains(&oid("exam")));
+        // An empty exclusion set is exactly `derive_state`.
+        assert_eq!(
+            derive_state_excluding_validation(&c, &obs, &rules(), day(7), &BTreeSet::new()),
+            open
+        );
+
+        // Later eligible (externally reviewed or deterministic) evidence validates
+        // and clears the flag.
+        obs.push(
+            Obs::new("exam-2", "c1", LearningDimension::Transfer, 85, day(8))
+                .mode(InteractionMode::Exam)
+                .build(),
+        );
+        let validated =
+            derive_state_excluding_validation(&c, &obs, &rules(), day(9), &self_adjudicated);
+        assert_eq!(validated.state, CompetencyState::Validated);
+        assert!(!validated.provisional);
+
+        // Ineligible evidence below the validation threshold does not flag.
+        let low = vec![
+            Obs::app("o1", "c1", 75, day(1)).build(),
+            Obs::app("o2", "c1", 70, day(2))
+                .mode(InteractionMode::Exam)
+                .build(),
+        ];
+        let set: BTreeSet<ObservationId> = [oid("o2")].into_iter().collect();
+        assert!(!derive_state_excluding_validation(&c, &low, &rules(), day(3), &set).provisional);
+
+        // The flag round-trips and defaults to false for older snapshots.
+        let json = serde_json::to_value(&capped).unwrap();
+        assert_eq!(json["provisional"], serde_json::json!(true));
+        let mut legacy = json.clone();
+        legacy.as_object_mut().unwrap().remove("provisional");
+        let back: CompetencyProjection = serde_json::from_value(legacy).unwrap();
+        assert!(!back.provisional);
     }
 
     #[test]

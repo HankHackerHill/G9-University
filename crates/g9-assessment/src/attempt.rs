@@ -101,6 +101,16 @@ pub enum AttemptError {
     /// A retake can only follow a finalized or voided attempt.
     #[error("a retake can only be created from a finalized or voided attempt")]
     RetakeOfOpenAttempt,
+    /// A retake must use a different variant (assessment version) than the
+    /// original (LRN-13).
+    #[error("a retake must use a different variant than the original attempt (version {version})")]
+    RetakeSameVariant {
+        /// The original's version number.
+        version: u32,
+    },
+    /// A retake variant must have the original's declared difficulty (LRN-13).
+    #[error("a retake variant must have the original's declared difficulty")]
+    RetakeDifficultyMismatch,
     /// The operation is not allowed in the current state.
     #[error("`{operation}` is not allowed while the attempt is {state}")]
     InvalidState {
@@ -127,6 +137,10 @@ impl AttemptError {
                 "assessment.attempt.official_requires_exam_mode"
             }
             AttemptError::RetakeOfOpenAttempt => "assessment.attempt.retake_of_open_attempt",
+            AttemptError::RetakeSameVariant { .. } => "assessment.attempt.retake_same_variant",
+            AttemptError::RetakeDifficultyMismatch => {
+                "assessment.attempt.retake_difficulty_mismatch"
+            }
             AttemptError::InvalidState { .. } => "assessment.attempt.invalid_state",
             AttemptError::Definition(e) => e.code(),
         }
@@ -149,9 +163,10 @@ impl From<AttemptError> for G9Error {
             AttemptError::VersionMismatch | AttemptError::OfficialRequiresExamMode => {
                 G9Error::invalid_input(code, message)
             }
-            AttemptError::RetakeOfOpenAttempt | AttemptError::InvalidState { .. } => {
-                G9Error::precondition_failed(code, message)
-            }
+            AttemptError::RetakeOfOpenAttempt
+            | AttemptError::RetakeSameVariant { .. }
+            | AttemptError::RetakeDifficultyMismatch
+            | AttemptError::InvalidState { .. } => G9Error::precondition_failed(code, message),
         }
     }
 }
@@ -246,8 +261,10 @@ impl Attempt {
 
     /// Create a new attempt linked to `original` through `retake_of`. The
     /// original must be terminal (finalized or voided) and is never modified.
-    /// `version` may differ from the original's (same definition, typically the
-    /// same equivalence group).
+    /// `version` must belong to the same definition, be a different variant
+    /// (version number) than the original and carry the original's declared
+    /// difficulty (LRN-13). Ledger-based blind eligibility of the new variant
+    /// is checked separately with `exposure::check_retake_item`.
     pub fn new_retake(
         id: AttemptId,
         original: &Attempt,
@@ -261,6 +278,14 @@ impl Attempt {
         version.verify_checksum()?;
         if version.definition_id != original.definition_id {
             return Err(AttemptError::VersionMismatch);
+        }
+        if version.version == original.version {
+            return Err(AttemptError::RetakeSameVariant {
+                version: original.version,
+            });
+        }
+        if version.difficulty != original.difficulty {
+            return Err(AttemptError::RetakeDifficultyMismatch);
         }
         Ok(Self {
             id,

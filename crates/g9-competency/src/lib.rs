@@ -38,7 +38,8 @@ pub mod rules;
 pub(crate) mod testutil;
 
 pub use derive::{
-    derive_state, derive_state_checked, CompetencyProjection, Contradiction, DimensionEstimate,
+    derive_state, derive_state_checked, derive_state_excluding_validation, CompetencyProjection,
+    Contradiction, DimensionEstimate,
 };
 pub use diagnosis::{
     classify_failure, DiagnosisContext, DiagnosisOutcome, EnvironmentFlags, FailureClass,

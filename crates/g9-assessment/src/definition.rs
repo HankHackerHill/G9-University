@@ -282,3 +282,84 @@ impl AssessmentVersion {
         self.sealed_key_ref.is_some()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use g9_domain::ErrorCategory;
+
+    fn def(
+        competencies: Vec<CompetencyId>,
+        title: &str,
+    ) -> Result<AssessmentDefinition, DefinitionError> {
+        AssessmentDefinition::new(
+            AssessmentId::parse("ad-1").unwrap(),
+            title,
+            competencies,
+            AssessmentKind::BlindPractical,
+            DataDomain::Learning,
+        )
+    }
+
+    fn version(n: u32, group: &str) -> AssessmentVersion {
+        AssessmentVersion {
+            definition_id: AssessmentId::parse("ad-1").unwrap(),
+            version: n,
+            rubric: Rubric::baseline(),
+            task_ref: EvidenceId::parse("evi-task").unwrap(),
+            sealed_key_ref: None,
+            difficulty: Difficulty::new(3).unwrap(),
+            equivalence_group: group.into(),
+            created_at: UtcMillis::from_millis(0),
+            checksum: String::new(),
+        }
+    }
+
+    #[test]
+    fn definition_and_version_invariants() {
+        let c = CompetencyId::parse("comp-1").unwrap();
+        assert!(def(vec![c.clone()], "Week 1").is_ok());
+        assert_eq!(
+            def(vec![c.clone()], " ").unwrap_err(),
+            DefinitionError::EmptyTitle
+        );
+        assert_eq!(
+            def(vec![], "Week 1").unwrap_err(),
+            DefinitionError::NoCompetencies
+        );
+        assert!(matches!(
+            def(vec![c.clone(), c], "Week 1").unwrap_err(),
+            DefinitionError::DuplicateCompetency(_)
+        ));
+        assert_eq!(
+            version(0, "g").with_checksum().unwrap_err(),
+            DefinitionError::VersionZero
+        );
+        assert_eq!(
+            version(1, " ").with_checksum().unwrap_err(),
+            DefinitionError::EmptyEquivalenceGroup
+        );
+        let v = version(1, "g").with_checksum().unwrap();
+        assert_eq!(v.checksum.len(), 64);
+        assert!(v.verify_checksum().is_ok());
+        assert!(!v.has_sealed_key());
+        let mut tampered = v.clone();
+        tampered.difficulty = Difficulty::new(4).unwrap();
+        let err = tampered.verify_checksum().unwrap_err();
+        assert_eq!(G9Error::from(err).category, ErrorCategory::DataCorruption);
+        assert_eq!(
+            AssessmentVersion::SEALED_KEY_CLASSIFICATION,
+            Classification::Secret
+        );
+    }
+
+    #[test]
+    fn official_kinds_require_exam_mode() {
+        for kind in AssessmentKind::ALL {
+            let expected =
+                (kind != AssessmentKind::DiagnosticCalibration).then_some(InteractionMode::Exam);
+            assert_eq!(kind.required_mode(), expected, "{kind:?}");
+            assert_eq!(kind.is_official(), expected.is_some());
+        }
+    }
+}
