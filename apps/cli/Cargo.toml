@@ -1,0 +1,66 @@
+[package]
+name = "g9-cli"
+description = "Command-line driver for G9 MENTOR: a thin client of g9_app::dispatch for end-to-end testing without the GTK/WebKit toolchain and for scripted operation on the G9 host."
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.97"
+license = "Apache-2.0"
+repository = "https://github.com/hackytacky/G9-University"
+publish = false
+
+# Developed as a standalone crate (its own workspace root) so that it builds
+# without touching the root Cargo.toml; the orchestrator adds `apps/cli` to the
+# root workspace afterwards (then remove this table and the `[profile.dev]`
+# section, which only a workspace root may carry).
+[workspace]
+
+[lib]
+name = "g9_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "g9"
+path = "src/main.rs"
+
+[dependencies]
+# Internal crates (same composition as apps/desktop/src-tauri: the bridge
+# opens the database, provisions the binding key, loads the skill registry and
+# hands everything to g9_app::AppContext::builder; every command goes through
+# g9_app::dispatch). g9-curriculum/g9-calendar give civil-date arithmetic for
+# the simulated week; g9-assessment/g9-competency give the typed rows that the
+# simulated week materializes through the g9-storage repositories where no IPC
+# path exists yet (see src/seed.rs).
+g9-app = { path = "../../crates/g9-app" }
+g9-domain = { path = "../../crates/g9-domain" }
+g9-storage = { path = "../../crates/g9-storage" }
+g9-policy = { path = "../../crates/g9-policy" }
+g9-skills = { path = "../../crates/g9-skills" }
+g9-curriculum = { path = "../../crates/g9-curriculum" }
+g9-calendar = { path = "../../crates/g9-calendar" }
+g9-assessment = { path = "../../crates/g9-assessment" }
+g9-competency = { path = "../../crates/g9-competency" }
+
+# Exact pins (the root Cargo.lock resolves the same versions on 2026-11-07).
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = { version = "=1.0.154", features = ["preserve_order"] }
+thiserror = "=2.0.21"
+uuid = { version = "=1.29.0", features = ["v7", "serde"] }
+clap = { version = "=4.6.1", features = ["derive"] }
+
+[dev-dependencies]
+tempfile = "=3.27.0"
+
+# Keep the per-crate build directory small (no debuginfo, no incremental cache).
+[profile.dev]
+debug = 0
+incremental = false
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"

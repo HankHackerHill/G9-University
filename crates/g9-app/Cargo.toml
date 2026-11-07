@@ -28,6 +28,10 @@ tracing = { workspace = true }
 jsonschema = { workspace = true }
 # Only to name the transaction/connection types g9-storage hands out; no SQL is written here.
 rusqlite = { workspace = true }
+# Approval binding key file store (src/keyfile.rs, moved here from the Tauri
+# bridge so the CLI and the bridge share one implementation): 32 bytes from the
+# OS CSPRNG into a 0600 file. Exact pin; already in the lock file.
+getrandom = "=0.4.3"
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }

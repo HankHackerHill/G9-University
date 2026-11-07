@@ -1109,6 +1109,7 @@ dependencies = [
  "g9-retention",
  "g9-skills",
  "g9-storage",
+ "getrandom 0.4.3",
  "jsonschema",
  "pretty_assertions",
  "rusqlite",
