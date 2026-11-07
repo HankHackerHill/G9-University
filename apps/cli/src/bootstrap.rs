@@ -144,8 +144,7 @@ impl DataLayout {
                 .map_err(|e| CliError::io("current directory", &e))?
                 .join(requested)
         };
-        platform::ensure_private_dir(&absolute)
-            .map_err(|e| CliError::io("data directory", &e))?;
+        platform::ensure_private_dir(&absolute).map_err(|e| CliError::io("data directory", &e))?;
         let root = fs::canonicalize(&absolute).map_err(|e| CliError::io("data directory", &e))?;
         let layout = Self {
             database: root.join(DATABASE_FILE),
@@ -258,11 +257,13 @@ pub fn open(opts: &BootOptions) -> Result<Booted, CliError> {
     config.program_start = opts.program_start;
     config.backup_dir = Some(layout.backups.clone());
     config.scratch_dir = Some(layout.scratch.clone());
-    config.approved_roots = vec![
-        layout.attachments.clone(),
-        layout.backups.clone(),
-        layout.scratch.clone(),
-    ];
+    // The attachments directory stays the primary root (relative attachment
+    // paths resolve there, as in the bridge). The data root is the second root
+    // so that `backups/` and `scratch/` are *inside* an approved root:
+    // `ApprovedRoots::contains` refuses a path that *is* a root (TESTED:
+    // `backup.create` answers `UNAUTHORIZED backup.backup_outside_approved_roots`
+    // with the bridge's `[attachments, backups, scratch]` list; reported).
+    config.approved_roots = vec![layout.attachments.clone(), layout.root.clone()];
     // `g9_app::Transport` has a single variant; `system.status.transport`
     // therefore reads `tauri` from the CLI as well (reported in the testing guide).
     config.transport = Transport::Tauri;
@@ -444,13 +445,19 @@ mod tests {
             name(zone_from_hints(None, None, Some("UTC\n"))),
             Some("UTC".into())
         );
-        assert_eq!(name(zone_from_hints(Some("Mars/Olympus"), None, None)), None);
+        assert_eq!(
+            name(zone_from_hints(Some("Mars/Olympus"), None, None)),
+            None
+        );
     }
 
     #[test]
     fn default_seed_manifest_is_in_the_repository() {
         assert!(default_seed_manifest().is_file());
-        assert_eq!(default_skills_dir().is_some(), repo_root().join(".agents/skills").is_dir());
+        assert_eq!(
+            default_skills_dir().is_some(),
+            repo_root().join(".agents/skills").is_dir()
+        );
     }
 
     #[cfg(unix)]

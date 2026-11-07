@@ -193,7 +193,10 @@ mod tests {
         assert!(!obj.contains_key("expected_revision"));
         assert_eq!(m["operation"], "session.start");
         assert_eq!(m["issued_at"], 42);
-        assert_eq!(m["payload_schema_version"], serde_json::json!({ "major": 1, "minor": 0 }));
+        assert_eq!(
+            m["payload_schema_version"],
+            serde_json::json!({ "major": 1, "minor": 0 })
+        );
         assert_eq!(m["scope"]["domain"], "LEARNING");
         assert_eq!(m["scope"]["mode"], "STUDY");
         for key in ["request_id", "idempotency_key", "trace_id"] {

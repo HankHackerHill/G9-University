@@ -20,7 +20,7 @@
 //! | [`clock`] | stepping clock for deterministic runs |
 //! | [`seed`] | repository-path materialization for data that has no IPC path yet (labelled `SEEDED`, never through `dispatch`) |
 //! | [`commands`] | one function per subcommand; [`commands::simulate`] is the Stage 03 exit criterion script |
-//! | [`output`] | exit codes (0 ok, 2 `G9Error`/scenario FAIL, 1 usage/IO) and JSON/human rendering |
+//! | [`output`] | exit codes (0 ok, 2 `G9Error` or scenario `INCOMPLETE`/`FAIL`, 1 usage/IO) and JSON/human rendering |
 
 pub mod bootstrap;
 pub mod cli;

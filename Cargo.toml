@@ -14,6 +14,7 @@ members = [
   "crates/g9-skills",
   "crates/g9-app",
   "crates/g9-evaluation",
+  "apps/cli",
   "apps/desktop/src-tauri",
 ]
 # The Tauri shell needs webkit2gtk-4.1 + GTK3 system libraries; it is excluded from
@@ -33,6 +34,7 @@ default-members = [
   "crates/g9-skills",
   "crates/g9-app",
   "crates/g9-evaluation",
+  "apps/cli",
 ]
 
 [workspace.package]

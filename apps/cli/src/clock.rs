@@ -83,7 +83,11 @@ mod tests {
         assert_eq!(c.now(), UtcMillis::from_millis(121_000));
         assert_eq!(c.mono(), MONOTONIC_ORIGIN_MS + 120_000);
         c.jump_to(UtcMillis::from_millis(5_000));
-        assert_eq!(c.now(), UtcMillis::from_millis(121_000), "no backwards jump");
+        assert_eq!(
+            c.now(),
+            UtcMillis::from_millis(121_000),
+            "no backwards jump"
+        );
         c.jump_to(UtcMillis::from_millis(200_000));
         assert_eq!(c.now(), UtcMillis::from_millis(200_000));
         assert_eq!(c.mono(), MONOTONIC_ORIGIN_MS + 199_000);

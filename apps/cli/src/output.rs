@@ -2,7 +2,7 @@
 //!
 //! * exit 0 — success; the result is printed as JSON (or in the `--human` form).
 //! * exit 2 — the backend refused (`G9Error`, printed serialized) or a scripted
-//!   scenario ended in FAIL (its report is printed).
+//!   scenario did not `PASS` (`INCOMPLETE` or `FAIL`; its report is printed).
 //! * exit 1 — usage or host I/O error (message on stderr).
 //!
 //! Nothing here ever prints the binding key: the only key handle in the
@@ -16,7 +16,7 @@ use serde_json::Value;
 pub const EXIT_OK: i32 = 0;
 /// Exit code for usage and host I/O errors.
 pub const EXIT_USAGE: i32 = 1;
-/// Exit code for a backend refusal (`G9Error`) or a scenario FAIL.
+/// Exit code for a backend refusal (`G9Error`) or a scenario that did not PASS (`INCOMPLETE`/`FAIL`).
 pub const EXIT_REFUSED: i32 = 2;
 
 /// Every way a command ends without a result.
@@ -31,8 +31,8 @@ pub enum CliError {
     /// The backend refused (exit 2). Printed serialized to stdout.
     #[error("backend refused: {} {}", .0.category_str(), .0.code)]
     Backend(G9Error),
-    /// A scripted scenario ended in FAIL (exit 2). Carries the report.
-    #[error("scenario FAIL")]
+    /// A scripted scenario did not PASS (`INCOMPLETE` or `FAIL`; exit 2). Carries the report.
+    #[error("scenario {}", scenario_result(.0))]
     Scenario(Value),
 }
 
@@ -49,6 +49,11 @@ impl CategoryStr for G9Error {
             .and_then(|v| v.as_str().map(str::to_string))
             .unwrap_or_else(|| format!("{:?}", self.category))
     }
+}
+
+/// The `result` field of a scenario report (`FAIL` when absent).
+pub fn scenario_result(report: &Value) -> &str {
+    report["result"].as_str().unwrap_or("FAIL")
 }
 
 impl From<G9Error> for CliError {
@@ -138,7 +143,7 @@ pub fn render_error(error: &CliError, human: bool) -> Rendered {
         },
         CliError::Scenario(report) => Rendered {
             stdout: Some(render_value(report, human)),
-            stderr: Some("g9: scenario FAIL".to_string()),
+            stderr: Some(format!("g9: scenario {}", scenario_result(report))),
             code: EXIT_REFUSED,
         },
     }
@@ -281,6 +286,21 @@ mod tests {
         assert_eq!(usage.code, 1);
         assert!(usage.stdout.is_none());
         assert_eq!(usage.stderr.as_deref(), Some("g9: bad"));
+        let incomplete = render_error(
+            &CliError::Scenario(json!({ "result": "INCOMPLETE", "steps": [] })),
+            false,
+        );
+        assert_eq!(incomplete.code, 2);
+        assert_eq!(
+            incomplete.stderr.as_deref(),
+            Some("g9: scenario INCOMPLETE")
+        );
+        assert_eq!(
+            render_error(&CliError::Scenario(json!({})), false)
+                .stderr
+                .as_deref(),
+            Some("g9: scenario FAIL")
+        );
     }
 
     #[test]

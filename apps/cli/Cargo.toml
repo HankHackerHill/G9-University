@@ -12,8 +12,6 @@ publish = false
 # without touching the root Cargo.toml; the orchestrator adds `apps/cli` to the
 # root workspace afterwards (then remove this table and the `[profile.dev]`
 # section, which only a workspace root may carry).
-[workspace]
-
 [lib]
 name = "g9_cli"
 path = "src/lib.rs"
@@ -51,10 +49,6 @@ clap = { version = "=4.6.1", features = ["derive"] }
 tempfile = "=3.27.0"
 
 # Keep the per-crate build directory small (no debuginfo, no incremental cache).
-[profile.dev]
-debug = 0
-incremental = false
-
 [lints.rust]
 unsafe_code = "forbid"
 missing_debug_implementations = "warn"
