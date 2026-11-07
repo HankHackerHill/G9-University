@@ -23,8 +23,15 @@ export interface UseCommandResult<T> {
   data: T | null;
   error: G9Error | null;
   loading: boolean;
+  /**
+   * `CommandOutcome.warnings` of the result in `data` (empty when there is none). The backend
+   * uses warnings to disclose partial or PROPOSED behaviour; screens must render them.
+   */
+  warnings: readonly string[];
   reload: () => void;
 }
+
+const NO_WARNINGS: readonly string[] = [];
 
 export function useCommand<K extends OperationName>(
   op: K,
@@ -62,18 +69,32 @@ export function useCommand<K extends OperationName>(
 
   return useMemo(() => {
     if (key === null) {
-      return { state: { status: 'idle' }, data: null, error: null, loading: false, reload };
+      return { state: { status: 'idle' }, data: null, error: null, loading: false, warnings: NO_WARNINGS, reload };
     }
     if (stored?.key !== key) {
       // Revalidating the same query: keep the last good result visible.
       if (stored !== null && stored.baseKey === baseKey && !isG9Error(stored.result)) {
-        return { state: { status: 'loading' }, data: stored.result.result, error: null, loading: true, reload };
+        return {
+          state: { status: 'loading' },
+          data: stored.result.result,
+          error: null,
+          loading: true,
+          warnings: stored.result.warnings ?? NO_WARNINGS,
+          reload,
+        };
       }
-      return { state: { status: 'loading' }, data: null, error: null, loading: true, reload };
+      return { state: { status: 'loading' }, data: null, error: null, loading: true, warnings: NO_WARNINGS, reload };
     }
     if (isG9Error(stored.result)) {
-      return { state: { status: 'error', error: stored.result }, data: null, error: stored.result, loading: false, reload };
+      return { state: { status: 'error', error: stored.result }, data: null, error: stored.result, loading: false, warnings: NO_WARNINGS, reload };
     }
-    return { state: { status: 'ok', outcome: stored.result }, data: stored.result.result, error: null, loading: false, reload };
+    return {
+      state: { status: 'ok', outcome: stored.result },
+      data: stored.result.result,
+      error: null,
+      loading: false,
+      warnings: stored.result.warnings ?? NO_WARNINGS,
+      reload,
+    };
   }, [key, baseKey, stored, reload]);
 }

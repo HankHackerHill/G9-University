@@ -25,15 +25,30 @@
 //! 7. **Events + audit** — significant `domain_events`; one hash-chained
 //!    `audit_metadata` row (metadata only); the `policy_decisions` row.
 //! 8. **Commit** — the idempotency outcome is stored inside the same
-//!    transaction, so a crash between commit and reply is replayable.
+//!    transaction, so a crash between commit and reply is replayable. A
+//!    result that carries personal or model content (note title/body, skill
+//!    output) is never stored: the handler supplies a content-free
+//!    [`Mutation::replay_record`] (ids only) and a replay rebuilds the result
+//!    from current storage (`commands::rebuild_replay`), so an approved
+//!    erasure (A10, ADR-0002) leaves no copy in `idempotency_records`.
 //! 9. **Return** `CommandOutcome { result, revision, audit_ref, replayed }`.
+//!
+//! In-memory service state that mirrors a row the handler wrote (the backup
+//! map) is changed only by [`Mutation::on_commit`], after the commit succeeded.
 //!
 //! Any failure after step 2 rolls the transaction back (nothing the handler
 //! wrote survives, an approval is not spent) and a second, small transaction
 //! records what must survive a refusal: the policy decision row, the approval
 //! request (step 3), an expired approval's terminal state, and an audit row
-//! whose outcome is the error category. Read-only queries run step 3 only; a
-//! refused read is logged as a `DENY` policy decision.
+//! whose outcome is the error category. Read-only queries run step 3 only;
+//! every read evaluation (allowed or refused) is persisted as a
+//! metadata-only `policy_decisions` row (ARCHITECTURE.md §11, ADR-0003).
+//!
+//! Approval binding (ADR-0003, SEC-02): an approval request is bound to the
+//! client's `expected_revision`, or — when the client sent none and the
+//! resource exists — to the stored revision read in step 3. Consumption
+//! compares against the same rule, so a resource changed between grant and
+//! use (e.g. a regrade after the approval) refuses the stale approval.
 
 use crate::context::{AppContext, Services};
 use crate::ops::OpSpec;
@@ -135,6 +150,14 @@ impl EventSpec {
 /// Online Backup API). Its result replaces the handler result.
 pub type PostCommit = Box<dyn FnOnce(&mut PostEnv<'_>) -> Result<Mutation, G9Error>>;
 
+/// In-memory service update applied only after the command transaction
+/// committed (never after a rollback).
+pub type OnCommit = Box<dyn FnOnce(&mut Services)>;
+
+/// Key of the content-free record stored in `idempotency_records` in place of
+/// a content-bearing result (see [`Mutation::replay_record`]).
+pub const REPLAY_RECORD_KEY: &str = "g9_replay_record";
+
 /// What a handler produced.
 pub struct Mutation {
     /// Operation result (validated against the response schema before commit).
@@ -154,6 +177,12 @@ pub struct Mutation {
     /// invocation record) but report this error to the caller. The audit row
     /// carries the error category and no idempotency outcome is stored.
     pub commit_error: Option<G9Error>,
+    /// Content-free replacement for `result` in the idempotency record (ids
+    /// only). Set by handlers whose result carries personal or model content;
+    /// a replay rebuilds the result from current storage.
+    pub replay_record: Option<Value>,
+    /// In-memory service update applied after a successful commit.
+    pub on_commit: Option<OnCommit>,
 }
 
 impl std::fmt::Debug for Mutation {
@@ -164,6 +193,8 @@ impl std::fmt::Debug for Mutation {
             .field("events", &self.events.len())
             .field("warnings", &self.warnings)
             .field("post_commit", &self.post_commit.is_some())
+            .field("replay_record", &self.replay_record.is_some())
+            .field("on_commit", &self.on_commit.is_some())
             .finish_non_exhaustive()
     }
 }
@@ -179,6 +210,8 @@ impl Mutation {
             warnings: Vec::new(),
             post_commit: None,
             commit_error: None,
+            replay_record: None,
+            on_commit: None,
         }
     }
 
@@ -217,6 +250,38 @@ impl Mutation {
         self.post_commit = Some(step);
         self
     }
+
+    /// Store `record` (content-free ids) instead of the result in the
+    /// idempotency record; a replay rebuilds the result from storage.
+    #[must_use]
+    pub fn replay_with(mut self, record: Value) -> Self {
+        self.replay_record = Some(record);
+        self
+    }
+
+    /// Apply `update` to the services after the transaction committed.
+    #[must_use]
+    pub fn on_commit(mut self, update: OnCommit) -> Self {
+        self.on_commit = Some(update);
+        self
+    }
+}
+
+/// The outcome as stored in `idempotency_records`: verbatim, or with the
+/// result replaced by the handler's content-free replay record plus the
+/// SHA-256 of the full result.
+fn stored_outcome(
+    outcome: &CommandOutcome<Value>,
+    replay_record: Option<&Value>,
+) -> Result<Value, G9Error> {
+    let mut stored = outcome.clone();
+    if let Some(record) = replay_record {
+        stored.result = json!({
+            REPLAY_RECORD_KEY: record,
+            "result_sha256": sha256_json(&outcome.result),
+        });
+    }
+    serde_json::to_value(&stored).map_err(|_| G9Error::internal_redacted("idempotency.serialize"))
 }
 
 /// What a handler sees: the transaction connection and the services.
@@ -357,11 +422,14 @@ where
     }
     if cmd.spec.mutating {
         if let Some(reason) = ctx.svc.recovery.write_block_reason() {
+            // No live-restore operation exists in this release (restoring a
+            // verified backup into the live database is PROPOSED); the message
+            // must not direct the operator to an operation that is not there.
             return Err(G9Error::data_corruption(
                 "recovery.integrity_failed",
-                "integrity verification failed at open; mutations are refused until the operator restores a verified backup",
+                "integrity verification failed at open; mutations are refused. In-app restore of a verified backup into the live database is not implemented in this release (PROPOSED)",
             )
-            .with_details(json!({ "reason": reason })));
+            .with_details(json!({ "reason": reason, "live_restore": "NOT_IMPLEMENTED" })));
         }
         execute_mutating(ctx, meta, cmd, facts, handler)
     } else {
@@ -386,7 +454,13 @@ where
     let op = descriptor(meta, &cmd);
     let evaluation = svc.policy.evaluate(&meta.actor, &op, &found.context);
     match &evaluation.decision {
-        Decision::Allow { .. } => {}
+        Decision::Allow { .. } => {
+            // ARCHITECTURE.md §11 / ADR-0003: every evaluation is persisted,
+            // allowed reads included (metadata only, before the read runs).
+            let tx = db.begin_immediate()?;
+            insert_decision(&tx, &evaluation.record, meta, None)?;
+            tx.commit().map_err(storage_err)?;
+        }
         Decision::Deny { .. } | Decision::ApprovalRequired { .. } => {
             let error: G9Error = match evaluation.decision.clone() {
                 Decision::ApprovalRequired {
@@ -545,7 +619,6 @@ where
         .map_err(|e| Refusal::not_evaluated(e.into()))?
     {
         IdempotencyCheck::Replay(stored) => {
-            drop(tx);
             let mut outcome: CommandOutcome<Value> = serde_json::from_value(stored.outcome_json)
                 .map_err(|_| {
                     Refusal::not_evaluated(G9Error::data_corruption(
@@ -553,6 +626,18 @@ where
                         "the stored outcome for this idempotency key cannot be read",
                     ))
                 })?;
+            if let Some(record) = outcome.result.get(REPLAY_RECORD_KEY).cloned() {
+                // Content-bearing result: rebuilt from current storage (an
+                // erased note replays as erased); nothing is written.
+                let (result, warnings) =
+                    crate::commands::rebuild_replay(cmd.spec.name, &tx, svc, &record)
+                        .map_err(Refusal::not_evaluated)?;
+                schemas::validate_response(cmd.spec.name, &result)
+                    .map_err(Refusal::not_evaluated)?;
+                outcome.result = result;
+                outcome.warnings.extend(warnings);
+            }
+            drop(tx);
             outcome.replayed = true;
             return Ok(Step::Replayed(outcome));
         }
@@ -568,6 +653,11 @@ where
 
     // Step 3 (facts read inside the transaction).
     let found = facts(&tx, svc).map_err(Refusal::not_evaluated)?;
+    // The revision an approval binds to (ADR-0003, SEC-02): the client's, or
+    // the stored revision when the client sent none. Used identically when the
+    // approval is requested and when it is consumed, so a change to the
+    // resource in between refuses the approval (`approval.revision_mismatch`).
+    let bound_revision = meta.expected_revision.or(found.current_revision);
 
     // Steps 3–4: policy and approval consumption.
     let (record, consumed) = match &meta.approval_id {
@@ -595,7 +685,7 @@ where
                 } => {
                     let id = ApprovalId::new_v7();
                     let request = evaluation
-                        .approval_request(id.clone(), &meta.actor, op, meta.expected_revision)
+                        .approval_request(id.clone(), &meta.actor, op, bound_revision)
                         .unwrap_or(Err(ApprovalError::InvalidExpiry))
                         .map_err(|e| Refusal::not_evaluated(e.into()))?;
                     let error: G9Error = PolicyError::ApprovalRequired {
@@ -636,7 +726,7 @@ where
                 op,
                 &found.context,
                 Some(approval_id),
-                meta.expected_revision,
+                bound_revision,
                 gate,
             ) {
                 Ok(authorized) => {
@@ -753,6 +843,9 @@ where
         if let Err(e) = tx.commit() {
             return Err(Refusal::after_allow(storage_err(e), record, touched));
         }
+        if let Some(update) = mutation.on_commit.take() {
+            update(svc);
+        }
         return Ok(Step::CommittedFailure(Box::new(error)));
     }
     let post = mutation.post_commit.take();
@@ -791,9 +884,9 @@ where
         outcome.audit_ref = Some(audit.audit_ref);
         outcome.warnings = mutation.warnings.clone();
         if post.is_none() {
-            // Step 8: the idempotency outcome commits with the mutation.
-            let stored = serde_json::to_value(&outcome)
-                .map_err(|_| G9Error::internal_redacted("idempotency.serialize"))?;
+            // Step 8: the idempotency outcome commits with the mutation
+            // (content-bearing results are stored as their replay record).
+            let stored = stored_outcome(&outcome, mutation.replay_record.as_ref())?;
             idempotency::store(
                 &tx,
                 &meta.actor.id,
@@ -811,6 +904,9 @@ where
     };
     if let Err(e) = tx.commit() {
         return Err(Refusal::after_allow(storage_err(e), record, touched));
+    }
+    if let Some(update) = mutation.on_commit.take() {
+        update(svc);
     }
     Ok(Step::Committed {
         outcome,
@@ -875,8 +971,7 @@ fn run_post_commit(
             outcome.revision = mutation.revision;
             outcome.audit_ref = Some(audit.audit_ref);
             outcome.warnings = mutation.warnings;
-            let stored = serde_json::to_value(&outcome)
-                .map_err(|_| G9Error::internal_redacted("idempotency.serialize"))?;
+            let stored = stored_outcome(&outcome, mutation.replay_record.as_ref())?;
             idempotency::store(
                 &tx,
                 &meta.actor.id,

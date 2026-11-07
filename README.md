@@ -8,7 +8,7 @@ Tauri 2 · Rust modular monolith · React + strict TypeScript · SQLite · repla
 | Controlling architecture | [`ARCHITECTURE.md`](ARCHITECTURE.md) (v6.1, supersedes the v5.1 plan and the v6.0 handoff where they conflict) |
 | Corrections register | [`docs/audit/defect-register.md`](docs/audit/defect-register.md) · [`docs/audit/stage00-triple-audit.md`](docs/audit/stage00-triple-audit.md) |
 | Decisions | [`docs/adr/`](docs/adr/) |
-| Governance and stage gates | [`GOVERNANCE.md`](GOVERNANCE.md) · [`docs/release/stage-report.md`](docs/release/stage-report.md) |
+| Governance and stage gates | [`GOVERNANCE.md`](GOVERNANCE.md) · [`docs/evaluations/gate-evidence.md`](docs/evaluations/gate-evidence.md) · [`docs/release/wave2-integration-report.md`](docs/release/wave2-integration-report.md) |
 | Security | [`SECURITY.md`](SECURITY.md) · [`docs/threat-model/`](docs/threat-model/) |
 | Agent / engineer rules | [`CLAUDE.md`](CLAUDE.md) · [`AGENTS.md`](AGENTS.md) |
 
@@ -76,7 +76,7 @@ CI (`.github/workflows/ci.yml`) runs the same steps plus `cargo-deny` and builds
 
 ## Stage status
 
-See `docs/release/stage-report.md` for the executed-test evidence. Summary labels per `GOVERNANCE.md`: Stage 00 DESIGN (this repository's documents) · Stage 01 SCAFFOLD (workspace, CI, pins) · Stage 02 DATA & IMPORTER (schema, migrations, importer, backup primitives) · Stages 03–15 have contracts, schemas, tests and skill packages but are **PROPOSED** unless the stage report says otherwise.
+Executed-test evidence: `docs/evaluations/gate-evidence.md` (generated gate harness; A02 and A12 NOT RUN there) and `docs/release/wave2-integration-report.md` (workspace test counts). No Stage PASS report (`GOVERNANCE.md`) has been issued yet. Summary labels per `GOVERNANCE.md`: Stage 00 DESIGN (this repository's documents) · Stage 01 SCAFFOLD (workspace, CI, pins) · Stage 02 DATA & IMPORTER (schema, migrations, importer, backup primitives) · Stages 03–15 have contracts, schemas, tests and skill packages but are **PROPOSED** unless a Stage PASS report says otherwise.
 
 ## Target environment (ASSUMED until inspected)
 

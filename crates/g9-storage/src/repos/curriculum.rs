@@ -579,9 +579,63 @@ pub fn set_provenance(
     finish_update(conn, TABLE, "id", id.as_str(), expected_revision, changed)
 }
 
+/// Links from outside the curriculum tree into a version's days, objectives or
+/// blocks, as `(table, column, parent table)`. The DDL declares them all
+/// `ON DELETE SET NULL` (informational links, ADR-0002), so the database alone
+/// would let a delete silently drop them; [`delete_version`] checks them first.
+/// The unit test `version_links_cover_every_outside_reference` keeps this list
+/// equal to the schema.
+pub const VERSION_LINKS: &[(&str, &str, &str)] = &[
+    ("assessment_definitions", "objective_id", "daily_objectives"),
+    ("assessment_definitions", "training_day_id", "training_days"),
+    ("calendar_events", "objective_id", "daily_objectives"),
+    ("calendar_events", "study_block_id", "study_blocks"),
+    ("calendar_events", "training_day_id", "training_days"),
+    ("learning_episodes", "objective_id", "daily_objectives"),
+    ("notes", "objective_id", "daily_objectives"),
+    ("review_items", "objective_id", "daily_objectives"),
+    ("study_sessions", "objective_id", "daily_objectives"),
+    ("study_sessions", "study_block_id", "study_blocks"),
+    ("study_sessions", "training_day_id", "training_days"),
+];
+
+/// Ids of a version's rows in one structural table (`?1` = version id).
+fn version_member_ids(parent: &str) -> StorageResult<&'static str> {
+    Ok(match parent {
+        "training_days" => "SELECT id FROM training_days WHERE curriculum_version_id = ?1",
+        "daily_objectives" => "SELECT id FROM daily_objectives WHERE curriculum_version_id = ?1",
+        "study_blocks" => {
+            "SELECT b.id FROM study_blocks b JOIN training_days d ON d.id = b.training_day_id
+             WHERE d.curriculum_version_id = ?1"
+        }
+        _ => return Err(StorageError::Internal("curriculum version link parent")),
+    })
+}
+
+/// Outside rows that link to the version, as `table.column` names (empty when none).
+pub fn version_dependents(conn: &Connection, id: &CurriculumVersionId) -> RepoResult<Vec<String>> {
+    let mut found = Vec::new();
+    for (table, column, parent) in VERSION_LINKS {
+        // table, column and parent come from the constant above, never from input
+        let sql = format!(
+            "SELECT EXISTS (SELECT 1 FROM {table} WHERE {column} IN ({}))",
+            version_member_ids(parent)?
+        );
+        let linked: bool = conn.query_row(&sql, params![id.as_str()], |r| r.get(0))?;
+        if linked {
+            found.push(format!("{table}.{column}"));
+        }
+    }
+    Ok(found)
+}
+
 /// Delete a non-canonical version and its structural tree (CASCADE inside the
-/// version). Refused for `APPROVED_CANONICAL` rows and, by `RESTRICT`, for
-/// versions that sessions, attempts or evidence refer to.
+/// version). Refused (`StorageError::Immutable`) for `APPROVED_CANONICAL` rows and
+/// (`StorageError::ForeignKey`, RESTRICT semantics) while any session, calendar
+/// event, note, learning episode, review item or assessment definition links to
+/// the version's days, objectives or blocks ([`VERSION_LINKS`]): those links are
+/// `ON DELETE SET NULL` in the DDL and would otherwise vanish silently (ADR-0002:
+/// deleting a curriculum version with attempts is refused).
 pub fn delete_version(
     conn: &Connection,
     id: &CurriculumVersionId,
@@ -598,6 +652,13 @@ pub fn delete_version(
         return Err(RepoError::Storage(StorageError::Immutable(
             "approved canonical curriculum version cannot be deleted".to_string(),
         )));
+    }
+    let dependents = version_dependents(conn, id)?;
+    if !dependents.is_empty() {
+        return Err(RepoError::Storage(StorageError::ForeignKey(format!(
+            "curriculum_versions.referenced: {} still link to this version",
+            dependents.join(", ")
+        ))));
     }
     let changed = conn.execute(
         "DELETE FROM curriculum_versions WHERE id = ?1 AND revision = ?2 AND provenance <> 'APPROVED_CANONICAL'",
@@ -1361,11 +1422,101 @@ mod tests {
             delete_version(conn, &id, Revision::new(9)),
             Err(RepoError::Storage(StorageError::StaleRevision { .. }))
         ));
+        assert!(version_dependents(conn, &id).unwrap().is_empty());
         delete_version(conn, &id, Revision::INITIAL).unwrap();
         assert_eq!(count(conn, "curriculum_versions"), 1);
         assert_eq!(count(conn, "daily_objectives"), 3);
         assert_eq!(count(conn, "study_blocks"), 3);
         assert_eq!(count(conn, "training_days"), 2);
         assert!(get_version(conn, &id).unwrap().is_none());
+    }
+
+    #[test]
+    fn version_links_cover_every_outside_reference() {
+        let db = db();
+        let conn = db.conn();
+        // the version's structural tree (CASCADE children, deleted with the version)
+        let tree = [
+            "curriculum_versions",
+            "weeks",
+            "training_days",
+            "daily_objectives",
+            "study_blocks",
+            "resource_references",
+            "deliverable_definitions",
+            "objective_competencies",
+        ];
+        let mut found = std::collections::BTreeSet::new();
+        for table in crate::migrations::app_tables(conn).unwrap() {
+            if tree.contains(&table.as_str()) {
+                continue;
+            }
+            let mut stmt = conn
+                .prepare(&format!("PRAGMA foreign_key_list(\"{table}\")"))
+                .unwrap();
+            let fks: Vec<(String, String)> = stmt
+                .query_map([], |r| Ok((r.get(2)?, r.get(3)?)))
+                .unwrap()
+                .map(|r| r.unwrap())
+                .collect();
+            for (parent, column) in fks {
+                if tree.contains(&parent.as_str()) {
+                    found.insert((table.clone(), column, parent));
+                }
+            }
+        }
+        let listed: std::collections::BTreeSet<(String, String, String)> = VERSION_LINKS
+            .iter()
+            .map(|(t, c, p)| ((*t).to_string(), (*c).to_string(), (*p).to_string()))
+            .collect();
+        assert_eq!(found, listed);
+        for (_, _, parent) in VERSION_LINKS {
+            assert!(version_member_ids(parent).is_ok(), "{parent}");
+        }
+    }
+
+    #[test]
+    fn delete_version_is_refused_while_outside_rows_link_to_it() {
+        let db = db();
+        let conn = db.conn();
+        let manifest = tiny_manifest();
+        let id = insert_tiny(conn, "cv-1", &manifest);
+        let objective: String = conn
+            .query_row(
+                "SELECT id FROM daily_objectives WHERE curriculum_version_id = 'cv-1' ORDER BY id LIMIT 1",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        let body = "linked note";
+        conn.execute(
+            "INSERT INTO notes (id, title, body_markdown, body_sha256, kind, objective_id, source_kind, trust, created_at,
+                 updated_at)
+             VALUES ('note-1', 'Note', ?1, ?2, 'JOURNAL', ?3, 'OPERATOR_INPUT', 'OPERATOR', 1, 1)",
+            params![
+                body,
+                g9_domain::hashing::sha256_hex(body.as_bytes()),
+                objective
+            ],
+        )
+        .unwrap();
+        assert_eq!(
+            version_dependents(conn, &id).unwrap(),
+            vec!["notes.objective_id".to_string()]
+        );
+        assert!(matches!(
+            delete_version(conn, &id, Revision::INITIAL),
+            Err(RepoError::Storage(StorageError::ForeignKey(m))) if m.contains("notes.objective_id")
+        ));
+        // nothing was deleted and the note keeps its link
+        assert!(get_version(conn, &id).unwrap().is_some());
+        let linked: Option<String> = conn
+            .query_row(
+                "SELECT objective_id FROM notes WHERE id = 'note-1'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(linked, Some(objective));
     }
 }

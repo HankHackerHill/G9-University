@@ -1,11 +1,20 @@
 //! `retention.due` and `interventions.list` (read-only; M08, M12).
 //!
 //! The due queue is planned by `g9_retention::plan_reviews` under the daily
-//! review budget (default 15 minutes, ARCHITECTURE.md §9); items that do not
-//! fit are returned as `overflow`, never dropped. The per-item time estimate
+//! review budget (default 15 minutes, ARCHITECTURE.md §9); every due item is
+//! read (no row limit) and items that do not fit are returned as `overflow`,
+//! never dropped; an item whose scheduler state cannot be read is reported in
+//! a warning. "Overdue" means due before local midnight (00:00:00) of `as_of`
+//! in the operator zone. The per-item time estimate
 //! is a scheduling parameter (ASSUMED 3 minutes, [`REVIEW_ITEM_ESTIMATE_MS`]),
 //! not a measurement. Interventions are listed as stored; model-originated
 //! proposals keep their `MODEL_OUTPUT` provenance.
+//!
+//! Reported gap: the v1.0 response vocabulary has no `PROCEDURAL` kind, so a
+//! memory-scheduled `PROCEDURAL` review item is labelled `PRACTICAL_TRANSFER`
+//! (it is NOT a `practical_transfer_checks` row); every such outcome carries
+//! the warning `retention.due.procedural_label` until the response schema and
+//! the UI add `PROCEDURAL` (PROPOSED, outside `g9-app`).
 
 use super::{decode, rc, scope_of};
 use crate::context::AppContext;
@@ -67,11 +76,14 @@ pub fn due(
                 })?;
             let estimate = DurationMs::new(REVIEW_ITEM_ESTIMATE_MS)
                 .map_err(|_| G9Error::internal_redacted("retention.estimate"))?;
-            let items = repo::list_due_items(env.conn, &scope, as_of, 1_000)?;
+            // Every due item (no row limit): overflow is reported, never dropped.
+            let items = repo::list_due_items(env.conn, &scope, as_of, u32::MAX)?;
             let mut states = Vec::new();
+            let mut stateless = Vec::new();
             for item in &items {
-                if let Some(s) = repo::item_state(env.conn, &item.id)? {
-                    states.push(s);
+                match repo::item_state(env.conn, &item.id)? {
+                    Some(s) => states.push(s),
+                    None => stateless.push(item.id.as_str().to_string()),
                 }
             }
             let plan = plan_reviews(&states, budget, estimate, as_of)
@@ -82,6 +94,7 @@ pub fn due(
                     let midnight = g9_domain::CivilDateTime {
                         hour: 0,
                         minute: 0,
+                        second: 0,
                         ..c
                     };
                     g9_calendar::resolve_local(&midnight, &env.svc.config.zone).ok()
@@ -125,10 +138,26 @@ pub fn due(
                 .iter()
                 .filter_map(|id| view(id).map(|v| v.1))
                 .collect();
-            Ok(Mutation::new(
+            let procedural = items
+                .iter()
+                .filter(|i| i.kind == ReviewItemKind::Procedural)
+                .count();
+            let mut mutation = Mutation::new(
                 json!({ "as_of": as_of, "budget_ms": budget, "due": due, "overdue": overdue, "overflow": overflow }),
                 None,
-            ))
+            );
+            if procedural > 0 {
+                mutation = mutation.with_warning(format!(
+                    "retention.due.procedural_label: {procedural} PROCEDURAL review item(s) are memory-scheduled recall items labelled PRACTICAL_TRANSFER because the v1.0 response has no PROCEDURAL kind; they are not practical transfer checks"
+                ));
+            }
+            if !stateless.is_empty() {
+                mutation = mutation.with_warning(format!(
+                    "retention.due.item_state_missing: no scheduler state for {}; not planned",
+                    stateless.join(", ")
+                ));
+            }
+            Ok(mutation)
         },
     )
 }

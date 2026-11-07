@@ -20,7 +20,9 @@
 //! Every evaluation yields a metadata-only [`PolicyDecisionRecord`] that
 //! `g9-app` persists as a `policy_decisions` row.
 
-use crate::approvals::{ApprovalLedger, ApprovalRequest, ConsumeIntent, ConsumedApproval};
+use crate::approvals::{
+    ApprovalLedger, ApprovalRequest, ConsumeIntent, ConsumedApproval, RuntimeEpoch,
+};
 use crate::binding::BindingKey;
 use crate::error::PolicyError;
 use crate::record::{DecisionKind, PolicyDecisionRecord};
@@ -200,6 +202,8 @@ pub struct ApprovalGate<'a> {
 pub struct Engine {
     rules: RuleSet,
     clock: Box<dyn Clock>,
+    /// The running process instance approvals must have been issued in (SEC-02).
+    runtime_epoch: Option<RuntimeEpoch>,
 }
 
 impl fmt::Debug for Engine {
@@ -207,6 +211,7 @@ impl fmt::Debug for Engine {
         f.debug_struct("Engine")
             .field("rules.version", &self.rules.version)
             .field("rules.len", &self.rules.rules.len())
+            .field("runtime_epoch", &self.runtime_epoch.is_some())
             .finish_non_exhaustive()
     }
 }
@@ -215,7 +220,11 @@ impl Engine {
     /// Build an engine over a validated rule table.
     pub fn new(rules: RuleSet, clock: Box<dyn Clock>) -> Result<Self, RuleSetError> {
         rules.validate()?;
-        Ok(Self { rules, clock })
+        Ok(Self {
+            rules,
+            clock,
+            runtime_epoch: None,
+        })
     }
 
     /// Engine over the built-in `builtin-v1` table (validated by this crate's tests).
@@ -223,7 +232,24 @@ impl Engine {
         Self {
             rules: RuleSet::builtin_v1(),
             clock,
+            runtime_epoch: None,
         }
+    }
+
+    /// Bind approval consumption to the running process instance (SEC-02,
+    /// `docs/audit/defect-register.md` D.2): [`Self::authorize_with_approval`]
+    /// treats an approval that was not issued in `epoch`
+    /// ([`ApprovalLedger::request_in_epoch`]) as EXPIRED. Without an epoch only
+    /// the wall-clock rules apply.
+    #[must_use]
+    pub fn with_runtime_epoch(mut self, epoch: RuntimeEpoch) -> Self {
+        self.runtime_epoch = Some(epoch);
+        self
+    }
+
+    /// The runtime epoch approvals are bound to, if configured.
+    pub fn runtime_epoch(&self) -> Option<&RuntimeEpoch> {
+        self.runtime_epoch.as_ref()
     }
 
     /// The active rule table.
@@ -348,6 +374,7 @@ impl Engine {
             required_capability,
             consumer: actor,
             now: evaluation.record.evaluated_at,
+            runtime_epoch: self.runtime_epoch.as_ref(),
         };
         match gate.ledger.verify_and_consume(id, &intent, gate.key) {
             Ok(consumed) => {
@@ -525,6 +552,7 @@ mod tests {
         Engine {
             rules,
             clock: Box::new(FixedClock(UtcMillis::from_millis(1))),
+            runtime_epoch: None,
         }
     }
 
@@ -776,6 +804,7 @@ mod tests {
         let e = Engine {
             rules,
             clock: Box::new(FixedClock(UtcMillis::UNIX_EPOCH)),
+            runtime_epoch: None,
         };
         let eval = e.evaluate(
             &skill(),

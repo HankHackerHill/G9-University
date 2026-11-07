@@ -140,6 +140,8 @@ pub struct ErasureReport {
     pub invalidated_derived: Vec<RowRef>,
     /// Content-addressed attachment paths whose bytes the application must remove
     /// from the approved attachment root (this crate performs no filesystem deletion).
+    /// A path still referenced by another non-erased attachment (identical bytes)
+    /// is never listed.
     pub attachment_storage_refs_to_purge: Vec<String>,
 }
 
@@ -389,10 +391,20 @@ impl Eraser<'_> {
             params![attachment_id, REDACTED, self.now.as_millis(), self.request_id],
         )?;
         self.tombstone("attachments", attachment_id, &sha)?;
+        // Paths are content-addressed, so identical bytes share one path: the path
+        // is purged only when no other non-erased attachment still uses it (the
+        // last erasure of those bytes lists it).
         if !storage_ref.is_empty() {
-            self.report
-                .attachment_storage_refs_to_purge
-                .push(storage_ref);
+            let shared: bool = self.tx.query_row(
+                "SELECT EXISTS (SELECT 1 FROM attachments WHERE storage_ref = ?1 AND erased = 0 AND id <> ?2)",
+                params![storage_ref, attachment_id],
+                |r| r.get(0),
+            )?;
+            if !shared {
+                self.report
+                    .attachment_storage_refs_to_purge
+                    .push(storage_ref);
+            }
         }
         self.invalidate_evidence("attachment_id", attachment_id)?;
         self.invalidate_hypotheses_referencing(attachment_id)

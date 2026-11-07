@@ -16,7 +16,9 @@
 //! a definition stores one `competency_id`; `assessment_versions` has no
 //! `difficulty`, `equivalence_group` or `checksum` column; `rubric_criteria` has
 //! no `dimension` column; `exposure_log.content_kind` lacks `HINT` and folds the
-//! reference solution into `KEY`. `g9_assessment::Attempt` keeps its fields
+//! reference solution into `KEY`. Rubric anchors are stored since `0012`, but a
+//! non-standard level scale is refused until `g9-app` regrades through
+//! [`rubric_from_stored`] (PROPOSED). `g9_assessment::Attempt` keeps its fields
 //! private, so [`AttemptRow::to_attempt`] rehydrates through serde with the
 //! definition-level facts the row does not carry.
 
@@ -29,7 +31,8 @@ use crate::error::{StorageError, StorageResult};
 use crate::sql::{enum_from_text, enum_to_text, parse_id, require_sha256};
 use g9_assessment::{
     AssessmentDefinition, AssessmentKind, AssessmentVersion, Attempt, CriterionResult,
-    ExposureKind, ExposureRecord, GradeDecision, Rubric, RubricCriterionDef, Score,
+    ExposureKind, ExposureRecord, GradeDecision, LevelScale, Rubric, RubricAnchors,
+    RubricCriterionDef, Score,
 };
 use g9_domain::{
     ActorId, ApprovalId, AssessmentAttemptState, AssessmentId, AssistanceLevel, AttemptId,
@@ -454,6 +457,11 @@ pub struct RubricRow {
     pub version_label: String,
     /// Total weight (must be 100).
     pub total_weight: u32,
+    /// Anchored scoring standard (level scale, standard-setting note,
+    /// descriptors; `rubrics.anchors_json`, migration `0012`, hash-checked on
+    /// read). `None` only for rows written before `0012`; they read back with
+    /// the standard anchors.
+    pub anchors: Option<RubricAnchors>,
     /// Row creation.
     pub created_at: UtcMillis,
 }
@@ -481,7 +489,9 @@ pub struct RubricCriterionRow {
     pub created_at: UtcMillis,
 }
 
-/// Rows for a validated `Rubric` (criterion ids are `<rubric_id>:<code>`).
+/// Rows for a validated `Rubric` (criterion ids are `<rubric_id>:<code>`). The
+/// rubric's anchors travel on the [`RubricRow`] and are persisted by
+/// [`insert_rubric`].
 pub fn rubric_rows_from_domain(
     rubric: &Rubric,
     rubric_id: &str,
@@ -513,19 +523,46 @@ pub fn rubric_rows_from_domain(
             title: title.to_string(),
             version_label: version_label.to_string(),
             total_weight: rubric.total_weight(),
+            anchors: Some(rubric.anchors().clone()),
             created_at: now,
         },
         criteria,
     )
 }
 
-/// Rebuild a `Rubric` from criterion rows. `rubric_criteria` has no dimension
-/// column (gap), so the caller supplies the code → dimension mapping (for the
-/// baseline rubric `Rubric::baseline_dimension`).
+/// Rebuild a `Rubric` from criterion rows with the STANDARD anchors. Correct
+/// for every stored rubric because [`insert_rubric`] refuses a non-standard
+/// level scale (the only anchor part that changes scores); prefer
+/// [`rubric_from_stored`], which also restores the stored note and descriptors.
+/// `rubric_criteria` has no dimension column (gap), so the caller supplies the
+/// code → dimension mapping (for the baseline rubric `Rubric::baseline_dimension`).
 pub fn rubric_from_rows(
     criteria: &[RubricCriterionRow],
     dimension_of: impl Fn(&str) -> Option<LearningDimension>,
 ) -> StorageResult<Rubric> {
+    let defs = criterion_defs(criteria, dimension_of)?;
+    Rubric::new(defs).map_err(|e| StorageError::RowDecode(format!("rubric: {e}")))
+}
+
+/// Rebuild a `Rubric` exactly as stored: criteria plus the persisted anchors
+/// (`Rubric::with_anchors`); a pre-`0012` row without anchors gets the standard ones.
+pub fn rubric_from_stored(
+    rubric: &RubricRow,
+    criteria: &[RubricCriterionRow],
+    dimension_of: impl Fn(&str) -> Option<LearningDimension>,
+) -> StorageResult<Rubric> {
+    let defs = criterion_defs(criteria, dimension_of)?;
+    match &rubric.anchors {
+        Some(anchors) => Rubric::with_anchors(defs, anchors.clone()),
+        None => Rubric::new(defs),
+    }
+    .map_err(|e| StorageError::RowDecode(format!("rubric: {e}")))
+}
+
+fn criterion_defs(
+    criteria: &[RubricCriterionRow],
+    dimension_of: impl Fn(&str) -> Option<LearningDimension>,
+) -> StorageResult<Vec<RubricCriterionDef>> {
     let mut defs = Vec::with_capacity(criteria.len());
     for c in criteria {
         let dimension = dimension_of(&c.code).ok_or_else(|| {
@@ -540,24 +577,46 @@ pub fn rubric_from_rows(
             dimension,
         });
     }
-    Rubric::new(defs).map_err(|e| StorageError::RowDecode(format!("rubric: {e}")))
+    Ok(defs)
 }
 
-/// Insert a rubric with its criteria (immutable afterwards).
+/// Insert a rubric with its criteria and anchors (immutable afterwards).
+///
+/// A non-standard level scale is refused (`assessment.rubric.custom_level_scale`,
+/// PROPOSED): the anchors are stored, but `g9-app` still regrades through
+/// [`rubric_from_rows`] (standard scale), so storing a custom scale would let a
+/// grade be silently recomputed on a different level → score mapping. Custom
+/// notes and descriptors (which do not change scores) are stored as given.
 pub fn insert_rubric(
     conn: &Connection,
     rubric: &RubricRow,
     criteria: &[RubricCriterionRow],
 ) -> RepoResult<()> {
+    let (anchors_json, anchors_sha256) = match &rubric.anchors {
+        Some(anchors) => {
+            if anchors.scale != LevelScale::STANDARD {
+                return Err(RepoError::Storage(StorageError::NotImplemented(
+                    "assessment.rubric.custom_level_scale",
+                )));
+            }
+            let json = to_json(anchors)?;
+            let sha = g9_domain::hashing::sha256_hex(json.as_bytes());
+            (Some(json), Some(sha))
+        }
+        None => (None, None),
+    };
     conn.execute(
-        "INSERT INTO rubrics (id, assessment_version_id, title, version_label, total_weight, created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        "INSERT INTO rubrics (id, assessment_version_id, title, version_label, total_weight, anchors_json,
+             anchors_sha256, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
             rubric.id,
             rubric.assessment_version_id,
             rubric.title,
             rubric.version_label,
             i64::from(rubric.total_weight),
+            anchors_json,
+            anchors_sha256,
             ms(rubric.created_at)
         ],
     )?;
@@ -581,14 +640,37 @@ pub fn insert_rubric(
     Ok(())
 }
 
-/// The rubric (and criteria in ordinal order) of a version, if any.
+/// Stored anchors: both columns or neither; the hash must match the JSON bytes.
+fn stored_anchors(
+    json: Option<String>,
+    sha256: Option<String>,
+) -> StorageResult<Option<RubricAnchors>> {
+    match (json, sha256) {
+        (None, None) => Ok(None),
+        (Some(json), Some(sha)) => {
+            if g9_domain::hashing::sha256_hex(json.as_bytes()) != sha {
+                return Err(StorageError::Corrupt(
+                    "rubrics.anchors_json does not match anchors_sha256".to_string(),
+                ));
+            }
+            from_json(&json, "anchors_json").map(Some)
+        }
+        _ => Err(StorageError::Corrupt(
+            "rubrics.anchors_json and anchors_sha256 are not paired".to_string(),
+        )),
+    }
+}
+
+/// The rubric (and criteria in ordinal order) of a version, if any. The stored
+/// anchors are hash-checked (`DATA_CORRUPTION` on mismatch).
 pub fn rubric_for_version(
     conn: &Connection,
     assessment_version_id: &str,
 ) -> RepoResult<Option<(RubricRow, Vec<RubricCriterionRow>)>> {
     let Some(rubric) = query_opt(
         conn,
-        "SELECT id, assessment_version_id, title, version_label, total_weight, created_at
+        "SELECT id, assessment_version_id, title, version_label, total_weight, anchors_json, anchors_sha256,
+                created_at
          FROM rubrics WHERE assessment_version_id = ?1 ORDER BY created_at DESC, id LIMIT 1",
         &[&assessment_version_id],
         |r| {
@@ -598,6 +680,7 @@ pub fn rubric_for_version(
                 title: r.get("title")?,
                 version_label: r.get("version_label")?,
                 total_weight: u32_from_i64(r.get("total_weight")?, "total_weight")?,
+                anchors: stored_anchors(r.get("anchors_json")?, r.get("anchors_sha256")?)?,
                 created_at: from_ms(r.get("created_at")?),
             })
         },
@@ -1253,7 +1336,8 @@ pub struct GradeDecisionRow {
     pub id: GradeDecisionId,
     /// Attempt decided.
     pub attempt_id: AttemptId,
-    /// Weighted total 0..=100.
+    /// Weighted total 0..=100, rounded down from the exact weighted total
+    /// ([`GradeDecisionRow::from_domain`]) so it never crosses the pass cut.
     pub total_score: u8,
     /// Pass/fail.
     pub passed: bool,
@@ -1299,8 +1383,12 @@ impl GradeDecisionRow {
                 "weighted total outside 0..=100".to_string(),
             ));
         }
-        // bounded above, so the cast cannot truncate outside u8
-        let total_score = total.round().clamp(0.0, 100.0) as u8;
+        // Round DOWN, never to nearest: the stored integer must never exceed the
+        // exact total the pass rule evaluated, so `total_score >= pass_threshold`
+        // holds exactly when the exact weighted total met the cut (79.5 is a FAIL
+        // and is stored as 79, not 80). The exact value is recomputable from the
+        // hashed criterion results. Bounded above, so the cast cannot truncate.
+        let total_score = total.floor().clamp(0.0, 100.0) as u8;
         Ok(Self {
             id: decision.id.clone(),
             attempt_id: decision.attempt_id.clone(),
@@ -1643,7 +1731,7 @@ pub fn exposed_before(
 mod tests {
     use super::*;
     use crate::repos::testutil::{
-        approval, assert_immutable, db, learning, operator, operator_id, sha, t,
+        approval, assert_immutable, count, db, learning, operator, operator_id, sha, t,
     };
     use g9_assessment::{score_breakdown, Rubric};
     use g9_domain::Actor;
@@ -2126,6 +2214,175 @@ mod tests {
         );
         assert_immutable(conn, "UPDATE attempt_evidence SET role = 'REVIEWER'");
         assert_immutable(conn, "DELETE FROM attempt_evidence");
+    }
+
+    /// Baseline-rubric decision from anchored levels (rubric order), with the
+    /// pass bit taken from the crate's exact-integer pass rule.
+    fn decision_from_levels(levels: [u8; 6]) -> GradeDecision {
+        let rubric = Rubric::baseline();
+        let attempt = AttemptId::parse("attempt-cut").unwrap();
+        let results: Vec<CriterionResult> = rubric
+            .criteria()
+            .iter()
+            .zip(levels)
+            .map(|(c, level)| {
+                CriterionResult::new(
+                    attempt.clone(),
+                    c.code.clone(),
+                    Score::new(rubric.score_for_level(level).unwrap()).unwrap(),
+                    GradeSource::HumanReviewer,
+                    &operator(),
+                    t(2),
+                )
+                .unwrap()
+            })
+            .collect();
+        let breakdown = score_breakdown(&rubric, &results);
+        let pass = breakdown.pass_recommendation.unwrap();
+        GradeDecision {
+            id: GradeDecisionId::parse("gd-cut").unwrap(),
+            attempt_id: attempt,
+            breakdown,
+            pass,
+            is_final: true,
+            decided_by: operator_id(),
+            decided_at: t(4),
+            supersedes: None,
+            rationale: None,
+        }
+    }
+
+    #[test]
+    fn rubric_anchors_are_persisted_hash_checked_and_custom_scales_refused() {
+        let db = db();
+        let conn = db.conn();
+        let (_def, ver, version_id) = seed(conn);
+        // the seeded baseline rubric round-trips with its anchors
+        let (row, criteria) = rubric_for_version(conn, &version_id).unwrap().unwrap();
+        assert_eq!(row.anchors.as_ref(), Some(ver.rubric.anchors()));
+        assert_eq!(
+            rubric_from_stored(&row, &criteria, Rubric::baseline_dimension).unwrap(),
+            ver.rubric
+        );
+
+        // an authored note and descriptors are stored with the version, not dropped
+        let defs = Rubric::baseline().criteria().to_vec();
+        let mut anchors = RubricAnchors::standard_for(&defs);
+        anchors.standard_setting_note = "Modified Angoff panel of three reviewers".into();
+        anchors.criteria[0].descriptors = ["absent", "fragmentary", "partial", "solid", "expert"]
+            .map(String::from)
+            .to_vec();
+        let authored = Rubric::with_anchors(defs.clone(), anchors.clone()).unwrap();
+        let (r2, c2) =
+            rubric_rows_from_domain(&authored, "rub-2", &version_id, "Authored", "v2", t(1));
+        insert_rubric(conn, &r2, &c2).unwrap();
+        let (row, criteria) = rubric_for_version(conn, &version_id).unwrap().unwrap();
+        assert_eq!(row.id, "rub-2");
+        assert_eq!(row.anchors.as_ref(), Some(&anchors));
+        assert_eq!(
+            rubric_from_stored(&row, &criteria, Rubric::baseline_dimension).unwrap(),
+            authored
+        );
+
+        // a custom level scale is refused before any row is written: the app still
+        // regrades on the standard scale, so 82.75 (PASS) would silently become 79.5
+        let mut custom = RubricAnchors::standard_for(&defs);
+        custom.scale = LevelScale::new([0, 20, 55, 85, 100]).unwrap();
+        let rescaled = Rubric::with_anchors(defs.clone(), custom).unwrap();
+        let (r3, c3) =
+            rubric_rows_from_domain(&rescaled, "rub-3", &version_id, "Rescaled", "v3", t(2));
+        let rubrics_before = count(conn, "rubrics");
+        let criteria_before = count(conn, "rubric_criteria");
+        assert!(matches!(
+            insert_rubric(conn, &r3, &c3),
+            Err(RepoError::Storage(StorageError::NotImplemented(
+                "assessment.rubric.custom_level_scale"
+            )))
+        ));
+        assert_eq!(count(conn, "rubrics"), rubrics_before);
+        assert_eq!(count(conn, "rubric_criteria"), criteria_before);
+
+        // a pre-0012 row (no anchors) reads back with the standard anchors
+        let (mut r4, c4) = rubric_rows_from_domain(
+            &Rubric::baseline(),
+            "rub-4",
+            &version_id,
+            "Legacy",
+            "v4",
+            t(3),
+        );
+        r4.anchors = None;
+        insert_rubric(conn, &r4, &c4).unwrap();
+        let (row, criteria) = rubric_for_version(conn, &version_id).unwrap().unwrap();
+        assert_eq!((row.id.as_str(), row.anchors.as_ref()), ("rub-4", None));
+        assert_eq!(
+            rubric_from_stored(&row, &criteria, Rubric::baseline_dimension).unwrap(),
+            Rubric::baseline()
+        );
+
+        // anchors whose bytes do not match the stored hash are corruption
+        conn.execute(
+            "INSERT INTO rubrics (id, assessment_version_id, title, version_label, total_weight, anchors_json,
+                 anchors_sha256, created_at)
+             VALUES ('rub-5', ?1, 'Tampered', 'v5', 100, '{}', ?2, ?3)",
+            params![version_id, sha("not the anchors"), ms(t(4))],
+        )
+        .unwrap();
+        assert!(matches!(
+            rubric_for_version(conn, &version_id),
+            Err(RepoError::Storage(StorageError::Corrupt(_)))
+        ));
+        // the two anchor columns are written together (trigger backstop)
+        let unpaired: StorageError = conn
+            .execute(
+                "INSERT INTO rubrics (id, assessment_version_id, title, version_label, total_weight, anchors_json,
+                     created_at)
+                 VALUES ('rub-6', ?1, 'Unpaired', 'v6', 100, '{}', ?2)",
+                params![version_id, ms(t(5))],
+            )
+            .expect_err("unpaired anchors must be refused")
+            .into();
+        assert!(
+            matches!(&unpaired, StorageError::Precondition(m) if m.contains("written together")),
+            "{unpaired:?}"
+        );
+    }
+
+    #[test]
+    fn grade_total_is_rounded_down_and_never_crosses_the_pass_cut() {
+        let threshold = g9_domain::PASS_THRESHOLD;
+        // (levels, exact weighted total, stored total, pass)
+        let cases: [([u8; 6], f64, u8, bool); 5] = [
+            // 25*80 + 20*100 + 20*80 + 15*50 + 10*80 + 10*80 = 7950 → 79.5, every floor met
+            ([3, 4, 3, 2, 3, 3], 79.5, 79, false),
+            // 25*50 + 20*80 + 20*80 + 15*100 + 10*100 + 10*100 = 7950 → 79.5
+            ([2, 3, 3, 4, 4, 4], 79.5, 79, false),
+            ([3, 3, 3, 3, 3, 3], 80.0, 80, true),
+            // 25*100 + 20*80 + 20*80 + 15*80 + 10*80 + 10*80 = 8500 → 85.0
+            ([4, 3, 3, 3, 3, 3], 85.0, 85, true),
+            ([4, 4, 4, 4, 4, 4], 100.0, 100, true),
+        ];
+        for (levels, exact, stored, pass) in cases {
+            let decision = decision_from_levels(levels);
+            assert_eq!(decision.breakdown.weighted_total, Some(exact), "{levels:?}");
+            assert_eq!(decision.pass, pass, "{levels:?}");
+            let row = GradeDecisionRow::from_domain(&decision, None, None).unwrap();
+            assert_eq!(row.total_score, stored, "{levels:?}");
+            assert_eq!(row.passed, pass, "{levels:?}");
+            // the stored total and the stored pass bit never contradict the cut
+            assert_eq!(
+                row.total_score >= threshold,
+                exact >= f64::from(threshold),
+                "{levels:?}"
+            );
+        }
+        // a fractional total just under the cut (79.9) is stored as 79, never 80
+        let mut decision = decision_from_levels([3, 3, 3, 3, 3, 3]);
+        decision.breakdown.weighted_total = Some(79.9);
+        decision.pass = false;
+        let row = GradeDecisionRow::from_domain(&decision, None, None).unwrap();
+        assert_eq!(row.total_score, 79);
+        assert!(row.total_score < threshold);
     }
 
     #[test]

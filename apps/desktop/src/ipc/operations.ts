@@ -193,6 +193,8 @@ export interface NoteView {
 }
 
 export type GradeSource = 'DETERMINISTIC_CHECKER' | 'HUMAN_REVIEWER' | 'MODEL_ADVISORY';
+/** Anchored rubric level (ADR-0012); the request schema accepts an integer 0..4 only. */
+export type AnchoredLevel = 0 | 1 | 2 | 3 | 4;
 export type ReliabilityClass = 'DETERMINISTIC' | 'EXTERNAL_REVIEW' | 'SELF_ADJUDICATED';
 
 export interface CriterionResult {
@@ -436,7 +438,7 @@ export interface Operations {
   'assessment.submit': { request: { attempt_id: Id; evidence_refs: Id[]; notes?: string }; response: AttemptView };
   'assessment.review_evidence': { request: { attempt_id: Id }; response: AttemptView };
   'assessment.grade_provisional': {
-    request: { attempt_id: Id; criteria: { criterion_code: string; score: number; source: GradeSource; evidence_refs: Id[] }[] };
+    request: { attempt_id: Id; criteria: { criterion_code: string; score: AnchoredLevel; source: GradeSource; evidence_refs: Id[] }[] };
     response: AttemptView;
   };
   'assessment.approve_final': { request: { attempt_id: Id }; response: AttemptView };
@@ -514,7 +516,8 @@ export const OPERATIONS: Readonly<Record<OperationName, OperationSpec>> = {
   'system.status': spec('system.status', 'READ', 'APP_SETTING', { mutating: false, defaultDomain: 'SYSTEM' }),
 
   'curriculum.validate': spec('curriculum.validate', 'READ', 'CURRICULUM', { mutating: false }),
-  'curriculum.import': spec('curriculum.import', 'IMPORT', 'CURRICULUM_VERSION', { defaultMode: 'MAINTENANCE' }),
+  // Policy rule `operator.import.curriculum.approval`: ApprovalRequired(CURRICULUM_IMPORT).
+  'curriculum.import': spec('curriculum.import', 'IMPORT', 'CURRICULUM_VERSION', { defaultMode: 'MAINTENANCE', approvalExpected: true }),
   'curriculum.daily_plan': spec('curriculum.daily_plan', 'READ', 'CURRICULUM_VERSION', { mutating: false }),
   'curriculum.promote': spec('curriculum.promote', 'PROMOTE_CANONICAL', 'CURRICULUM_VERSION', { defaultMode: 'MAINTENANCE', approvalExpected: true }),
 

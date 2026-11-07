@@ -22,6 +22,18 @@
 //!
 //! The ledger is in-memory and serializable so that `g9-app` can persist
 //! snapshots; the binding key is **never** part of a snapshot.
+//!
+//! ## Expiry (SEC-02, `docs/audit/defect-register.md` D.2)
+//!
+//! An approval is EXPIRED (fail closed) when any of these holds at use time:
+//!
+//! * the wall clock is at or past `expires_at` (secondary upper bound);
+//! * the wall clock reads earlier than `requested_at`, or earlier than the
+//!   operator's `decided_at`: the clock moved backwards, so the elapsed time
+//!   since the request cannot be trusted;
+//! * the consumer supplies a [`RuntimeEpoch`] (boot id + process-start id) and
+//!   the approval was not issued in that same epoch (reboot, process restart,
+//!   or a request that was never stamped).
 
 use crate::binding::{self, ct_str_eq, BindingError, BindingKey};
 use g9_domain::hashing::sha256_json;
@@ -138,6 +150,49 @@ impl ApprovalError {
     }
 }
 
+/// Identity of the running backend process instance (SEC-02): the kernel boot
+/// id (`/proc/sys/kernel/random/boot_id`) and a process-start id. `g9-app`
+/// supplies both; this crate reads no files and generates no ids.
+///
+/// Monotonic readings cannot be compared across reboots or process restarts,
+/// so an approval is only usable in the epoch it was issued in.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RuntimeEpoch {
+    boot_id: String,
+    process_start_id: String,
+}
+
+impl RuntimeEpoch {
+    /// Build an epoch from its two parts (surrounding whitespace, such as the
+    /// trailing newline of `boot_id`, is trimmed). `None` when either part is blank.
+    pub fn new(boot_id: impl Into<String>, process_start_id: impl Into<String>) -> Option<Self> {
+        let boot_id = boot_id.into().trim().to_string();
+        let process_start_id = process_start_id.into().trim().to_string();
+        if boot_id.is_empty() || process_start_id.is_empty() {
+            return None;
+        }
+        Some(Self {
+            boot_id,
+            process_start_id,
+        })
+    }
+
+    /// Kernel boot id.
+    pub fn boot_id(&self) -> &str {
+        &self.boot_id
+    }
+
+    /// Process-start id.
+    pub fn process_start_id(&self) -> &str {
+        &self.process_start_id
+    }
+
+    /// Both parts present (a deserialized value is not re-validated).
+    fn is_well_formed(&self) -> bool {
+        !self.boot_id.trim().is_empty() && !self.process_start_id.trim().is_empty()
+    }
+}
+
 /// A request for the operator to authorize one exact operation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ApprovalRequest {
@@ -221,9 +276,11 @@ impl ApprovalRequest {
         Ok(())
     }
 
-    /// Whether the request is expired at `now` (inclusive bound).
+    /// Whether the request is expired at `now`: at or past `expires_at`
+    /// (inclusive bound), or earlier than `requested_at` because the wall clock
+    /// moved backwards (SEC-02, fail closed).
     pub fn is_expired_at(&self, now: UtcMillis) -> bool {
-        now >= self.expires_at
+        now >= self.expires_at || now < self.requested_at
     }
 }
 
@@ -294,18 +351,32 @@ impl ApprovalRecord {
         Ok(())
     }
 
+    /// Whether the record is expired at `now`: the request's window
+    /// ([`ApprovalRequest::is_expired_at`]) or a wall clock that reads earlier
+    /// than the recorded decision instant (clock moved backwards, SEC-02).
+    pub fn is_expired_at(&self, now: UtcMillis) -> bool {
+        self.request.is_expired_at(now) || self.decided_at.is_some_and(|decided| now < decided)
+    }
+
     /// Mark expired if the window has passed; returns `true` when it did.
     fn expire_if_due(&mut self, now: UtcMillis) -> bool {
-        if self.request.is_expired_at(now) && self.apply(ApprovalEvent::Expire).is_ok() {
+        self.is_expired_at(now) && self.mark_expired(now)
+    }
+
+    /// Apply `Expire` (only legal from `Pending`/`Approved`); returns `true` when it did.
+    fn mark_expired(&mut self, now: UtcMillis) -> bool {
+        if self.apply(ApprovalEvent::Expire).is_ok() {
             self.expired_at = Some(now);
             return true;
         }
         false
     }
 
-    /// Whether the record can still be consumed at `now`.
+    /// Whether the record can still be consumed at `now` (wall-clock rules
+    /// only; the runtime-epoch rule is checked by
+    /// [`ApprovalLedger::verify_and_consume`]).
     pub fn is_usable_at(&self, now: UtcMillis) -> bool {
-        self.state == ApprovalState::Approved && !self.request.is_expired_at(now)
+        self.state == ApprovalState::Approved && !self.is_expired_at(now)
     }
 }
 
@@ -346,12 +417,21 @@ pub struct ConsumeIntent<'a> {
     pub consumer: &'a Actor,
     /// Engine clock reading.
     pub now: UtcMillis,
+    /// The running process instance (SEC-02). When present, an approval that
+    /// was not issued in this exact epoch is EXPIRED. `None` applies the
+    /// wall-clock rules only.
+    pub runtime_epoch: Option<&'a RuntimeEpoch>,
 }
 
 /// In-memory ledger of approval records keyed by id.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ApprovalLedger {
     records: BTreeMap<ApprovalId, ApprovalRecord>,
+    /// Runtime epoch each request was issued in ([`Self::request_in_epoch`]).
+    /// A record without an entry was never stamped and is EXPIRED whenever the
+    /// consumer supplies an epoch.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    issued_in: BTreeMap<ApprovalId, RuntimeEpoch>,
 }
 
 impl ApprovalLedger {
@@ -361,16 +441,44 @@ impl ApprovalLedger {
     }
 
     /// Register a pending request. Refuses duplicates, invalid expiry and
-    /// operator-only capabilities requested by a non-operator.
+    /// operator-only capabilities requested by a non-operator. The request is
+    /// not stamped with a [`RuntimeEpoch`]; see [`Self::request_in_epoch`].
     pub fn request(&mut self, request: ApprovalRequest) -> Result<&ApprovalRecord, ApprovalError> {
+        self.insert_pending(request, None)
+    }
+
+    /// [`Self::request`], recording that the request was issued in `epoch`
+    /// (SEC-02). Consumption under any other epoch is EXPIRED.
+    pub fn request_in_epoch(
+        &mut self,
+        request: ApprovalRequest,
+        epoch: &RuntimeEpoch,
+    ) -> Result<&ApprovalRecord, ApprovalError> {
+        self.insert_pending(request, Some(epoch))
+    }
+
+    fn insert_pending(
+        &mut self,
+        request: ApprovalRequest,
+        epoch: Option<&RuntimeEpoch>,
+    ) -> Result<&ApprovalRecord, ApprovalError> {
         request.validate()?;
         if self.records.contains_key(&request.id) {
             return Err(ApprovalError::AlreadyExists);
         }
         let id = request.id.clone();
+        match epoch {
+            Some(epoch) => self.issued_in.insert(id.clone(), epoch.clone()),
+            None => self.issued_in.remove(&id),
+        };
         self.records
             .insert(id.clone(), ApprovalRecord::pending(request));
         self.records.get(&id).ok_or(ApprovalError::NotFound)
+    }
+
+    /// The runtime epoch a request was issued in, if it was stamped.
+    pub fn issued_epoch(&self, id: &ApprovalId) -> Option<&RuntimeEpoch> {
+        self.issued_in.get(id)
     }
 
     /// Operator approves a pending request; computes and stores the binding MAC.
@@ -464,16 +572,19 @@ impl ApprovalLedger {
     /// Verify every binding and spend the approval in one step.
     ///
     /// Check order (first failure wins): `NotFound`, `AlreadyConsumed`,
-    /// `NotApproved`, `Expired`, `RequesterMismatch`, `OperatorOnlyCapability`,
-    /// `CapabilityMismatch`, `ResourceMismatch`, `OperationMismatch`,
-    /// `RevisionMismatch`, `MacInvalid`. Hash and id comparisons are
-    /// constant-time. On success the record is `Consumed` and cannot be spent again.
+    /// `NotApproved`, `Expired` (window passed, wall clock moved backwards, or
+    /// runtime epoch differs; the record moves to `Expired`),
+    /// `RequesterMismatch`, `OperatorOnlyCapability`, `CapabilityMismatch`,
+    /// `ResourceMismatch`, `OperationMismatch`, `RevisionMismatch`,
+    /// `MacInvalid`. Hash and id comparisons are constant-time. On success the
+    /// record is `Consumed` and cannot be spent again.
     pub fn verify_and_consume(
         &mut self,
         id: &ApprovalId,
         intent: &ConsumeIntent<'_>,
         key: &BindingKey,
     ) -> Result<ConsumedApproval, ApprovalError> {
+        let issued_in = self.issued_in.get(id);
         let record = self.records.get_mut(id).ok_or(ApprovalError::NotFound)?;
         match record.state {
             ApprovalState::Consumed => return Err(ApprovalError::AlreadyConsumed),
@@ -482,6 +593,13 @@ impl ApprovalLedger {
         }
         if record.expire_if_due(intent.now) {
             return Err(ApprovalError::Expired);
+        }
+        if let Some(current) = intent.runtime_epoch {
+            let same_epoch = current.is_well_formed() && issued_in == Some(current);
+            if !same_epoch {
+                record.mark_expired(intent.now);
+                return Err(ApprovalError::Expired);
+            }
         }
         let request = &record.request;
         if intent.consumer.id != request.requested_by.id {
@@ -663,6 +781,41 @@ mod tests {
             required_capability: Capability::GradeFinalize,
             consumer,
             now: UtcMillis::from_millis(now),
+            runtime_epoch: None,
+        }
+    }
+
+    fn epoch(boot: &str, process: &str) -> RuntimeEpoch {
+        RuntimeEpoch::new(boot, process).unwrap()
+    }
+
+    /// Request at 1_000 issued in `issued`, approved at 2_000.
+    fn approved_in(issued: &RuntimeEpoch) -> (ApprovalLedger, ApprovalId, OperationDescriptor) {
+        let operation = op(Action::Finalize, ResourceKind::GradeDecision, "g1", "aa");
+        let req = request(
+            "apr-1",
+            operator(),
+            Capability::GradeFinalize,
+            operation.clone(),
+        );
+        let id = req.id.clone();
+        let mut ledger = ApprovalLedger::new();
+        ledger.request_in_epoch(req, issued).unwrap();
+        ledger
+            .approve(&id, &operator(), UtcMillis::from_millis(2_000), &key())
+            .unwrap();
+        (ledger, id, operation)
+    }
+
+    fn intent_in<'a>(
+        operation: &'a OperationDescriptor,
+        consumer: &'a Actor,
+        now: i64,
+        runtime_epoch: &'a RuntimeEpoch,
+    ) -> ConsumeIntent<'a> {
+        ConsumeIntent {
+            runtime_epoch: Some(runtime_epoch),
+            ..intent(operation, consumer, now)
         }
     }
 
@@ -848,6 +1001,7 @@ mod tests {
             )]
             .into_iter()
             .collect(),
+            issued_in: BTreeMap::new(),
         })
         .unwrap();
         let mut ledger = ApprovalLedger::from_json(&json).unwrap();
@@ -944,6 +1098,200 @@ mod tests {
         assert!(ledger
             .expire_due(UtcMillis::from_millis(1_000 + 15 * 60_000))
             .is_empty());
+    }
+
+    #[test]
+    fn wall_clock_set_back_before_request_expires_approval_after_restart() {
+        // SEC-02 (defect register D.2): a wall clock that reads earlier than the
+        // request instant has moved backwards, so the approval is EXPIRED
+        // (fail closed), also after a snapshot restart.
+        let (ledger, id, operation) = approved_ledger(); // requested 1_000, approved 2_000
+        let mut restored = ApprovalLedger::from_json(&ledger.to_json().unwrap()).unwrap();
+        let consumer = operator();
+        let back = UtcMillis::from_millis(999);
+        assert!(restored.get(&id).unwrap().request.is_expired_at(back));
+        assert!(!restored.get(&id).unwrap().is_usable_at(back));
+        assert_eq!(
+            restored.verify_and_consume(&id, &intent(&operation, &consumer, 999), &key()),
+            Err(ApprovalError::Expired)
+        );
+        let rec = restored.get(&id).unwrap();
+        assert_eq!(rec.state, ApprovalState::Expired);
+        assert_eq!(rec.expired_at, Some(back));
+        assert_eq!(rec.consumed_at, None);
+        // Putting the clock right afterwards does not revive the approval.
+        assert_eq!(
+            restored.verify_and_consume(&id, &intent(&operation, &consumer, 3_000), &key()),
+            Err(ApprovalError::NotApproved {
+                state: ApprovalState::Expired
+            })
+        );
+    }
+
+    #[test]
+    fn wall_clock_set_back_before_decision_expires_approval() {
+        // 1_500 is inside [requested_at, expires_at) but before decided_at = 2_000:
+        // the clock moved backwards after the operator decided.
+        let (mut ledger, id, operation) = approved_ledger();
+        let consumer = operator();
+        assert!(!ledger
+            .get(&id)
+            .unwrap()
+            .is_usable_at(UtcMillis::from_millis(1_500)));
+        assert!(ledger
+            .get(&id)
+            .unwrap()
+            .is_usable_at(UtcMillis::from_millis(2_000)));
+        assert_eq!(
+            ledger.verify_and_consume(&id, &intent(&operation, &consumer, 1_500), &key()),
+            Err(ApprovalError::Expired)
+        );
+        assert_eq!(ledger.get(&id).unwrap().state, ApprovalState::Expired);
+    }
+
+    #[test]
+    fn approve_and_sweep_with_wall_clock_before_request_expire() {
+        let operation = op(Action::Finalize, ResourceKind::GradeDecision, "g1", "aa");
+        let mut ledger = ApprovalLedger::new();
+        for id in ["p", "q"] {
+            ledger
+                .request(request(
+                    id,
+                    operator(),
+                    Capability::GradeFinalize,
+                    operation.clone(),
+                ))
+                .unwrap();
+        }
+        let p = ApprovalId::parse("p").unwrap();
+        let q = ApprovalId::parse("q").unwrap();
+        let back = UtcMillis::from_millis(999);
+        assert_eq!(
+            ledger.approve(&p, &operator(), back, &key()).unwrap_err(),
+            ApprovalError::Expired
+        );
+        assert_eq!(ledger.get(&p).unwrap().state, ApprovalState::Expired);
+        assert_eq!(ledger.get(&p).unwrap().binding_mac, None);
+        assert_eq!(ledger.expire_due(back), vec![q.clone()]);
+        assert_eq!(ledger.get(&q).unwrap().state, ApprovalState::Expired);
+    }
+
+    #[test]
+    fn runtime_epoch_requires_both_parts() {
+        assert!(RuntimeEpoch::new("", "p-1").is_none());
+        assert!(RuntimeEpoch::new("b-1", "  ").is_none());
+        let e = RuntimeEpoch::new("b-1\n", "p-1").unwrap();
+        assert_eq!(e.boot_id(), "b-1");
+        assert_eq!(e.process_start_id(), "p-1");
+    }
+
+    #[test]
+    fn approval_used_in_another_runtime_epoch_is_expired() {
+        // SEC-02: a reboot (boot id differs) or a process restart
+        // (process-start id differs) expires the approval, fail closed.
+        let issued = epoch("boot-a", "proc-1");
+        let consumer = operator();
+        for other in [epoch("boot-b", "proc-1"), epoch("boot-a", "proc-2")] {
+            let (mut ledger, id, operation) = approved_in(&issued);
+            assert_eq!(ledger.issued_epoch(&id), Some(&issued));
+            assert_eq!(
+                ledger.verify_and_consume(
+                    &id,
+                    &intent_in(&operation, &consumer, 3_000, &other),
+                    &key()
+                ),
+                Err(ApprovalError::Expired)
+            );
+            let rec = ledger.get(&id).unwrap();
+            assert_eq!(rec.state, ApprovalState::Expired);
+            assert_eq!(rec.expired_at, Some(UtcMillis::from_millis(3_000)));
+            assert_eq!(rec.consumed_at, None);
+            // Going back to the original epoch does not revive it.
+            assert_eq!(
+                ledger.verify_and_consume(
+                    &id,
+                    &intent_in(&operation, &consumer, 3_001, &issued),
+                    &key()
+                ),
+                Err(ApprovalError::NotApproved {
+                    state: ApprovalState::Expired
+                })
+            );
+        }
+        // Same epoch: consumed once.
+        let (mut ledger, id, operation) = approved_in(&issued);
+        let consumed = ledger
+            .verify_and_consume(
+                &id,
+                &intent_in(&operation, &consumer, 3_000, &issued),
+                &key(),
+            )
+            .unwrap();
+        assert_eq!(consumed.consumed_at, UtcMillis::from_millis(3_000));
+    }
+
+    #[test]
+    fn unstamped_approval_is_expired_when_consumer_supplies_epoch() {
+        // A ledger rebuilt after a restart carries no stamp for older requests.
+        let (mut ledger, id, operation) = approved_ledger();
+        assert_eq!(ledger.issued_epoch(&id), None);
+        let consumer = operator();
+        let current = epoch("boot-a", "proc-2");
+        assert_eq!(
+            ledger.verify_and_consume(
+                &id,
+                &intent_in(&operation, &consumer, 3_000, &current),
+                &key()
+            ),
+            Err(ApprovalError::Expired)
+        );
+        assert_eq!(ledger.get(&id).unwrap().state, ApprovalState::Expired);
+    }
+
+    #[test]
+    fn malformed_epoch_never_matches() {
+        let blank: RuntimeEpoch =
+            serde_json::from_str(r#"{"boot_id":"","process_start_id":""}"#).unwrap();
+        let (mut ledger, id, operation) = approved_in(&blank);
+        let consumer = operator();
+        assert_eq!(
+            ledger.verify_and_consume(
+                &id,
+                &intent_in(&operation, &consumer, 3_000, &blank),
+                &key()
+            ),
+            Err(ApprovalError::Expired)
+        );
+    }
+
+    #[test]
+    fn epoch_stamp_survives_snapshot_in_the_same_epoch_only() {
+        let issued = epoch("boot-a", "proc-1");
+        let (ledger, id, operation) = approved_in(&issued);
+        let json = ledger.to_json().unwrap();
+        let consumer = operator();
+        let mut same = ApprovalLedger::from_json(&json).unwrap();
+        assert_eq!(same, ledger);
+        assert!(same
+            .verify_and_consume(
+                &id,
+                &intent_in(&operation, &consumer, 3_000, &issued),
+                &key()
+            )
+            .is_ok());
+        let restarted = epoch("boot-a", "proc-2");
+        let mut after_restart = ApprovalLedger::from_json(&json).unwrap();
+        assert_eq!(
+            after_restart.verify_and_consume(
+                &id,
+                &intent_in(&operation, &consumer, 3_000, &restarted),
+                &key()
+            ),
+            Err(ApprovalError::Expired)
+        );
+        // An unstamped ledger snapshot keeps its legacy JSON shape.
+        let (plain, _, _) = approved_ledger();
+        assert!(!plain.to_json().unwrap().contains("issued_in"));
     }
 
     #[test]

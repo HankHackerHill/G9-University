@@ -2,11 +2,13 @@ import { Link } from 'react-router-dom';
 import type { SessionView } from '../../ipc/operations';
 import { addDays, startOfDayUtc } from '../../lib/civil-time';
 import { formatDateTime, formatDuration, formatMinutes, formatTime, humanizeEnum } from '../../lib/format';
+import { NON_CANONICAL_WARNING, hasWarning, mergeWarnings } from '../../lib/warnings';
 import { Badge, ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, ModelUnavailable, NoData, Panel } from '../components/Panel';
 import { Table } from '../components/Table';
 import { Tabs } from '../components/Tabs';
+import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 
@@ -25,19 +27,27 @@ export function MissionControl() {
   );
 
   const s = today.status;
-  const todaySessions = sessions.data?.sessions ?? [];
-  const running = todaySessions.find((x) => x.state === 'RUNNING' || x.state === 'PAUSED');
-  const nextSession = todaySessions.find((x) => x.state === 'READY' || x.state === 'PLANNED');
+  // Derived values exist only when their records loaded. A failed or pending read is shown as an
+  // error / loading state, never as a computed zero (Panel.tsx NoData rule, rtm R-014).
+  const todaySessions = sessions.data?.sessions ?? null;
+  const running = todaySessions?.find((x) => x.state === 'RUNNING' || x.state === 'PAUSED');
+  const nextSession = todaySessions?.find((x) => x.state === 'READY' || x.state === 'PLANNED');
   const nextCommitment = today.now === null ? undefined : calendar.data?.events.find((e) => e.start > (today.now ?? 0));
-  const credited = todaySessions.reduce((acc, x) => acc + x.credited_ms, 0);
-  const verifiedDone = todaySessions.filter((x) => WORK_DONE.includes(x.state));
-  const plannedMs = (plan.data?.planned_minutes ?? 0) * 60_000;
+  const credited = todaySessions === null ? null : todaySessions.reduce((acc, x) => acc + x.credited_ms, 0);
+  const verifiedDone = todaySessions === null ? null : todaySessions.filter((x) => WORK_DONE.includes(x.state));
+  const plannedMs = plan.data === null ? null : plan.data.planned_minutes * 60_000;
   const hypotheses = (interventions.data?.interventions ?? []).filter((i) => i.state === 'HYPOTHESIS' || i.state === 'PROPOSED');
+  const planLabel = hasWarning(plan.warnings, NON_CANONICAL_WARNING) ? 'PROPOSED' : 'VERIFIED';
 
   return (
     <div>
       <h1>Mission Control</h1>
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
+      {sessions.error !== null ? <ErrorDisplay error={sessions.error} onRetry={sessions.reload} /> : null}
+      {calendar.error !== null ? <ErrorDisplay error={calendar.error} onRetry={calendar.reload} /> : null}
+      <Warnings
+        warnings={mergeWarnings(plan.warnings, sessions.warnings, due.warnings, interventions.warnings, approvals.warnings, calendar.warnings)}
+      />
       <section className="panel" aria-label="Today header">
         {s === null ? (
           <Loading what="system status" />
@@ -59,7 +69,9 @@ export function MissionControl() {
             </div>
             <div>
               <h3>Session</h3>
-              {running !== undefined ? (
+              {todaySessions === null ? (
+                <span className="muted">{sessions.error === null ? 'Loading sessions…' : `NO DATA — sessions unavailable (${sessions.error.code})`}</span>
+              ) : running !== undefined ? (
                 <span>
                   <StateBadge state={running.state} /> {running.day_id} {humanizeEnum(running.block)}
                 </span>
@@ -71,7 +83,9 @@ export function MissionControl() {
             </div>
             <div>
               <h3>Next commitment</h3>
-              {nextCommitment === undefined ? (
+              {calendar.data === null ? (
+                <span className="muted">{calendar.error === null ? 'Loading calendar…' : `NO DATA — calendar unavailable (${calendar.error.code})`}</span>
+              ) : nextCommitment === undefined ? (
                 <span className="muted">None in the next 48 h</span>
               ) : (
                 <span>
@@ -94,7 +108,7 @@ export function MissionControl() {
               ) : (
                 <>
                   <p className="muted">
-                    {plan.data.day_id} · week {plan.data.week_number} · {plan.data.week_title} · evidence: {plan.data.evidence_artifact} <ProvenanceBadge label="VERIFIED" />
+                    {plan.data.day_id} · week {plan.data.week_number} · {plan.data.week_title} · evidence: {plan.data.evidence_artifact} <ProvenanceBadge label={planLabel} />
                   </p>
                   <ol>
                     {plan.data.objectives.map((o) => (
@@ -116,7 +130,7 @@ export function MissionControl() {
                 caption={`Blocks for ${plan.data.day_id}: planned ${formatMinutes(plan.data.planned_minutes)}`}
                 headers={['#', 'Block', 'Planned', 'Credited', 'Uncertain', 'State']}
                 rows={plan.data.blocks.map((b) => {
-                  const session = todaySessions.find((x) => x.session_id === b.session_id);
+                  const session = todaySessions?.find((x) => x.session_id === b.session_id);
                   return {
                     key: `${b.seq}`,
                     cells: [
@@ -125,7 +139,13 @@ export function MissionControl() {
                       formatMinutes(b.minutes),
                       session === undefined ? '—' : formatDuration(session.credited_ms),
                       session === undefined ? '—' : formatDuration(session.uncertain_ms),
-                      session === undefined ? <span className="muted">no session</span> : <StateBadge state={session.state} />,
+                      todaySessions === null ? (
+                        <span className="muted">NO DATA</span>
+                      ) : session === undefined ? (
+                        <span className="muted">no session</span>
+                      ) : (
+                        <StateBadge state={session.state} />
+                      ),
                     ],
                   };
                 })}
@@ -194,7 +214,11 @@ export function MissionControl() {
           </Panel>
 
           <Panel title="Weak-skill hypotheses" as="aside">
-            {hypotheses.length === 0 ? (
+            {interventions.error !== null ? (
+              <ErrorDisplay error={interventions.error} onRetry={interventions.reload} />
+            ) : interventions.data === null ? (
+              <Loading what="hypotheses" />
+            ) : hypotheses.length === 0 ? (
               s !== null && !s.model.available ? (
                 <ModelUnavailable reason={s.model.reason} what="Hypotheses" />
               ) : (
@@ -213,7 +237,11 @@ export function MissionControl() {
 
           <Panel title="Pending approvals" as="aside">
             {approvals.data === null ? (
-              approvals.loading ? <Loading what="approvals" /> : null
+              approvals.error !== null ? (
+                <ErrorDisplay error={approvals.error} onRetry={approvals.reload} />
+              ) : (
+                <Loading what="approvals" />
+              )
             ) : approvals.data.approvals.length === 0 ? (
               <NoData reason="nothing awaits approval" />
             ) : (
@@ -233,12 +261,31 @@ export function MissionControl() {
         <div className="row" style={{ gap: 24 }}>
           <div>
             <h3>Verified work</h3>
-            <span className="kpi">{verifiedDone.length}</span> <span className="muted">blocks completed</span> <ProvenanceBadge label="VERIFIED" />
+            {verifiedDone === null ? (
+              <NoData reason={sessions.error === null ? 'sessions loading' : 'sessions could not be read'} />
+            ) : (
+              <>
+                <span className="kpi">{verifiedDone.length}</span> <span className="muted">blocks completed</span> <ProvenanceBadge label="VERIFIED" />
+              </>
+            )}
           </div>
           <div>
             <h3>Estimated vs actual</h3>
-            <span className="kpi">{formatDuration(plannedMs)}</span> <span className="muted">planned</span> · <span className="kpi">{formatDuration(credited)}</span>{' '}
-            <span className="muted">credited</span>
+            {plannedMs === null ? (
+              <span className="muted">NO DATA — plan not loaded</span>
+            ) : (
+              <>
+                <span className="kpi">{formatDuration(plannedMs)}</span> <span className="muted">planned</span>
+              </>
+            )}{' '}
+            ·{' '}
+            {credited === null ? (
+              <span className="muted">NO DATA — sessions not loaded</span>
+            ) : (
+              <>
+                <span className="kpi">{formatDuration(credited)}</span> <span className="muted">credited</span>
+              </>
+            )}
           </div>
           <div>
             <h3>Business milestones</h3>
@@ -246,7 +293,9 @@ export function MissionControl() {
           </div>
           <div>
             <h3>Next step</h3>
-            {nextSession !== undefined ? (
+            {todaySessions === null ? (
+              <span className="muted">NO DATA — sessions not loaded</span>
+            ) : nextSession !== undefined ? (
               <span>
                 Prepare <strong>{humanizeEnum(nextSession.block)}</strong> ({formatMinutes(Math.round(nextSession.planned_ms / 60_000))})
               </span>

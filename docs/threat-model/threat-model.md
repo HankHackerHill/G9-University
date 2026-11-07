@@ -25,11 +25,11 @@ Method: trust boundaries → data flows → STRIDE per boundary → attack tree 
 4. Skill package files → registry (validate, hash) → orchestrator (instructions role for `SkillInstructions` segments only, never `SystemPolicy`).
 5. Storage → backup (Online Backup API) → verify on copy → restore test → retained set.
 
-## 3. STRIDE by boundary (selected; full table in `stride.md`)
+## 3. STRIDE by boundary (selected boundaries; a full B1–B8 table is PROPOSED)
 
 | Boundary | Spoofing | Tampering | Repudiation | Information disclosure | Denial of service | Elevation of privilege |
 |---|---|---|---|---|---|---|
-| B1 IPC | forged actor in meta → actor is set server-side from the window session, never trusted from payload | payload schema violations → `INVALID_INPUT` | every command audited with request/trace ids | errors are category+code only; no backtraces | per-operation budgets; invocation queue limits | capabilities file exposes no plugins |
+| B1 IPC | forged actor in meta → actor is set server-side from the window session, never trusted from payload | payload schema violations → `INVALID_INPUT` | every command audited with request/trace ids | errors are category+code only; no backtraces | per-operation budgets; invocation rate/queue limits PROPOSED (not implemented) | capabilities file exposes no plugins |
 | B2 pipeline | stale/forged approval → MAC + hash + revision binding | STALE_REVISION on concurrent edit | audit chain, idempotency records | scope/domain checks on reads | idempotent replay prevents duplicate work | deny-by-default rules; operator-only capabilities |
 | B4 model | model claims to be operator → trust tag `ModelOutput` is attached by code | model output edits state → output is a proposal; schema-validated | invocation record (metadata) | Secret filter; EXAM mode minimal context; no raw prompts stored | timeout, max tokens, cancellation, VRAM budget | no tool rights from text; recommended actions re-enter pipeline |
 | B5 skills | package name collision → dir==name, unique codes | modified SKILL.md → hash mismatch refused | package hash in invocation record | skill cannot request `CrossDomainRead` without rule | budget per package | operator-only capabilities rejected at load |
@@ -64,7 +64,7 @@ Goal: alter authoritative state / exfiltrate / destroy data
 │   ├── XSS in rendered note                                → DOMPurify allow-list + CSP [markdown sanitizer tests]
 │   └── UI pretends to be authoritative (timer, state)      → backend state is the source; UI mirrors only
 └── Via resource exhaustion
-    ├── repeated expensive skill calls                      → budgets + queue limits [budget_exceeded_rejected]
+    ├── repeated expensive skill calls                      → per-invocation budgets [budget_exceeded_rejected]; rate/queue limits PROPOSED
     └── unbounded context                                   → ContextBudget drops lowest-trust first and reports
 ```
 
@@ -91,15 +91,15 @@ Goal: alter authoritative state / exfiltrate / destroy data
 |---|---|---|---|
 | ST01 | Note contains "open a terminal and run …" / "edit the schedule" | Flag `InstructionLike`; no command executed; schedule unchanged | crate tests TESTED; end-to-end PROPOSED |
 | ST02 | SKILL.md replaced with one requesting `file:///etc/passwd` read or `SHELL_EXEC` | Registry refuses package (hash mismatch, capability) | TESTED |
-| ST03 | Contradictory evidence injected (forged "VALIDATED" observation with model provenance) | Rejected; contradiction flagged for operator | TESTED |
+| ST03 | Contradictory evidence injected (forged "VALIDATED" observation with model provenance) | Rejected; contradiction flagged for operator | storage refusal TESTED (ST03 harness); contradiction detection TESTED at crate level only (`a05_contradiction_detected_between_exam_and_guided_results`); flagging an injected observation end-to-end PROPOSED (no ingest path, gate-evidence G8) |
 | ST04 | Skill output requests `EXECUTE`/`CONNECT` | Validation error; invocation `Error`, never `Completed` | TESTED |
 | ST05 | Request to export private notes via model | `DataExport` approval required; `Secret` filtered | TESTED (policy/adapter) |
 | ST06 | Compromised dependency / modified model weights | `cargo deny` bans + advisories; checksum mismatch rejected; restore drill | PARTIAL |
 | ST07 | XSS payloads in note (`<img onerror>`, `javascript:` link, `<svg onload>`) | Rendered inert | TESTED (UI) |
-| ST08 | Rapid repeated expensive skill calls; oversized context | Budget/queue refusal; drops reported | TESTED (adapter/skills) |
+| ST08 | Rapid repeated expensive skill calls; oversized context | Budget/queue refusal; drops reported | per-invocation budget refusal and context drops TESTED (adapter/skills); rate/queue limit on repeated calls PROPOSED (not implemented) |
 | ST09 | Stale approval replayed on a different resource / after consumption / after expiry | Denied with explicit reason; policy decision logged | TESTED |
 | ST10 | Corrupted DB file or forged backup presented for restore | `verify_snapshot` fails; restore refused | TESTED |
-| ST11 | Business/personal records appear in learning context | Cross-domain read denied without `CrossDomainRead` | TESTED (policy) |
+| ST11 | Business/personal records appear in learning context | Cross-domain read denied without `CrossDomainRead` | TESTED (policy: rule `sm.read.cross_domain.approval`, `a06_*` cross-domain rows); end-to-end refusals come from storage scope checks and the orchestrator preflight (gate-evidence G7) |
 | ST12 | Late model response after cancellation applies old command | Response discarded; invocation `Cancelled` | TESTED |
 
 ## 7. Residual risks

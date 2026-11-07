@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { isG9Error } from '../../ipc/client';
 import type { DailyPlan } from '../../ipc/operations';
 import type { G9Error } from '../../ipc/types';
-import { addDays, formatIsoDate, startOfIsoWeek } from '../../lib/civil-time';
+import { addDays, formatIsoDate, parseIsoDate, startOfIsoWeek } from '../../lib/civil-time';
 import { formatMinutes, humanizeEnum } from '../../lib/format';
+import { NON_CANONICAL_WARNING, hasWarning, mergeWarnings, warningsOf } from '../../lib/warnings';
 import { ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, NoData, Panel } from '../components/Panel';
+import { Warnings } from '../components/Warnings';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
 
@@ -14,6 +16,7 @@ interface DayNode {
   date: string;
   plan: DailyPlan | null;
   error: G9Error | null;
+  warnings: readonly string[];
 }
 
 /** Week/day/objective tree built from `curriculum.daily_plan` for each day of the current week. */
@@ -24,11 +27,13 @@ export function CurriculumNavigator() {
   const weekKey = today.date === null ? null : formatIsoDate(startOfIsoWeek(today.date));
 
   useEffect(() => {
-    if (weekKey === null || today.date === null) {
+    // Keyed on the week string only: `today.date` is a new object on every render, and depending
+    // on it re-ran this effect after every setNodes (an endless daily_plan request loop).
+    const monday = weekKey === null ? null : parseIsoDate(weekKey);
+    if (weekKey === null || monday === null) {
       return;
     }
     let active = true;
-    const monday = startOfIsoWeek(today.date);
     const dates = Array.from({ length: 6 }, (_, i) => formatIsoDate(addDays(monday, i)));
     void Promise.all(dates.map((date) => client.invoke('curriculum.daily_plan', { date }))).then((results) => {
       if (!active) {
@@ -36,16 +41,19 @@ export function CurriculumNavigator() {
       }
       setNodes({
         key: weekKey,
-        days: results.map((r, i) => ({ date: dates[i] ?? '', plan: isG9Error(r) ? null : r.result, error: isG9Error(r) ? r : null })),
+        days: results.map((r, i) => ({ date: dates[i] ?? '', plan: isG9Error(r) ? null : r.result, error: isG9Error(r) ? r : null, warnings: warningsOf(r) })),
       });
     });
     return () => {
       active = false;
     };
-  }, [client, weekKey, today.date]);
+  }, [client, weekKey]);
 
   const current = nodes !== null && nodes.key === weekKey ? nodes : null;
   const weekTitle = current?.days.find((d) => d.plan !== null)?.plan;
+  const weekWarnings = mergeWarnings(...(current?.days.map((d) => d.warnings) ?? []));
+  // Non-canonical versions (the PROPOSED_SEED today) produce PROPOSED plans, never VERIFIED ones.
+  const weekLabel = hasWarning(weekWarnings, NON_CANONICAL_WARNING) ? 'PROPOSED' : 'VERIFIED';
 
   return (
     <div>
@@ -57,6 +65,7 @@ export function CurriculumNavigator() {
           shown per version by <code>curriculum.validate</code>.
         </p>
       </Panel>
+      <Warnings warnings={weekWarnings} />
       {current === null ? (
         <Loading what="week plan" />
       ) : (
@@ -64,7 +73,7 @@ export function CurriculumNavigator() {
           <li>
             <details open>
               <summary>
-                Week {weekTitle?.week_number ?? '?'} — {weekTitle?.week_title ?? 'not loaded'} <ProvenanceBadge label="VERIFIED" />
+                Week {weekTitle?.week_number ?? '?'} — {weekTitle?.week_title ?? 'not loaded'} {weekTitle === undefined ? null : <ProvenanceBadge label={weekLabel} />}
               </summary>
               <ul>
                 {current.days.map((d) => (

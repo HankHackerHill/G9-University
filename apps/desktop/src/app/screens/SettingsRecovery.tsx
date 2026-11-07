@@ -4,11 +4,13 @@ import type { BackupView } from '../../ipc/operations';
 import type { G9Error } from '../../ipc/types';
 import { formatDateTime } from '../../lib/format';
 import { BACKUP_MACHINE, can } from '../../lib/state-machines';
+import { warningsOf } from '../../lib/warnings';
 import { ApprovalCard } from '../components/ApprovalCard';
 import { Badge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, NoData, Panel } from '../components/Panel';
 import { Table } from '../components/Table';
+import { Warnings } from '../components/Warnings';
 import { useApprovalFlow } from '../hooks/useApprovalFlow';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
@@ -21,6 +23,7 @@ export function SettingsRecovery() {
   const [backups, setBackups] = useState<BackupView[]>([]);
   const [error, setError] = useState<G9Error | null>(null);
   const [busy, setBusy] = useState(false);
+  const [backupWarnings, setBackupWarnings] = useState<readonly string[]>([]);
   const exportFlow = useApprovalFlow<'export.request'>();
 
   const upsert = (b: BackupView) => {
@@ -30,6 +33,7 @@ export function SettingsRecovery() {
   const create = async () => {
     setBusy(true);
     const r = await client.invoke('backup.create', { label: 'manual' });
+    setBackupWarnings(warningsOf(r));
     if (isG9Error(r)) {
       setError(r);
     } else {
@@ -43,6 +47,7 @@ export function SettingsRecovery() {
   const step = async (op: 'backup.verify' | 'backup.restore_test', b: BackupView) => {
     setBusy(true);
     const r = await client.invoke(op, { backup_id: b.backup_id }, { expectedRevision: b.revision });
+    setBackupWarnings(warningsOf(r));
     if (isG9Error(r)) {
       setError(r);
     } else {
@@ -66,6 +71,17 @@ export function SettingsRecovery() {
       <h1>Settings / Recovery</h1>
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
       {error !== null ? <ErrorDisplay error={error} /> : null}
+      <Panel title="Host and storage warnings">
+        {s === null ? (
+          <Loading what="status warnings" />
+        ) : today.warnings.length === 0 ? (
+          <p className="muted" data-testid="status-warnings-none">
+            system.status reported no warnings.
+          </p>
+        ) : (
+          <Warnings warnings={today.warnings} label="Reported by system.status (binding-key storage, time zone, skills registry, storage state)" testId="settings-status-warnings" />
+        )}
+      </Panel>
       <div className="grid-2">
         <Panel title="Model runtime">
           {s === null ? (
@@ -115,6 +131,7 @@ export function SettingsRecovery() {
             <span className="muted">No backup recorded</span>
           )}
         </div>
+        <Warnings warnings={backupWarnings} />
         {backups.length === 0 ? (
           <NoData reason="no backups created in this session (backup.list is PROPOSED)" />
         ) : (
@@ -186,6 +203,7 @@ export function SettingsRecovery() {
             Export <code>{exportFlow.result.result.export_id}</code> <StateBadge state={exportFlow.result.result.state} />
           </p>
         ) : null}
+        <Warnings warnings={exportFlow.warnings} />
       </Panel>
       <Panel title="Transport">
         {s === null ? <Loading what="status" /> : <p>Active transport: <StateBadge state={s.transport.toUpperCase()} /> {s.transport === 'mock' ? <span className="muted">— fixture data, no storage.</span> : null}</p>}

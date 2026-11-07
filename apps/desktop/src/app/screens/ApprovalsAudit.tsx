@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { isG9Error } from '../../ipc/client';
 import type { G9Error } from '../../ipc/types';
 import { formatDateTime, shortHash } from '../../lib/format';
+import { mergeWarnings, warningsOf } from '../../lib/warnings';
 import { ApprovalCard } from '../components/ApprovalCard';
 import { Badge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, NoData, Panel } from '../components/Panel';
 import { Table } from '../components/Table';
+import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
@@ -18,11 +20,13 @@ export function ApprovalsAudit() {
   const audit = useCommand('audit.recent', { limit: 50 });
   const [error, setError] = useState<G9Error | null>(null);
   const [busy, setBusy] = useState(false);
+  const [decideWarnings, setDecideWarnings] = useState<readonly string[]>([]);
 
   const decide = async (approvalId: string, decision: 'APPROVE' | 'REJECT') => {
     setBusy(true);
     const r = await client.invoke('approvals.decide', { approval_id: approvalId, decision });
     setError(isG9Error(r) ? r : null);
+    setDecideWarnings(warningsOf(r));
     setBusy(false);
     approvals.reload();
     audit.reload();
@@ -34,10 +38,15 @@ export function ApprovalsAudit() {
     <div>
       <h1>Approvals / Audit</h1>
       <p className="muted">
-        An approval binds to one exact operation (action, resource, scope, parameter hash, expected revision), expires after 15 minutes and is consumed once. The webview
-        requests a decision; the trusted confirmation surface grants it (Addendum A.7).
+        An approval binds to one exact operation (action, resource, scope, parameter hash, expected revision), expires after 15 minutes and is consumed once.
+      </p>
+      <p className="banner" role="note" data-testid="confirmation-surface-gap">
+        <strong>NOT IMPLEMENTED:</strong> the trusted native confirmation raised from Rust (Addendum A.7, ADR-0014) is <strong>PROPOSED</strong> (SEC-03 OPEN). In this
+        build an approval is granted by <code>approvals.decide</code> called from this webview, so script running in the webview could approve its own request. Check the
+        operation, resource and parameter hash before you approve.
       </p>
       {error !== null ? <ErrorDisplay error={error} /> : null}
+      <Warnings warnings={mergeWarnings(approvals.warnings, audit.warnings, decideWarnings)} />
       {approvals.error !== null ? <ErrorDisplay error={approvals.error} onRetry={approvals.reload} /> : null}
       <Panel title="Approval requests">
         {approvals.loading && approvals.data === null ? <Loading what="approvals" /> : null}

@@ -4,6 +4,7 @@ import { ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, ModelUnavailable, NoData, Panel } from '../components/Panel';
 import { Table } from '../components/Table';
+import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 
@@ -21,6 +22,7 @@ export function InterventionCenter() {
       </p>
       {list.error !== null ? <ErrorDisplay error={list.error} onRetry={list.reload} /> : null}
       {list.loading ? <Loading what="interventions" /> : null}
+      <Warnings warnings={list.warnings} />
       <Panel title="Interventions">
         {list.data !== null && items.length === 0 ? (
           <>

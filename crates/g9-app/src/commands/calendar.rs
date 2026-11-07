@@ -8,7 +8,11 @@
 //!   block sized by the due queue). `FILL_CURRICULUM` and `RESCHEDULE` are
 //!   PROPOSED and return `PRECONDITION_FAILED calendar.<intent>.not_implemented`.
 //! * `calendar.apply` requires `Capability::ScheduleApply` (a consumed operator
-//!   approval), refuses expired or infeasible proposals, creates the events and
+//!   approval), refuses expired or infeasible proposals, re-checks every
+//!   placement against the calendar as it is at apply time (inside the command
+//!   transaction, before policy) and refuses a proposal whose placements now
+//!   overlap an existing event (`PRECONDITION_FAILED proposal.stale`;
+//!   ARCHITECTURE.md §7: no silent violation), then creates the events and
 //!   records the immutable schedule decision.
 
 use super::{decode, new_id, parse_id, rc, scope_of, tail, to_value};
@@ -30,6 +34,8 @@ use g9_storage::repos::calendar::{
     ScheduleDecisionKind, ScheduleDecisionRow, ScheduleProposalRow,
 };
 use g9_storage::repos::retention as retention_repo;
+use g9_storage::repos::ReadScope;
+use rusqlite::Connection;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -252,7 +258,8 @@ pub fn propose(
             )))
         },
         |env| {
-            let due = retention_repo::list_due_items(env.conn, &scope, env.now, 1_000)?;
+            // Every due item sizes the block (no silent truncation).
+            let due = retention_repo::list_due_items(env.conn, &scope, env.now, u32::MAX)?;
             let minutes = u32::try_from(
                 (i64::try_from(due.len()).unwrap_or(i64::MAX) * REVIEW_ITEM_ESTIMATE_MS) / 60_000,
             )
@@ -327,6 +334,38 @@ struct ApplyRequest {
     proposal_id: String,
 }
 
+/// Re-check the stored placements against the calendar as it is now (every
+/// domain: any existing event blocks time, as in `propose_schedule`). A
+/// placement that overlaps an existing event makes the proposal stale.
+fn ensure_not_stale(conn: &Connection, row: &ScheduleProposalRow) -> Result<(), G9Error> {
+    let current = repo::list_events_between(
+        conn,
+        &ReadScope::cross_domain(DataDomain::Learning),
+        row.range_start_utc,
+        row.range_end_utc,
+    )?;
+    let mut conflicting: Vec<String> = Vec::new();
+    for p in &row.proposal.placements {
+        for e in current
+            .iter()
+            .filter(|e| e.start_utc < p.end && p.start < e.end_utc)
+        {
+            let id = e.id.as_str().to_string();
+            if !conflicting.contains(&id) {
+                conflicting.push(id);
+            }
+        }
+    }
+    if conflicting.is_empty() {
+        return Ok(());
+    }
+    Err(G9Error::precondition_failed(
+        "proposal.stale",
+        "the calendar changed after this proposal was made: a placement now overlaps an existing event; propose again",
+    )
+    .with_details(json!({ "conflicting_event_ids": conflicting })))
+}
+
 /// `calendar.apply` (approval-gated: `ScheduleApply`).
 pub fn apply(
     ctx: &mut AppContext,
@@ -374,6 +413,9 @@ pub fn apply(
                     "proposal expired; propose again",
                 ));
             }
+            // Checked inside the command transaction both when the approval is
+            // requested and when it is consumed (use-time check).
+            ensure_not_stale(conn, &row)?;
             Ok(Facts::existing(
                 rc(DataDomain::Learning, Classification::Internal, false),
                 row.revision,

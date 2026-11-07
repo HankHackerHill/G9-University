@@ -54,8 +54,14 @@ pub struct AppConfig {
     pub program_start: Option<g9_curriculum::CivilDate>,
     /// Directory backups are written to (must lie inside `approved_roots`).
     pub backup_dir: Option<PathBuf>,
-    /// Scratch directory for restore tests (must lie inside `approved_roots`).
+    /// Scratch directory for restore tests and migration dry runs (must lie
+    /// inside `approved_roots`; a file database with pending migrations is not
+    /// migrated without it).
     pub scratch_dir: Option<PathBuf>,
+    /// Root of the content-addressed attachment store, checked by every backup
+    /// verification (must lie inside `approved_roots`). Without it a snapshot
+    /// that holds attachment rows fails verification.
+    pub attachment_dir: Option<PathBuf>,
     /// Host directories the backend may write to.
     pub approved_roots: Vec<PathBuf>,
     /// Reported `SystemStatus.transport`.
@@ -73,6 +79,7 @@ impl AppConfig {
             program_start: None,
             backup_dir: None,
             scratch_dir: None,
+            attachment_dir: None,
             approved_roots: Vec::new(),
             transport: Transport::Tauri,
         })
@@ -426,6 +433,14 @@ impl AppContextBuilder {
     }
 
     /// Inject the monotonic clock (default: `std::time::Instant` since build).
+    ///
+    /// Suspend semantics of the default differ per OS (INFERRED from the Rust
+    /// std documentation, not measured here): on Linux `CLOCK_MONOTONIC` stops
+    /// while the machine is suspended, on Windows the performance counter keeps
+    /// counting. The session timer compares wall and monotonic elapsed time at
+    /// every stop (`commands::sessions::CLOCK_DIVERGENCE_TOLERANCE_MS`), which
+    /// detects the first case; the second needs the TEC-07 heartbeat ledger
+    /// (PROPOSED).
     pub fn monotonic(mut self, mono: Box<dyn Fn() -> u64 + Send + Sync>) -> Self {
         self.monotonic = Some(Arc::from(mono));
         self

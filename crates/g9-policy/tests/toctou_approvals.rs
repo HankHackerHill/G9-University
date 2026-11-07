@@ -20,7 +20,7 @@ use g9_domain::{
 };
 use g9_policy::{
     ApprovalError, ApprovalGate, ApprovalLedger, ApprovalRequest, ConsumeIntent, DecisionKind,
-    Engine, PolicyError, SteppingClock, DEFAULT_APPROVAL_TTL,
+    Engine, PolicyError, RuntimeEpoch, SteppingClock, DEFAULT_APPROVAL_TTL,
 };
 use std::sync::Arc;
 
@@ -97,6 +97,7 @@ fn intent<'a>(
         required_capability: Capability::GradeFinalize,
         consumer,
         now,
+        runtime_epoch: None,
     }
 }
 
@@ -419,6 +420,10 @@ fn toctou_forged_mac_is_mac_invalid() {
 
     // (c) A snapshot whose *operation* was rewritten to a juicier one while
     //     keeping the genuine MAC: the field checks pass, the MAC does not.
+    //     Consumed at the fixture's decision instant (T0+5s): an instant before
+    //     the decision is a wall clock that moved backwards (SEC-02) and would
+    //     be refused as EXPIRED before the MAC is checked.
+    let after_decision = f.clock.now();
     let mut json: serde_json::Value =
         serde_json::from_str(&approved_fixture().ledger.to_json().unwrap()).unwrap();
     json["records"]["apr-a"]["request"]["operation"]["resource"]["id"] =
@@ -435,7 +440,7 @@ fn toctou_forged_mac_is_mac_invalid() {
     assert_eq!(
         tampered.verify_and_consume(
             &ApprovalId::parse("apr-a").unwrap(),
-            &intent(&juicier, REV_A, &consumer, T0),
+            &intent(&juicier, REV_A, &consumer, after_decision),
             &key()
         ),
         Err(ApprovalError::MacInvalid)
@@ -452,7 +457,7 @@ fn toctou_forged_mac_is_mac_invalid() {
     assert_eq!(
         stripped.verify_and_consume(
             &ApprovalId::parse("apr-a").unwrap(),
-            &intent(&op_a(), REV_A, &consumer, T0),
+            &intent(&op_a(), REV_A, &consumer, after_decision),
             &key()
         ),
         Err(ApprovalError::MacInvalid)
@@ -565,6 +570,111 @@ fn toctou_snapshot_round_trip_keeps_single_use() {
         ),
         Err(ApprovalError::AlreadyConsumed)
     );
+}
+
+#[test]
+fn toctou_wall_clock_set_back_after_restart_expires_approval() {
+    // SEC-02 (defect register D.2): approved at T0+5s, ledger restored from a
+    // snapshot (restart), wall clock then set back one day. Before the fix the
+    // approval was consumed with now < requested_at.
+    let mut f = approved_fixture();
+    f.ledger = ApprovalLedger::from_json(&f.ledger.to_json().unwrap()).unwrap();
+    f.clock
+        .set(UtcMillis::from_millis(T0.as_millis() - 86_400_000));
+    let g = expect_approval_error(
+        consume_via_engine(&mut f, &op_a(), REV_A),
+        &ApprovalError::Expired,
+    );
+    assert_eq!(g.code, "approval.expired");
+    let record = f.ledger.get(&f.id).unwrap();
+    assert_eq!(record.state, ApprovalState::Expired);
+    assert_eq!(record.consumed_at, None);
+    // Restoring the clock does not revive it.
+    f.clock.set(T0);
+    f.clock.advance(DurationMs::from_seconds_u32(10));
+    expect_approval_error(
+        consume_via_engine(&mut f, &op_a(), REV_A),
+        &ApprovalError::NotApproved {
+            state: ApprovalState::Expired,
+        },
+    );
+}
+
+#[test]
+fn toctou_wall_clock_set_back_between_decision_and_use_expires_approval() {
+    // Inside [requested_at, expires_at) but before the operator's decision
+    // instant: the clock moved backwards after approval.
+    let mut f = approved_fixture(); // requested T0, approved T0+5s
+    f.clock.set(T0);
+    f.clock.advance(DurationMs::from_seconds_u32(2));
+    expect_approval_error(
+        consume_via_engine(&mut f, &op_a(), REV_A),
+        &ApprovalError::Expired,
+    );
+    assert_eq!(f.ledger.get(&f.id).unwrap().state, ApprovalState::Expired);
+}
+
+#[test]
+fn toctou_restart_under_new_runtime_epoch_expires_approval() {
+    // SEC-02: the approval is stamped with the epoch it was issued in; an
+    // engine for a restarted process (new process-start id) or a rebooted host
+    // (new boot id) refuses it as EXPIRED even inside the 15-minute window.
+    let issued = RuntimeEpoch::new("boot-a", "proc-1").unwrap();
+    let build = |engine_epoch: RuntimeEpoch| {
+        let clock = Arc::new(SteppingClock::new(T0));
+        let c = Arc::clone(&clock);
+        let engine = Engine::builtin_v1(Box::new(move || c.now())).with_runtime_epoch(engine_epoch);
+        let mut ledger = ApprovalLedger::new();
+        let id = ApprovalId::parse("apr-epoch").unwrap();
+        ledger
+            .request_in_epoch(
+                ApprovalRequest::new(
+                    id.clone(),
+                    op_a(),
+                    operator(),
+                    T0,
+                    REV_A,
+                    Capability::GradeFinalize,
+                    "finalize D01 grade",
+                )
+                .unwrap(),
+                &issued,
+            )
+            .unwrap();
+        clock.advance(DurationMs::from_seconds_u32(5));
+        ledger
+            .approve(&id, &operator(), clock.now(), &key())
+            .unwrap();
+        // Snapshot round trip: what g9-app does when it re-reads a record.
+        let ledger = ApprovalLedger::from_json(&ledger.to_json().unwrap()).unwrap();
+        clock.advance(DurationMs::from_seconds_u32(5));
+        Fixture {
+            engine,
+            clock,
+            ledger,
+            id,
+        }
+    };
+
+    let mut same = build(issued.clone());
+    assert_eq!(same.engine.runtime_epoch(), Some(&issued));
+    let authorized = consume_via_engine(&mut same, &op_a(), REV_A).unwrap();
+    assert!(authorized.consumed.is_some());
+
+    for restarted in [
+        RuntimeEpoch::new("boot-a", "proc-2").unwrap(),
+        RuntimeEpoch::new("boot-b", "proc-1").unwrap(),
+    ] {
+        let mut f = build(restarted);
+        let g = expect_approval_error(
+            consume_via_engine(&mut f, &op_a(), REV_A),
+            &ApprovalError::Expired,
+        );
+        assert_eq!(g.code, "approval.expired");
+        let record = f.ledger.get(&f.id).unwrap();
+        assert_eq!(record.state, ApprovalState::Expired);
+        assert_eq!(record.consumed_at, None);
+    }
 }
 
 #[test]

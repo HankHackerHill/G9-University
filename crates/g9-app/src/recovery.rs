@@ -7,10 +7,13 @@
 //!    an existing database with pending migrations *unmigrated*. Here, pending
 //!    migrations are applied only after a verified backup: Online Backup API
 //!    snapshot into the configured backup directory → verification on the copy
-//!    → (file databases) `Migrator::dry_run_on_copy` → `migrate_pending`.
-//!    Without a backup directory, or when any step fails, the database stays
-//!    unmigrated and every mutating command is refused (`DATA_CORRUPTION
-//!    recovery.integrity_failed` with reason `pending_migrations`).
+//!    (attachment manifest included) → (file databases)
+//!    `Migrator::dry_run_on_copy` in the scratch directory → `migrate_pending`.
+//!    Without a backup directory, without an approved scratch directory for a
+//!    file database (the dry run is mandatory, runbook Migration step 2), or
+//!    when any step fails, the database stays unmigrated and every mutating
+//!    command is refused (`DATA_CORRUPTION recovery.integrity_failed` with
+//!    reason `pending_migrations`).
 //! 2. **Audit chain.** `AuditChain::verify_chain`; a broken chain blocks
 //!    mutations (tamper evidence must not be written over).
 //! 3. **Open intervals.** Every interval still open is closed `UNCERTAIN`
@@ -33,7 +36,7 @@ use g9_domain::{
 use g9_policy::ResourceContext;
 use g9_storage::approvals_store;
 use g9_storage::audit::{AuditChain, AuditDecision, AuditOutcome};
-use g9_storage::backup::{self, SnapshotRequest, VerifyOptions};
+use g9_storage::backup::{self, SnapshotRequest};
 use g9_storage::events::{self, DomainEvent};
 use g9_storage::repos::sessions::{self, ClosedBy};
 use g9_storage::repos::ReadScope;
@@ -133,6 +136,31 @@ fn migrate_after_backup(
             Some("backup directory is not inside an approved root".into());
         return Ok(());
     }
+    // A file database is migrated only after a dry run on a copy, which needs
+    // an approved scratch directory; checked before any snapshot is taken.
+    let file_db = db.path().map(std::path::Path::to_path_buf);
+    let scratch = match (&file_db, svc.config.scratch_dir.clone()) {
+        (None, _) => None,
+        (Some(_), None) => {
+            report.migration_blocked_reason = Some(
+                "no scratch directory is configured; the migration dry run on a copy is required"
+                    .into(),
+            );
+            return Ok(());
+        }
+        (Some(_), Some(scratch)) => {
+            if !svc
+                .approved_roots
+                .as_ref()
+                .is_some_and(|roots| roots.contains(&scratch))
+            {
+                report.migration_blocked_reason =
+                    Some("scratch directory is not inside an approved root".into());
+                return Ok(());
+            }
+            Some(scratch)
+        }
+    };
     let now = svc.now();
     let backup_id = BackupId::new_v7();
     let dest = dir.join(format!("{}.pre-migration.sqlite", backup_id.as_str()));
@@ -152,15 +180,20 @@ fn migrate_after_backup(
             return Ok(());
         }
     };
-    let verified = backup::verify_and_advance(&mut manifest, &VerifyOptions::default());
+    let verified =
+        backup::verify_and_advance(&mut manifest, &crate::commands::backup::verify_options(svc));
     if !matches!(&verified, Ok(r) if r.ok()) {
         report.migration_blocked_reason = Some("pre-migration backup failed verification".into());
         return Ok(());
     }
-    if let (Some(path), Some(scratch)) = (
-        db.path().map(std::path::Path::to_path_buf),
-        svc.config.scratch_dir.clone(),
-    ) {
+    if matches!(&verified, Ok(r) if crate::commands::backup::attachments_unchecked(r)) {
+        report.migration_blocked_reason = Some(
+            "pre-migration backup holds attachments that were not checked (no attachment directory is configured)"
+                .into(),
+        );
+        return Ok(());
+    }
+    if let (Some(path), Some(scratch)) = (file_db, scratch) {
         let migrator = Migrator::new(svc.config.app_version.clone(), now);
         match migrator.dry_run_on_copy(&path, &scratch) {
             Ok(dry) if dry.integrity_ok && dry.foreign_key_violations == 0 => {

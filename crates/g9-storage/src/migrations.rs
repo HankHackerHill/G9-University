@@ -93,10 +93,20 @@ pub const EMBEDDED_MIGRATIONS: &[Migration] = &[
         name: "0010_intervention_review_and_reliability",
         sql: include_str!("migrations/0010_intervention_review_and_reliability.sql"),
     },
+    Migration {
+        version: 11,
+        name: "0011_time_interval_immutability",
+        sql: include_str!("migrations/0011_time_interval_immutability.sql"),
+    },
+    Migration {
+        version: 12,
+        name: "0012_rubric_anchors",
+        sql: include_str!("migrations/0012_rubric_anchors.sql"),
+    },
 ];
 
 /// Highest embedded migration version.
-pub const CURRENT_SCHEMA_VERSION: u32 = 10;
+pub const CURRENT_SCHEMA_VERSION: u32 = 12;
 
 const BOOTSTRAP_SQL: &str = "CREATE TABLE IF NOT EXISTS schema_migrations (
   version     INTEGER PRIMARY KEY NOT NULL CHECK (version >= 1),

@@ -11,6 +11,19 @@
 //! `record_manifest`. Backup and scratch directories must lie inside an
 //! approved root. A failed verification or restore test is reported as the
 //! `FAILED` state (the command itself succeeded in establishing that).
+//!
+//! Attachment manifest (ADR-0001, runbook step 2): every verification and
+//! restore test checks attachments under `AppConfig::attachment_dir` (when it
+//! lies inside an approved root). A snapshot that holds attachment rows which
+//! were not checked (no attachment directory configured) is never `CHECKED`:
+//! the manifest moves to `FAILED` with reason `backup.attachments_not_checked`.
+//! Hashing attachment bytes against `content_sha256` is a `g9-storage`
+//! verification change (PROPOSED).
+//!
+//! The in-memory backup map (`Services::backups`) mirrors `backup_manifests`
+//! and is updated only after the command transaction committed
+//! (`Mutation::on_commit`), so a rolled-back command never leaves it ahead of
+//! the database.
 
 use super::{decode, parse_id, rc, to_value};
 use crate::context::{AppContext, KnownBackup, Services};
@@ -20,7 +33,9 @@ use g9_domain::{
     BackupId, BackupState, Classification, CommandMeta, CommandOutcome, DataDomain, G9Error,
     ResourceKind, ResourceRef, Revision,
 };
-use g9_storage::backup::{self, SnapshotRequest, VerifyOptions};
+use g9_storage::backup::{
+    self, AttachmentCheck, SnapshotRequest, VerificationReport, VerifyOptions,
+};
 use g9_storage::BackupManifest;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -69,6 +84,28 @@ fn approved_dir(svc: &Services, dir: Option<&PathBuf>, what: &str) -> Result<Pat
         ));
     }
     Ok(dir.clone())
+}
+
+/// Verification options for every backup check: the attachment directory,
+/// when configured inside an approved root.
+pub(crate) fn verify_options(svc: &Services) -> VerifyOptions {
+    VerifyOptions {
+        attachment_root: svc.config.attachment_dir.clone().filter(|dir| {
+            svc.approved_roots
+                .as_ref()
+                .is_some_and(|roots| roots.contains(dir))
+        }),
+    }
+}
+
+/// Reason recorded when attachment rows exist but were not checked.
+pub(crate) const ATTACHMENTS_NOT_CHECKED: &str = "backup.attachments_not_checked";
+
+/// Whether a report holds attachment rows whose files were never checked (an
+/// unchecked manifest is not a passed check).
+pub(crate) fn attachments_unchecked(report: &VerificationReport) -> bool {
+    matches!(report.attachment_manifest, AttachmentCheck::NotChecked)
+        && report.table_counts.get("attachments").copied().unwrap_or(0) > 0
 }
 
 #[derive(Debug, Deserialize)]
@@ -217,16 +254,24 @@ fn advance(
                 .get(&id)
                 .cloned()
                 .ok_or_else(|| G9Error::not_found("backup.not_found", "backup not found"))?;
-            let options = VerifyOptions::default();
+            let options = verify_options(env.svc);
             let kind = match &scratch {
                 None => {
                     if known.manifest.state != BackupState::SnapshotCreated {
                         return Err(illegal(known.manifest.state, "CHECK"));
                     }
                     // A failed or impossible verification drives the manifest to FAILED.
-                    if let Err(e) = backup::verify_and_advance(&mut known.manifest, &options) {
-                        if known.manifest.state == BackupState::SnapshotCreated {
-                            known.manifest.fail(e.code())?;
+                    match backup::verify_and_advance(&mut known.manifest, &options) {
+                        Ok(report) if attachments_unchecked(&report) => {
+                            if known.manifest.state == BackupState::Checked {
+                                known.manifest.fail(ATTACHMENTS_NOT_CHECKED)?;
+                            }
+                        }
+                        Ok(_) => {}
+                        Err(e) => {
+                            if known.manifest.state == BackupState::SnapshotCreated {
+                                known.manifest.fail(e.code())?;
+                            }
                         }
                     }
                     "backup.verified"
@@ -256,13 +301,16 @@ fn advance(
             let result = view(&id, &known)?;
             let state = known.manifest.state;
             let revision = known.revision;
-            env.svc.backups.insert(id.clone(), known);
-            Ok(
-                Mutation::new(result, Some(revision)).with_event(EventSpec::system(
+            let key = id.clone();
+            Ok(Mutation::new(result, Some(revision))
+                .with_event(EventSpec::system(
                     kind,
                     json!({ "backup_id": id, "state": state }),
-                )),
-            )
+                ))
+                // Only after the manifest row committed (no divergence on rollback).
+                .on_commit(Box::new(move |svc| {
+                    svc.backups.insert(key, known);
+                })))
         },
     )
 }

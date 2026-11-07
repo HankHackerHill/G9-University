@@ -79,3 +79,59 @@ describe('CalendarGrid', () => {
     expect(seen).toEqual(['D15 recall|D15 theory']);
   });
 });
+
+describe('CalendarGrid never hides timed events', () => {
+  const zone = 'Europe/Berlin';
+  const at = (day: number, hour: number, minute = 0) => Date.UTC(2026, 10, day, hour - 1, minute); // CET = UTC+1 in November
+  const event = (id: string, title: string, start: number, end: number): CalendarEvent => ({
+    event_id: id,
+    title,
+    kind: 'APPOINTMENT',
+    start,
+    end,
+    all_day: false,
+    immutable: true,
+    day_id: null,
+    block: null,
+    session_id: null,
+    adjusted: null,
+    provenance: 'OPERATOR',
+  });
+  const events = [
+    event('e-early', 'Early dentist', at(17, 6), at(17, 7)),
+    event('e-mid', 'Mid call', at(17, 10), at(17, 11)),
+    event('e-late', 'Late call', at(17, 21), at(17, 22)),
+    event('e-night', 'Night shift', at(17, 22, 30), at(18, 6)),
+    event('e-carry', 'Carried over', at(15, 23), at(16, 2)),
+  ];
+  const labels = () =>
+    screen
+      .getAllByRole('gridcell')
+      .map((c) => c.getAttribute('aria-label') ?? '')
+      .join('\n');
+
+  it('by default extends the hour rows so every timed event of the week is in a cell label', () => {
+    render(<CalendarGrid weekStart={{ year: 2026, month: 11, day: 16 }} zone={zone} events={events} />);
+    const all = labels();
+    for (const title of ['Early dentist', 'Mid call', 'Late call', 'Night shift', 'Carried over']) {
+      expect(all).toContain(title);
+    }
+    expect(screen.getByTestId('cell-2026-11-17:6')).toHaveAttribute('aria-label', 'Tue 2026-11-17 06:00, 1 event: Early dentist 06:00 to 07:00');
+    expect(screen.getByTestId('cell-2026-11-17:21')).toHaveAttribute('aria-label', 'Tue 2026-11-17 21:00, 1 event: Late call 21:00 to 22:00');
+    expect(screen.getByTestId('cell-2026-11-17:22')).toHaveAttribute('aria-label', expect.stringContaining('Night shift 22:30 to 2026-11-18 06:00'));
+    // An event that began before the week is listed at Monday 00:00.
+    expect(screen.getByTestId('cell-2026-11-16:0')).toHaveAttribute('aria-label', expect.stringContaining('Carried over 2026-11-15 23:00 to 02:00'));
+    expect(screen.queryByTestId('calendar-outside-hours')).toBeNull();
+  });
+
+  it('with a caller-fixed range lists the events outside it in a note instead of dropping them', () => {
+    render(<CalendarGrid weekStart={{ year: 2026, month: 11, day: 16 }} zone={zone} events={events} startHour={7} endHour={21} />);
+    expect(screen.queryByTestId('cell-2026-11-17:6')).toBeNull();
+    const note = screen.getByTestId('calendar-outside-hours');
+    expect(note).toHaveTextContent('4 events outside the shown hours (07:00–21:00)');
+    for (const title of ['Early dentist', 'Late call', 'Night shift', 'Carried over']) {
+      expect(note).toHaveTextContent(title);
+    }
+    expect(note).not.toHaveTextContent('Mid call');
+  });
+});

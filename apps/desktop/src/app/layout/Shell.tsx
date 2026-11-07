@@ -5,6 +5,7 @@ import { useCommand } from '../hooks/useCommand';
 import { SCREENS } from '../router';
 import { useContrast } from '../theme/useContrast';
 import { Badge } from '../components/Badge';
+import { Warnings } from '../components/Warnings';
 
 export function Shell() {
   const status = useCommand('system.status', {});
@@ -55,6 +56,7 @@ export function Shell() {
             High contrast
           </button>
         </div>
+        <Warnings warnings={status.warnings} label="System status warnings (host facts reported by system.status)" testId="status-warnings" />
       </header>
       <nav className="shell-nav" aria-label="Screens">
         <ol>

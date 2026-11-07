@@ -482,9 +482,26 @@ pub fn restore_to_copy(backup_path: &Path, dest_path: &Path) -> StorageResult<Pa
     Ok(dest_path.to_path_buf())
 }
 
+/// The snapshot file must still be the bytes this manifest recorded.
+fn manifest_hash_errors(manifest: &BackupManifest, path: &Path, when: &str) -> Vec<String> {
+    match sha256_of_file(path) {
+        Ok(sha) if sha == manifest.sha256_of_file => Vec::new(),
+        Ok(_) => vec![format!(
+            "snapshot file hash differs from the manifest {when}"
+        )],
+        Err(e) => vec![format!("snapshot file unreadable {when}: {}", e.code())],
+    }
+}
+
 /// Restore the manifest's snapshot into `scratch_dir/<backup_id>.restore-test.sqlite`,
 /// verify it and advance Checked → RestoreTested (or → Failed). The restored copy
 /// is left for inspection; the caller removes it.
+///
+/// The bytes restored must be the bytes verified under this manifest (ADR-0001,
+/// threat ST10): the snapshot file is re-hashed against
+/// `manifest.sha256_of_file` before the copy (a replaced file is refused without
+/// restoring it) and again after it (a swap during the copy), and the restored
+/// copy's audit chain head must equal `manifest.audit_anchor`.
 pub fn restore_test(
     manifest: &mut BackupManifest,
     scratch_dir: &Path,
@@ -495,6 +512,11 @@ pub fn restore_test(
         .path
         .clone()
         .ok_or_else(|| StorageError::Precondition("manifest has no snapshot path".to_string()))?;
+    let before = manifest_hash_errors(manifest, &path, "before the restore");
+    if !before.is_empty() {
+        manifest.fail("restore test verification failed")?;
+        return Err(StorageError::Verification(before));
+    }
     let dest = scratch_dir.join(format!(
         "{}.restore-test.sqlite",
         manifest.backup_id.as_str()
@@ -506,14 +528,26 @@ pub fn restore_test(
             return Err(e);
         }
     };
+    let mut errors = manifest_hash_errors(manifest, &path, "after the restore");
     let report = verify_snapshot(&restored, options)?;
-    if report.ok() {
+    errors.extend(report.errors.iter().cloned());
+    let restored_head = {
+        let copy = Connection::open_with_flags(
+            &restored,
+            OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+        )?;
+        AuditChain::head(&copy)?.map(|(seq, row_hash)| AuditAnchor { seq, row_hash })
+    };
+    if restored_head != manifest.audit_anchor {
+        errors.push("restored audit chain head differs from the manifest anchor".to_string());
+    }
+    if report.ok() && errors.is_empty() {
         manifest.restore_tested_at = Some(now);
         manifest.transition(BackupEvent::TestRestore)?;
         Ok(restored)
     } else {
         manifest.fail("restore test verification failed")?;
-        Err(StorageError::Verification(report.errors))
+        Err(StorageError::Verification(errors))
     }
 }
 

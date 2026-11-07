@@ -125,6 +125,7 @@ fn assert_skill_denied_even_with_approval(
             required_capability: capability,
             consumer: &actor,
             now: T0,
+            runtime_epoch: None,
         };
         let err = ledger.verify_and_consume(&id, &intent, &key()).unwrap_err();
         assert!(
@@ -236,6 +237,7 @@ fn a07_operator_approval_cannot_be_consumed_by_skill_for_shared_capability() {
         required_capability: Capability::CrossDomainRead,
         consumer: &actor,
         now: T0,
+        runtime_epoch: None,
     };
     assert_eq!(
         ledger.verify_and_consume(&id, &intent, &key()).unwrap_err(),

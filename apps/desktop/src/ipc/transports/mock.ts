@@ -16,6 +16,7 @@
  */
 import fixtureJson from '../../fixtures/curriculum-week3.json';
 import { canonicalJson } from '../../lib/canonical-json';
+import { BASELINE_RUBRIC, CRITERION_FLOOR_PERCENT, LEVEL_SCALE, PASS_THRESHOLD } from '../../lib/rubric';
 import {
   addDays,
   civilToUtc,
@@ -289,15 +290,12 @@ interface Criterion {
   critical: boolean;
 }
 
-/** Baseline rubric (handoff §8, ADR-0012): six criteria, weights sum to 100, SCOPE is the critical gate. */
-export const BASELINE_CRITERIA: readonly Criterion[] = [
-  { code: 'SCOPE', weight: 20, critical: true },
-  { code: 'METHOD', weight: 15, critical: false },
-  { code: 'EVIDENCE', weight: 20, critical: false },
-  { code: 'REMEDIATION', weight: 20, critical: false },
-  { code: 'VERIFICATION', weight: 15, critical: false },
-  { code: 'REPORT', weight: 10, critical: false },
-];
+/**
+ * Baseline rubric (handoff §9, `g9_domain::assessment::BaselineRubric`): six criteria, weights
+ * 25/20/20/15/10/10, `scope_compliance_reporting` is the only critical gate. Mirrored in
+ * `src/lib/rubric.ts`, which is parity-tested against the Rust source.
+ */
+export const BASELINE_CRITERIA: readonly Criterion[] = BASELINE_RUBRIC.map((c) => ({ code: c.code, weight: c.weight, critical: c.critical_gate }));
 
 const GENESIS_HASH = '0'.repeat(64);
 const APPROVAL_TTL_MS = 15 * 60_000;
@@ -507,7 +505,7 @@ class MockState {
         weight: c.weight,
         score: 3,
         source: 'HUMAN_REVIEWER',
-        evidence_refs: [`mock-evidence-W${prevWeek}-${c.code.toLowerCase()}`],
+        evidence_refs: [`mock-evidence-W${prevWeek}-${c.code.replace(/_/g, '-')}`],
       }));
       const finalizedAt = this.blockStart(this.fixture.week.days[0] ?? { ...emptyDay(), day_of_week: 1 }, 1) - 2 * 86_400_000;
       this.attempts.set('mock-attempt-prev', {
@@ -589,12 +587,13 @@ class MockState {
   // ----- pipeline ------------------------------------------------------------
 
   execute(opName: string, clientMeta: ClientCommandMeta, payload: unknown): unknown {
+    // Same order as `g9_app::dispatch`: the operation name is checked before the metadata is parsed.
+    if (!isOperationName(opName)) {
+      return fail('INVALID_INPUT', 'ipc.unknown_operation', 'unknown operation').error;
+    }
     // Addendum A.8 — identity is never accepted from the wire.
     if (Object.hasOwn(clientMeta, 'actor')) {
       return fail('INVALID_INPUT', 'meta.actor_not_accepted', 'command metadata must not carry an actor; the backend assigns it').error;
-    }
-    if (!isOperationName(opName)) {
-      return fail('NOT_FOUND', 'ipc.unknown_operation', `unknown operation ${opName}`).error;
     }
     const spec = OPERATIONS[opName];
     if (clientMeta.operation !== opName) {
@@ -625,6 +624,10 @@ class MockState {
       const outcome: CommandOutcome<unknown> = { result: result.result, replayed: false };
       if (result.revision !== undefined) {
         outcome.revision = result.revision;
+      }
+      // Like the backend, `warnings` is omitted when empty.
+      if (result.warnings !== undefined && result.warnings.length > 0) {
+        outcome.warnings = [...result.warnings];
       }
       if (spec.mutating) {
         const entry = this.appendAudit({
@@ -668,9 +671,9 @@ class MockState {
       case 'curriculum.validate':
         return { result: this.curriculumValidate(payload) };
       case 'curriculum.import':
-        return { result: this.curriculumImport(payload) };
+        return this.curriculumImport(payload, meta);
       case 'curriculum.daily_plan':
-        return { result: this.dailyPlan(payload) };
+        return this.dailyPlan(payload);
       case 'curriculum.promote':
         return this.curriculumPromote(payload, meta);
       case 'calendar.list':
@@ -846,10 +849,16 @@ class MockState {
     return { valid: violations.length === 0, violations, checksum_sha256: sha256Hex(canonicalJson(manifest)), provenance };
   }
 
-  private curriculumImport(payload: unknown): ResponseOf<'curriculum.import'> {
-    const rec = asRecord(payload, 'curriculum.import');
-    const manifest = json(rec, 'manifest', 'curriculum.import');
-    const provenance = oneOf(rec, 'provenance', ['PROPOSED_SEED', 'RECONCILED_CANDIDATE', 'APPROVED_CANONICAL'] as const, 'curriculum.import');
+  /**
+   * Mock of `curriculum.import`. Mirrors the backend contract: the manifest is checked first
+   * (INVALID_INPUT before any approval), then policy rule `operator.import.curriculum.approval`
+   * answers APPROVAL_REQUIRED(CURRICULUM_IMPORT) bound to the manifest identity and checksum.
+   */
+  private curriculumImport(payload: unknown, meta: CommandMeta): Handled<ResponseOf<'curriculum.import'>> {
+    const op = 'curriculum.import';
+    const rec = asRecord(payload, op);
+    const manifest = json(rec, 'manifest', op);
+    const provenance = oneOf(rec, 'provenance', ['PROPOSED_SEED', 'RECONCILED_CANDIDATE', 'APPROVED_CANONICAL'] as const, op);
     if (provenance === 'APPROVED_CANONICAL') {
       throw fail('UNAUTHORIZED', 'curriculum.promote_requires_approval', 'importing directly as APPROVED_CANONICAL is denied; use PROMOTE_CANONICAL');
     }
@@ -860,6 +869,10 @@ class MockState {
       });
     }
     const m = manifest as Rec;
+    const versionId = `${String(m.curriculum_id)}:${String(m.version)}`;
+    const checksum = sha256Hex(canonicalJson(manifest));
+    const resource: ResourceRef = { kind: 'CURRICULUM_VERSION', id: versionId };
+    this.requireApproval(op, { curriculum_version_id: versionId, checksum_sha256: checksum, provenance }, resource, 'CURRICULUM_IMPORT', meta, `Import ${versionId} as ${provenance}`);
     const weeks = Array.isArray(m.weeks) ? m.weeks : [];
     let days = 0;
     let objectives = 0;
@@ -871,12 +884,9 @@ class MockState {
       }
     }
     return {
-      curriculum_version_id: `${String(m.curriculum_id)}:${String(m.version)}`,
-      checksum_sha256: sha256Hex(canonicalJson(manifest)),
-      provenance,
-      weeks: weeks.length,
-      days,
-      objectives,
+      result: { curriculum_version_id: versionId, checksum_sha256: checksum, provenance, weeks: weeks.length, days, objectives },
+      revision: 1,
+      resource,
     };
   }
 
@@ -950,7 +960,13 @@ class MockState {
     };
   }
 
-  private dailyPlan(payload: unknown): DailyPlan {
+  private dailyPlan(payload: unknown): Handled<DailyPlan> {
+    // Same disclosure as g9-app commands/curriculum.rs: a plan from a non-canonical version says so.
+    const warnings = this.fixture.provenance === 'APPROVED_CANONICAL' ? [] : [NON_CANONICAL_PLAN_WARNING];
+    return { result: this.dailyPlanResult(payload), warnings };
+  }
+
+  private dailyPlanResult(payload: unknown): DailyPlan {
     const rec = asRecord(payload, 'curriculum.daily_plan');
     const dateStr = str(rec, 'date', 'curriculum.daily_plan');
     const date = parseIsoDate(dateStr);
@@ -1201,7 +1217,7 @@ class MockState {
       revision: 1,
     };
     this.notes.set(note.note_id, note);
-    return { result: note, revision: 1, resource: { kind: 'NOTE', id: note.note_id } };
+    return { result: note, revision: 1, resource: { kind: 'NOTE', id: note.note_id }, warnings: evidence.length > 0 ? [NOTE_EVIDENCE_NOT_PERSISTED_WARNING] : [] };
   }
 
   private notesRevise(payload: unknown, meta: CommandMeta): Handled<NoteView> {
@@ -1311,20 +1327,37 @@ class MockState {
     if (!Array.isArray(rawCriteria)) {
       throw fail('INVALID_INPUT', 'ipc.field_invalid', `${op}: 'criteria' must be an array`, { field: 'criteria' });
     }
-    const raw: unknown[] = rawCriteria;
+    const raw: Rec[] = rawCriteria.map((r): Rec => {
+      if (typeof r !== 'object' || r === null || Array.isArray(r)) {
+        throw fail('INVALID_INPUT', 'ipc.field_invalid', `${op}: 'criteria[]' must be objects`, { field: 'criteria' });
+      }
+      return r as Rec;
+    });
+    // Same checks and order as g9-app commands/assessment.rs grade_provisional:
+    // unknown code → level range → every rubric criterion present → source/actor provenance.
+    for (const e of raw) {
+      const code = str(e, 'criterion_code', op);
+      if (!BASELINE_CRITERIA.some((c) => c.code === code)) {
+        throw fail('INVALID_INPUT', 'grade.criterion_unknown', 'criterion is not part of this rubric', { criterion_code: code });
+      }
+      const level = int(e, 'score', op, 0);
+      if (level > 4) {
+        throw fail('INVALID_INPUT', 'grade.level_out_of_range', 'criterion score is an anchored level 0..=4', { criterion_code: code, level });
+      }
+    }
     const results: CriterionResult[] = [];
     for (const c of BASELINE_CRITERIA) {
-      const entry = raw.find((r) => typeof r === 'object' && r !== null && (r as Rec).criterion_code === c.code);
-      if (entry === undefined) {
-        throw fail('INVALID_INPUT', 'grade.criterion_missing', `criterion ${c.code} has no result`, { criterion_code: c.code });
-      }
-      const e = entry as Rec;
-      const score = int(e, 'score', op, 0);
-      if (score > 4) {
-        throw fail('INVALID_INPUT', 'grade.score_out_of_range', 'criterion scores use anchored levels 0-4', { criterion_code: c.code });
+      const e = raw.find((r) => r.criterion_code === c.code);
+      if (e === undefined) {
+        throw fail('INVALID_INPUT', 'grade.criterion_missing', 'every rubric criterion needs a result', { criterion_code: c.code });
       }
       const source = oneOf(e, 'source', ['DETERMINISTIC_CHECKER', 'HUMAN_REVIEWER', 'MODEL_ADVISORY'] as const satisfies readonly GradeSource[], op);
-      results.push({ criterion_code: c.code, weight: c.weight, score, source, evidence_refs: strArray(e, 'evidence_refs', op, true) });
+      // The operator may record HUMAN_REVIEWER (or advisory) results; a DETERMINISTIC_CHECKER
+      // result can only come from a System checker (g9-assessment CriterionResult::new).
+      if (source === 'DETERMINISTIC_CHECKER') {
+        throw fail('UNAUTHORIZED', 'assessment.grade.source_actor_mismatch', 'grade source DETERMINISTIC_CHECKER cannot be recorded by an OPERATOR actor');
+      }
+      results.push({ criterion_code: c.code, weight: c.weight, score: int(e, 'score', op, 0), source, evidence_refs: strArray(e, 'evidence_refs', op, true) });
     }
     attempt.state = applyMachine(ASSESSMENT_MACHINE, attempt.state, 'GRADE_PROVISIONAL', 'assessment_attempt');
     attempt.grade = computeGrade(results);
@@ -1352,7 +1385,7 @@ class MockState {
     attempt.grade = { ...attempt.grade, final: true };
     attempt.finalized_at = this.now();
     attempt.revision += 1;
-    return { result: attempt, revision: attempt.revision, resource };
+    return { result: attempt, revision: attempt.revision, resource, warnings: [OBSERVATIONS_NOT_DERIVED_WARNING] };
   }
 
   private competencyProjection(payload: unknown): ResponseOf<'competency.projection'> {
@@ -1560,6 +1593,7 @@ class MockState {
       result: { export_id: exportId, state: 'REQUESTED', domains, format, requested_at: this.now() },
       revision: 1,
       resource: { kind: 'EXPORT', id: exportId },
+      warnings: [EXPORT_NOT_IMPLEMENTED_WARNING],
     };
   }
 
@@ -1602,7 +1636,16 @@ interface Handled<T = unknown> {
   result: T;
   revision?: Revision;
   resource?: ResourceRef;
+  /** Becomes `CommandOutcome.warnings` (omitted when empty), as in g9-app. */
+  warnings?: readonly string[];
 }
+
+// Warning texts copied from g9-app (commands/curriculum.rs, privacy.rs, assessment.rs, notes.rs).
+const NON_CANONICAL_PLAN_WARNING = 'curriculum.non_canonical: plan derived from a version that is not APPROVED_CANONICAL';
+const EXPORT_NOT_IMPLEMENTED_WARNING = 'export.execution_not_implemented: the per-domain export writer is PROPOSED; no file was produced';
+const OBSERVATIONS_NOT_DERIVED_WARNING =
+  'competency.observations_not_derived: assessment versions store no difficulty (wave-1 gap); observation derivation is PROPOSED';
+const NOTE_EVIDENCE_NOT_PERSISTED_WARNING = 'notes.evidence_refs_not_persisted: note-level evidence links are PROPOSED (wave-1 storage gap)';
 
 function applyMachine<S extends string, E extends string>(table: TransitionTable<S, E>, from: S, event: E, area: string): S {
   const r = transition(table, from, event);
@@ -1664,27 +1707,47 @@ function emptyDay(): FixtureDay {
   return { day_id: 'D00', day_of_week: 1, planned_minutes: 0, objectives: [], evidence_artifact: '', blocks: [], is_assessment_day: false };
 }
 
-/** ADR-0012 pass rule: total >= 80, every criterion >= 50 % of its weight, no gate failure. */
+/**
+ * Port of the backend provisional grade view (g9-app commands/assessment.rs `grade_view` over
+ * g9-assessment `score_breakdown`, ADR-0012, LRN-10 option a):
+ *  - a level maps through the anchored scale 0/25/50/80/100 (level 3 everywhere = 80 = PASS);
+ *  - per criterion the best HUMAN_REVIEWER result counts, else the best DETERMINISTIC_CHECKER;
+ *    MODEL_ADVISORY results never count;
+ *  - PASS iff every criterion has a counted result, each meets the 50 % floor and the weighted
+ *    total is >= 80; a criterion without a counted result makes the total 0 (no estimate);
+ *  - `gate_failures` lists critical criteria below the floor (or without a counted result);
+ *  - the reliability class of an operator-entered provisional grade is SELF_ADJUDICATED
+ *    (the MVP operator is the learner, LRN-11).
+ */
 export function computeGrade(criteria: CriterionResult[]): GradeView {
-  let total = 0;
+  let weightedSum: number | null = 0;
+  let totalWeight = 0;
+  let floorsMet = true;
+  let knownFailure = false;
   const gateFailures: string[] = [];
-  let everyHalf = true;
-  for (const c of criteria) {
-    const earned = (c.score / 4) * c.weight;
-    total += earned;
-    if (earned < c.weight / 2) {
-      everyHalf = false;
+  for (const def of BASELINE_CRITERIA) {
+    totalWeight += def.weight;
+    const counted = (source: GradeSource): number | null => {
+      const levels = criteria.filter((c) => c.criterion_code === def.code && c.source === source).map((c) => c.score);
+      return levels.length === 0 ? null : Math.max(...levels);
+    };
+    const level = counted('HUMAN_REVIEWER') ?? counted('DETERMINISTIC_CHECKER');
+    const score = level === null ? null : (LEVEL_SCALE[level] ?? 0);
+    const meetsFloor = score === null ? null : score >= CRITERION_FLOOR_PERCENT;
+    if (meetsFloor !== true) {
+      floorsMet = false;
     }
-    const def = BASELINE_CRITERIA.find((b) => b.code === c.criterion_code);
-    if (def?.critical === true && c.score === 0) {
-      gateFailures.push('OUT_OF_SCOPE');
+    if (meetsFloor === false) {
+      knownFailure = true;
     }
+    if (def.critical && meetsFloor !== true) {
+      gateFailures.push(def.code);
+    }
+    weightedSum = weightedSum === null || score === null ? null : weightedSum + def.weight * score;
   }
-  const sources = new Set(criteria.map((c) => c.source));
-  const reliability: GradeView['reliability_class'] =
-    sources.size === 1 && sources.has('DETERMINISTIC_CHECKER') ? 'DETERMINISTIC' : 'SELF_ADJUDICATED';
-  const rounded = Math.round(total * 100) / 100;
-  return { total: rounded, pass: rounded >= 80 && everyHalf && gateFailures.length === 0, gate_failures: gateFailures, criteria, reliability_class: reliability, final: false };
+  const total = weightedSum === null || totalWeight === 0 ? 0 : Math.round((weightedSum / totalWeight) * 100) / 100;
+  const pass = !knownFailure && weightedSum !== null && totalWeight > 0 && weightedSum >= PASS_THRESHOLD * totalWeight && floorsMet;
+  return { total, pass, gate_failures: gateFailures, criteria, reliability_class: 'SELF_ADJUDICATED', final: false };
 }
 
 function isProvenance(v: unknown): v is ManifestProvenance {

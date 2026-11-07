@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { isG9Error } from '../../ipc/client';
 import { addDays, formatIsoDate, startOfDayUtc, startOfIsoWeek, type CivilDate } from '../../lib/civil-time';
 import { formatDateTime } from '../../lib/format';
+import { mergeWarnings, warningsOf } from '../../lib/warnings';
 import { ApprovalCard } from '../components/ApprovalCard';
 import { StateBadge } from '../components/Badge';
 import { CalendarGrid } from '../components/CalendarGrid';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, NoData, Panel } from '../components/Panel';
+import { Warnings } from '../components/Warnings';
 import { useApprovalFlow } from '../hooks/useApprovalFlow';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
@@ -80,6 +82,7 @@ export function CalendarScreen() {
         ) : null}
       </div>
       {events.error !== null ? <ErrorDisplay error={events.error} onRetry={events.reload} /> : null}
+      <Warnings warnings={events.warnings} />
       {weekStart === null || events.data === null ? (
         <Loading what="calendar" />
       ) : (
@@ -161,6 +164,7 @@ export function CalendarScreen() {
             ) : null}
           </div>
         )}
+        <Warnings warnings={mergeWarnings(warningsOf(proposalState), apply.warnings)} />
         {apply.error !== null && apply.error.category !== 'APPROVAL_REQUIRED' ? <ErrorDisplay error={apply.error} /> : null}
         {apply.approval !== null ? (
           <ApprovalCard

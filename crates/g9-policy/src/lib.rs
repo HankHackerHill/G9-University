@@ -29,14 +29,19 @@
 //! * Approvals bind to the exact operation hash, resource, scope and expected
 //!   revision; they expire (15 min default), are single-use, and every refused
 //!   consumption yields a `DENY` record with an `approval.*` reason.
+//! * Expiry fails closed (SEC-02): a wall clock earlier than the request or
+//!   decision instant expires the approval, and so does consumption under a
+//!   [`RuntimeEpoch`] (boot id + process-start id) other than the one the
+//!   request was issued in, when the caller supplies one.
 //! * Finalized records are immutable for everyone; corrections supersede.
 //!
 //! ## What this crate does not do
 //!
 //! It does not persist anything, does not read the OS keyring or CSPRNG (the
-//! [`BindingKey`] bytes are supplied by `g9-app`), and does not decide *which*
-//! resource context applies — `g9-app` reads the stored row and supplies a
-//! [`ResourceContext`].
+//! [`BindingKey`] bytes are supplied by `g9-app`), does not read the boot id or
+//! mint a process-start id (the [`RuntimeEpoch`] is supplied by `g9-app`), and
+//! does not decide *which* resource context applies — `g9-app` reads the
+//! stored row and supplies a [`ResourceContext`].
 
 pub mod approvals;
 pub mod binding;
@@ -47,7 +52,7 @@ pub mod rules;
 
 pub use approvals::{
     ApprovalError, ApprovalLedger, ApprovalRecord, ApprovalRequest, ConsumeIntent,
-    ConsumedApproval, DEFAULT_APPROVAL_TTL,
+    ConsumedApproval, RuntimeEpoch, DEFAULT_APPROVAL_TTL,
 };
 pub use binding::{sign, verify, BindingError, BindingKey, BINDING_KEY_LEN, MAC_HEX_LEN};
 pub use engine::{

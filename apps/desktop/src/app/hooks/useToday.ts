@@ -15,6 +15,8 @@ export interface Today {
   zone: IanaZone;
   date: CivilDate | null;
   isoDate: string | null;
+  /** `system.status` warnings: host facts appended by the bridge (key-file fallback, zone fallback, read-only storage...). */
+  warnings: readonly string[];
   reload: () => void;
 }
 
@@ -31,6 +33,7 @@ export function useToday(): Today {
     zone,
     date,
     isoDate: date === null ? null : formatIsoDate(date),
+    warnings: status.warnings,
     reload: status.reload,
   };
 }

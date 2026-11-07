@@ -4,6 +4,7 @@ import { ProvenanceBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, NoData, Panel } from '../components/Panel';
 import { Table } from '../components/Table';
+import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 
@@ -28,6 +29,7 @@ export function RetentionCenter() {
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
       {due.error !== null ? <ErrorDisplay error={due.error} onRetry={due.reload} /> : null}
       {due.loading ? <Loading what="review queue" /> : null}
+      <Warnings warnings={due.warnings} />
       {due.data !== null ? (
         <>
           <p>

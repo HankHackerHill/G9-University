@@ -6,7 +6,7 @@ The primary attack surface is the bridge between untrusted text and privileged h
 
 Full threat model, trust boundaries, data flows and adversarial test catalogue: `docs/threat-model/`.
 
-## Mandatory defenses (implemented or gated; see the stage report for status)
+## Mandatory defenses (implemented or gated; status per control in `docs/threat-model/threat-model.md` §6 and `docs/evaluations/gate-evidence.md`)
 
 | Control | Where |
 |---|---|

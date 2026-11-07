@@ -4,11 +4,13 @@ import type { NoteView } from '../../ipc/operations';
 import type { Classification, G9Error } from '../../ipc/types';
 import { CLASSIFICATIONS } from '../../ipc/types';
 import { formatDateTime } from '../../lib/format';
+import { warningsOf } from '../../lib/warnings';
 import { ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { MarkdownPreview } from '../components/MarkdownPreview';
 import { NoData, Panel } from '../components/Panel';
 import { Table } from '../components/Table';
+import { Warnings } from '../components/Warnings';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
 
@@ -24,6 +26,7 @@ export function LearningJournal() {
   const [notes, setNotes] = useState<NoteView[]>([]);
   const [error, setError] = useState<G9Error | null>(null);
   const [busy, setBusy] = useState(false);
+  const [saveWarnings, setSaveWarnings] = useState<readonly string[]>([]);
 
   const save = async () => {
     setBusy(true);
@@ -31,6 +34,7 @@ export function LearningJournal() {
       current === null
         ? await client.invoke('notes.create', { title, body_markdown: body, classification, domain: 'LEARNING' })
         : await client.invoke('notes.revise', { note_id: current.note_id, title, body_markdown: body }, { expectedRevision: current.revision });
+    setSaveWarnings(warningsOf(r));
     if (isG9Error(r)) {
       setError(r);
     } else {
@@ -46,6 +50,7 @@ export function LearningJournal() {
     setTitle('');
     setBody(STARTER);
     setError(null);
+    setSaveWarnings([]);
   };
 
   return (
@@ -56,6 +61,7 @@ export function LearningJournal() {
         imported or pasted HTML is data, never instructions.
       </p>
       {error !== null ? <ErrorDisplay error={error} /> : null}
+      <Warnings warnings={saveWarnings} />
       <div className="grid-2">
         <Panel title={current === null ? 'New note' : `Revise ${current.note_id} (revision ${current.revision})`}>
           <form

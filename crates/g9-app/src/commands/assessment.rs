@@ -17,10 +17,21 @@
 //!   operator takes every attempt, so the operator is the learner and an
 //!   operator finalization is `SELF_ADJUDICATED` (ADR-0012, LRN-11).
 //! * `assessment.begin` with `retake_of` starts the retake on the newest
-//!   version that differs from the original's (LRN-13: a retake uses a
-//!   different variant). When the assessment has no other version the retake
+//!   other version whose task was never shown to the operator, else the
+//!   newest version that differs from the original's with the warning
+//!   `assessment.retake_exposed_variant` (LRN-13: a retake uses a different
+//!   variant). When the assessment has no other version the retake
 //!   reuses the original variant and the outcome carries the warning
 //!   `assessment.retake_same_variant` (the item is no longer blind-eligible).
+//!   A `begin` without `retake_of` on an assessment that already has a
+//!   terminal attempt is recorded as a retake of the latest terminal attempt
+//!   (warning `assessment.retake_inferred`; Addendum A.3: retakes are linked
+//!   and reported separately, never counted as first attempts).
+//! * `assessment.grade_provisional` records the backend-assigned operator as
+//!   `scored_by`; the operator may not claim `DETERMINISTIC_CHECKER`
+//!   provenance (`CriterionResult::new`: only a `System` checker writes it →
+//!   `UNAUTHORIZED assessment.grade.source_actor_mismatch`). A relayed
+//!   `MODEL_ADVISORY` score is accepted; it can never finalize on its own.
 //!
 //! PROPOSED (not wired, reported): gate failures (ADR-0012) cannot be declared
 //! through IPC (`assessment.approve_final` carries only `attempt_id`) and
@@ -366,22 +377,32 @@ pub fn begin(
                 G9Error::precondition_failed("assessment.no_version", "assessment has no version")
             })?;
             let mut same_variant = false;
+            let mut exposed_variant = false;
+            let mut latest_terminal: Option<AttemptRow> = None;
             for v in &versions {
-                if let Some(open) = repo::list_attempts_for_version(
+                for a in repo::list_attempts_for_version(
                     env.conn,
                     &ReadScope::cross_domain(def.data_domain),
                     &v.id,
-                )?
-                .into_iter()
-                .find(|a| !a.state.is_terminal())
-                {
-                    return Err(G9Error::conflict(
-                        "attempt.already_open",
-                        "an attempt for this assessment is already in progress",
-                    )
-                    .with_details(json!({ "attempt_id": open.id })));
+                )? {
+                    if !a.state.is_terminal() {
+                        return Err(G9Error::conflict(
+                            "attempt.already_open",
+                            "an attempt for this assessment is already in progress",
+                        )
+                        .with_details(json!({ "attempt_id": a.id })));
+                    }
+                    let key =
+                        |r: &AttemptRow| (r.started_at, r.created_at, r.id.as_str().to_string());
+                    if latest_terminal.as_ref().is_none_or(|l| key(&a) > key(l)) {
+                        latest_terminal = Some(a);
+                    }
                 }
             }
+            // Addendum A.3 / LRN-13: a second attempt on the same assessment is
+            // a retake, whether or not the client said so.
+            let inferred = retake_of.is_none() && latest_terminal.is_some();
+            let retake_of = retake_of.or_else(|| latest_terminal.map(|a| a.id));
             if let Some(original) = &retake_of {
                 let orig = load_attempt(env.conn, &scope, original)?;
                 if !orig.state.is_terminal() {
@@ -397,14 +418,46 @@ pub fn begin(
                         "retake_of belongs to another assessment",
                     ));
                 }
-                // LRN-13: a retake uses a different variant (the newest other version).
-                match versions
+                // LRN-13: a retake uses a different variant — the newest
+                // other version whose task was never shown, else the newest
+                // other version (flagged), else the only one (flagged).
+                let shown_until = env
+                    .now
+                    .checked_add(
+                        g9_domain::DurationMs::new(1)
+                            .map_err(|_| G9Error::internal_redacted("assessment.duration"))?,
+                    )
+                    .unwrap_or(env.now);
+                let mut unexposed = None;
+                for v in versions
+                    .iter()
+                    .rev()
+                    .filter(|v| v.id != orig.assessment_version_id)
+                {
+                    if !repo::exposed_before(
+                        env.conn,
+                        &v.id,
+                        ExposureContentKind::Task,
+                        ExposedTo::Operator,
+                        shown_until,
+                    )? {
+                        unexposed = Some(v.clone());
+                        break;
+                    }
+                }
+                let other = versions
                     .iter()
                     .rev()
                     .find(|v| v.id != orig.assessment_version_id)
-                {
-                    Some(other) => version = other.clone(),
-                    None => same_variant = true,
+                    .cloned();
+                match (unexposed, other) {
+                    (Some(v), _) => version = v,
+                    (None, Some(v)) => {
+                        version = v;
+                        exposed_variant = true;
+                    }
+                    // Only one version exists: `version` is the original's.
+                    (None, None) => same_variant = true,
                 }
             }
             let state = AssessmentAttemptState::Available
@@ -436,7 +489,12 @@ pub fn begin(
                     &RetakeLinkRow {
                         original_attempt_id: original.clone(),
                         retake_attempt_id: attempt_id.clone(),
-                        reason: "operator retake".to_string(),
+                        reason: if inferred {
+                            "operator retake (inferred: a terminal attempt already existed)"
+                                .to_string()
+                        } else {
+                            "operator retake".to_string()
+                        },
                         created_by: env.meta.actor.id.clone(),
                         created_at: env.now,
                     },
@@ -476,11 +534,24 @@ pub fn begin(
                     "retake_of": retake_of,
                     "variant": version.version_label,
                     "retake_same_variant": same_variant,
+                    "retake_exposed_variant": exposed_variant,
+                    "retake_inferred": inferred,
                 }),
             ));
+            let mutation = if inferred {
+                mutation.with_warning(
+                    "assessment.retake_inferred: this assessment already has a terminal attempt; the new attempt is recorded as a retake of the latest one (Addendum A.3, LRN-13)",
+                )
+            } else {
+                mutation
+            };
             Ok(if same_variant {
                 mutation.with_warning(
                     "assessment.retake_same_variant: the assessment has no other variant; this retake reuses the original variant, which is no longer blind-eligible (LRN-13)",
+                )
+            } else if exposed_variant {
+                mutation.with_warning(
+                    "assessment.retake_exposed_variant: every other variant was already shown; this retake uses one of them and is not blind-eligible (LRN-13)",
                 )
             } else {
                 mutation
@@ -716,6 +787,20 @@ pub fn grade_provisional(
                     .find(|r| r.criterion_code == c.code && r.row.source == input.source)
                     .map(|r| r.row.id.clone());
                 let score = scale.score_for_level(input.score)?;
+                if input.source != GradeSource::ModelAdvisory {
+                    // Provenance is checked by the domain constructor: the
+                    // operator records HUMAN_REVIEWER results; a
+                    // DETERMINISTIC_CHECKER result can only come from a System
+                    // checker (→ UNAUTHORIZED, nothing is stored).
+                    CriterionResult::new(
+                        loaded.attempt.id.clone(),
+                        c.code.clone(),
+                        g9_assessment::Score::new(score)?,
+                        input.source,
+                        &env.meta.actor,
+                        env.now,
+                    )?;
+                }
                 repo::append_criterion_result(
                     env.conn,
                     &CriterionResultRow {

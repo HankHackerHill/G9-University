@@ -527,9 +527,18 @@ fn map_interval(r: &Row<'_>) -> StorageResult<TimeIntervalRow> {
 }
 
 /// Open a focused-time interval. Refused (`CONFLICT`) while any interval is
-/// open in any session, or when a recorded interval of any session ends after
-/// `start_utc` (overlap check in SQL; there is one learner, so focused time of
-/// two sessions can never overlap either).
+/// open in any session: there is one learner, and an interval can only start
+/// after the previous one was closed, so focused time of two sessions can never
+/// overlap and cannot be double counted (credit comes from the monotonic
+/// readings, ADR-0011). A backdated start (`start_utc < now`) is a claim about
+/// the past and is also refused (`CONFLICT`) when a recorded interval ends after it.
+///
+/// A start at the caller's current reading (`start_utc >= now`, the `g9-app`
+/// path) is NOT compared with recorded wall instants, which are for display and
+/// correlation only (`g9-calendar` timer contract): the wall clock can step
+/// backwards (NTP, a hardware clock kept in local time, defect TEC-07) and
+/// closed intervals are immutable, so such a rule would refuse every start
+/// until real time passed the latest recorded end.
 pub fn open_interval(
     conn: &Connection,
     id: &str,
@@ -549,15 +558,19 @@ pub fn open_interval(
             "time_intervals.already_running: session {open_session} has an open interval"
         ))));
     }
-    let overlapping: i64 = conn.query_row(
-        "SELECT COUNT(*) FROM time_intervals WHERE end_utc > ?1",
-        params![ms(start_utc)],
-        |r| r.get(0),
-    )?;
-    if overlapping > 0 {
-        return Err(RepoError::Storage(StorageError::Conflict(
-            "time_intervals.overlap: a recorded interval ends after the new start".to_string(),
-        )));
+    // `start_utc` and `now` come from the caller's clock; a live start has
+    // start_utc == now, so a wall-clock step can never reach this check.
+    if start_utc < now {
+        let overlapping: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM time_intervals WHERE end_utc > ?1",
+            params![ms(start_utc)],
+            |r| r.get(0),
+        )?;
+        if overlapping > 0 {
+            return Err(RepoError::Storage(StorageError::Conflict(
+                "time_intervals.overlap: a recorded interval ends after the new start".to_string(),
+            )));
+        }
     }
     conn.execute(
         "INSERT INTO time_intervals (id, session_id, start_utc, end_utc, start_mono_ms, end_mono_ms, continuity, closed_by,
@@ -1103,9 +1116,9 @@ mod tests {
             ),
             Err(RepoError::Storage(StorageError::Immutable(_)))
         ));
-        // overlap with the closed interval (starts before it ended)
+        // a start backdated into the closed interval (starts before it ended) overlaps
         assert!(matches!(
-            open_interval(conn, "ti-2", &s1, t(300_000), 700_000, t(300_000)),
+            open_interval(conn, "ti-2", &s1, t(300_000), 700_000, t(700_000)),
             Err(RepoError::Storage(StorageError::Conflict(_)))
         ));
         let closed = list_intervals(conn, &s1).unwrap();
@@ -1410,6 +1423,133 @@ mod tests {
             ),
             Err(RepoError::Storage(StorageError::NotFound("study_sessions")))
         ));
+    }
+
+    #[test]
+    fn wall_clock_regression_never_locks_the_timer() {
+        let db = db();
+        let conn = db.conn();
+        let a = session("sess-a", SessionState::Running, DataDomain::Learning);
+        let b = session("sess-b", SessionState::Running, DataDomain::Learning);
+        insert_session(conn, &a).unwrap();
+        insert_session(conn, &b).unwrap();
+        let year_ms: i64 = 365 * 24 * 3_600_000;
+
+        // session A runs while the wall clock is wrongly one year ahead
+        open_interval(conn, "ti-a", &a.id, t(year_ms), 1_000, t(year_ms)).unwrap();
+        close_interval(
+            conn,
+            "ti-a",
+            Revision::INITIAL,
+            t(year_ms + 600_000),
+            Some(601_000),
+            Continuity::Verified,
+            ClosedBy::Operator,
+            t(year_ms + 600_000),
+        )
+        .unwrap();
+
+        // the clock is corrected: another session's timer still starts and stops
+        open_interval(conn, "ti-b1", &b.id, t(0), 700_000, t(0)).unwrap();
+        // the single-open-interval rule still prevents any overlap of focused time
+        assert!(matches!(
+            open_interval(conn, "ti-a2", &a.id, t(10), 701_000, t(10)),
+            Err(RepoError::Storage(StorageError::Conflict(m))) if m.contains("already_running")
+        ));
+        close_interval(
+            conn,
+            "ti-b1",
+            Revision::INITIAL,
+            t(60_000),
+            Some(760_000),
+            Continuity::Verified,
+            ClosedBy::Operator,
+            t(60_000),
+        )
+        .unwrap();
+
+        // an NTP step backwards (30 s) between pause and resume is not a conflict
+        open_interval(conn, "ti-b2", &b.id, t(30_000), 790_000, t(30_000)).unwrap();
+        assert_eq!(open_intervals(conn).unwrap().len(), 1);
+        assert_eq!(count_rows(conn), 3);
+        // credit stays monotonic: the earlier intervals keep their elapsed time
+        let ledger = list_intervals(conn, &b.id).unwrap();
+        assert_eq!(
+            ledger[0].record.mono_elapsed(),
+            Some(DurationMs::new(60_000).unwrap())
+        );
+        assert_eq!(
+            list_intervals(conn, &a.id).unwrap()[0]
+                .record
+                .mono_elapsed(),
+            Some(DurationMs::new(600_000).unwrap())
+        );
+    }
+
+    #[test]
+    fn closed_intervals_cannot_be_moved_relabelled_or_reidentified() {
+        let db = db();
+        let conn = db.conn();
+        let a = session("sess-a", SessionState::Running, DataDomain::Learning);
+        let b = session("sess-b", SessionState::Running, DataDomain::Learning);
+        insert_session(conn, &a).unwrap();
+        insert_session(conn, &b).unwrap();
+        open_interval(conn, "ti-1", &a.id, t(0), 0, t(0)).unwrap();
+        // an open interval keeps its identity, session and start
+        assert_immutable(
+            conn,
+            "UPDATE time_intervals SET session_id = 'sess-b' WHERE id = 'ti-1'",
+        );
+        assert_immutable(
+            conn,
+            "UPDATE time_intervals SET start_mono_ms = 5 WHERE id = 'ti-1'",
+        );
+        close_interval(
+            conn,
+            "ti-1",
+            Revision::INITIAL,
+            t(3_600_000),
+            Some(3_600_000),
+            Continuity::Verified,
+            ClosedBy::Recovery,
+            t(3_600_000),
+        )
+        .unwrap();
+        // credited time cannot move to another session; the closer cannot be relabelled
+        assert_immutable(
+            conn,
+            "UPDATE time_intervals SET session_id = 'sess-b', closed_by = 'SYSTEM' WHERE id = 'ti-1'",
+        );
+        assert_immutable(
+            conn,
+            "UPDATE time_intervals SET session_id = 'sess-b' WHERE id = 'ti-1'",
+        );
+        assert_immutable(
+            conn,
+            "UPDATE time_intervals SET closed_by = 'SYSTEM' WHERE id = 'ti-1'",
+        );
+        assert_immutable(
+            conn,
+            "UPDATE time_intervals SET created_at = 99 WHERE id = 'ti-1'",
+        );
+        assert_immutable(
+            conn,
+            "UPDATE time_intervals SET id = 'ti-x' WHERE id = 'ti-1'",
+        );
+        assert_immutable(
+            conn,
+            "UPDATE time_intervals SET continuity = 'UNCERTAIN' WHERE id = 'ti-1'",
+        );
+        let row = &list_intervals(conn, &a.id).unwrap()[0];
+        assert_eq!(row.closed_by, Some(ClosedBy::Recovery));
+        assert_eq!(row.record.session_id, a.id);
+        assert!(list_intervals(conn, &b.id).unwrap().is_empty());
+        // revision bookkeeping is the only change a closed row accepts
+        conn.execute(
+            "UPDATE time_intervals SET revision = revision + 1, updated_at = 4000000 WHERE id = 'ti-1'",
+            [],
+        )
+        .unwrap();
     }
 
     fn count_rows(conn: &Connection) -> i64 {

@@ -36,7 +36,18 @@
 //!
 //! * `g9_storage::backup` has no manifest reader: backups created by an
 //!   earlier process cannot be verified/restore-tested through IPC
-//!   (`PRECONDITION_FAILED backup.manifest_unavailable`).
+//!   (`PRECONDITION_FAILED backup.manifest_unavailable`), and
+//!   `system.status.last_backup` covers this process only (warning
+//!   `system.status.last_backup_process_scoped` when earlier manifests exist).
+//! * No live restore: restoring a verified backup into the live database is
+//!   PROPOSED; the `READ_ONLY` refusal says so (`details.live_restore`).
+//! * Suspend detection (TEC-07) is a stop-time wall/monotonic comparison only;
+//!   the heartbeat ledger needs a `g9-storage` table (PROPOSED).
+//! * The `retention.due` v1.0 vocabulary has no `PROCEDURAL` kind (labelled
+//!   `PRACTICAL_TRANSFER` with the warning `retention.due.procedural_label`).
+//! * Idempotency records written before content-free replay records existed
+//!   still hold their full outcome; erasure does not reach them (needs a
+//!   `g9-storage` erasure/retention change).
 //! * `g9_storage::audit` has no listing query: `audit.recent` lists rows
 //!   appended by this process and verifies the whole chain.
 //! * `g9_storage::deletion::execute_erasure` opens its own transaction: the

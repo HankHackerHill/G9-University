@@ -10,6 +10,23 @@
 //! readings are comparable only within one process lifetime: intervals opened
 //! by this process belong to epoch 1, every stored interval from an earlier
 //! process to epoch 0 (recovery closed those `UNCERTAIN` at open).
+//!
+//! Dual-clock check at stop (TEC-07, partial): when `pause`/`complete` closes
+//! an interval, the wall-clock and monotonic elapsed times are compared; if
+//! they differ by more than [`CLOCK_DIVERGENCE_TOLERANCE_MS`] (a suspend
+//! during which the monotonic clock stood still, or a wall-clock jump) the
+//! interval is closed `UNCERTAIN` (never credited without a correction), the
+//! session moves to `INTERRUPTED` and the outcome carries the warning
+//! `session.clock_discontinuity`. A suspend during which the monotonic source
+//! keeps counting (both deltas grow together) cannot be seen at stop time; the
+//! TEC-07 heartbeat ledger that would bound it needs a `session_heartbeats`
+//! table in `g9-storage` and is PROPOSED.
+//!
+//! Recovery after a correction (A03): `session.correct_time` moves an
+//! `INTERRUPTED` session to `PAUSED` only when no closed `UNCERTAIN` interval
+//! of the session is left without a correction (the rule of
+//! `g9_calendar::SessionRecord::recover`); otherwise the session stays
+//! `INTERRUPTED` and the warning names the remaining interval ids.
 
 use super::{decode, new_id, parse_id, rc, scope_of, tail, to_value};
 use crate::context::{AppContext, Services};
@@ -29,6 +46,10 @@ use g9_storage::repos::ReadScope;
 use rusqlite::Connection;
 use serde::Deserialize;
 use serde_json::{json, Value};
+
+/// Largest tolerated difference between wall-clock and monotonic elapsed time
+/// of one interval before it is treated as a discontinuity (TEC-07: 5000 ms).
+pub const CLOCK_DIVERGENCE_TOLERANCE_MS: i64 = 5_000;
 
 /// Map a timer ledger refusal onto the closed category set.
 pub(crate) fn timer_err(e: TimerError) -> G9Error {
@@ -253,10 +274,12 @@ fn transition(
         },
         move |env| {
             let row = load(env.conn, &scope, &id)?;
-            let next = row
+            let mut next = row
                 .state
                 .transition(event)
                 .map_err(|_| illegal(row.state, event))?;
+            let mut applied = event;
+            let mut warning = None;
             let mut ledger = ledger_for(env.conn, env.svc, &id)?;
             let mono = env.svc.mono();
             let mut details = json!({ "from": row.state, "to": next });
@@ -273,21 +296,55 @@ fn transition(
                         .into_iter()
                         .find(|r| r.record.is_open());
                     if let Some(open) = open {
-                        ledger.stop(&id, env.now, mono).map_err(timer_err)?;
-                        repo::close_interval(
-                            env.conn,
-                            &open.id,
-                            open.revision,
-                            env.now,
-                            Some(mono),
-                            Continuity::Verified,
-                            if event == SessionEvent::Pause {
-                                ClosedBy::Operator
-                            } else {
-                                ClosedBy::System
-                            },
-                            env.now,
-                        )?;
+                        let divergence = clock_divergence(&open.record, env.now, mono);
+                        if env.svc.epoch_intervals.contains(&open.id)
+                            && divergence > CLOCK_DIVERGENCE_TOLERANCE_MS
+                        {
+                            // TEC-07: the two clocks disagree (suspend with a
+                            // stopped monotonic clock, or a wall-clock jump):
+                            // the elapsed time is unknown, never VERIFIED.
+                            repo::close_interval(
+                                env.conn,
+                                &open.id,
+                                open.revision,
+                                env.now,
+                                None,
+                                Continuity::Uncertain,
+                                ClosedBy::System,
+                                env.now,
+                            )?;
+                            applied = SessionEvent::Interrupt;
+                            next = row
+                                .state
+                                .transition(SessionEvent::Interrupt)
+                                .map_err(|_| illegal(row.state, SessionEvent::Interrupt))?;
+                            details = json!({
+                                "from": row.state,
+                                "to": next,
+                                "requested": event,
+                                "reason": "clock_discontinuity",
+                                "divergence_ms": divergence,
+                            });
+                            warning = Some(format!(
+                                "session.clock_discontinuity: wall-clock and monotonic elapsed time differ by {divergence} ms (more than {CLOCK_DIVERGENCE_TOLERANCE_MS} ms: suspend or clock change); the interval was closed UNCERTAIN, is not credited and the session is INTERRUPTED until the operator records a correction"
+                            ));
+                        } else {
+                            ledger.stop(&id, env.now, mono).map_err(timer_err)?;
+                            repo::close_interval(
+                                env.conn,
+                                &open.id,
+                                open.revision,
+                                env.now,
+                                Some(mono),
+                                Continuity::Verified,
+                                if event == SessionEvent::Pause {
+                                    ClosedBy::Operator
+                                } else {
+                                    ClosedBy::System
+                                },
+                                env.now,
+                            )?;
+                        }
                         details["interval_id"] = json!(open.id);
                     }
                 }
@@ -301,10 +358,15 @@ fn transition(
                 &SessionEventRow {
                     seq,
                     session_id: id.clone(),
-                    event,
+                    event: applied,
                     from: row.state,
                     to: next,
-                    actor: env.meta.actor.clone(),
+                    actor: if applied == event {
+                        env.meta.actor.clone()
+                    } else {
+                        // The interruption is the backend's finding, not the operator's act.
+                        env.svc.system.clone()
+                    },
                     occurred_at: env.now,
                 },
                 Some(&details),
@@ -321,28 +383,43 @@ fn transition(
             )?;
             let stored = load(env.conn, &ReadScope::cross_domain(row.data_domain), &id)?;
             let view = session_view(env.conn, env.svc, &stored)?;
-            let kind = match event {
+            let kind = match applied {
                 SessionEvent::Prepare => "session.prepared",
                 SessionEvent::Start => "session.started",
                 SessionEvent::Pause => "session.paused",
                 SessionEvent::Resume => "session.resumed",
                 SessionEvent::Complete => "session.completed",
+                SessionEvent::Interrupt => "session.interrupted",
                 _ => "session.transitioned",
             };
-            Ok(
-                Mutation::new(view, Some(revision)).with_event(EventSpec::learning(
-                    kind,
-                    json!({
-                        "session_id": id,
-                        "from": row.state,
-                        "to": next,
-                        "credited_ms": credit.total_credited_ms,
-                        "uncertain_ms": credit.uncertain_ms,
-                    }),
-                )),
-            )
+            let mutation = Mutation::new(view, Some(revision)).with_event(EventSpec::learning(
+                kind,
+                json!({
+                    "session_id": id,
+                    "from": row.state,
+                    "to": next,
+                    "credited_ms": credit.total_credited_ms,
+                    "uncertain_ms": credit.uncertain_ms,
+                }),
+            ));
+            Ok(match warning {
+                Some(w) => mutation.with_warning(w),
+                None => mutation,
+            })
         },
     )
+}
+
+/// |wall-clock elapsed − monotonic elapsed| of an open interval at `now`/`mono`
+/// (saturating; a clock that went backwards counts as divergence).
+fn clock_divergence(record: &g9_calendar::IntervalRecord, now: UtcMillis, mono: u64) -> i64 {
+    let wall = now
+        .as_millis()
+        .saturating_sub(record.start_wall.as_millis());
+    let mono_now = i64::try_from(mono).unwrap_or(i64::MAX);
+    let mono_start = i64::try_from(record.start_mono_ms).unwrap_or(i64::MAX);
+    wall.saturating_sub(mono_now.saturating_sub(mono_start))
+        .saturating_abs()
 }
 
 /// `session.prepare` (PLANNED → READY).
@@ -406,7 +483,8 @@ struct CorrectRequest {
 /// `session.correct_time`: an operator correction is a new
 /// `manual_time_corrections` row that supersedes the credit of one closed
 /// `UNCERTAIN` interval; the interval itself is never edited. An
-/// `INTERRUPTED` session recovers to `PAUSED`.
+/// `INTERRUPTED` session recovers to `PAUSED` once no `UNCERTAIN` interval of
+/// the session is left without a correction.
 pub fn correct_time(
     ctx: &mut AppContext,
     spec: &'static OpSpec,
@@ -415,6 +493,9 @@ pub fn correct_time(
 ) -> Result<CommandOutcome<Value>, G9Error> {
     let req: CorrectRequest = decode(payload)?;
     let id: SessionId = parse_id(&req.session_id, "session_id")?;
+    // Corrections are refused during an open exam (`operator.correct.allow`
+    // excludes EXAM); the mode is backend-derived (TEC-25).
+    let meta = &super::with_backend_mode(ctx, meta)?;
     let resource = ResourceRef::new(ResourceKind::TimeInterval, req.interval_id.as_str());
     let scope = scope_of(meta);
     let facts_id = id.clone();
@@ -489,8 +570,26 @@ pub fn correct_time(
                     created_at: env.now,
                 },
             )?;
+            // A03 / `SessionRecord::recover`: recover only when no closed
+            // UNCERTAIN interval of this session is left uncorrected.
+            let remaining: Vec<String> = intervals
+                .iter()
+                .enumerate()
+                .filter(|(i, r)| {
+                    r.record.continuity == Continuity::Uncertain
+                        && !r.record.is_open()
+                        && ledger.latest_correction(*i).is_none()
+                })
+                .map(|(_, r)| r.id.clone())
+                .collect();
+            let mut warning = None;
             let mut revision = row.revision;
-            if row.state == SessionState::Interrupted {
+            if row.state == SessionState::Interrupted && !remaining.is_empty() {
+                warning = Some(format!(
+                    "session.uncorrected_uncertain_time: the session stays INTERRUPTED until every UNCERTAIN interval has a correction; remaining: {}",
+                    remaining.join(", ")
+                ));
+            } else if row.state == SessionState::Interrupted {
                 let next = row
                     .state
                     .transition(SessionEvent::Recover)
@@ -524,17 +623,20 @@ pub fn correct_time(
             )?;
             let stored = load(env.conn, &ReadScope::cross_domain(row.data_domain), &id)?;
             let view = session_view(env.conn, env.svc, &stored)?;
-            Ok(
-                Mutation::new(view, Some(revision)).with_event(EventSpec::learning(
-                    "session.time_corrected",
-                    json!({
-                        "session_id": id,
-                        "interval_id": req.interval_id,
-                        "correction_id": correction_id,
-                        "credited_ms": credited,
-                    }),
-                )),
-            )
+            let mutation = Mutation::new(view, Some(revision)).with_event(EventSpec::learning(
+                "session.time_corrected",
+                json!({
+                    "session_id": id,
+                    "interval_id": req.interval_id,
+                    "correction_id": correction_id,
+                    "credited_ms": credited,
+                    "remaining_uncertain": remaining,
+                }),
+            ));
+            Ok(match warning {
+                Some(w) => mutation.with_warning(w),
+                None => mutation,
+            })
         },
     )
 }

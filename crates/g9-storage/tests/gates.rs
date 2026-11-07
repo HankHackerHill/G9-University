@@ -638,6 +638,43 @@ fn curriculum_cascade_stays_inside_the_version() {
 }
 
 #[test]
+fn curriculum_delete_version_refuses_a_version_that_sessions_and_evidence_link_to() {
+    let db = open_mem();
+    let fx = populate(db.conn());
+    let id = g9_domain::CurriculumVersionId::parse(&fx.curriculum_version_id).unwrap();
+    let r = g9_storage::repos::curriculum::delete_version(db.conn(), &id, Revision::INITIAL);
+    match r {
+        Err(g9_storage::repos::RepoError::Storage(StorageError::ForeignKey(m))) => {
+            for link in [
+                "study_sessions.training_day_id",
+                "study_sessions.objective_id",
+                "calendar_events.training_day_id",
+                "notes.objective_id",
+                "assessment_definitions.objective_id",
+            ] {
+                assert!(m.contains(link), "{link} missing from {m}");
+            }
+        }
+        other => panic!("expected a RESTRICT-style refusal, got {other:?}"),
+    }
+    // nothing was deleted and no link was nulled
+    assert_count(db.conn(), "curriculum_versions", 1);
+    assert_count(db.conn(), "training_days", 1);
+    let links: (Option<String>, Option<String>) = db
+        .conn()
+        .query_row(
+            "SELECT training_day_id, objective_id FROM study_sessions WHERE id = 'sess-1'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(
+        links,
+        (Some(fx.day_id.clone()), Some(fx.objective_id.clone()))
+    );
+}
+
+#[test]
 fn a10_deletion_request_redacts_and_tombstones() {
     let mut db = open_mem();
     let fx = populate(db.conn());
@@ -788,6 +825,67 @@ fn a10_deletion_request_redacts_and_tombstones() {
         },
     ));
     assert!(matches!(e, StorageError::Conflict(_)), "{e:?}");
+}
+
+#[test]
+fn a10_erasure_never_lists_bytes_a_live_attachment_still_uses() {
+    let mut db = open_mem();
+    let fx = populate(db.conn());
+    // identical bytes → identical content-addressed path, shared by att-1 and att-2
+    db.conn()
+        .execute(
+            "INSERT INTO attachments (id, note_id, original_filename, media_type, size_bytes, content_sha256, storage_ref,
+                source_kind, trust, created_at, updated_at)
+             VALUES ('att-2', NULL, 'copy.pcap', 'application/vnd.tcpdump.pcap', 10, ?1, ?2, 'OPERATOR_INPUT', 'OPERATOR', ?3, ?3)",
+            params![fx.attachment_sha, fx.attachment_storage_ref, T0],
+        )
+        .unwrap();
+    let erase = |db: &mut Database, req: &str, subject: &str, at: i64| {
+        deletion::create_request(
+            db.conn(),
+            &NewDeletionRequest {
+                id: req.into(),
+                subject_kind: DeletionSubjectKind::Attachment,
+                subject_id: subject.into(),
+                requested_by: ActorId::parse("operator-1").unwrap(),
+                requested_at: t(at),
+                reason: None,
+                approval_id: Some(fx.approval_id.clone()),
+            },
+        )
+        .unwrap();
+        deletion::execute_erasure(
+            db.conn_mut(),
+            req,
+            &ActorId::parse("operator-1").unwrap(),
+            t(at + 1),
+        )
+        .unwrap()
+    };
+
+    // att-2 still uses the bytes: erasing att-1 must not hand the path out for purging
+    let first = erase(&mut db, "del-a1", &fx.attachment_id, 10);
+    assert_eq!(first.tombstones.len(), 1);
+    assert!(
+        first.attachment_storage_refs_to_purge.is_empty(),
+        "{first:?}"
+    );
+    let live: (String, i64) = db
+        .conn()
+        .query_row(
+            "SELECT storage_ref, erased FROM attachments WHERE id = 'att-2'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(live, (fx.attachment_storage_ref.clone(), 0));
+
+    // the last erasure of those bytes lists the path exactly once
+    let last = erase(&mut db, "del-a2", "att-2", 20);
+    assert_eq!(
+        last.attachment_storage_refs_to_purge,
+        vec![fx.attachment_storage_ref.clone()]
+    );
 }
 
 #[test]
@@ -1292,6 +1390,84 @@ fn a08_snapshot_refuses_overwrite_and_live_path() {
     let e = err_of(verify_and_advance(&mut manifest, &VerifyOptions::default()));
     assert!(
         matches!(e, StorageError::Verification(_) | StorageError::Corrupt(_)),
+        "{e:?}"
+    );
+    assert_eq!(manifest.state, BackupState::Failed);
+}
+
+fn snapshot_request(id: &str) -> SnapshotRequest {
+    SnapshotRequest {
+        backup_id: BackupId::parse(id).unwrap(),
+        requested_at: t(100),
+        app_version: "0.1.0-test".into(),
+    }
+}
+
+#[test]
+fn a08_restore_test_refuses_a_snapshot_replaced_after_verification() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = open_file(&dir.path().join("live.sqlite"));
+    populate(db.conn());
+    let s0_path = dir.path().join("s0.sqlite");
+    let s0 = create_snapshot(db.conn(), &s0_path, &snapshot_request("s0")).unwrap();
+    // the live database changes between the two snapshots
+    record_manifest(db.conn(), &s0, t(150)).unwrap();
+    let s1_path = dir.path().join("s1.sqlite");
+    let mut s1 = create_snapshot(db.conn(), &s1_path, &snapshot_request("s1")).unwrap();
+    verify_and_advance(&mut s1, &VerifyOptions::default()).unwrap();
+    assert_eq!(s1.state, BackupState::Checked);
+
+    // an older, internally consistent database replaces the verified file
+    std::fs::remove_file(&s1_path).unwrap();
+    std::fs::copy(&s0_path, &s1_path).unwrap();
+    assert_ne!(
+        g9_storage::backup::sha256_of_file(&s1_path).unwrap(),
+        s1.sha256_of_file
+    );
+    assert!(verify_snapshot(&s1_path, &VerifyOptions::default())
+        .unwrap()
+        .ok());
+
+    let scratch = dir.path().join("scratch");
+    std::fs::create_dir_all(&scratch).unwrap();
+    let e = err_of(restore_test(
+        &mut s1,
+        &scratch,
+        &VerifyOptions::default(),
+        t(200),
+    ));
+    assert!(
+        matches!(&e, StorageError::Verification(errs) if errs.iter().any(|m| m.contains("hash differs"))),
+        "{e:?}"
+    );
+    assert_eq!(s1.state, BackupState::Failed);
+    assert!(s1.restore_tested_at.is_none());
+    assert!(s1.retain().is_err(), "a failed set can never be RETAINED");
+    // the replaced bytes were never restored
+    assert!(!scratch.join("s1.restore-test.sqlite").exists());
+}
+
+#[test]
+fn a08_restore_test_refuses_an_audit_anchor_mismatch() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = open_file(&dir.path().join("live.sqlite"));
+    populate(db.conn());
+    let path = dir.path().join("b-anchor.sqlite");
+    let mut manifest = create_snapshot(db.conn(), &path, &snapshot_request("b-anchor")).unwrap();
+    verify_and_advance(&mut manifest, &VerifyOptions::default()).unwrap();
+    // the manifest claims a chain head the snapshot does not contain
+    manifest.audit_anchor = Some(g9_storage::backup::AuditAnchor {
+        seq: 999_999,
+        row_hash: "0".repeat(64),
+    });
+    let e = err_of(restore_test(
+        &mut manifest,
+        dir.path(),
+        &VerifyOptions::default(),
+        t(200),
+    ));
+    assert!(
+        matches!(&e, StorageError::Verification(errs) if errs.iter().any(|m| m.contains("audit chain head"))),
         "{e:?}"
     );
     assert_eq!(manifest.state, BackupState::Failed);

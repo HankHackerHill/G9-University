@@ -8,7 +8,7 @@ Inputs: the v5.1 audit/plan text (operator-supplied) and the v6.0 FINAL MASTER B
 
 **Corrections applied in this repository.** `ARCHITECTURE.md` §3 maps all 17 modules to 13 crates with acyclic layering (ADR-0010); `g9-domain` fixes the vocabulary (ids, UTC ms, zones, civil time, 13 error categories, eight explicit state machines, invariants) (ADR-0011, ADR-0013); `g9-storage` carries the DDL with per-relationship deletion semantics, STRICT tables, triggers and checksummed migrations (ADR-0002); backup is Online Backup API/VACUUM INTO verified on a copy (ADR-0001); the timer is a wall+monotonic ledger with `UNCERTAIN` closure; the curriculum importer enforces 12/72/216/28,800 and the provenance gate (A01).
 
-**Acceptance evidence.** Executed tests are listed in `docs/release/stage-report.md`; anything not executed is NOT RUN. No irrecoverable migration defects in the fault suite (A08), no silent corruption (triggers + chain), complete curriculum arithmetic (A01), idempotent repeated mutation (pipeline tests, wave 2), bounded inference (A09/A11).
+**Acceptance evidence.** Executed tests are listed in `docs/evaluations/gate-evidence.md` (generated gate harness) and `docs/release/wave2-integration-report.md` (workspace test counts); no Stage PASS report has been issued yet; anything not executed is NOT RUN. No irrecoverable migration defects in the fault suite (A08), no silent corruption (triggers + chain), complete curriculum arithmetic (A01), idempotent repeated mutation (pipeline tests, wave 2), bounded inference (A09/A11).
 
 **Open technical items.** Generated TypeScript IPC types from Rust (backlog), `g9-ipc` crate split (backlog), analytics read models (Stage 05), layering test over `cargo metadata` (wave 2).
 

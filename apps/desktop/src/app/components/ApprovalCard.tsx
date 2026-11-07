@@ -14,8 +14,12 @@ export interface ApprovalCardProps {
 
 /**
  * Shows exactly what an approval binds to: action, resource, parameter hash, expiry.
- * Approve/Reject are requests to the backend (Addendum A.7: the webview requests, the trusted
- * surface grants); "Apply" re-issues the original operation with the approval id.
+ * "Apply" re-issues the original operation with the approval id.
+ *
+ * Addendum A.7 requires that the webview only requests and a native confirmation raised from
+ * Rust grants (ADR-0014). That surface is PROPOSED and NOT IMPLEMENTED (SEC-03 OPEN): in this
+ * build Approve calls `approvals.decide` directly from the webview. Every card says so until the
+ * Rust dialog ships.
  */
 export function ApprovalCard({ approval, zone, now, onDecide, onApply, disabled = false }: ApprovalCardProps) {
   const expired = now !== undefined && now > approval.expires_at;
@@ -78,6 +82,10 @@ export function ApprovalCard({ approval, zone, now, onDecide, onApply, disabled 
           </dd>
         </div>
       </dl>
+      <p className="banner" role="note" data-testid="approval-webview-grant">
+        <strong>Webview approval:</strong> the native Rust confirmation is PROPOSED, not implemented (SEC-03 OPEN). In this build Approve grants the request directly
+        from the webview.
+      </p>
       <div className="row">
         {approval.state === 'PENDING' && onDecide !== undefined ? (
           <>

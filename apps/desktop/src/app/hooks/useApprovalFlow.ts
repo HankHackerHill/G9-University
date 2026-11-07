@@ -3,8 +3,10 @@
  *   run(invoke) → backend answers APPROVAL_REQUIRED(approval_id) → show the request →
  *   operator decides (approvals.decide) → re-run the SAME operation with approval_id.
  *
- * The webview only requests; the backend binds the approval to the operation hash and
- * consumes it once (Addendum A.7/ADR-0003). The mock mirrors that behaviour.
+ * The backend binds the approval to the operation hash and consumes it once (ADR-0003); the
+ * mock mirrors that behaviour. The native confirmation raised from Rust (Addendum A.7,
+ * ADR-0014) is PROPOSED and NOT IMPLEMENTED (SEC-03 OPEN): in this build `decide` grants the
+ * approval directly from the webview.
  */
 import { useCallback, useState } from 'react';
 import type { InvokeResult } from '../../ipc/client';
@@ -12,6 +14,7 @@ import { isG9Error } from '../../ipc/client';
 import type { ApprovalRequest } from '../../ipc/operations';
 import type { OperationName } from '../../ipc/operations';
 import type { G9Error } from '../../ipc/types';
+import { warningsOf } from '../../lib/warnings';
 import { useIpc } from '../ipc-context';
 
 export type ApprovalInvoke<K extends OperationName> = (approvalId: string | undefined) => Promise<InvokeResult<K>>;
@@ -21,6 +24,8 @@ export interface ApprovalFlow<K extends OperationName> {
   approval: ApprovalRequest | null;
   error: G9Error | null;
   result: InvokeResult<K> | null;
+  /** `CommandOutcome.warnings` of a successful `result`; empty otherwise. */
+  warnings: readonly string[];
   run: (invoke: ApprovalInvoke<K>) => Promise<void>;
   decide: (decision: 'APPROVE' | 'REJECT') => Promise<void>;
   applyWithApproval: () => Promise<void>;
@@ -109,5 +114,5 @@ export function useApprovalFlow<K extends OperationName>(): ApprovalFlow<K> {
     setInvoker(null);
   }, []);
 
-  return { pending, approval, error, result, run, decide, applyWithApproval, reset };
+  return { pending, approval, error, result, warnings: warningsOf(result), run, decide, applyWithApproval, reset };
 }

@@ -1211,7 +1211,16 @@ fn approval_expiry_is_swept_on_open_and_cannot_be_consumed() {
 // Recovery: migrations only after a verified backup
 // ---------------------------------------------------------------------------
 
-/// A file database at schema version 9 (migration 10 pending).
+/// Migration versions after 9 embedded in this build (pending on a v9 database).
+fn after_version_9() -> Vec<u32> {
+    g9_storage::EMBEDDED_MIGRATIONS
+        .iter()
+        .map(|m| m.version)
+        .filter(|v| *v > 9)
+        .collect()
+}
+
+/// A file database at schema version 9 (every later migration pending).
 fn database_at_version_9(path: &std::path::Path) -> g9_storage::Database {
     let options = g9_storage::OpenOptions::new("0.0.9").applied_at(UtcMillis::from_millis(T0));
     let mut db = g9_storage::Database::open(path, options.clone().no_auto_migrate()).unwrap();
@@ -1220,7 +1229,8 @@ fn database_at_version_9(path: &std::path::Path) -> g9_storage::Database {
         .unwrap();
     drop(db);
     let db = g9_storage::Database::open(path, options).unwrap();
-    assert_eq!(db.pending_migrations(), &[10]);
+    assert_eq!(db.pending_migrations(), after_version_9().as_slice());
+    assert_eq!(db.pending_migrations().first(), Some(&10));
     db
 }
 
@@ -1235,7 +1245,7 @@ fn recovery_migrates_only_after_a_verified_backup() {
     let blocked_path = root.join("blocked.sqlite");
     let mut blocked = Harness::with_database(database_at_version_9(&blocked_path), |_| {}).unwrap();
     let report = blocked.ctx().recovery_report().clone();
-    assert_eq!(report.pending_migrations, vec![10]);
+    assert_eq!(report.pending_migrations, after_version_9());
     assert!(report.migration_blocked_reason.is_some());
     let status = blocked.call("system.status", json!({})).unwrap();
     assert_eq!(status["result"]["storage"]["state"], "READ_ONLY");
@@ -1255,7 +1265,7 @@ fn recovery_migrates_only_after_a_verified_backup() {
     })
     .unwrap();
     let report = h.ctx().recovery_report().clone();
-    assert_eq!(report.migrated, vec![10]);
+    assert_eq!(report.migrated, after_version_9());
     assert!(report.pending_migrations.is_empty());
     let backup = report.pre_migration_backup.unwrap();
     assert_eq!(

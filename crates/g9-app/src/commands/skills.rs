@@ -12,6 +12,17 @@
 //! its own approval. A non-completed invocation (policy denial, model down,
 //! rejected output) commits its metadata row and returns the orchestrator's
 //! redacted error.
+//!
+//! Interaction mode (TEC-25, SEC-10): the mode the pipeline policy and the
+//! orchestrator preflight evaluate is derived from backend state — while an
+//! EXAM-mode attempt is `STARTED` the invocation runs in `EXAM` whatever mode
+//! the client declared, so teaching skills (hints, worked steps) are refused
+//! during an open blind attempt. Recording a refused hint request on the
+//! attempt (LRN-12 `hint_requested`) is PROPOSED.
+//!
+//! Model output is never kept in `idempotency_records`: the stored replay
+//! record has `output: null` and no recommended actions, and a replay says so
+//! with the warning `idempotency.content_not_retained`.
 
 use super::{decode, rc};
 use crate::context::{AppContext, Services};
@@ -276,6 +287,8 @@ pub fn invoke(
             "payload mode must equal the command scope mode",
         ));
     }
+    // The backend-derived mode replaces the declared one (TEC-25, SEC-10).
+    let meta = &super::with_backend_mode(ctx, meta)?;
     let resource = ResourceRef::new(ResourceKind::Skill, req.skill_code.as_str());
     pipeline::execute(
         ctx,
@@ -471,9 +484,26 @@ pub fn invoke(
                     "tool_calls": usage.tool_calls,
                 },
             });
+            // Model output is content: the idempotency record keeps the
+            // envelope without it (see module docs).
+            let mut replay = result.clone();
+            replay["output"] = Value::Null;
+            replay["recommended_actions"] = json!([]);
             Ok(Mutation::new(result, Some(Revision::INITIAL))
                 .with_event(event)
-                .with_warning("skills.output_advisory: recommended actions are proposals and were not executed"))
+                .with_warning("skills.output_advisory: recommended actions are proposals and were not executed")
+                .replay_with(replay))
         },
+    )
+}
+
+/// Replayed `skills.invoke` result: the stored envelope without model output
+/// (see module docs).
+pub(crate) fn replay_view(record: &Value) -> (Value, Vec<String>) {
+    (
+        record.clone(),
+        vec![
+            "idempotency.content_not_retained: model output and recommended actions are not retained for replay; invoke the skill again to see them".to_string(),
+        ],
     )
 }

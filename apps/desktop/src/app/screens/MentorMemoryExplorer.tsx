@@ -1,6 +1,7 @@
 import { ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, ModelUnavailable, NoData, Panel } from '../components/Panel';
+import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 
@@ -19,6 +20,7 @@ export function MentorMemoryExplorer() {
       </p>
       {interventions.error !== null ? <ErrorDisplay error={interventions.error} onRetry={interventions.reload} /> : null}
       {interventions.loading ? <Loading what="hypotheses" /> : null}
+      <Warnings warnings={interventions.warnings} />
       <Panel title="Hypotheses">
         {interventions.data !== null && hypotheses.length === 0 ? (
           <>

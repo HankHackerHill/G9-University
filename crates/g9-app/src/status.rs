@@ -4,6 +4,12 @@
 //! `NullRuntime`), network egress is reported disabled because the mentor
 //! runtime has no network capability at all, and storage is `READ_ONLY` when
 //! recovery refused writes (broken audit chain or unapplied migrations).
+//!
+//! `last_backup` covers backups created or advanced by this process
+//! (`g9-storage` has no manifest reader yet). When it is `null` but
+//! `backup_manifests` holds rows from an earlier process, the outcome carries
+//! the warning `system.status.last_backup_process_scoped` with their count,
+//! so "no backup" is never reported while backups are on record.
 
 use crate::commands::{rc, to_value};
 use crate::context::AppContext;
@@ -14,7 +20,7 @@ use g9_domain::{
     ResourceRef, Revision, SchemaVersion,
 };
 use g9_storage::approvals_store;
-use g9_storage::Migrator;
+use g9_storage::{migrations, Migrator};
 use serde_json::{json, Value};
 
 /// Handle `system.status`.
@@ -81,7 +87,19 @@ pub fn handle(
                 "pending_approvals": pending,
                 "last_backup": last_backup,
             });
-            Ok(Mutation::new(to_value(&status)?, None))
+            let mut mutation = Mutation::new(to_value(&status)?, None);
+            if svc.backups.is_empty() {
+                let recorded = migrations::table_counts(env.conn)?
+                    .get("backup_manifests")
+                    .copied()
+                    .unwrap_or(0);
+                if recorded > 0 {
+                    mutation = mutation.with_warning(format!(
+                        "system.status.last_backup_process_scoped: {recorded} backup manifest(s) recorded by an earlier process are not read (no manifest reader); last_backup covers this process only"
+                    ));
+                }
+            }
+            Ok(mutation)
         },
     )
 }

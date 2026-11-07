@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { formatDuration, formatMinutes, humanizeEnum } from '../../lib/format';
+import { NON_CANONICAL_WARNING, hasWarning, mergeWarnings } from '../../lib/warnings';
 import { ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, ModelUnavailable, NoData, Panel } from '../components/Panel';
 import { Table } from '../components/Table';
+import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 
@@ -12,6 +14,9 @@ export function DailyClassroom() {
   const plan = useCommand('curriculum.daily_plan', today.isoDate === null ? null : { date: today.isoDate });
   const sessions = useCommand('session.list', today.isoDate === null ? null : { date: today.isoDate });
   const list = sessions.data?.sessions ?? [];
+  // A plan derived from a curriculum version that is not APPROVED_CANONICAL (the PROPOSED_SEED
+  // today, rtm R-004) is a proposal, not a verified record.
+  const planLabel = hasWarning(plan.warnings, NON_CANONICAL_WARNING) ? 'PROPOSED' : 'VERIFIED';
 
   return (
     <div>
@@ -19,6 +24,7 @@ export function DailyClassroom() {
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
       {plan.error !== null ? <ErrorDisplay error={plan.error} onRetry={plan.reload} /> : null}
       {plan.loading ? <Loading what="today's plan" /> : null}
+      <Warnings warnings={mergeWarnings(plan.warnings, sessions.warnings)} />
       {plan.data !== null ? (
         plan.data.unscheduled ? (
           <NoData reason={`${plan.data.date} is unscheduled (protected rest)`} />
@@ -27,7 +33,7 @@ export function DailyClassroom() {
             <Panel title={`${plan.data.day_id} — ${plan.data.week_title}`}>
               <p className="muted">
                 Week {plan.data.week_number} · {formatMinutes(plan.data.planned_minutes)} planned · evidence artifact: {plan.data.evidence_artifact}{' '}
-                {plan.data.is_assessment_day ? <StateBadge state="ASSESSMENT DAY" /> : null} <ProvenanceBadge label="VERIFIED" />
+                {plan.data.is_assessment_day ? <StateBadge state="ASSESSMENT DAY" /> : null} <ProvenanceBadge label={planLabel} />
               </p>
               <h3>Objectives</h3>
               <ol>
@@ -67,7 +73,8 @@ export function DailyClassroom() {
                   <ModelUnavailable reason={today.status.model.reason} what="Lesson proposal" />
                 )}
                 <p className="muted">
-                  Teaching output is always a <ProvenanceBadge label="RECOMMENDATION" />; the objective list above is the <ProvenanceBadge label="VERIFIED" /> plan.
+                  Teaching output is always a <ProvenanceBadge label="RECOMMENDATION" />; the objective list above is the <ProvenanceBadge label={planLabel} /> plan
+                  {planLabel === 'PROPOSED' ? ' (curriculum version not APPROVED_CANONICAL)' : ''}.
                 </p>
               </Panel>
               <Panel title="Capture">

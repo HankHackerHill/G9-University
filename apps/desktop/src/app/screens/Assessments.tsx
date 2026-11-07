@@ -1,20 +1,29 @@
 import { useState } from 'react';
-import { isG9Error } from '../../ipc/client';
-import type { AttemptView } from '../../ipc/operations';
+import { isG9Error, type InvokeResult } from '../../ipc/client';
+import type { AnchoredLevel, AttemptView, OperationName } from '../../ipc/operations';
 import type { G9Error } from '../../ipc/types';
 import { formatDateTime } from '../../lib/format';
+import { BASELINE_RUBRIC, parseLevel } from '../../lib/rubric';
 import { ASSESSMENT_MACHINE, can } from '../../lib/state-machines';
+import { mergeWarnings, warningsOf } from '../../lib/warnings';
 import { ApprovalCard } from '../components/ApprovalCard';
 import { ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, NoData, Panel } from '../components/Panel';
 import { Table } from '../components/Table';
+import { Warnings } from '../components/Warnings';
 import { useApprovalFlow } from '../hooks/useApprovalFlow';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
 
-const CRITERIA = ['SCOPE', 'METHOD', 'EVIDENCE', 'REMEDIATION', 'VERIFICATION', 'REPORT'] as const;
+/** Reviewer input for one attempt. Nothing is pre-filled: a level counts only once the reviewer types it. */
+interface ScoreDraft {
+  attemptId: string | null;
+  values: Readonly<Record<string, string>>;
+}
+
+const EMPTY_DRAFT: ScoreDraft = { attemptId: null, values: {} };
 
 export function Assessments() {
   const today = useToday();
@@ -23,14 +32,20 @@ export function Assessments() {
   const [error, setError] = useState<G9Error | null>(null);
   const [busy, setBusy] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [scores, setScores] = useState<Record<string, string>>(Object.fromEntries(CRITERIA.map((c) => [c, '3'])));
+  const [draft, setDraft] = useState<ScoreDraft>(EMPTY_DRAFT);
+  const [actionWarnings, setActionWarnings] = useState<readonly string[]>([]);
   const finalize = useApprovalFlow<'assessment.approve_final'>();
 
   const attempts = list.data?.attempts ?? [];
   const selected: AttemptView | undefined = attempts.find((a) => a.attempt_id === selectedId) ?? attempts[0];
+  // A draft belongs to one attempt; selecting another attempt starts from empty inputs.
+  const scores: Readonly<Record<string, string>> = draft.attemptId !== null && draft.attemptId === selected?.attempt_id ? draft.values : {};
+  const levels: (AnchoredLevel | null)[] = BASELINE_RUBRIC.map((c) => parseLevel(scores[c.code]));
+  const allScored = levels.every((l) => l !== null);
 
-  const after = (r: unknown) => {
+  const after = (r: InvokeResult<OperationName>) => {
     setError(isG9Error(r) ? r : null);
+    setActionWarnings(warningsOf(r));
     setBusy(false);
     list.reload();
   };
@@ -48,14 +63,21 @@ export function Assessments() {
     after(await client.invoke('assessment.review_evidence', { attempt_id: a.attempt_id }, { expectedRevision: a.revision }));
   };
   const grade = async (a: AttemptView) => {
+    const criteria: { criterion_code: string; score: AnchoredLevel; source: 'HUMAN_REVIEWER'; evidence_refs: string[] }[] = [];
+    for (const [i, c] of BASELINE_RUBRIC.entries()) {
+      const score = levels[i];
+      if (score === null || score === undefined) {
+        // Never send a level the reviewer did not enter.
+        return;
+      }
+      criteria.push({ criterion_code: c.code, score, source: 'HUMAN_REVIEWER', evidence_refs: [] });
+    }
     setBusy(true);
-    after(
-      await client.invoke(
-        'assessment.grade_provisional',
-        { attempt_id: a.attempt_id, criteria: CRITERIA.map((c) => ({ criterion_code: c, score: Number(scores[c] ?? '0'), source: 'HUMAN_REVIEWER', evidence_refs: [] })) },
-        { expectedRevision: a.revision },
-      ),
-    );
+    const r = await client.invoke('assessment.grade_provisional', { attempt_id: a.attempt_id, criteria }, { expectedRevision: a.revision });
+    if (!isG9Error(r)) {
+      setDraft(EMPTY_DRAFT);
+    }
+    after(r);
   };
   const approveFinal = async (a: AttemptView) => {
     await finalize.run((approvalId) =>
@@ -73,6 +95,7 @@ export function Assessments() {
       </p>
       {list.error !== null ? <ErrorDisplay error={list.error} onRetry={list.reload} /> : null}
       {error !== null ? <ErrorDisplay error={error} /> : null}
+      <Warnings warnings={mergeWarnings(list.warnings, actionWarnings, finalize.warnings)} />
       <div className="grid-2">
         <div>
           <Panel title="Definitions">
@@ -121,6 +144,7 @@ export function Assessments() {
                       aria-pressed={selected?.attempt_id === a.attempt_id}
                       onClick={() => {
                         setSelectedId(a.attempt_id);
+                        setActionWarnings([]);
                         finalize.reset();
                       }}
                     >
@@ -165,7 +189,7 @@ export function Assessments() {
                 </button>
                 <button
                   type="button"
-                  disabled={busy || !can(ASSESSMENT_MACHINE, selected.state, 'GRADE_PROVISIONAL')}
+                  disabled={busy || !allScored || !can(ASSESSMENT_MACHINE, selected.state, 'GRADE_PROVISIONAL')}
                   onClick={() => {
                     void grade(selected);
                   }}
@@ -186,17 +210,29 @@ export function Assessments() {
               {can(ASSESSMENT_MACHINE, selected.state, 'GRADE_PROVISIONAL') ? (
                 <fieldset>
                   <legend>Reviewer scores (anchored levels 0–4, source HUMAN_REVIEWER)</legend>
-                  {CRITERIA.map((c) => (
-                    <div className="row" key={c}>
-                      <label htmlFor={`score-${c}`}>{c}</label>
+                  <p className="muted">
+                    Baseline rubric (g9-domain): level 3 maps to 80 % of a criterion&apos;s weight, every criterion needs at least level 2 (50 % floor) and the
+                    critical gate fails the attempt below the floor. Nothing is pre-filled; Grade stays disabled until every criterion has a level you entered
+                    ({levels.filter((l) => l !== null).length}/{BASELINE_RUBRIC.length}).
+                  </p>
+                  {BASELINE_RUBRIC.map((c) => (
+                    <div className="row" key={c.code}>
+                      <label htmlFor={`score-${c.code}`}>
+                        {c.title} <code>{c.code}</code> · weight {c.weight}
+                        {c.critical_gate ? ' · critical gate' : ''}
+                      </label>
                       <input
-                        id={`score-${c}`}
+                        id={`score-${c.code}`}
                         type="number"
                         min={0}
                         max={4}
-                        value={scores[c] ?? '0'}
+                        step={1}
+                        inputMode="numeric"
+                        value={scores[c.code] ?? ''}
+                        aria-invalid={(scores[c.code] ?? '') !== '' && parseLevel(scores[c.code]) === null}
                         onChange={(e) => {
-                          setScores((prev) => ({ ...prev, [c]: e.target.value }));
+                          const value = e.target.value;
+                          setDraft({ attemptId: selected.attempt_id, values: { ...scores, [c.code]: value } });
                         }}
                       />
                     </div>

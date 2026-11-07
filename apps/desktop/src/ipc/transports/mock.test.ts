@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createClient, isG9Error, type InvokeResult } from '../client';
-import type { OperationName } from '../operations';
+import { OPERATIONS, type CriterionResult, type GradeSource, type OperationName } from '../operations';
 import type { ClientCommandMeta } from '../types';
-import { MOCK_DEFAULT_NOW, createMockClock, createMockTransport } from './mock';
+import { BASELINE_CRITERIA, MOCK_DEFAULT_NOW, computeGrade, createMockClock, createMockTransport } from './mock';
 
 function harness() {
   const clock = createMockClock();
@@ -350,5 +350,147 @@ describe('mock transport: curriculum promotion', () => {
     expect(done.promotion_allowed).toBe(true);
     expect(done.summary).toEqual({ unchanged: 72, changed: 0, missing_in_candidate: 0, added_in_candidate: 0, metadata_changes: [] });
     expect(done.candidate_checksum).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe('mock transport: fidelity with g9-app (review findings)', () => {
+  const levels = (level: number, overrides: Record<string, { score?: number; source?: GradeSource }> = {}): CriterionResult[] =>
+    BASELINE_CRITERIA.map((c) => ({
+      criterion_code: c.code,
+      weight: c.weight,
+      score: overrides[c.code]?.score ?? level,
+      source: overrides[c.code]?.source ?? 'HUMAN_REVIEWER',
+      evidence_refs: [],
+    }));
+
+  it('grades on the anchored scale: level 3 everywhere is 80 and PASS, SELF_ADJUDICATED (LRN-10, ADR-0012)', () => {
+    const g = computeGrade(levels(3));
+    expect(g.total).toBe(80);
+    expect(g.pass).toBe(true);
+    expect(g.reliability_class).toBe('SELF_ADJUDICATED');
+    expect(g.gate_failures).toEqual([]);
+  });
+
+  it('applies the 50 % floor and reports the critical criterion as the gate failure', () => {
+    const atTwo = computeGrade(levels(2));
+    expect(atTwo.total).toBe(50);
+    expect(atTwo.pass).toBe(false);
+    const gate = computeGrade(levels(4, { scope_compliance_reporting: { score: 1 } }));
+    expect(gate.total).toBe(92.5);
+    expect(gate.pass).toBe(false);
+    expect(gate.gate_failures).toEqual(['scope_compliance_reporting']);
+    const floor = computeGrade(levels(4, { root_cause_reasoning: { score: 1 } }));
+    expect(floor.total).toBe(85);
+    expect(floor.pass).toBe(false);
+    expect(floor.gate_failures).toEqual([]);
+  });
+
+  it('never counts MODEL_ADVISORY results; a criterion with only advisory results leaves no total', () => {
+    const withAdvisory = computeGrade([...levels(3), { criterion_code: 'independent_execution', weight: 25, score: 0, source: 'MODEL_ADVISORY', evidence_refs: [] }]);
+    expect(withAdvisory.total).toBe(80);
+    expect(withAdvisory.pass).toBe(true);
+    const advisoryOnly = computeGrade(levels(4, { scope_compliance_reporting: { source: 'MODEL_ADVISORY' } }));
+    expect(advisoryOnly.total).toBe(0);
+    expect(advisoryOnly.pass).toBe(false);
+    expect(advisoryOnly.gate_failures).toEqual(['scope_compliance_reporting']);
+  });
+
+  it('shows the seeded level-3 attempt as 80 PASS, as the backend would', async () => {
+    const { client } = harness();
+    const prev = ok(await client.invoke('assessment.list', {})).result.attempts.find((a) => a.attempt_id === 'mock-attempt-prev');
+    expect(prev?.grade?.total).toBe(80);
+    expect(prev?.grade?.pass).toBe(true);
+  });
+
+  it('rejects criterion codes outside the rubric, out-of-range levels and operator-recorded DETERMINISTIC_CHECKER results', async () => {
+    const { client } = harness();
+    const def = ok(await client.invoke('assessment.list', {})).result.definitions.find((d) => d.assessment_id !== 'mock-assessment-W2');
+    if (def === undefined) {
+      throw new Error('no definition');
+    }
+    const begun = ok(await client.invoke('assessment.begin', { assessment_id: def.assessment_id })).result;
+    ok(await client.invoke('assessment.submit', { attempt_id: begun.attempt_id, evidence_refs: [] }));
+    const inReview = ok(await client.invoke('assessment.review_evidence', { attempt_id: begun.attempt_id })).result;
+    expect(inReview.state).toBe('EVIDENCE_REVIEW');
+    const legacy = ['SCOPE', 'METHOD', 'EVIDENCE', 'REMEDIATION', 'VERIFICATION', 'REPORT'].map((code) => ({
+      criterion_code: code,
+      score: 3 as const,
+      source: 'HUMAN_REVIEWER' as const,
+      evidence_refs: [],
+    }));
+    const unknown = err(await client.invoke('assessment.grade_provisional', { attempt_id: begun.attempt_id, criteria: legacy }));
+    expect(unknown.category).toBe('INVALID_INPUT');
+    expect(unknown.code).toBe('grade.criterion_unknown');
+    expect(unknown.details).toEqual({ criterion_code: 'SCOPE' });
+    const baseline = BASELINE_CRITERIA.map((c) => ({ criterion_code: c.code, score: 3 as const, source: 'HUMAN_REVIEWER' as const, evidence_refs: [] }));
+    const checker = baseline.map((c) => ({ ...c, source: 'DETERMINISTIC_CHECKER' as const }));
+    expect(err(await client.invoke('assessment.grade_provisional', { attempt_id: begun.attempt_id, criteria: checker })).category).toBe('UNAUTHORIZED');
+    const graded = ok(await client.invoke('assessment.grade_provisional', { attempt_id: begun.attempt_id, criteria: baseline })).result;
+    expect(graded.state).toBe('GRADED_PROVISIONAL');
+    expect(graded.grade?.total).toBe(80);
+    expect(graded.grade?.pass).toBe(true);
+  });
+
+  it('answers INVALID_INPUT ipc.unknown_operation for an unknown operation, checked before the metadata (g9-app dispatch order)', async () => {
+    const { transport } = harness();
+    const meta = {
+      request_id: 'r',
+      operation: 'nope.operation',
+      idempotency_key: 'k',
+      scope: { domain: 'SYSTEM', mode: 'STUDY' },
+      payload_schema_version: { major: 1, minor: 0 },
+      trace_id: 't',
+      issued_at: MOCK_DEFAULT_NOW,
+    } satisfies ClientCommandMeta;
+    const plain = await transport.invoke('nope.operation' as OperationName, meta, {});
+    expect(isG9Error(plain) && plain.category === 'INVALID_INPUT' && plain.code === 'ipc.unknown_operation').toBe(true);
+    const withActor = await transport.invoke('nope.operation' as OperationName, { ...meta, actor: { id: 'x', kind: { kind: 'OPERATOR' } } } as ClientCommandMeta, {});
+    expect(isG9Error(withActor) && withActor.code === 'ipc.unknown_operation').toBe(true);
+  });
+
+  it('gates curriculum.import behind a CURRICULUM_IMPORT approval, like policy rule operator.import.curriculum.approval', async () => {
+    expect(OPERATIONS['curriculum.import'].approvalExpected).toBe(true);
+    const { client } = harness();
+    const weeks = Array.from({ length: 12 }, (_, w) => ({
+      week_number: w + 1,
+      days: Array.from({ length: 6 }, (_, d) => {
+        const id = `D${String(w * 6 + d + 1).padStart(2, '0')}`;
+        return { day_id: id, objectives: [1, 2, 3].map((seq) => ({ seq, objective_id: `${id}-O${String(seq)}`, text: `objective ${id}` })) };
+      }),
+    }));
+    const manifest = {
+      curriculum_id: 'g9-ct9-480',
+      version: '0.3.0',
+      provenance: 'PROPOSED_SEED',
+      structure: { weeks: 12, days_per_week: 6, objectives_per_day: 3, weekday_minutes: 420, saturday_minutes: 300, weekly_minutes: 2400, total_minutes: 28800 },
+      weeks,
+    };
+    const payload = { manifest, provenance: 'PROPOSED_SEED' as const };
+    const first = err(await client.invoke('curriculum.import', payload));
+    expect(first.category).toBe('APPROVAL_REQUIRED');
+    expect(first.details).toMatchObject({ required_capability: 'CURRICULUM_IMPORT' });
+    const approvalId = first.approval_id ?? '';
+    ok(await client.invoke('approvals.decide', { approval_id: approvalId, decision: 'APPROVE' }));
+    const done = ok(await client.invoke('curriculum.import', payload, { approvalId })).result;
+    expect(done.curriculum_version_id).toBe('g9-ct9-480:0.3.0');
+    expect(done.days).toBe(72);
+    const consumed = ok(await client.invoke('approvals.list', {})).result.approvals.find((a) => a.approval_id === approvalId);
+    expect(consumed?.state).toBe('CONSUMED');
+  });
+
+  it('emits the backend disclosure warnings: non-canonical daily plan, export not implemented, observations not derived', async () => {
+    const { client } = harness();
+    const plan = ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-18' }));
+    expect(plan.warnings).toEqual(['curriculum.non_canonical: plan derived from a version that is not APPROVED_CANONICAL']);
+    const need = err(await client.invoke('export.request', { domains: ['LEARNING'], format: 'JSON', include_private: false }));
+    ok(await client.invoke('approvals.decide', { approval_id: need.approval_id ?? '', decision: 'APPROVE' }));
+    const exported = ok(await client.invoke('export.request', { domains: ['LEARNING'], format: 'JSON', include_private: false }, { approvalId: need.approval_id ?? '' }));
+    expect(exported.warnings?.[0]).toMatch(/^export\.execution_not_implemented: .*no file was produced$/);
+    const fin = err(await client.invoke('assessment.approve_final', { attempt_id: 'mock-attempt-prev' }));
+    ok(await client.invoke('approvals.decide', { approval_id: fin.approval_id ?? '', decision: 'APPROVE' }));
+    const finalized = ok(await client.invoke('assessment.approve_final', { attempt_id: 'mock-attempt-prev' }, { approvalId: fin.approval_id ?? '' }));
+    expect(finalized.warnings?.[0]).toMatch(/^competency\.observations_not_derived: /);
+    const status = ok(await client.invoke('system.status', {}));
+    expect(status.warnings).toBeUndefined();
   });
 });

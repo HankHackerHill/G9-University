@@ -18,11 +18,16 @@ pub mod retention;
 pub mod sessions;
 pub mod skills;
 
-use crate::context::AppContext;
+use crate::context::{AppContext, Services};
 use crate::ops::OpSpec;
-use g9_domain::{Classification, CommandMeta, CommandOutcome, DataDomain, G9Error};
+use g9_domain::{
+    AssessmentAttemptState, Classification, CommandMeta, CommandOutcome, DataDomain, G9Error,
+    InteractionMode,
+};
 use g9_policy::ResourceContext;
+use g9_storage::repos::assessment as assessment_repo;
 use g9_storage::repos::ReadScope;
+use rusqlite::Connection;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
@@ -75,6 +80,51 @@ pub fn handler_for(name: &str) -> Option<Handler> {
         "deletion.request" => privacy::deletion_request,
         _ => return None,
     })
+}
+
+/// Rebuild a content-bearing result on an idempotent replay from its stored
+/// content-free record (`pipeline::REPLAY_RECORD_KEY`). Returns the result
+/// and the warnings to add to the replayed outcome.
+pub(crate) fn rebuild_replay(
+    op: &str,
+    conn: &Connection,
+    svc: &Services,
+    record: &Value,
+) -> Result<(Value, Vec<String>), G9Error> {
+    match op {
+        "notes.create" | "notes.revise" => notes::replay_view(conn, svc, record),
+        "skills.invoke" => Ok(skills::replay_view(record)),
+        _ => Err(G9Error::internal_redacted("idempotency.replay_unsupported")),
+    }
+}
+
+/// The open EXAM-mode attempt, if any (an attempt in `STARTED` whose mode is
+/// `EXAM`). Backend state, never client metadata (TEC-25, SEC-10).
+pub(crate) fn open_exam_attempt(conn: &Connection) -> Result<Option<String>, G9Error> {
+    let open = assessment_repo::list_attempts_by_state(
+        conn,
+        &ReadScope::cross_domain(DataDomain::Learning),
+        AssessmentAttemptState::Started,
+    )?;
+    Ok(open
+        .into_iter()
+        .find(|a| a.mode == InteractionMode::Exam)
+        .map(|a| a.id.as_str().to_string()))
+}
+
+/// Command metadata with the backend-derived interaction mode (TEC-25,
+/// SEC-10): while an EXAM-mode attempt is `STARTED` the command is evaluated
+/// in `EXAM`, whatever mode the client declared. The client's mode can never
+/// widen the backend-derived one.
+pub(crate) fn with_backend_mode(
+    ctx: &AppContext,
+    meta: &CommandMeta,
+) -> Result<CommandMeta, G9Error> {
+    let mut effective = meta.clone();
+    if open_exam_attempt(ctx.db.conn())?.is_some() {
+        effective.scope.mode = InteractionMode::Exam;
+    }
+    Ok(effective)
 }
 
 /// Deserialize a payload that already passed its JSON Schema.

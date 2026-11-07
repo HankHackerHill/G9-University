@@ -20,4 +20,4 @@ Honest effectiveness claims (gates B03, B04).
 
 ## Verification
 
-`docs/evaluations/learning-evaluation-protocol.md`; L05 skill schema requires an `inconclusive` outcome.
+`docs/evaluations/learning-evaluation-protocol.md`. TESTED: `scripts/check_skill_packages.py` requires the L05 (`g9-learning-experiment`) SKILL.md body to contain `inconclusive` and `predeclared` and rejects `p<0.05` and `n=20` in it. NOT MET (PROPOSED): the L05 output schema (`.agents/skills/g9-learning-experiment/schemas/output.schema.json`) must restrict `outcome` to the enum EVIDENCE_OF_IMPROVEMENT / EVIDENCE_OF_NO_IMPROVEMENT / INCONCLUSIVE; on 2026-11-07 `outcome` is an unconstrained string, so `outcome: "SIGNIFICANT_p<0.05"` validates.

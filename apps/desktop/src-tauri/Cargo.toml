@@ -22,7 +22,8 @@ serde_json = { workspace = true }
 g9-domain = { workspace = true }
 g9-app = { workspace = true }
 # Bootstrap composition only (no SQL, no policy decisions here): `Database::open`,
-# `BindingKey`, `Registry::load` are the types `g9_app::AppContext::builder` takes.
+# `BindingKey`, `Registry::load_pinned` (pins: `skill-pins.json`, compiled in with
+# `include_str!`) are the types `g9_app::AppContext::builder` takes.
 g9-policy = { workspace = true }
 g9-storage = { workspace = true }
 g9-skills = { workspace = true }

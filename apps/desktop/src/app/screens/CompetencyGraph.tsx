@@ -4,6 +4,7 @@ import { ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, NoData, Panel } from '../components/Panel';
 import { Table } from '../components/Table';
+import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 
@@ -23,6 +24,7 @@ export function CompetencyGraph() {
       </p>
       {projection.error !== null ? <ErrorDisplay error={projection.error} onRetry={projection.reload} /> : null}
       {projection.loading ? <Loading what="competency projection" /> : null}
+      <Warnings warnings={projection.warnings} />
       {projection.data !== null ? (
         projection.data.projections.length === 0 ? (
           <NoData reason="no competencies loaded" />
