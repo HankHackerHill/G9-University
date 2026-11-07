@@ -111,7 +111,8 @@ describe('plans from a curriculum version that is not APPROVED_CANONICAL', () =>
     const harness = createInterceptHarness(async (op, _payload, next) => {
       const r = await next();
       if (op === 'curriculum.daily_plan' && typeof r === 'object' && r !== null && 'result' in r) {
-        const { warnings: _dropped, ...rest } = r as { warnings?: string[] };
+        const rest: Record<string, unknown> = { ...(r as Record<string, unknown>) };
+        delete rest.warnings;
         return rest;
       }
       return r;

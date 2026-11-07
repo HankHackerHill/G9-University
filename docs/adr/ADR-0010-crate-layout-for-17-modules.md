@@ -21,3 +21,15 @@ Drift is caught by the build; module ownership is unambiguous.
 ## Verification
 
 `cargo tree` in CI; layering test in wave 2.
+
+## Addendum (2026-11-07): command-line driver as a second L6 shell
+
+`apps/cli` (package `g9-cli`, binary `g9`) is a second L6 front end beside the Tauri shell. It is a workspace member and a default member (it builds without GTK/WebKit). Rules enforced by `tests/integration/layering_gate.rs`:
+
+| Rule | Statement |
+|---|---|
+| Edges | `g9-cli` may name `g9-domain`, `g9-policy`, `g9-storage`, `g9-skills`, `g9-app`, `g9-curriculum`, `g9-calendar`, `g9-assessment`, `g9-competency`; never `g9-ai-adapter`, `g9-evaluation` or the Tauri shell |
+| Inbound | nothing depends on `g9-cli` |
+| Bootstrap | same composition as the Tauri bridge (database, binding key via `g9_app::keyfile`, skill registry, `NullRuntime`); the backend assigns the operator actor |
+| Pipeline | every command enters `g9_app::dispatch`; the only writes outside it are `SEEDED` repository rows of `simulate-week` and `crash-drill` for records with no IPC creation path yet (`apps/cli/src/seed.rs`); `g9 call` cannot reach them |
+| Status | PROPOSED: refuse `simulate-week` and `crash-drill` on a data directory that already holds operator data (not implemented) |

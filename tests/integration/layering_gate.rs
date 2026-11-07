@@ -94,6 +94,26 @@ fn allowed(package: &str) -> Option<BTreeSet<&'static str>> {
                 "g9-app",
             ]);
         }
+        // L6 shell, second front end (ADR-0010 addendum): the command-line
+        // driver composes the same bootstrap as the Tauri bridge and drives
+        // every operation through `g9_app::dispatch`. The pure domain crates
+        // and storage repositories are named only by `simulate-week` and
+        // `crash-drill` to materialize records that have no IPC creation path
+        // yet (labelled SEEDED, never reachable from `g9 call`). Nothing
+        // depends on it and it never names `rusqlite` (rule 3 test).
+        "g9-cli" => {
+            set.extend([
+                "g9-domain",
+                "g9-policy",
+                "g9-storage",
+                "g9-skills",
+                "g9-app",
+                "g9-curriculum",
+                "g9-calendar",
+                "g9-assessment",
+                "g9-competency",
+            ]);
+        }
         _ => return None,
     }
     Some(set)
@@ -285,7 +305,7 @@ fn layering_internal_edges_follow_the_dependency_law() {
 #[test]
 fn layering_nothing_depends_on_the_harness_or_the_shell() {
     for (name, m) in load() {
-        for top in ["g9-evaluation", "g9-mentor-desktop"] {
+        for top in ["g9-evaluation", "g9-mentor-desktop", "g9-cli"] {
             assert!(!m.deps.contains(top), "{name} depends on {top}");
         }
     }

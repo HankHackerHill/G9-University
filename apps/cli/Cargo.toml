@@ -8,10 +8,6 @@ license = "Apache-2.0"
 repository = "https://github.com/hackytacky/G9-University"
 publish = false
 
-# Developed as a standalone crate (its own workspace root) so that it builds
-# without touching the root Cargo.toml; the orchestrator adds `apps/cli` to the
-# root workspace afterwards (then remove this table and the `[profile.dev]`
-# section, which only a workspace root may carry).
 [lib]
 name = "g9_cli"
 path = "src/lib.rs"
