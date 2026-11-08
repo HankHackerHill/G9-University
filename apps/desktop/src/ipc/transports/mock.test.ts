@@ -532,7 +532,7 @@ describe('mock transport: fidelity with g9-app (review findings)', () => {
     expect(consumed?.state).toBe('CONSUMED');
   });
 
-  it('emits the backend disclosure warnings: non-canonical daily plan, export not implemented, observations not derived', async () => {
+  it('emits the backend disclosure warnings: non-canonical daily plan, export not implemented', async () => {
     const { client } = harness();
     const plan = ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-18' }));
     expect(plan.warnings).toEqual(['curriculum.non_canonical: plan derived from a version that is not APPROVED_CANONICAL']);
@@ -540,11 +540,101 @@ describe('mock transport: fidelity with g9-app (review findings)', () => {
     ok(await client.invoke('approvals.decide', { approval_id: need.approval_id ?? '', decision: 'APPROVE' }));
     const exported = ok(await client.invoke('export.request', { domains: ['LEARNING'], format: 'JSON', include_private: false }, { approvalId: need.approval_id ?? '' }));
     expect(exported.warnings?.[0]).toMatch(/^export\.execution_not_implemented: .*no file was produced$/);
-    const fin = err(await client.invoke('assessment.approve_final', { attempt_id: 'mock-attempt-prev' }));
-    ok(await client.invoke('approvals.decide', { approval_id: fin.approval_id ?? '', decision: 'APPROVE' }));
-    const finalized = ok(await client.invoke('assessment.approve_final', { attempt_id: 'mock-attempt-prev' }, { approvalId: fin.approval_id ?? '' }));
-    expect(finalized.warnings?.[0]).toMatch(/^competency\.observations_not_derived: /);
     const status = ok(await client.invoke('system.status', {}));
     expect(status.warnings).toBeUndefined();
+  });
+});
+
+/** Approval-gated finalization of the fixture attempt `mock-attempt-prev` (GRADED_PROVISIONAL, level 3 everywhere). */
+async function finalizePrev(client: ReturnType<typeof harness>['client']) {
+  const fin = err(await client.invoke('assessment.approve_final', { attempt_id: 'mock-attempt-prev' }));
+  ok(await client.invoke('approvals.decide', { approval_id: fin.approval_id ?? '', decision: 'APPROVE' }));
+  return ok(await client.invoke('assessment.approve_final', { attempt_id: 'mock-attempt-prev' }, { approvalId: fin.approval_id ?? '' }));
+}
+
+const PREV_COMPETENCY = 'mock-competency-W2';
+
+describe('mock transport: grade decision -> competency observations (mirrors g9-app approve_final)', () => {
+  it('derives observations for a version that declares a difficulty: no warning, the projection changes', async () => {
+    const { client } = harness();
+    const before = ok(await client.invoke('competency.projection', { competency_id: PREV_COMPETENCY })).result.projections[0];
+    expect(before).toMatchObject({ state: 'UNASSESSED', provisional: false, evidence_refs: [] });
+    expect(before?.per_dimension.APPLICATION).toEqual({ score_estimate: null, n_unaided: 0, last_observed_at: null, uncertainty: null });
+
+    const finalized = await finalizePrev(client);
+    expect(finalized.result.state).toBe('APPROVED_FINAL');
+    expect(finalized.result.grade?.reliability_class).toBe('SELF_ADJUDICATED');
+    // no competency.observations_not_derived warning: the observations were derived
+    expect(finalized.warnings).toBeUndefined();
+
+    const after = ok(await client.invoke('competency.projection', { competency_id: PREV_COMPETENCY })).result.projections[0];
+    // level 3 everywhere = 80 per criterion = 80 per dimension (understanding, application, transfer)
+    expect(after?.evidence_refs).toHaveLength(3);
+    expect(after?.per_dimension.RECALL.score_estimate).toBeNull();
+    for (const d of ['UNDERSTANDING', 'APPLICATION', 'TRANSFER'] as const) {
+      expect(after?.per_dimension[d]).toMatchObject({ score_estimate: 80, n_unaided: 1, uncertainty: 0 });
+    }
+    // One Application observation >= 60 reaches GUIDED; the operator graded their own attempt
+    // (SELF_ADJUDICATED), so the 80 is validation-level evidence that is excluded: provisional.
+    expect(after).toMatchObject({ state: 'GUIDED', provisional: true });
+    // other competencies are untouched
+    const all = ok(await client.invoke('competency.projection', {})).result.projections;
+    expect(all.filter((p) => p.evidence_refs.length > 0).map((p) => p.competency_id)).toEqual([PREV_COMPETENCY]);
+  });
+
+  it('a failing decision derives observations that never validate or inflate the state', async () => {
+    const { client } = harness();
+    ok(await client.invoke('assessment.begin', { assessment_id: 'mock-assessment-D18' }));
+    const list = ok(await client.invoke('assessment.list', {})).result.attempts;
+    const attempt = list.find((a) => a.assessment_id === 'mock-assessment-D18');
+    expect(attempt).toBeDefined();
+    const id = attempt?.attempt_id ?? '';
+    let rev = attempt?.revision ?? 0;
+    for (const op of ['assessment.submit', 'assessment.review_evidence'] as const) {
+      const r = ok(await client.invoke(op, op === 'assessment.submit' ? { attempt_id: id, evidence_refs: [] } : { attempt_id: id }, { expectedRevision: rev }));
+      rev = r.revision ?? rev;
+    }
+    const criteria = BASELINE_CRITERIA.map((c) => ({ criterion_code: c.code, score: 1 as const, source: 'HUMAN_REVIEWER' as const, evidence_refs: [] }));
+    const graded = ok(await client.invoke('assessment.grade_provisional', { attempt_id: id, criteria }, { expectedRevision: rev }));
+    expect(graded.result.grade?.pass).toBe(false);
+    const gradedRevision = graded.revision ?? rev;
+    const fin = err(await client.invoke('assessment.approve_final', { attempt_id: id }, { expectedRevision: gradedRevision }));
+    ok(await client.invoke('approvals.decide', { approval_id: fin.approval_id ?? '', decision: 'APPROVE' }));
+    const done = ok(await client.invoke('assessment.approve_final', { attempt_id: id }, { approvalId: fin.approval_id ?? '', expectedRevision: gradedRevision }));
+    expect(done.warnings).toBeUndefined();
+    const projected = ok(await client.invoke('competency.projection', { competency_id: 'mock-competency-D18' })).result.projections[0];
+    // level 1 = 25 per criterion: introduced only, no estimate above the evidence, nothing validation-level
+    expect(projected).toMatchObject({ state: 'INTRODUCED', provisional: false });
+    expect(projected?.per_dimension.APPLICATION.score_estimate).toBe(25);
+  });
+
+  it('derives nothing and warns when the version declares no difficulty (never guessed)', async () => {
+    const clock = createMockClock();
+    const transport = createMockTransport({ clock, assessmentsWithoutDifficulty: ['mock-assessment-W2'] });
+    let n = 0;
+    const client = createClient(transport, {
+      now: () => clock.now(),
+      uuid: () => {
+        n += 1;
+        return `u${n}`;
+      },
+    });
+    const finalized = await finalizePrev(client);
+    expect(finalized.result.state).toBe('APPROVED_FINAL');
+    expect(finalized.warnings).toHaveLength(1);
+    expect(finalized.warnings?.[0]).toMatch(/^competency\.observations_not_derived: the assessment version declares no difficulty; /);
+    expect(finalized.warnings?.[0]).not.toMatch(/wave-1/);
+    const after = ok(await client.invoke('competency.projection', { competency_id: PREV_COMPETENCY })).result.projections[0];
+    expect(after).toMatchObject({ state: 'UNASSESSED', provisional: false, evidence_refs: [] });
+  });
+
+  it('a competency nobody finalized an attempt for is unchanged: UNASSESSED, empty estimates', async () => {
+    const { client } = harness();
+    await finalizePrev(client);
+    const untouched = ok(await client.invoke('competency.projection', { competency_id: 'mock-competency-D13' })).result.projections[0];
+    expect(untouched).toMatchObject({ state: 'UNASSESSED', provisional: false, evidence_refs: [], contradictions: [] });
+    for (const d of ['RECALL', 'UNDERSTANDING', 'APPLICATION', 'TRANSFER'] as const) {
+      expect(untouched?.per_dimension[d]).toEqual({ score_estimate: null, n_unaided: 0, last_observed_at: null, uncertainty: null });
+    }
   });
 });

@@ -7,10 +7,10 @@
 //! |---|---|---|
 //! | 0 | open the data directory; recovery runs | `AppContext::builder(..).open()` |
 //! | 1 | probe `curriculum.daily_plan`; when no version exists: `curriculum.validate`, `curriculum.import` (`APPROVAL_REQUIRED` expected), `approvals.decide`, retry | `dispatch` |
-//! | 2 | materialize one `PLANNED` session per study block of the six days, and the Saturday blind practical (competency, definition, version, baseline rubric) | `g9-storage` repositories (`SEEDED`; `FILL_CURRICULUM` and catalogue import are PROPOSED) |
+//! | 2 | materialize one `PLANNED` session per study block of the six days, and the Saturday blind practical (competency, definition, version with the seed-declared difficulty 3, baseline rubric) | `g9-storage` repositories (`SEEDED`; `FILL_CURRICULUM` and catalogue import are PROPOSED) |
 //! | 3 | per day Monday..Saturday: `curriculum.daily_plan`; per block `session.prepare`, `session.start`, clock advance (one `session.pause`/`session.resume` on the third block), `session.complete` (credited time must equal the block minutes); `notes.create` (learning journal) | `dispatch` |
 //! | 4 | Saturday: `assessment.begin`, `assessment.submit`, `assessment.review_evidence`, `assessment.grade_provisional`, `assessment.approve_final` (`APPROVAL_REQUIRED` expected), `approvals.decide`, retry → `APPROVED_FINAL` | `dispatch` |
-//! | 5 | `retention.due`, `competency.projection` | `dispatch` |
+//! | 5 | `retention.due`, `competency.projection`; checks: the projection is non-empty and its `evidence_refs` include every observation derived from the finalized attempt, and the self-adjudicated grade never validates (`provisional`, no `VALIDATED`) | `dispatch` + `competency_repo::observations_for_attempt` |
 //! | 6 | `backup.create`, `backup.verify`, `backup.restore_test` → `RETAINED` | `dispatch` |
 //! | 7 | `audit.recent`; the hash chain verifies and has more rows than at open | `dispatch` + `AuditChain::verify_chain` |
 //!
@@ -44,7 +44,8 @@ use crate::meta::{IdSource, MetaOptions};
 use crate::output::{CategoryStr, CliError};
 use crate::seed::{self, SeedReport, DAY_START_HOUR};
 use g9_curriculum::CivilDate;
-use g9_domain::{ErrorCategory, G9Error, IanaZone, UtcMillis};
+use g9_domain::{AttemptId, ErrorCategory, G9Error, IanaZone, UtcMillis};
+use g9_storage::repos::competency as competency_repo;
 use g9_storage::AuditChain;
 use serde::Serialize;
 use serde_json::{json, Map, Value};
@@ -446,7 +447,14 @@ fn summarize(op: &str, result: &Result<Value, G9Error>) -> Value {
                     "overdue": len_of(&r["overdue"]),
                     "overflow": len_of(&r["overflow"]),
                 }),
-                ("competency", _) => json!({ "projections": len_of(&r["projections"]) }),
+                ("competency", _) => {
+                    let projections = r["projections"].as_array().map_or(&[][..], Vec::as_slice);
+                    json!({
+                        "projections": projections.len(),
+                        "evidence_refs": projections.iter().map(|p| len_of(&p["evidence_refs"])).sum::<usize>(),
+                        "provisional": projections.iter().filter(|p| p["provisional"] == json!(true)).count(),
+                    })
+                }
                 ("audit", _) => {
                     json!({ "entries": len_of(&r["entries"]), "chain_ok": r["chain_ok"] })
                 }
@@ -950,6 +958,57 @@ fn backups(sim: &mut Sim, o: &SimulateOptions) -> Result<(), Halt> {
     Ok(())
 }
 
+/// The Saturday grade reached the competency model: the projection is
+/// non-empty and its `evidence_refs` include every observation that
+/// `assessment.approve_final` derived from the finalized attempt. The operator
+/// is the learner, so the grade is `SELF_ADJUDICATED` (ADR-0012): it must not
+/// validate, and the projection says so (`provisional`).
+fn projection_checks(sim: &mut Sim, projected: &Value) {
+    let Some(attempt) = sim
+        .artifacts
+        .get("attempt_id")
+        .and_then(Value::as_str)
+        .and_then(|a| a.parse::<AttemptId>().ok())
+    else {
+        return;
+    };
+    let derived: Vec<String> =
+        competency_repo::observations_for_attempt(sim.client.ctx.database().conn(), &attempt)
+            .map(|rows| {
+                rows.into_iter()
+                    .map(|o| o.id.as_str().to_string())
+                    .collect()
+            })
+            .unwrap_or_default();
+    let projections = projected["result"]["projections"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    let refs: Vec<&str> = projections
+        .iter()
+        .flat_map(|p| p["evidence_refs"].as_array().into_iter().flatten())
+        .filter_map(Value::as_str)
+        .collect();
+    let covered = !derived.is_empty() && derived.iter().all(|id| refs.contains(&id.as_str()));
+    sim.check(
+        "competency.projection includes the observations of the finalized attempt",
+        !projections.is_empty() && covered,
+        json!({
+            "projections": projections.len(),
+            "attempt_observations": derived.len(),
+            "evidence_refs": refs.len(),
+            "attempt_observations_in_evidence_refs": covered,
+        }),
+    );
+    let validated = projections.iter().any(|p| p["state"] == json!("VALIDATED"));
+    let provisional = projections.iter().any(|p| p["provisional"] == json!(true));
+    sim.check(
+        "self-adjudicated grade does not validate (provisional, no VALIDATED)",
+        !validated && provisional,
+        json!({ "validated": validated, "provisional": provisional }),
+    );
+}
+
 fn script(sim: &mut Sim, o: &SimulateOptions) -> Result<(), Halt> {
     ensure_curriculum(sim, o)?;
     let days = resolve_days(sim, o)?;
@@ -958,7 +1017,9 @@ fn script(sim: &mut Sim, o: &SimulateOptions) -> Result<(), Halt> {
         run_day(sim, o, k, day)?;
     }
     sim.ok("retention.due", json!({}), &MetaOptions::default())?;
-    sim.ok("competency.projection", json!({}), &MetaOptions::default())?;
+    if let Some(projected) = sim.ok("competency.projection", json!({}), &MetaOptions::default())? {
+        projection_checks(sim, &projected);
+    }
     backups(sim, o)?;
     Ok(())
 }

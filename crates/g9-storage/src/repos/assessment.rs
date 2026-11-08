@@ -14,7 +14,10 @@
 //! DDL ↔ wave-1 gaps (adapters refuse rather than guess): `assessment_definitions.kind`
 //! lacks `WEEKLY_ASSESSMENT`/`DIAGNOSTIC_CALIBRATION` and has `QUIZ`/`REPORT`;
 //! a definition stores one `competency_id`; `assessment_versions` has no
-//! `difficulty`, `equivalence_group` or `checksum` column; `rubric_criteria` has
+//! `equivalence_group` or `checksum` column (its `difficulty` column exists
+//! since `0013`, is nullable and is never defaulted: `None` means the author
+//! declared none and no competency observation may be derived from the
+//! version); `rubric_criteria` has
 //! no `dimension` column; `exposure_log.content_kind` lacks `HINT` and folds the
 //! reference solution into `KEY`. Rubric anchors are stored since `0012`, but a
 //! non-standard level scale is refused until `g9-app` regrades through
@@ -311,6 +314,11 @@ pub struct AssessmentVersionRow {
     pub sealed_key_sha256: Option<String>,
     /// Pass threshold (default 80).
     pub pass_threshold: u8,
+    /// Task difficulty declared by the version's author (`assessment_versions.difficulty`,
+    /// migration `0013`). `None` = none declared (rows written before `0013`, or an
+    /// author who declared none): it is never defaulted or inferred, and no
+    /// competency observation is derived from an attempt on such a version.
+    pub difficulty: Option<Difficulty>,
     /// Creating operator.
     pub created_by: ActorId,
     /// Row creation.
@@ -319,8 +327,9 @@ pub struct AssessmentVersionRow {
 
 impl AssessmentVersionRow {
     /// Build a row from a checksummed version. `task_statement` is the resolved
-    /// task text (the domain type holds an evidence reference). `difficulty`,
-    /// `equivalence_group` and `checksum` have no column and are not persisted (gap).
+    /// task text (the domain type holds an evidence reference). The version's
+    /// declared `difficulty` is persisted; `equivalence_group` and `checksum`
+    /// have no column and are not persisted (gap).
     pub fn from_domain(
         version: &AssessmentVersion,
         id: &str,
@@ -343,6 +352,7 @@ impl AssessmentVersionRow {
                 .map(|a| a.as_str().to_string()),
             sealed_key_sha256,
             pass_threshold: g9_domain::PASS_THRESHOLD,
+            difficulty: Some(version.difficulty),
             created_by,
             created_at: version.created_at,
         })
@@ -357,7 +367,7 @@ impl AssessmentVersionRow {
 }
 
 const VERSION_COLUMNS: &str = "id, definition_id, version_label, task_statement, task_sha256, sealed_key_ref, sealed_key_sha256,
-    pass_threshold, created_by, created_at";
+    pass_threshold, difficulty, created_by, created_at";
 
 fn map_version(r: &Row<'_>) -> StorageResult<AssessmentVersionRow> {
     Ok(AssessmentVersionRow {
@@ -369,6 +379,12 @@ fn map_version(r: &Row<'_>) -> StorageResult<AssessmentVersionRow> {
         sealed_key_ref: r.get("sealed_key_ref")?,
         sealed_key_sha256: r.get("sealed_key_sha256")?,
         pass_threshold: u8_from_i64(r.get("pass_threshold")?, "pass_threshold")?,
+        difficulty: r
+            .get::<_, Option<i64>>("difficulty")?
+            .map(|d| {
+                Difficulty::new(u8_from_i64(d, "difficulty")?).map_err(StorageError::RowDecode)
+            })
+            .transpose()?,
         created_by: parse_id(&r.get::<_, String>("created_by")?)?,
         created_at: from_ms(r.get("created_at")?),
     })
@@ -381,7 +397,7 @@ pub fn insert_version(conn: &Connection, row: &AssessmentVersionRow) -> RepoResu
     conn.execute(
         &format!(
             "INSERT INTO assessment_versions ({VERSION_COLUMNS}, key_classification)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'SECRET')"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 'SECRET')"
         ),
         params![
             row.id,
@@ -392,6 +408,7 @@ pub fn insert_version(conn: &Connection, row: &AssessmentVersionRow) -> RepoResu
             row.sealed_key_ref,
             row.sealed_key_sha256,
             i64::from(row.pass_threshold),
+            row.difficulty.map(|d| i64::from(d.get())),
             row.created_by.as_str(),
             ms(row.created_at),
         ],
@@ -1852,6 +1869,8 @@ mod tests {
         assert_eq!(v.task_sha256, sha("Recover the boot chain"));
         assert_eq!(v.sealed_key_ref.as_deref(), Some("att-key"));
         assert_eq!(v.pass_threshold, 80);
+        // the declared difficulty of the domain version is persisted (0013)
+        assert_eq!(v.difficulty, Some(ver.difficulty));
         assert_eq!(version_by_label(conn, &def.id, "1").unwrap().unwrap(), v);
         assert_eq!(list_versions(conn, &def.id).unwrap().len(), 1);
 
@@ -1900,6 +1919,77 @@ mod tests {
         assert!(
             AssessmentVersionRow::from_domain(&tampered, "av-x", "task", None, operator_id())
                 .is_err()
+        );
+    }
+
+    #[test]
+    fn version_difficulty_is_declared_never_defaulted_and_frozen() {
+        let db = db();
+        let conn = db.conn();
+        let (def, ver, _) = seed(conn);
+        // a version whose author declared no difficulty keeps NULL: no default, no guess
+        let mut v2 = ver.clone();
+        v2.version = 2;
+        let v2 = v2.with_checksum().unwrap();
+        let mut undeclared =
+            AssessmentVersionRow::from_domain(&v2, "av-2", "variant 2", None, operator_id())
+                .unwrap();
+        assert_eq!(undeclared.difficulty, Some(v2.difficulty));
+        undeclared.difficulty = None;
+        insert_version(conn, &undeclared).unwrap();
+        let stored = get_version(conn, "av-2").unwrap().unwrap();
+        assert_eq!(stored.difficulty, None);
+        assert_eq!(stored, undeclared);
+        let raw: Option<i64> = conn
+            .query_row(
+                "SELECT difficulty FROM assessment_versions WHERE id = 'av-2'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(raw, None);
+        // raw SQL that omits the column also stores NULL (the column has no DEFAULT)
+        conn.execute(
+            "INSERT INTO assessment_versions (id, definition_id, version_label, task_statement, task_sha256, created_by, created_at)
+             VALUES ('av-3', ?1, '3', 't', ?2, 'op', 1)",
+            params![def.id.as_str(), sha("t")],
+        )
+        .unwrap();
+        assert_eq!(get_version(conn, "av-3").unwrap().unwrap().difficulty, None);
+        // every difficulty 1..=5 round-trips; 0 and 6 are refused by the CHECK
+        for (n, d) in (1_i64..=5).enumerate() {
+            conn.execute(
+                "INSERT INTO assessment_versions (id, definition_id, version_label, task_statement, task_sha256, difficulty, created_by, created_at)
+                 VALUES (?1, ?2, ?3, 't', ?4, ?5, 'op', 1)",
+                params![format!("av-d{d}"), def.id.as_str(), format!("1{n}"), sha("t"), d],
+            )
+            .unwrap();
+            assert_eq!(
+                get_version(conn, &format!("av-d{d}"))
+                    .unwrap()
+                    .unwrap()
+                    .difficulty
+                    .map(Difficulty::get),
+                Some(u8::try_from(d).unwrap())
+            );
+        }
+        for bad in [0_i64, 6] {
+            assert!(conn
+                .execute(
+                    "INSERT INTO assessment_versions (id, definition_id, version_label, task_statement, task_sha256, difficulty, created_by, created_at)
+                     VALUES (?1, ?2, ?3, 't', ?4, ?5, 'op', 1)",
+                    params![format!("av-bad{bad}"), def.id.as_str(), format!("9{bad}"), sha("t"), bad],
+                )
+                .is_err());
+        }
+        // a declared difficulty is frozen with the rest of the version (0010 trigger)
+        assert_immutable(
+            conn,
+            "UPDATE assessment_versions SET difficulty = 5 WHERE id = 'av-1'",
+        );
+        assert_immutable(
+            conn,
+            "UPDATE assessment_versions SET difficulty = 4 WHERE id = 'av-2'",
         );
     }
 

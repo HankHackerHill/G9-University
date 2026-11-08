@@ -78,7 +78,9 @@ fn a05_projection_replays_correction_supersedes_and_model_evidence_is_refused() 
         correction.state_after["observations"]
             .as_array()
             .map(Vec::len),
-        Some(4),
+        // 3 fixture lab observations + 3 derived from the final grade of att-net
+        // (assessment.approve_final) + the correction; the superseded row stays
+        Some(7),
         "the superseded observation is retained"
     );
 
@@ -96,6 +98,22 @@ fn a05_projection_replays_correction_supersedes_and_model_evidence_is_refused() 
         "the refused observation was not stored"
     );
     assert!(r
-        .evidence_for("projection follows the correction")
-        .is_some_and(|c| c.passed && c.actual == json!("GUIDED")));
+        .evidence_for(
+            "state after correction (grade-derived evidence and obs-w03-net-2 still qualify)"
+        )
+        .is_some_and(|c| c.passed && c.actual == json!("INDEPENDENT")));
+    assert!(r
+        .evidence_for(
+            "projection follows the correction (APPLICATION estimate lowered by 78 -> 55)"
+        )
+        .is_some_and(|c| c.passed));
+    // the fixture's final grade is SELF_ADJUDICATED: derived, never validating
+    assert!(r
+        .evidence_for(
+            "served projection is provisional (self-adjudicated exam evidence excluded from validation)"
+        )
+        .is_some_and(|c| c.passed && c.actual == json!(true)));
+    assert!(r
+        .evidence_for("without the evidence rows the same observations would validate")
+        .is_some_and(|c| c.passed && c.actual == json!("VALIDATED")));
 }

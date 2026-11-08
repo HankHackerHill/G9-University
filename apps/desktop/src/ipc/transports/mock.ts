@@ -51,6 +51,7 @@ import type {
   GradeSource,
   GradeView,
   Intervention,
+  LearningDimension,
   ManifestProvenance,
   NoteView,
   ReviewItem,
@@ -71,6 +72,7 @@ import type {
   ClientCommandMeta,
   CommandMeta,
   CommandOutcome,
+  CompetencyState,
   DataDomain,
   ErrorCategory,
   G9Error,
@@ -320,6 +322,13 @@ export interface MockOptions {
   clock?: MockClock;
   zone?: IanaZone;
   fixture?: CurriculumFixture;
+  /**
+   * Assessment definition ids whose version declares no difficulty (the column is nullable in the
+   * backend and never defaulted): finalizing an attempt of such a definition derives nothing and
+   * warns `competency.observations_not_derived`. Every other fixture definition declares
+   * `FIXTURE_DECLARED_DIFFICULTY`.
+   */
+  assessmentsWithoutDifficulty?: readonly Id[];
 }
 
 export interface MockTransport extends IpcTransport {
@@ -355,17 +364,23 @@ class MockState {
   private readonly notes = new Map<Id, NoteView>();
   private readonly attempts = new Map<Id, AttemptView>();
   private readonly definitions: AssessmentDefinition[] = [];
+  /** Difficulty each assessment version's author declared (backend: `assessment_versions.difficulty`). */
+  private readonly declaredDifficulty = new Map<Id, number>();
+  /** Append-only competency observations derived by `assessment.approve_final` (never edited). */
+  private readonly observations: MockObservation[] = [];
   private readonly approvals = new Map<Id, ApprovalRequest>();
   private readonly backups = new Map<Id, BackupView>();
   private readonly proposals = new Map<Id, ScheduleProposal>();
   private readonly idempotency = new Map<string, IdempotencyRecord>();
   private readonly audit: AuditEntry[] = [];
   private events: CalendarEvent[] = [];
+  private readonly undeclared: ReadonlySet<Id>;
 
   constructor(options: MockOptions) {
     this.clock = options.clock ?? createMockClock();
     this.fixture = options.fixture ?? WEEK3_FIXTURE;
     this.zone = options.zone ?? this.fixture.zone;
+    this.undeclared = new Set(options.assessmentsWithoutDifficulty ?? []);
     this.seed();
   }
 
@@ -454,7 +469,7 @@ class MockState {
         });
       }
       if (day.is_assessment_day) {
-        this.definitions.push({ assessment_id: `mock-assessment-${day.day_id}`, title: `${day.day_id} blind practical`, day_id: day.day_id, mode: 'EXAM' });
+        this.defineAssessment({ assessment_id: `mock-assessment-${day.day_id}`, title: `${day.day_id} blind practical`, day_id: day.day_id, mode: 'EXAM' }, 'push');
       }
     }
     // Sunday of the fixture week is protected rest (structure.sunday = unscheduled).
@@ -507,7 +522,7 @@ class MockState {
     const prevWeek = this.fixture.week.week_number - 1;
     if (prevWeek >= 1) {
       const defId = `mock-assessment-W${prevWeek}`;
-      this.definitions.unshift({ assessment_id: defId, title: `Week ${prevWeek} blind practical (fixture)`, day_id: `D${prevWeek * 6}`, mode: 'EXAM' });
+      this.defineAssessment({ assessment_id: defId, title: `Week ${prevWeek} blind practical (fixture)`, day_id: `D${prevWeek * 6}`, mode: 'EXAM' }, 'unshift');
       const criteria: CriterionResult[] = BASELINE_CRITERIA.map((c) => ({
         criterion_code: c.code,
         weight: c.weight,
@@ -1422,30 +1437,85 @@ class MockState {
     attempt.grade = { ...attempt.grade, final: true };
     attempt.finalized_at = this.now();
     attempt.revision += 1;
-    return { result: attempt, revision: attempt.revision, resource, warnings: [OBSERVATIONS_NOT_DERIVED_WARNING] };
+    // Same step as the backend finalization transaction (g9-app `finalize_attempt`).
+    const notDerived = this.deriveObservations(attempt, attempt.grade);
+    return { result: attempt, revision: attempt.revision, resource, warnings: notDerived === null ? [] : [observationsNotDerivedWarning(notDerived)] };
+  }
+
+  private defineAssessment(def: AssessmentDefinition, at: 'push' | 'unshift'): void {
+    if (at === 'push') {
+      this.definitions.push(def);
+    } else {
+      this.definitions.unshift(def);
+    }
+    if (!this.undeclared.has(def.assessment_id)) {
+      this.declaredDifficulty.set(def.assessment_id, FIXTURE_DECLARED_DIFFICULTY);
+    }
+  }
+
+  /**
+   * Port of g9-app `derive_observations` (over g9-assessment `observations_from_decision`): one
+   * observation per dimension that has criteria, scored by the weighted mean of that dimension's
+   * criteria (rounded half up), carrying the difficulty the version declared. The attempt is EXAM
+   * mode and unaided; the operator finalized their own grade, so the decision is SELF_ADJUDICATED and
+   * no observation is validation-eligible (see `projectObservations`). Returns why nothing was
+   * derived, or `null` when observations were appended.
+   */
+  private deriveObservations(attempt: AttemptView, grade: GradeView): string | null {
+    const difficulty = this.declaredDifficulty.get(attempt.assessment_id);
+    if (difficulty === undefined) {
+      return 'the assessment version declares no difficulty';
+    }
+    const groups = new Map<LearningDimension, { num: number; den: number }>();
+    for (const c of grade.criteria) {
+      const dimension = BASELINE_DIMENSION[c.criterion_code];
+      if (dimension === undefined) {
+        continue;
+      }
+      const acc = groups.get(dimension) ?? { num: 0, den: 0 };
+      acc.num += c.weight * (LEVEL_SCALE[c.score] ?? 0);
+      acc.den += c.weight;
+      groups.set(dimension, acc);
+    }
+    if (groups.size === 0) {
+      return 'the decision maps to no competency dimension';
+    }
+    const observedAt = this.now();
+    for (const dimension of LEARNING_DIMENSIONS) {
+      const acc = groups.get(dimension);
+      if (acc === undefined) {
+        continue;
+      }
+      this.observations.push({
+        observation_id: this.nextId('observation'),
+        competency_id: assessedCompetencyId(attempt.assessment_id),
+        dimension,
+        attempt_id: attempt.attempt_id,
+        difficulty,
+        score: acc.den === 0 ? 0 : Math.floor((2 * acc.num + acc.den) / (2 * acc.den)),
+        observed_at: observedAt,
+      });
+    }
+    return null;
   }
 
   private competencyProjection(payload: unknown): ResponseOf<'competency.projection'> {
     const rec = asRecord(payload, 'competency.projection');
     const only = optStr(rec, 'competency_id', 'competency.projection');
-    const projections: CompetencyProjection[] = this.fixture.week.days
+    const dayCompetencies = this.fixture.week.days
       .filter((d) => !d.is_assessment_day)
-      .map((d) => ({
-        competency_id: `mock-competency-${d.day_id}`,
-        name: d.evidence_artifact,
-        // No observations exist in the fixture: state and estimates are honestly empty.
-        state: 'UNASSESSED',
-        provisional: false,
-        per_dimension: {
-          RECALL: emptyDimension(),
-          UNDERSTANDING: emptyDimension(),
-          APPLICATION: emptyDimension(),
-          TRANSFER: emptyDimension(),
-        },
-        contradictions: [],
-        evidence_refs: [],
-        objective_ids: d.objectives.map((o) => o.objective_id),
-      }));
+      .map((d) => ({ id: `mock-competency-${d.day_id}`, name: d.evidence_artifact, objective_ids: d.objectives.map((o) => o.objective_id) }));
+    // One competency per assessment definition (the backend definition links one competency).
+    const assessedCompetencies = this.definitions.map((d) => ({ id: assessedCompetencyId(d.assessment_id), name: d.title, objective_ids: [] as Id[] }));
+    const projections: CompetencyProjection[] = [...dayCompetencies, ...assessedCompetencies].map((c) => ({
+      competency_id: c.id,
+      name: c.name,
+      // The fixture seeds no observations: only `assessment.approve_final` appends any, so a
+      // competency nothing was finalized for is honestly UNASSESSED with empty estimates.
+      ...projectObservations(this.observations.filter((o) => o.competency_id === c.id)),
+      contradictions: [],
+      objective_ids: c.objective_ids,
+    }));
     const filtered = only === undefined ? projections : projections.filter((p) => p.competency_id === only);
     if (only !== undefined && filtered.length === 0) {
       throw fail('NOT_FOUND', 'competency.not_found', 'competency not found', { competency_id: only });
@@ -1680,8 +1750,10 @@ interface Handled<T = unknown> {
 // Warning texts copied from g9-app (commands/curriculum.rs, privacy.rs, assessment.rs, notes.rs).
 const NON_CANONICAL_PLAN_WARNING = 'curriculum.non_canonical: plan derived from a version that is not APPROVED_CANONICAL';
 const EXPORT_NOT_IMPLEMENTED_WARNING = 'export.execution_not_implemented: the per-domain export writer is PROPOSED; no file was produced';
-const OBSERVATIONS_NOT_DERIVED_WARNING =
-  'competency.observations_not_derived: assessment versions store no difficulty (wave-1 gap); observation derivation is PROPOSED';
+/** g9-app commands/assessment.rs: names why nothing was derived; the difficulty is never guessed. */
+function observationsNotDerivedWarning(reason: string): string {
+  return `competency.observations_not_derived: ${reason}; no competency observation was recorded from this decision and the difficulty is never guessed`;
+}
 const NOTE_EVIDENCE_NOT_PERSISTED_WARNING = 'notes.evidence_refs_not_persisted: note-level evidence links are PROPOSED (wave-1 storage gap)';
 /** g9-app commands/sessions.rs `correct_time`; the remaining interval ids follow after a space. */
 export const UNCORRECTED_UNCERTAIN_WARNING =
@@ -1760,6 +1832,86 @@ function stripSession(s: SessionRecord): SessionView {
     corrections: s.corrections.map((c) => ({ ...c })),
     revision: s.revision,
   };
+}
+
+/**
+ * Difficulty (1..=5) declared by the fixture for every mock assessment version, like the value the
+ * CLI seed and the evaluation fixtures declare: a fixture value, not a measurement.
+ */
+export const FIXTURE_DECLARED_DIFFICULTY = 3;
+
+const LEARNING_DIMENSIONS: readonly LearningDimension[] = ['RECALL', 'UNDERSTANDING', 'APPLICATION', 'TRANSFER'];
+
+/** `g9_assessment::Rubric::baseline_dimension` (crates/g9-assessment/src/rubric.rs). */
+const BASELINE_DIMENSION: Readonly<Record<string, LearningDimension>> = {
+  independent_execution: 'APPLICATION',
+  root_cause_reasoning: 'UNDERSTANDING',
+  remediation_verification: 'APPLICATION',
+  detection_visibility: 'TRANSFER',
+  evidence_documentation: 'UNDERSTANDING',
+  scope_compliance_reporting: 'APPLICATION',
+};
+
+/** A competency observation derived from a final grade (EXAM mode, unaided, SELF_ADJUDICATED decision). */
+interface MockObservation {
+  observation_id: Id;
+  competency_id: Id;
+  dimension: LearningDimension;
+  attempt_id: Id;
+  difficulty: number;
+  score: number;
+  observed_at: UtcMillis;
+}
+
+/** `mock-assessment-W2` assesses `mock-competency-W2`. */
+function assessedCompetencyId(assessmentId: Id): Id {
+  return `mock-competency-${assessmentId.replace(/^mock-assessment-/, '')}`;
+}
+
+/**
+ * Reduced port of g9-competency `derive_state_excluding_validation` over the observations the mock
+ * can hold (all EXAM mode, unaided, from SELF_ADJUDICATED decisions: the MVP operator is the
+ * learner, so no mock observation is validation-eligible, ADR-0005/0012, Addendum A.2):
+ *  - UNASSESSED without observations, else INTRODUCED;
+ *  - GUIDED on an Application observation >= 60;
+ *  - INDEPENDENT on >= 2 Application observations >= 70 at difficulty >= 3 (the 60-day window is not
+ *    modelled: the mock clock does not move between attempts);
+ *  - never VALIDATED; `provisional` when an observation would have been validation-level evidence
+ *    (Application/Transfer >= 80) but is excluded;
+ *  - per dimension: mean score (every mock observation is unaided, independence weight 1), unaided
+ *    count, last instant, uncertainty 0 (the backend records 0 = certain, no error model exists).
+ * RETEST_DUE and Regress need a second observation round the mock does not produce; not modelled.
+ */
+function projectObservations(
+  observations: readonly MockObservation[],
+): Pick<CompetencyProjection, 'state' | 'provisional' | 'per_dimension' | 'evidence_refs'> {
+  const per_dimension: CompetencyProjection['per_dimension'] = {
+    RECALL: emptyDimension(),
+    UNDERSTANDING: emptyDimension(),
+    APPLICATION: emptyDimension(),
+    TRANSFER: emptyDimension(),
+  };
+  for (const dimension of LEARNING_DIMENSIONS) {
+    const mine = observations.filter((o) => o.dimension === dimension);
+    if (mine.length > 0) {
+      per_dimension[dimension] = {
+        score_estimate: mine.reduce((sum, o) => sum + o.score, 0) / mine.length,
+        n_unaided: mine.length,
+        last_observed_at: Math.max(...mine.map((o) => o.observed_at)),
+        uncertainty: 0,
+      };
+    }
+  }
+  const application = observations.filter((o) => o.dimension === 'APPLICATION');
+  let state: CompetencyState = observations.length === 0 ? 'UNASSESSED' : 'INTRODUCED';
+  if (application.some((o) => o.score >= 60)) {
+    state = 'GUIDED';
+  }
+  if (application.filter((o) => o.score >= 70 && o.difficulty >= 3).length >= 2) {
+    state = 'INDEPENDENT';
+  }
+  const provisional = observations.some((o) => (o.dimension === 'APPLICATION' || o.dimension === 'TRANSFER') && o.score >= 80);
+  return { state, provisional, per_dimension, evidence_refs: observations.map((o) => o.observation_id) };
 }
 
 function emptyDimension(): CompetencyProjection['per_dimension']['RECALL'] {

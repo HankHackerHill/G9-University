@@ -52,8 +52,13 @@
 //!   appended by this process and verifies the whole chain.
 //! * `g9_storage::deletion::execute_erasure` opens its own transaction: the
 //!   erasure runs as a post-commit step of the approved command.
-//! * `assessment_versions` stores no difficulty: observations from final
-//!   grades are not derived (PROPOSED, reported as a warning).
+//! * `assessment_versions.difficulty` (nullable, since migration `0013`) is the
+//!   author-declared difficulty: observations from a final grade are derived
+//!   only for a version that declares one; otherwise `assessment.approve_final`
+//!   warns `competency.observations_not_derived` and derives nothing. Every
+//!   operator finalization is `SELF_ADJUDICATED` (the operator is the learner),
+//!   so no derived observation validates in the MVP; an external reviewer or a
+//!   deterministic checker is PROPOSED.
 //! * `g9_policy::ApprovalLedger` has no record-level restore: the ledger is
 //!   re-synchronised through its JSON snapshot form.
 //! * No export writer honours a domain selection: `export.request` records the
@@ -73,6 +78,15 @@ pub mod research;
 pub mod schemas;
 pub mod status;
 pub mod teaching;
+
+// Unit tests that need a finalization by a reviewer who is not the learner (not
+// reachable through `dispatch`: the operator is both) reuse the integration-test
+// harness; `extern crate self` lets that file name this crate as `g9_app`.
+#[cfg(test)]
+extern crate self as g9_app;
+#[cfg(test)]
+#[path = "../tests/common/mod.rs"]
+mod test_harness;
 
 pub use context::{AppConfig, AppContext, AppContextBuilder, Transport};
 pub use dispatch::dispatch;

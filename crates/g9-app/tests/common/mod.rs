@@ -10,9 +10,12 @@
 
 use g9_ai_adapter::InferenceRuntime;
 use g9_app::{AppConfig, AppContext};
-use g9_domain::{ActorId, G9Error, UtcMillis};
+use g9_domain::{
+    ActorId, AssessmentId, CompetencyId, DataDomain, Difficulty, EvidenceId, G9Error, UtcMillis,
+};
 use g9_policy::BindingKey;
 use g9_skills::Registry;
+use g9_storage::repos::{assessment as assessment_repo, competency as competency_repo};
 use g9_storage::{Database, OpenOptions};
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
@@ -272,4 +275,131 @@ impl Harness {
             .unwrap()
             .rows
     }
+}
+
+/// The competency every blind-practical fixture below assesses.
+pub const COMPETENCY: &str = "comp-boot";
+
+/// Competency [`COMPETENCY`], the blind-practical definition `ad-w1` (mode EXAM)
+/// and `versions` baseline versions labelled "1".."n". `difficulty` is the value
+/// the versions' author declares: `Some(d)` persists it, `None` models a
+/// version authored without one (the column keeps NULL; nothing is guessed).
+pub fn seed_blind_practical(h: &Harness, versions: u32, difficulty: Option<u8>) -> AssessmentId {
+    let conn = h.conn();
+    let now = h.now();
+    let competency = g9_competency::Competency {
+        id: CompetencyId::parse(COMPETENCY).unwrap(),
+        name: "Linux boot chain".into(),
+        pack: "linux".into(),
+        domain: DataDomain::Learning,
+        description: "Recover a broken boot chain".into(),
+        validity_window_days: 90,
+        difficulty_band: (Difficulty::new(1).unwrap(), Difficulty::new(5).unwrap()),
+        nice_refs: Vec::new(),
+    };
+    competency_repo::insert_competency(
+        conn,
+        &competency_repo::CompetencyRow::from_domain(&competency, "LINUX-BOOT", None, now),
+    )
+    .unwrap();
+    let def = g9_assessment::AssessmentDefinition::new(
+        AssessmentId::parse("ad-w1").unwrap(),
+        "Week 1 blind practical",
+        vec![competency.id.clone()],
+        g9_assessment::AssessmentKind::BlindPractical,
+        DataDomain::Learning,
+    )
+    .unwrap();
+    assessment_repo::insert_definition(
+        conn,
+        &assessment_repo::AssessmentDefinitionRow::from_domain(&def, "W1-BLIND", now).unwrap(),
+    )
+    .unwrap();
+    for n in 1..=versions {
+        let version = g9_assessment::AssessmentVersion {
+            definition_id: def.id.clone(),
+            version: n,
+            rubric: g9_assessment::Rubric::baseline(),
+            task_ref: EvidenceId::parse(&format!("evi-task-{n}")).unwrap(),
+            sealed_key_ref: None,
+            // The domain type requires a value; a version "without difficulty"
+            // is stored by clearing it on the row below.
+            difficulty: Difficulty::new(difficulty.unwrap_or(3)).unwrap(),
+            equivalence_group: "W1".into(),
+            created_at: now,
+            checksum: String::new(),
+        }
+        .with_checksum()
+        .unwrap();
+        let mut row = assessment_repo::AssessmentVersionRow::from_domain(
+            &version,
+            &format!("av-w1-{n}"),
+            &format!("Recover the boot chain (variant {n})"),
+            None,
+            operator_id(),
+        )
+        .unwrap();
+        if difficulty.is_none() {
+            row.difficulty = None;
+        }
+        assessment_repo::insert_version(conn, &row).unwrap();
+        let (rubric, criteria) = assessment_repo::rubric_rows_from_domain(
+            &version.rubric,
+            &format!("rub-w1-{n}"),
+            &format!("av-w1-{n}"),
+            "Baseline",
+            "v1",
+            now,
+        );
+        assessment_repo::insert_rubric(conn, &rubric, &criteria).unwrap();
+    }
+    def.id
+}
+
+/// An independent (unaided, difficulty 3, application) LAB observation of
+/// [`COMPETENCY`] from a learning episode, `days_ago` days before the
+/// harness clock. Stands for earlier practice recorded outside `g9-app`.
+pub fn lab_observation(h: &Harness, id: &str, score: u8, days_ago: i64) {
+    use g9_competency::{CompetencyObservation, ObservationSource};
+    use g9_domain::{
+        AssistanceLevel, Confidence, EpisodeId, InteractionMode, LearningDimension, ObservationId,
+        Provenance, SourceKind, TrustClass,
+    };
+    let at = UtcMillis::from_millis(h.now().as_millis() - days_ago * 86_400_000);
+    let episode = format!("ep-{id}");
+    h.conn()
+        .execute(
+            "INSERT INTO learning_episodes (id, competency_id, kind, started_at, created_at, updated_at)
+             VALUES (?1, ?2, 'INDEPENDENT_LAB', ?3, ?3, ?3)",
+            rusqlite::params![episode, COMPETENCY, at.as_millis()],
+        )
+        .unwrap();
+    competency_repo::append_observation(
+        h.conn(),
+        &CompetencyObservation {
+            id: ObservationId::parse(id).unwrap(),
+            competency_id: CompetencyId::parse(COMPETENCY).unwrap(),
+            dimension: LearningDimension::Application,
+            source: ObservationSource::Episode(EpisodeId::parse(&episode).unwrap()),
+            mode: InteractionMode::Lab,
+            difficulty: Difficulty::new(3).unwrap(),
+            assistance: AssistanceLevel::Unaided,
+            score,
+            environment: "lab-vm".into(),
+            reviewer: None,
+            provenance: Provenance {
+                source_kind: SourceKind::SystemGenerated,
+                source_ref: format!("episode:{episode}"),
+                trust: TrustClass::SystemDeterministic,
+                content_sha256: None,
+                recorded_at: at,
+                recorded_by: ActorId::parse("system").unwrap(),
+                version: None,
+            },
+            uncertainty: Confidence::new(0.0).unwrap(),
+            observed_at: at,
+            supersedes: None,
+        },
+    )
+    .unwrap();
 }

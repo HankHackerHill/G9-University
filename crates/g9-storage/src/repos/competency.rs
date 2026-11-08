@@ -7,6 +7,12 @@
 //!   whose `supersedes` names the earlier one ([`append_observation`] runs the
 //!   crate's structural validation, so model-output provenance is refused before
 //!   the CHECK constraint sees it).
+//! * `competency_observation_evidence` (migration `0013`): one append-only row
+//!   per observation derived from a grade decision (decision, reliability
+//!   class, blind, validation-eligible). [`ineligible_observation_ids`] feeds
+//!   `g9_competency::derive_state_excluding_validation`, so an observation
+//!   whose decision is `SELF_ADJUDICATED`, failed or not blind never counts as
+//!   validation evidence (ADR-0005/0012, Addendum A.2).
 //! * `learner_hypotheses`: proposals from any actor, decisions by the operator
 //!   only ([`decide_hypothesis`] follows the `HypothesisStatus` edges).
 //! * `competency_state_snapshots`: derived projections, never authoritative,
@@ -24,10 +30,11 @@
 //! difficulty band, NICE refs) because the DDL has no dedicated columns for the
 //! last two.
 
+use super::assessment::ReliabilityClass;
 use super::{
-    finish_update, from_json, from_ms, ms, opt_from_ms, opt_parse_id, query_all, query_opt,
-    required, rev_from_i64, rev_i64, to_json, u32_from_i64, u8_from_i64, ReadScope, RepoError,
-    RepoResult,
+    bool_i64, finish_update, from_json, from_ms, i64_bool, ms, opt_from_ms, opt_parse_id,
+    query_all, query_opt, required, rev_from_i64, rev_i64, to_json, u32_from_i64, u8_from_i64,
+    ReadScope, RepoError, RepoResult,
 };
 use crate::error::{StorageError, StorageResult};
 use crate::sql::{enum_from_text, enum_to_text, parse_id};
@@ -37,11 +44,12 @@ use g9_competency::{
 };
 use g9_domain::{
     Actor, ActorId, AssistanceLevel, AttemptId, Classification, CompetencyId, CompetencyState,
-    Confidence, DataDomain, Difficulty, EpisodeId, InteractionMode, LearningDimension,
-    ObservationId, Provenance, Revision, SourceKind, UtcMillis,
+    Confidence, DataDomain, Difficulty, EpisodeId, GradeDecisionId, InteractionMode,
+    LearningDimension, ObservationId, Provenance, Revision, SourceKind, UtcMillis,
 };
 use rusqlite::{params, Connection, Row};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
 /// Contents of `competencies.rules_json`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
@@ -673,6 +681,149 @@ pub fn observations_for_attempt(
         &[&attempt_id.as_str()],
         map_observation,
     )
+}
+
+// ---------------------------------------------------------------------------
+// observation evidence (observations derived from grade decisions)
+// ---------------------------------------------------------------------------
+
+/// A `competency_observation_evidence` row (append-only; migration `0013`):
+/// what an observation derived from a grade decision rests on.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ObservationEvidenceRow {
+    /// The derived observation (primary key).
+    pub observation_id: ObservationId,
+    /// The grade decision the observation was derived from.
+    pub decision_id: GradeDecisionId,
+    /// Reliability class of that decision (ADR-0012).
+    pub reliability_class: ReliabilityClass,
+    /// May count as validation evidence: the decision passed, the attempt was
+    /// blind and the class is not `SELF_ADJUDICATED`
+    /// (`g9_assessment::ObservationDraft::validation_eligible`).
+    pub validation_eligible: bool,
+    /// Whether the attempt was blind (EXAM, unaided, no key or hint exposure).
+    pub blind: bool,
+    /// Row creation.
+    pub created_at: UtcMillis,
+}
+
+const EVIDENCE_COLUMNS: &str = "e.observation_id, e.decision_id, e.reliability_class, e.validation_eligible, e.blind, e.created_at";
+
+fn map_evidence(r: &Row<'_>) -> StorageResult<ObservationEvidenceRow> {
+    Ok(ObservationEvidenceRow {
+        observation_id: parse_id(&r.get::<_, String>("observation_id")?)?,
+        decision_id: parse_id(&r.get::<_, String>("decision_id")?)?,
+        reliability_class: enum_from_text(&r.get::<_, String>("reliability_class")?)?,
+        validation_eligible: i64_bool(r.get("validation_eligible")?)?,
+        blind: i64_bool(r.get("blind")?)?,
+        created_at: from_ms(r.get("created_at")?),
+    })
+}
+
+/// Append the evidence row of an observation derived from a grade decision.
+/// A `SELF_ADJUDICATED` decision can never be validation-eligible (ADR-0005),
+/// and when both rows exist the observation must be grounded in the decision's
+/// attempt; a missing observation or decision is refused by the foreign keys.
+/// Rows are never updated or deleted (trigger-enforced).
+pub fn append_observation_evidence(
+    conn: &Connection,
+    row: &ObservationEvidenceRow,
+) -> RepoResult<()> {
+    if row.validation_eligible && row.reliability_class == ReliabilityClass::SelfAdjudicated {
+        return Err(RepoError::Storage(StorageError::InvalidInput(
+            "a SELF_ADJUDICATED decision can never supply validation-eligible evidence".to_string(),
+        )));
+    }
+    let attempts: Option<(Option<String>, String)> = query_opt(
+        conn,
+        "SELECT o.attempt_id, d.attempt_id
+           FROM competency_observations o, grade_decisions d
+          WHERE o.id = ?1 AND d.id = ?2",
+        &[&row.observation_id.as_str(), &row.decision_id.as_str()],
+        |r| Ok((r.get(0)?, r.get(1)?)),
+    )?;
+    if let Some((observed, decided)) = attempts {
+        if observed.as_deref() != Some(decided.as_str()) {
+            return Err(RepoError::Storage(StorageError::Precondition(
+                "competency.observation_evidence.attempt_mismatch".to_string(),
+            )));
+        }
+    }
+    conn.execute(
+        "INSERT INTO competency_observation_evidence
+           (observation_id, decision_id, reliability_class, validation_eligible, blind, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        params![
+            row.observation_id.as_str(),
+            row.decision_id.as_str(),
+            enum_to_text(&row.reliability_class)?,
+            bool_i64(row.validation_eligible),
+            bool_i64(row.blind),
+            ms(row.created_at),
+        ],
+    )?;
+    Ok(())
+}
+
+/// Evidence rows of every observation of a competency, in the order of the
+/// observations (`observed_at`, id).
+pub fn observation_evidence_for_competency(
+    conn: &Connection,
+    competency_id: &CompetencyId,
+) -> RepoResult<Vec<ObservationEvidenceRow>> {
+    query_all(
+        conn,
+        &format!(
+            "SELECT {EVIDENCE_COLUMNS}
+               FROM competency_observation_evidence e
+               JOIN competency_observations o ON o.id = e.observation_id
+              WHERE o.competency_id = ?1
+              ORDER BY o.observed_at, o.id"
+        ),
+        &[&competency_id.as_str()],
+        map_evidence,
+    )
+}
+
+/// Ids of the competency's observations that must never count as validation
+/// evidence: the `validation_ineligible` input of
+/// `g9_competency::derive_state_excluding_validation`. Listed are
+///
+/// * every observation whose evidence row says `validation_eligible = 0`, and
+/// * every observation that *has no evidence row of its own* and supersedes a
+///   listed one (transitively): an operator correction (`MANUAL_CORRECTION`)
+///   cannot launder a `SELF_ADJUDICATED`, failed or non-blind grade into
+///   validation evidence. A superseding observation derived from a later grade
+///   decision has its own evidence row and is judged by that row alone.
+///
+/// Observations without an evidence row that supersede nothing listed
+/// (episodes, earlier lab observations) are not listed.
+pub fn ineligible_observation_ids(
+    conn: &Connection,
+    competency_id: &CompetencyId,
+) -> RepoResult<BTreeSet<ObservationId>> {
+    let ids: Vec<ObservationId> = query_all(
+        conn,
+        "WITH RECURSIVE ineligible(id) AS (
+             SELECT e.observation_id
+               FROM competency_observation_evidence e
+              WHERE e.validation_eligible = 0
+             UNION
+             SELECT o.id
+               FROM competency_observations o
+               JOIN ineligible i ON o.supersedes = i.id
+              WHERE NOT EXISTS (SELECT 1 FROM competency_observation_evidence x
+                                 WHERE x.observation_id = o.id)
+         )
+         SELECT i.id
+           FROM ineligible i
+           JOIN competency_observations o ON o.id = i.id
+          WHERE o.competency_id = ?1
+          ORDER BY i.id",
+        &[&competency_id.as_str()],
+        |r| parse_id(&r.get::<_, String>("id")?),
+    )?;
+    Ok(ids.into_iter().collect())
 }
 
 // ---------------------------------------------------------------------------
@@ -1352,6 +1503,344 @@ mod tests {
             1
         );
         assert!(latest_snapshot(conn, &comp).unwrap().is_none());
+    }
+
+    /// A final decision row for an attempt (the columns the evidence FK needs).
+    fn decision(conn: &Connection, id: &str, attempt: &str) {
+        conn.execute(
+            "INSERT INTO grade_decisions (id, attempt_id, total_score, passed, is_final, decided_by, decided_at, created_at, updated_at)
+             VALUES (?1, ?2, 85, 1, 1, 'op', 1, 1, 1)",
+            params![id, attempt],
+        )
+        .unwrap();
+    }
+
+    fn evidence(
+        observation: &str,
+        decision: &str,
+        class: ReliabilityClass,
+        eligible: bool,
+    ) -> ObservationEvidenceRow {
+        ObservationEvidenceRow {
+            observation_id: ObservationId::parse(observation).unwrap(),
+            decision_id: GradeDecisionId::parse(decision).unwrap(),
+            reliability_class: class,
+            validation_eligible: eligible,
+            blind: true,
+            created_at: t(5),
+        }
+    }
+
+    fn attempt_observation(id: &str, attempt: &str, at: UtcMillis) -> CompetencyObservation {
+        observation(
+            id,
+            ObservationSource::Attempt(AttemptId::parse(attempt).unwrap()),
+            provenance(SourceKind::AssessmentSubmission, TrustClass::Operator),
+            at,
+        )
+    }
+
+    #[test]
+    fn observation_evidence_round_trips_and_lists_ineligible_ids() {
+        let db = db();
+        let conn = db.conn();
+        seed(conn);
+        insert_competency(
+            conn,
+            &CompetencyRow::from_domain(&competency("comp-2"), "LINUX-FS", None, t(0)),
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO attempts (id, assessment_version_id, state, mode, created_at, updated_at)
+             VALUES ('attempt-2', 'av-1', 'SUBMITTED', 'EXAM', 1, 1)",
+            [],
+        )
+        .unwrap();
+        decision(conn, "gd-1", "attempt-1");
+        decision(conn, "gd-2", "attempt-2");
+        let comp = CompetencyId::parse("comp-1").unwrap();
+        let other = CompetencyId::parse("comp-2").unwrap();
+
+        // nothing recorded yet
+        assert!(observation_evidence_for_competency(conn, &comp)
+            .unwrap()
+            .is_empty());
+        assert!(ineligible_observation_ids(conn, &comp).unwrap().is_empty());
+
+        append_observation(conn, &attempt_observation("obs-1", "attempt-1", t(1))).unwrap();
+        append_observation(conn, &attempt_observation("obs-2", "attempt-1", t(2))).unwrap();
+        append_observation(conn, &attempt_observation("obs-3", "attempt-2", t(3))).unwrap();
+        // an episode observation has no grade decision and no evidence row
+        let mut lab = observation(
+            "obs-lab",
+            ObservationSource::Episode(EpisodeId::parse("ep-1").unwrap()),
+            provenance(SourceKind::SystemGenerated, TrustClass::SystemDeterministic),
+            t(0),
+        );
+        lab.mode = InteractionMode::Lab;
+        append_observation(conn, &lab).unwrap();
+        // an observation of another competency
+        let mut foreign = attempt_observation("obs-x", "attempt-2", t(4));
+        foreign.competency_id = other.clone();
+        append_observation(conn, &foreign).unwrap();
+
+        let eligible = evidence("obs-1", "gd-1", ReliabilityClass::ExternalReview, true);
+        let self_graded = evidence("obs-2", "gd-1", ReliabilityClass::SelfAdjudicated, false);
+        let failed = ObservationEvidenceRow {
+            blind: false,
+            ..evidence("obs-3", "gd-2", ReliabilityClass::Deterministic, false)
+        };
+        for row in [&eligible, &self_graded, &failed] {
+            append_observation_evidence(conn, row).unwrap();
+        }
+        append_observation_evidence(
+            conn,
+            &evidence("obs-x", "gd-2", ReliabilityClass::Deterministic, true),
+        )
+        .unwrap();
+
+        // round trip, in observation order, per competency
+        assert_eq!(
+            observation_evidence_for_competency(conn, &comp).unwrap(),
+            vec![eligible.clone(), self_graded.clone(), failed.clone()]
+        );
+        assert_eq!(
+            observation_evidence_for_competency(conn, &other)
+                .unwrap()
+                .len(),
+            1
+        );
+        // only validation_eligible = 0 rows are listed as ineligible
+        assert_eq!(
+            ineligible_observation_ids(conn, &comp).unwrap(),
+            [
+                self_graded.observation_id.clone(),
+                failed.observation_id.clone()
+            ]
+            .into_iter()
+            .collect::<BTreeSet<_>>()
+        );
+        assert!(ineligible_observation_ids(conn, &other).unwrap().is_empty());
+        // the episode observation is not listed anywhere
+        assert!(observation_evidence_for_competency(conn, &comp)
+            .unwrap()
+            .iter()
+            .all(|e| e.observation_id.as_str() != "obs-lab"));
+
+        // the listed set is what derivation consumes: obs-1 (EXTERNAL_REVIEW)
+        // validates; without it the SELF_ADJUDICATED and failed observations
+        // stop at Independent and the projection is provisional
+        let node = get_competency(conn, &learning(), &comp)
+            .unwrap()
+            .unwrap()
+            .to_domain()
+            .unwrap();
+        let observations = list_observations(conn, &comp).unwrap();
+        let rules = DerivationRules::default();
+        let blocked = ineligible_observation_ids(conn, &comp).unwrap();
+        let with_eligible = g9_competency::derive_state_excluding_validation(
+            &node,
+            &observations,
+            &rules,
+            t(10),
+            &blocked,
+        );
+        assert_eq!(with_eligible.state, CompetencyState::Validated);
+        assert!(!with_eligible.provisional);
+        let without_eligible: Vec<_> = observations
+            .iter()
+            .filter(|o| o.id != eligible.observation_id)
+            .cloned()
+            .collect();
+        let capped = g9_competency::derive_state_excluding_validation(
+            &node,
+            &without_eligible,
+            &rules,
+            t(10),
+            &blocked,
+        );
+        assert_eq!(capped.state, CompetencyState::Independent);
+        assert!(capped.provisional);
+    }
+
+    #[test]
+    fn corrections_inherit_ineligibility_but_a_later_decision_is_judged_on_its_own_row() {
+        let db = db();
+        let conn = db.conn();
+        seed(conn);
+        conn.execute(
+            "INSERT INTO attempts (id, assessment_version_id, state, mode, created_at, updated_at)
+             VALUES ('attempt-2', 'av-1', 'SUBMITTED', 'EXAM', 1, 1)",
+            [],
+        )
+        .unwrap();
+        decision(conn, "gd-1", "attempt-1");
+        decision(conn, "gd-2", "attempt-1");
+        let comp = CompetencyId::parse("comp-1").unwrap();
+        append_observation(conn, &attempt_observation("obs-1", "attempt-1", t(1))).unwrap();
+        append_observation_evidence(
+            conn,
+            &evidence("obs-1", "gd-1", ReliabilityClass::SelfAdjudicated, false),
+        )
+        .unwrap();
+        // an operator correction of the self-graded observation has no evidence
+        // row of its own: it must not become validation evidence
+        let mut correction = observation(
+            "obs-2",
+            ObservationSource::ManualCorrection,
+            provenance(SourceKind::OperatorInput, TrustClass::Operator),
+            t(2),
+        );
+        correction.score = 95;
+        correction.supersedes = Some(ObservationId::parse("obs-1").unwrap());
+        append_observation(conn, &correction).unwrap();
+        // ... and neither may a correction of that correction
+        let mut second = correction.clone();
+        second.id = ObservationId::parse("obs-3").unwrap();
+        second.supersedes = Some(correction.id.clone());
+        second.observed_at = t(3);
+        append_observation(conn, &second).unwrap();
+        // an unrelated lab observation is not listed
+        let mut lab = observation(
+            "obs-lab",
+            ObservationSource::Episode(EpisodeId::parse("ep-1").unwrap()),
+            provenance(SourceKind::SystemGenerated, TrustClass::SystemDeterministic),
+            t(0),
+        );
+        lab.mode = InteractionMode::Lab;
+        append_observation(conn, &lab).unwrap();
+        assert_eq!(
+            ineligible_observation_ids(conn, &comp).unwrap(),
+            ["obs-1", "obs-2", "obs-3"]
+                .iter()
+                .map(|i| ObservationId::parse(i).unwrap())
+                .collect::<BTreeSet<_>>()
+        );
+
+        // an observation derived from a later (e.g. adjudicated) decision that
+        // supersedes the old one carries its own evidence row and is judged by it
+        let mut adjudicated = attempt_observation("obs-4", "attempt-1", t(4));
+        adjudicated.supersedes = Some(second.id.clone());
+        adjudicated.provenance = provenance(SourceKind::AssessmentSubmission, TrustClass::Operator);
+        append_observation(conn, &adjudicated).unwrap();
+        append_observation_evidence(
+            conn,
+            &evidence("obs-4", "gd-2", ReliabilityClass::ExternalReview, true),
+        )
+        .unwrap();
+        let listed = ineligible_observation_ids(conn, &comp).unwrap();
+        assert!(!listed.contains(&adjudicated.id));
+        assert_eq!(listed.len(), 3);
+    }
+
+    #[test]
+    fn observation_evidence_refuses_inconsistent_and_dangling_rows() {
+        let db = db();
+        let conn = db.conn();
+        seed(conn);
+        conn.execute(
+            "INSERT INTO attempts (id, assessment_version_id, state, mode, created_at, updated_at)
+             VALUES ('attempt-2', 'av-1', 'SUBMITTED', 'EXAM', 1, 1)",
+            [],
+        )
+        .unwrap();
+        decision(conn, "gd-1", "attempt-1");
+        decision(conn, "gd-2", "attempt-2");
+        append_observation(conn, &attempt_observation("obs-1", "attempt-1", t(1))).unwrap();
+
+        // SELF_ADJUDICATED can never be validation-eligible (ADR-0005)
+        assert!(matches!(
+            append_observation_evidence(
+                conn,
+                &evidence("obs-1", "gd-1", ReliabilityClass::SelfAdjudicated, true)
+            ),
+            Err(RepoError::Storage(StorageError::InvalidInput(_)))
+        ));
+        // the observation must come from the decision's attempt
+        assert!(matches!(
+            append_observation_evidence(
+                conn,
+                &evidence("obs-1", "gd-2", ReliabilityClass::ExternalReview, true)
+            ),
+            Err(RepoError::Storage(StorageError::Precondition(_)))
+        ));
+        // foreign keys: neither side may dangle
+        assert!(matches!(
+            append_observation_evidence(
+                conn,
+                &evidence("ghost", "gd-1", ReliabilityClass::ExternalReview, true)
+            ),
+            Err(RepoError::Storage(StorageError::ForeignKey(_)))
+        ));
+        assert!(matches!(
+            append_observation_evidence(
+                conn,
+                &evidence("obs-1", "ghost", ReliabilityClass::ExternalReview, true)
+            ),
+            Err(RepoError::Storage(StorageError::ForeignKey(_)))
+        ));
+        // CHECK lists and the primary key
+        for sql in [
+            "INSERT INTO competency_observation_evidence VALUES ('obs-1', 'gd-1', 'GUESSED', 1, 1, 1)",
+            "INSERT INTO competency_observation_evidence VALUES ('obs-1', 'gd-1', 'DETERMINISTIC', 2, 1, 1)",
+            "INSERT INTO competency_observation_evidence VALUES ('obs-1', 'gd-1', 'DETERMINISTIC', 1, 2, 1)",
+        ] {
+            assert!(matches!(
+                StorageError::from(conn.execute(sql, []).unwrap_err()),
+                StorageError::CheckViolation(_)
+            ));
+        }
+        let row = evidence("obs-1", "gd-1", ReliabilityClass::ExternalReview, true);
+        append_observation_evidence(conn, &row).unwrap();
+        assert!(matches!(
+            append_observation_evidence(conn, &row),
+            Err(RepoError::Storage(StorageError::UniqueViolation(_)))
+        ));
+
+        // append-only: no update, no delete
+        assert_immutable(
+            conn,
+            "UPDATE competency_observation_evidence SET validation_eligible = 0 WHERE observation_id = 'obs-1'",
+        );
+        assert_immutable(
+            conn,
+            "UPDATE competency_observation_evidence SET decision_id = 'gd-2' WHERE observation_id = 'obs-1'",
+        );
+        assert_immutable(conn, "DELETE FROM competency_observation_evidence");
+
+        // both parents are RESTRICT (the parents' own immutability triggers
+        // refuse first; the declared actions are checked on the schema)
+        let mut stmt = conn
+            .prepare("PRAGMA foreign_key_list(competency_observation_evidence)")
+            .unwrap();
+        let mut fks: Vec<(String, String, String, String)> = stmt
+            .query_map([], |r| Ok((r.get(2)?, r.get(3)?, r.get(5)?, r.get(6)?)))
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        fks.sort();
+        assert_eq!(
+            fks,
+            vec![
+                (
+                    "competency_observations".to_string(),
+                    "observation_id".to_string(),
+                    "RESTRICT".to_string(),
+                    "RESTRICT".to_string()
+                ),
+                (
+                    "grade_decisions".to_string(),
+                    "decision_id".to_string(),
+                    "RESTRICT".to_string(),
+                    "RESTRICT".to_string()
+                ),
+            ]
+        );
+        assert_immutable(
+            conn,
+            "DELETE FROM competency_observations WHERE id = 'obs-1'",
+        );
+        assert_immutable(conn, "DELETE FROM grade_decisions WHERE id = 'gd-1'");
     }
 
     #[test]

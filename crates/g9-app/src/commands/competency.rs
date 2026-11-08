@@ -1,17 +1,27 @@
 //! `competency.projection` (read-only; M06; ARCHITECTURE.md §8 "Derivation").
 //!
-//! State is derived on every read by `g9_competency::derive_state` (a pure,
-//! replayable fold over retained observations with the default
-//! `DerivationRules`); nothing is cached as authority and no number is
-//! invented: a dimension without observations reports `null` estimates.
-//! `provisional` is `false` because the reliability-class downgrade (ADR-0005
-//! addendum, LRN-11) is not modelled by the wave-1 derivation (PROPOSED).
+//! State is derived on every read by
+//! `g9_competency::derive_state_excluding_validation` (a pure, replayable fold
+//! over retained observations with the default `DerivationRules`); nothing is
+//! cached as authority and no number is invented: a dimension without
+//! observations reports `null` estimates.
+//!
+//! The reliability-class downgrade (ADR-0005 addendum, ARCHITECTURE.md
+//! Addendum A.2, LRN-11) is applied here: the ids of the competency's
+//! observations whose `competency_observation_evidence.validation_eligible` is
+//! `0` (derived from a `SELF_ADJUDICATED`, failed or non-blind grade decision by
+//! `assessment.approve_final`) are passed as the `validation_ineligible` set, so
+//! they never count as validation evidence: the state stops at `Independent`
+//! and `provisional` is `true` when such evidence would otherwise have
+//! qualified. `provisional` is the derived projection's flag, never a constant.
+//! A competency with no observation is unchanged (`UNASSESSED`, `provisional`
+//! false).
 
 use super::{decode, parse_id, rc, scope_of, tail};
 use crate::context::AppContext;
 use crate::ops::OpSpec;
 use crate::pipeline::{self, Command, Facts, Mutation};
-use g9_competency::{derive_state, DerivationRules};
+use g9_competency::{derive_state_excluding_validation, DerivationRules};
 use g9_domain::{
     Classification, CommandMeta, CommandOutcome, CompetencyId, G9Error, LearningDimension,
     ResourceKind, ResourceRef,
@@ -70,7 +80,14 @@ pub fn projection(
             for row in rows {
                 let competency = row.to_domain()?;
                 let observations = repo::list_observations(env.conn, &row.id)?;
-                let p = derive_state(&competency, &observations, &rules, env.now);
+                let ineligible = repo::ineligible_observation_ids(env.conn, &row.id)?;
+                let p = derive_state_excluding_validation(
+                    &competency,
+                    &observations,
+                    &rules,
+                    env.now,
+                    &ineligible,
+                );
                 let mut per_dimension = Map::new();
                 for d in LearningDimension::ALL {
                     let key = serde_json::to_value(d)
@@ -102,7 +119,7 @@ pub fn projection(
                     "competency_id": row.id,
                     "name": row.title,
                     "state": p.state,
-                    "provisional": false,
+                    "provisional": p.provisional,
                     "per_dimension": per_dimension,
                     "contradictions": p.contradictions.iter().map(|c| c.reason.clone()).collect::<Vec<_>>(),
                     "evidence_refs": p.evidence_refs,

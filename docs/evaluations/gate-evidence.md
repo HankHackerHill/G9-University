@@ -49,7 +49,7 @@ Scenarios: 24; PASS 24; FAIL 0.
 |---|---|
 | G1 | g9-app notes.create does not run g9_evidence::classify_text nor persist content_classifications: an instruction-like note is stored as data (correct) but its InstructionLike flag is not recorded (ST01). |
 | G2 | No IPC cancellation operation: skills.invoke always runs with a fresh CancelToken, so late-response discard (ST12) is exercised at the orchestrator boundary with g9-app's own PolicyAdapter/RuntimeBackend. |
-| G3 | No IPC path creates study sessions, competencies, assessment definitions or observations (FILL_CURRICULUM and catalogue import are PROPOSED): fixtures insert them through the g9-storage repositories. |
+| G3 | No IPC path creates study sessions, competencies, assessment definitions or observations other than the ones `assessment.approve_final` derives from a final grade (FILL_CURRICULUM and catalogue import are PROPOSED): fixtures insert them through the g9-storage repositories. |
 | G4 | g9-app RuntimeBackend maps a structured-output schema failure (InferenceError::InvalidOutput) to BackendError::Runtime, so a schema-invalid or non-JSON model reply surfaces as INTERNAL skills.backend.runtime instead of PRECONDITION_FAILED skills.output_rejected; the reply is still rejected and nothing is persisted (A11). |
 | G5 | No model-load IPC operation: modified model weights (ST06) are checked at the g9_ai_adapter::verify_checksum boundary only; dependency bans are CI (cargo deny) and NOT RUN here. |
 | G6 | g9-app backup.verify/restore_test only know backups created by the same process (no manifest reader in g9-storage): after a restart the pre-crash backup answers PRECONDITION_FAILED backup.manifest_unavailable and is verified at the g9_storage::backup::verify_snapshot boundary instead (A08). |
@@ -169,7 +169,7 @@ Gate: A05 · Test: `tests/integration/a04_a05_gate.rs`
 | # | Operation | Decision | Outcome | Code |
 |---|---|---|---|---|
 | 1 | `competency.projection` | NO_AUDIT_ROW | OK | — |
-| 2 | `harness:replay derive_state (forward, reversed)` | REPLAYED | OK | — |
+| 2 | `harness:replay derive_state_excluding_validation (forward, reversed)` | REPLAYED | OK | — |
 | 3 | `storage:append_observation (MANUAL_CORRECTION supersedes obs-w03-net-3)` | ACCEPTED | OK | — |
 | 4 | `competency.projection (after correction)` | NO_AUDIT_ROW | OK | — |
 | 5 | `storage:append_observation (MODEL_OUTPUT provenance)` | REFUSED | INVALID_INPUT | `storage.invalid_input` |
@@ -179,18 +179,22 @@ Gate: A05 · Test: `tests/integration/a04_a05_gate.rs`
 | projection read: recorded decision | NO_AUDIT_ROW | NO_AUDIT_ROW | PASS |
 | projection read: outcome | OK | OK | PASS |
 | derived state from fixture evidence | INDEPENDENT | INDEPENDENT | PASS |
-| APPLICATION unaided count | 2 | 2 | PASS |
+| served projection is provisional (self-adjudicated exam evidence excluded from validation) | true | true | PASS |
+| APPLICATION unaided count (two fixture lab observations + one derived from the final grade) | 3 | 3 | PASS |
 | no estimate invented for unobserved dimension | null | null | PASS |
-| replay is order independent | {"competency_id":"comp-net-path-diagnosis","state":"INDEPENDENT","per_dimension":{"APPLICATION":{"n_total":3,"n_unaided":2,"latest_score":78,"independence_weighted_mean":73.6,"last_observed_at":1794995400000,"uncertainty":0.1000000000000000 | {"competency_id":"comp-net-path-diagnosis","state":"INDEPENDENT","per_dimension":{"APPLICATION":{"n_total":3,"n_unaided":2,"latest_score":78,"independence_weighted_mean":73.6,"last_observed_at":1794995400000,"uncertainty":0.1000000000000000 | PASS |
-| replay equals the served projection | INDEPENDENT | INDEPENDENT | PASS |
-| projection is stable across reads | {"competency_id":"comp-net-path-diagnosis","name":"Network path diagnosis","state":"INDEPENDENT","provisional":false,"per_dimension":{"RECALL":{"score_estimate":null,"n_unaided":0,"last_observed_at":null,"uncertainty":null},"UNDERSTANDING": | {"competency_id":"comp-net-path-diagnosis","name":"Network path diagnosis","state":"INDEPENDENT","provisional":false,"per_dimension":{"RECALL":{"score_estimate":null,"n_unaided":0,"last_observed_at":null,"uncertainty":null},"UNDERSTANDING": | PASS |
+| grade-derived observations (EXAM mode) are all validation-ineligible | [3,3] | [3,3] | PASS |
+| replay is order independent | {"competency_id":"comp-net-path-diagnosis","state":"INDEPENDENT","per_dimension":{"UNDERSTANDING":{"n_total":1,"n_unaided":1,"latest_score":100,"independence_weighted_mean":100.0,"last_observed_at":1794995220000,"uncertainty":0.0},"APPLICAT | {"competency_id":"comp-net-path-diagnosis","state":"INDEPENDENT","per_dimension":{"UNDERSTANDING":{"n_total":1,"n_unaided":1,"latest_score":100,"independence_weighted_mean":100.0,"last_observed_at":1794995220000,"uncertainty":0.0},"APPLICAT | PASS |
+| replay equals the served projection (state, provisional) | ["INDEPENDENT",true] | ["INDEPENDENT",true] | PASS |
+| without the evidence rows the same observations would validate | VALIDATED | VALIDATED | PASS |
+| projection is stable across reads | {"competency_id":"comp-net-path-diagnosis","name":"Network path diagnosis","state":"INDEPENDENT","provisional":true,"per_dimension":{"RECALL":{"score_estimate":null,"n_unaided":0,"last_observed_at":null,"uncertainty":null},"UNDERSTANDING":{ | {"competency_id":"comp-net-path-diagnosis","name":"Network path diagnosis","state":"INDEPENDENT","provisional":true,"per_dimension":{"RECALL":{"score_estimate":null,"n_unaided":0,"last_observed_at":null,"uncertainty":null},"UNDERSTANDING":{ | PASS |
 | correction accepted | true | true | PASS |
-| superseded observation retained (append-only) | obs-w03-net-3 still stored and 4 rows total | ["obs-w03-net-1","obs-w03-net-2","obs-w03-net-3","obs-w03-net-3-correction"] | PASS |
-| projection follows the correction | GUIDED | GUIDED | PASS |
-| superseded observation no longer counted as evidence | evidence_refs exclude obs-w03-net-3, include the correction | ["obs-w03-net-1","obs-w03-net-2","obs-w03-net-3-correction"] | PASS |
+| superseded observation retained (append-only) | obs-w03-net-3 still stored and one more row than before the correction | ["obs-w03-net-1","obs-w03-net-2","obs-<uuid>","obs-<uuid>","obs-<uuid>","obs-w03-net-3","obs-w03-net-3-correction"] | PASS |
+| state after correction (grade-derived evidence and obs-w03-net-2 still qualify) | INDEPENDENT | INDEPENDENT | PASS |
+| projection follows the correction (APPLICATION estimate lowered by 78 -> 55) | estimate after correction < estimate before | {"before":81.14285714285714,"after":74.57142857142857} | PASS |
+| superseded observation no longer counted as evidence | evidence_refs exclude obs-w03-net-3, include the correction | ["obs-w03-net-1","obs-w03-net-2","obs-<uuid>","obs-<uuid>","obs-<uuid>","obs-w03-net-3-correction"] | PASS |
 | model-provenance observation refused (INVALID_INPUT) | INVALID_INPUT | INVALID_INPUT | PASS |
-| observation set unchanged by the refusal | ["obs-w03-net-1","obs-w03-net-2","obs-w03-net-3","obs-w03-net-3-correction"] | ["obs-w03-net-1","obs-w03-net-2","obs-w03-net-3","obs-w03-net-3-correction"] | PASS |
-| projection unchanged by the refusal | GUIDED | GUIDED | PASS |
+| observation set unchanged by the refusal | ["obs-w03-net-1","obs-w03-net-2","obs-<uuid>","obs-<uuid>","obs-<uuid>","obs-w03-net-3","obs-w03-net-3-correction"] | ["obs-w03-net-1","obs-w03-net-2","obs-<uuid>","obs-<uuid>","obs-<uuid>","obs-w03-net-3","obs-w03-net-3-correction"] | PASS |
+| projection unchanged by the refusal | INDEPENDENT | INDEPENDENT | PASS |
 
 ### A06-01 — approval-gated operations refuse without an approval and change nothing (PASS)
 
@@ -607,7 +611,7 @@ Gate: A05, A07 · Test: `tests/adversarial/st_adversarial_catalogue.rs`
 | model reply asking to FINALIZE: outcome | PRECONDITION_FAILED | PRECONDITION_FAILED | PASS |
 | model reply asking to FINALIZE: error code | skills.output_rejected | skills.output_rejected | PASS |
 | competency state not raised to VALIDATED | INDEPENDENT | INDEPENDENT | PASS |
-| evidence set unchanged | ["obs-w03-net-1","obs-w03-net-2","obs-w03-net-3"] | ["obs-w03-net-1","obs-w03-net-2","obs-w03-net-3"] | PASS |
+| evidence set unchanged | ["obs-w03-net-1","obs-w03-net-2","obs-<uuid>","obs-<uuid>","obs-<uuid>","obs-w03-net-3"] | ["obs-w03-net-1","obs-w03-net-2","obs-<uuid>","obs-<uuid>","obs-<uuid>","obs-w03-net-3"] | PASS |
 | grade record unchanged | {"exists":true,"state":"APPROVED_FINAL","revision":5,"grade_decisions":1,"final_decisions":1,"final_passed":true,"final_approval":"<uuid>"} | {"exists":true,"state":"APPROVED_FINAL","revision":5,"grade_decisions":1,"final_decisions":1,"final_passed":true,"final_approval":"<uuid>"} | PASS |
 
 - The threat model also expects contradictions to be flagged for the operator; no IPC path ingests a contradicting observation in wave 1, so only the refusal is evidenced here.

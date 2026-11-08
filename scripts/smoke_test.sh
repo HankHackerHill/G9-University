@@ -5,7 +5,9 @@
 #   init -> import-seed -> simulate-week (fixed clock; PASS, complete, reproducible across
 #   two fresh directories: identical step tables, the full reports differ only in data_dir
 #   and the backend-generated ids under artifacts; a re-run on the same directory is FAIL at
-#   the first replayed idempotency key and executes nothing)
+#   the first replayed idempotency key and executes nothing; the Saturday grade reaches
+#   competency.projection: its evidence_refs include the 3 observations derived from the
+#   finalized attempt, and the self-adjudicated grade is provisional, never VALIDATED)
 #   -> crash-drill + init (the drill leaves exactly one open interval in storage, checked
 #      read-only in the database before recovery; recovery closes that interval UNCERTAIN
 #      and the session is INTERRUPTED with nothing credited)
@@ -111,6 +113,30 @@ print(steps[-1]["state_after"].get("state") if steps else "absent")
 PY
 }
 
+check_field() { # file check-name field -> field of the named simulate-week check's detail ('absent' when no such check)
+  python3 -I - "$1" "$2" "$3" <<'PY'
+import json, sys
+checks = [c for c in json.load(open(sys.argv[1]))["checks"] if c["name"] == sys.argv[2]]
+if not checks:
+    print("absent")
+else:
+    v = checks[0]["detail"].get(sys.argv[3]) if sys.argv[3] != "passed" else checks[0]["passed"]
+    print(json.dumps(v) if not isinstance(v, str) else v)
+PY
+}
+
+step_field() { # file op field -> state_after.<field> of the last step with that op ('absent' when none)
+  python3 -I - "$1" "$2" "$3" <<'PY'
+import json, sys
+steps = [s for s in json.load(open(sys.argv[1]))["steps"] if s["op"] == sys.argv[2]]
+if not steps:
+    print("absent")
+else:
+    v = steps[-1]["state_after"].get(sys.argv[3])
+    print(json.dumps(v) if not isinstance(v, str) else v)
+PY
+}
+
 first_fail() { # file -> "<first failing op>/<its decision>|<every failing op>" or "none"
   python3 -I - "$1" <<'PY'
 import json, sys
@@ -174,6 +200,11 @@ assert_eq "simulate-week completed 34 block sessions" 34 "$(count_steps "$WORK/w
 assert_eq "simulate-week six daily plans, six pauses, six journal notes" "6/6/6" "$(count_steps "$WORK/week.json" curriculum.daily_plan)/$(count_steps "$WORK/week.json" session.pause)/$(count_steps "$WORK/week.json" notes.create)"
 assert_eq "simulate-week attempt APPROVED_FINAL" APPROVED_FINAL "$(last_state "$WORK/week.json" assessment.approve_final)"
 assert_eq "simulate-week backup RETAINED" RETAINED "$(last_state "$WORK/week.json" backup.restore_test)"
+# The Saturday grade reaches the competency model: the projection is non-empty and its evidence_refs
+# include the 3 observations derived from the finalized attempt (understanding, application, transfer).
+# The operator grades their own attempt (SELF_ADJUDICATED), so the projection is provisional, never VALIDATED.
+assert_eq "simulate-week projection lists the finalized attempt's observations" "true/3/3/3" "$(check_field "$WORK/week.json" "competency.projection includes the observations of the finalized attempt" passed)/$(check_field "$WORK/week.json" "competency.projection includes the observations of the finalized attempt" attempt_observations)/$(check_field "$WORK/week.json" "competency.projection includes the observations of the finalized attempt" evidence_refs)/$(step_field "$WORK/week.json" competency.projection evidence_refs)"
+assert_eq "simulate-week self-adjudicated grade is provisional, not VALIDATED" "true/false/true" "$(check_field "$WORK/week.json" "self-adjudicated grade does not validate (provisional, no VALIDATED)" passed)/$(check_field "$WORK/week.json" "self-adjudicated grade does not validate (provisional, no VALIDATED)" validated)/$(check_field "$WORK/week.json" "self-adjudicated grade does not validate (provisional, no VALIDATED)" provisional)"
 # Determinism: two runs on fresh directories (both import the seed) must produce identical step
 # tables, and their full reports may differ only in the data directory and the backend ids.
 code2=$(run "$WORK/week2.json" simulate-week --data-dir "$WORK/data2" --no-skills --start-date "$START_DATE" --zone Europe/Berlin --fixed-clock "$FIXED_CLOCK")

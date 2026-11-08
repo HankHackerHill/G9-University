@@ -293,6 +293,10 @@ pub fn materialize_assessment(
     row.training_day_id = Some(day.id.clone());
     assessment_repo::insert_definition(conn, &row)?;
 
+    // Difficulty 3 is a fixture value declared by this seed for the simulated
+    // practical, not a measurement. It is persisted with the version
+    // (`assessment_versions.difficulty`): `assessment.approve_final` derives
+    // competency observations only from a version that declares a difficulty.
     let difficulty = Difficulty::new(3).map_err(|_| internal("cli.difficulty"))?;
     let task_ref =
         EvidenceId::parse(&format!("{id_text}-task")).map_err(|_| internal("cli.evidence_id"))?;

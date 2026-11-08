@@ -10,7 +10,10 @@ use crate::fixtures::{self, grade_payload, SeedReport};
 use crate::harness::{CallOpts, Harness, HarnessOptions, StepOutcome, MINUTE_MS, OPERATOR_ID};
 use crate::probes;
 use crate::report::ScenarioReport;
-use g9_competency::{derive_state, CompetencyObservation, DerivationRules, ObservationSource};
+use g9_competency::{
+    derive_state, derive_state_excluding_validation, CompetencyObservation, DerivationRules,
+    ObservationSource,
+};
 use g9_domain::hashing::sha256_hex;
 use g9_domain::{
     ActorId, ApprovalState, Confidence, DataDomain, G9Error, InteractionMode, ObservationId,
@@ -516,18 +519,28 @@ pub fn a05_competency_replay_and_correction() -> Result<ScenarioReport, G9Error>
         json!("INDEPENDENT"),
         p1["state"].clone(),
     );
+    // The fixture's finalized attempt (att-net) was graded by the operator for
+    // the operator: SELF_ADJUDICATED (ADR-0012). Its grade is derived into
+    // observations (one per dimension with criteria) whose exam evidence is
+    // excluded from validation, so the competency stays INDEPENDENT, provisional.
     r.check_eq(
-        "APPLICATION unaided count",
-        json!(2),
+        "served projection is provisional (self-adjudicated exam evidence excluded from validation)",
+        json!(true),
+        p1["provisional"].clone(),
+    );
+    r.check_eq(
+        "APPLICATION unaided count (two fixture lab observations + one derived from the final grade)",
+        json!(3),
         p1["per_dimension"]["APPLICATION"]["n_unaided"].clone(),
     );
     r.check_eq(
         "no estimate invented for unobserved dimension",
         Value::Null,
-        p1["per_dimension"]["TRANSFER"]["score_estimate"].clone(),
+        p1["per_dimension"]["RECALL"]["score_estimate"].clone(),
     );
 
-    // Replay: the stored observations folded in two orders give one projection.
+    // Replay: the stored observations, folded with the stored evidence rows in
+    // two orders, give one projection.
     let conn = h.db()?.conn();
     let cid = g9_domain::CompetencyId::parse(comp)
         .map_err(|_| G9Error::internal_redacted("evaluation.competency_id"))?;
@@ -535,16 +548,39 @@ pub fn a05_competency_replay_and_correction() -> Result<ScenarioReport, G9Error>
         .ok_or_else(|| G9Error::not_found("evaluation.competency", "competency missing"))?;
     let competency = row.to_domain()?;
     let mut observations = competency_repo::list_observations(conn, &cid)?;
+    let ineligible = competency_repo::ineligible_observation_ids(conn, &cid)?;
+    let derived = competency_repo::observations_for_attempt(
+        conn,
+        &g9_domain::AttemptId::parse(seed_id(&seed.attempts, "att-net")?)
+            .map_err(|_| G9Error::internal_redacted("evaluation.attempt_id"))?,
+    )?
+    .into_iter()
+    .filter(|o| o.mode == InteractionMode::Exam)
+    .count();
+    r.check_eq(
+        "grade-derived observations (EXAM mode) are all validation-ineligible",
+        (json!(3), json!(3)),
+        (json!(derived), json!(ineligible.len())),
+    );
     let rules = DerivationRules::default();
-    let forward = derive_state(&competency, &observations, &rules, h.now());
+    let forward =
+        derive_state_excluding_validation(&competency, &observations, &rules, h.now(), &ineligible);
+    // negative control: the same observations folded without the evidence rows
+    let unfiltered = derive_state(&competency, &observations, &rules, h.now());
     observations.reverse();
-    let backward = derive_state(&competency, &observations, &rules, h.now());
+    let backward =
+        derive_state_excluding_validation(&competency, &observations, &rules, h.now(), &ineligible);
     r.boundary_step(
-        "harness:replay derive_state (forward, reversed)",
+        "harness:replay derive_state_excluding_validation (forward, reversed)",
         "REPLAYED",
         "OK",
         None,
-        json!({ "forward": forward.state, "backward": backward.state }),
+        json!({
+            "forward": forward.state,
+            "backward": backward.state,
+            "provisional": forward.provisional,
+            "unfiltered": unfiltered.state,
+        }),
     );
     r.check_eq(
         "replay is order independent",
@@ -552,9 +588,17 @@ pub fn a05_competency_replay_and_correction() -> Result<ScenarioReport, G9Error>
         serde_json::to_value(&backward).unwrap_or(Value::Null),
     );
     r.check_eq(
-        "replay equals the served projection",
-        p1["state"].clone(),
-        serde_json::to_value(forward.state).unwrap_or(Value::Null),
+        "replay equals the served projection (state, provisional)",
+        (p1["state"].clone(), p1["provisional"].clone()),
+        (
+            serde_json::to_value(forward.state).unwrap_or(Value::Null),
+            json!(forward.provisional),
+        ),
+    );
+    r.check_eq(
+        "without the evidence rows the same observations would validate",
+        json!("VALIDATED"),
+        serde_json::to_value(unfiltered.state).unwrap_or(Value::Null),
     );
     let without_derived_at = |mut v: Value| {
         if let Some(o) = v.as_object_mut() {
@@ -578,6 +622,7 @@ pub fn a05_competency_replay_and_correction() -> Result<ScenarioReport, G9Error>
     let original = competency_repo::get_observation(h.db()?.conn(), &target)?.ok_or_else(|| {
         G9Error::not_found("evaluation.observation", "fixture observation missing")
     })?;
+    let observations_before_correction = probes::observation_ids(&h, comp)?.len();
     h.advance(MINUTE_MS);
     let correction = CompetencyObservation {
         id: ObservationId::parse("obs-w03-net-3-correction")
@@ -617,9 +662,9 @@ pub fn a05_competency_replay_and_correction() -> Result<ScenarioReport, G9Error>
     let ids = probes::observation_ids(&h, comp)?;
     r.check_that(
         "superseded observation retained (append-only)",
-        "obs-w03-net-3 still stored and 4 rows total",
+        "obs-w03-net-3 still stored and one more row than before the correction",
         &ids,
-        ids.iter().any(|i| i == "obs-w03-net-3") && ids.len() == 4,
+        ids.iter().any(|i| i == "obs-w03-net-3") && ids.len() == observations_before_correction + 1,
     );
     let p2 = projection(&mut h)?;
     r.boundary_step(
@@ -629,10 +674,19 @@ pub fn a05_competency_replay_and_correction() -> Result<ScenarioReport, G9Error>
         None,
         json!({ "state": p2["state"], "evidence_refs": p2["evidence_refs"] }),
     );
+    // The grade-derived exam observation and obs-w03-net-2 still qualify for
+    // INDEPENDENT, so the state holds; the corrected score lowers the estimate.
     r.check_eq(
-        "projection follows the correction",
-        json!("GUIDED"),
+        "state after correction (grade-derived evidence and obs-w03-net-2 still qualify)",
+        json!("INDEPENDENT"),
         p2["state"].clone(),
+    );
+    let estimate = |p: &Value| p["per_dimension"]["APPLICATION"]["score_estimate"].as_f64();
+    r.check_that(
+        "projection follows the correction (APPLICATION estimate lowered by 78 -> 55)",
+        "estimate after correction < estimate before",
+        json!({ "before": estimate(&p1), "after": estimate(&p2) }),
+        matches!((estimate(&p1), estimate(&p2)), (Some(b), Some(a)) if a < b),
     );
     r.check_that(
         "superseded observation no longer counted as evidence",

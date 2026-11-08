@@ -12,8 +12,8 @@
 //! | planned study sessions | `g9-storage` repositories (`PLANNED`) | sessions are created by `FILL_CURRICULUM`, which is PROPOSED |
 //! | session transitions | `dispatch` (`session.prepare/start/pause/resume/complete`) | the timer ledger is written by the backend only |
 //! | notes | `dispatch` (`notes.create`) | |
-//! | attempts, grades, final approval | `dispatch` (`assessment.*`, `approvals.decide`) | the approval flow is the real one |
-//! | competency observations | `g9-storage` `append_observation` | no IPC path; the repository runs the domain validation (model provenance refused) |
+//! | attempts, grades, final approval | `dispatch` (`assessment.*`, `approvals.decide`) | the approval flow is the real one; the final approval also derives the attempt's competency observations (SELF_ADJUDICATED: the operator grades their own attempt) |
+//! | hand-authored competency observations | `g9-storage` `append_observation` | no IPC path; the repository runs the domain validation (model provenance refused) |
 
 use crate::harness::{CallOpts, Harness, MINUTE_MS, OPERATOR_ID, T0};
 use g9_assessment::{AssessmentDefinition, AssessmentKind, AssessmentVersion, Rubric};
@@ -477,6 +477,10 @@ pub fn seed_assessments(h: &Harness, fx: &LearnerHistory) -> Result<(), G9Error>
             conn,
             &assessment_repo::AssessmentDefinitionRow::from_domain(&def, &a.code, now)?,
         )?;
+        // The fixture file declares each version's difficulty (a fixture value,
+        // not a measurement); `AssessmentVersionRow::from_domain` persists it, so
+        // `assessment.approve_final` derives competency observations from these
+        // versions.
         let version = AssessmentVersion {
             definition_id: def.id.clone(),
             version: 1,

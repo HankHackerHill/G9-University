@@ -162,6 +162,45 @@ fn simulated_week_passes_and_is_reproducible_with_a_fixed_clock() {
         .unwrap();
     assert_eq!(restore["state_after"]["state"], "RETAINED");
     assert_eq!(restore["state_after"]["integrity"], "OK");
+    // The Saturday grade reached the competency model: the finalized attempt's
+    // observations are in the projection's evidence_refs. The operator grades
+    // their own attempt (SELF_ADJUDICATED), so the projection is provisional and
+    // never VALIDATED.
+    let projection = steps
+        .iter()
+        .rev()
+        .find(|s| s["op"] == "competency.projection")
+        .unwrap();
+    assert_eq!(projection["decision"], "OK");
+    assert!(projection["state_after"]["projections"].as_u64().unwrap() >= 1);
+    assert_eq!(
+        projection["state_after"]["evidence_refs"], 3,
+        "one observation per assessed dimension (understanding, application, transfer)"
+    );
+    assert_eq!(projection["state_after"]["provisional"], 1);
+    let check_named = |name: &str| {
+        report["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["name"] == name)
+            .unwrap_or_else(|| panic!("missing check {name}"))
+            .clone()
+    };
+    let included =
+        check_named("competency.projection includes the observations of the finalized attempt");
+    assert_eq!(included["passed"], true, "{included}");
+    assert_eq!(included["detail"]["attempt_observations"], 3);
+    assert_eq!(included["detail"]["evidence_refs"], 3);
+    assert_eq!(
+        included["detail"]["attempt_observations_in_evidence_refs"],
+        true
+    );
+    let honest =
+        check_named("self-adjudicated grade does not validate (provisional, no VALIDATED)");
+    assert_eq!(honest["passed"], true, "{honest}");
+    assert_eq!(honest["detail"]["validated"], false);
+    assert_eq!(honest["detail"]["provisional"], true);
     let audit = report["checks"]
         .as_array()
         .unwrap()
