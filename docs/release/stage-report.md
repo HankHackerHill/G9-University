@@ -61,7 +61,7 @@ Change against baseline: 973 tracked files, 39 commits since `f414481`; the base
 | Rust fmt | `cargo fmt --all -- --check` | clean | VERIFIED |
 | Rust clippy | `cargo clippy --workspace --exclude g9-mentor-desktop --all-targets -- -D warnings` | exit 0 | VERIFIED |
 | Rust tests | collector run: default members `--no-fail-fast`, plus `g9-retention --features fsrs` (the collector sums both runs; the second re-runs that crate's own tests) | **772 passed, 0 failed, 0 ignored** counted by the collector; **761 passed, 0 failed** in a single `--workspace --exclude g9-mentor-desktop --no-fail-fast` run | TESTED |
-| UI | `npm run typecheck`, `npm run lint`, `npx vitest run`, `npm run build` | exit 0; **190 passed, 0 failed** (20 files) | TESTED |
+| UI | `npm run typecheck`, `npm run lint`, `npx vitest run`, `npm run build` | exit 0; **191 passed, 0 failed** (20 files; the collector's earlier run recorded 190, before the restore-guidance test was added) | TESTED |
 | Smoke test | `bash scripts/smoke_test.sh` | **100 assertions passed, 0 failed**; 189 simulated steps (193 on a fresh directory); includes backup, verify and restore-test in separate processes, offline restore with content proof, restore refusals and the `--scratch` guard | TESTED |
 | Content gates | `check_curriculum_seed.py`, `check_skill_packages.py` (37), `check_competency_packs.py` (8), `check_schemas.py` (151), `skill_hashes.py --check`, `check_source_register.py` | all pass | TESTED |
 | Supply chain | cargo-deny (advisories, bans, licenses, sources) | ok | TESTED |

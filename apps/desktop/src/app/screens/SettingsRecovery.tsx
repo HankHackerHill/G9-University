@@ -116,6 +116,11 @@ export function SettingsRecovery() {
           Backup machine: REQUESTED → SNAPSHOT_CREATED → CHECKED → RESTORE_TESTED → RETAINED (→ EXPIRED); FAILED from any non-terminal state. A backup counts only after a
           restore test into a disposable copy (M17).
         </p>
+        <p className="muted" data-testid="restore-guidance">
+          Restoring a retained backup into the live database is not available in this window (in-app restore is PROPOSED). To restore, close G9 Mentor and run <code>g9 restore</code>{' '}
+          from the command line: without <code>--confirm-replace-live-database</code> it only prints the plan; with it, the verified snapshot replaces the database and the old one is
+          kept in <code>quarantine/</code>, never deleted. See docs/runbooks/backup-restore.md.
+        </p>
         <div className="row">
           <button
             type="button"

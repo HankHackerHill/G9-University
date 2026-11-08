@@ -35,3 +35,14 @@ describe('Settings/Recovery when system.status fails', () => {
     expect(screen.getByTestId('runtime-none')).toBeInTheDocument();
   });
 });
+
+describe('Settings/Recovery restore guidance', () => {
+  it('says that in-app restore is not available and names the offline command and its safeguards', async () => {
+    renderWithIpc(<SettingsRecovery />);
+    const guidance = await screen.findByTestId('restore-guidance');
+    expect(guidance).toHaveTextContent(/not available in this window/);
+    expect(guidance).toHaveTextContent(/g9 restore/);
+    expect(guidance).toHaveTextContent(/--confirm-replace-live-database/);
+    expect(guidance).toHaveTextContent(/never deleted/);
+  });
+});
