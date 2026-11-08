@@ -136,10 +136,10 @@ Skill invocations are commands too: `skills.invoke` runs the orchestrator (prefl
 ## 10. AI gateway and skills
 
 - `InferenceRuntime` trait: `describe() -> RuntimeInfo`, `generate(InferenceRequest, CancelToken) -> Result<InferenceResponse, InferenceError>`; `InferenceRequest` carries `max_tokens`, `timeout`, `response_schema: Option<Value>`, context segments each tagged with `TrustClass` and `Classification`. `NullRuntime` implements model-down behavior (`RESOURCE_UNAVAILABLE`), and the UI shows explicit fallback states.
-- Structured output: responses are validated with `jsonschema` 0.60 against the skill's `schemas/output.schema.json`; invalid output is rejected (A11), never auto-repaired into authoritative data.
+- Structured output: responses are validated with `jsonschema` 0.60 against the skill's `<skill>/schemas/output.schema.json`; invalid output is rejected (A11), never auto-repaired into authoritative data.
 - Context assembly: minimal, provenance-tagged, privacy-filtered; raw prompts are not persisted; per-invocation record keeps model id, template version, token counts, latency, validation outcome.
 - Model registry: `model_registry(model_id, architecture, weights_source, license, quantization, checksum, context_length, tokenizer_template, runtime_version)`; load requires `Capability::ModelLoad` (operator-only) and a checksum match. No model is pre-selected; selection follows `docs/evaluations/model-benchmark-protocol.md`.
-- Skill registry: `.agents/skills/<name>/SKILL.md` (frontmatter `name`, `description`, `metadata.g9.*`), `schemas/input.schema.json`, `schemas/output.schema.json`, `evals/{positive,negative,adversarial,acceptance}.json`. `g9_skills::Registry::load(dir)` validates all 37 and computes package hashes; mismatched hashes are refused at runtime (supply-chain rule).
+- Skill registry: `.agents/skills/<name>/SKILL.md` (frontmatter `name`, `description`, `metadata.g9.*`), `schemas/input.schema.json` and `schemas/output.schema.json` inside the package, `evals/{positive,negative,adversarial,acceptance}.json`. `g9_skills::Registry::load(dir)` validates all 37 and computes package hashes; mismatched hashes are refused at runtime (supply-chain rule).
 - Orchestrator: intent → candidate skills (positive/negative triggers) → policy preflight (`Capability::SkillInvoke`, mode) → envelope → runtime → schema + evidence checks → `SkillOutputEnvelope`. Recursion depth 0; budgets enforced; cancellation releases resources; a late response for a cancelled invocation is discarded.
 
 ## 11. Authorization (`crates/g9-policy`)
@@ -164,7 +164,7 @@ Threat model and controls: `docs/threat-model/`. Non-negotiables: deny-by-defaul
 
 | Gate | Where it is tested |
 |---|---|
-| A01 curriculum invariants / provenance | `g9-curriculum` tests + `tests/integration/a01_curriculum_gate.rs` |
+| A01 curriculum invariants / provenance | `g9-curriculum` tests + `tests/integration/a01_gate.rs` |
 | A02 recurrence/DST/conflicts | `g9-calendar` fixtures |
 | A03 timer discontinuity | `g9-calendar::timer` tests + recovery test |
 | A04 finalized grade immutability | `g9-assessment` + `g9-app` + storage trigger tests |
