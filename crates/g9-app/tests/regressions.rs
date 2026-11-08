@@ -664,7 +664,7 @@ fn recovery_blocks_migration_of_a_file_database_without_a_scratch_directory() {
 // ---------------------------------------------------------------------------
 
 #[test]
-fn read_only_refusal_does_not_direct_the_operator_to_a_missing_restore() {
+fn read_only_refusal_names_the_offline_restore_and_not_a_missing_in_app_one() {
     let dir = tempfile::Builder::new().prefix("g9ro").tempdir().unwrap();
     let path = dir.path().join("blocked.sqlite");
     let mut h = Harness::with_database(database_at_version_9(&path), |_| {}).unwrap();
@@ -677,8 +677,12 @@ fn read_only_refusal_does_not_direct_the_operator_to_a_missing_restore() {
     assert_eq!(refused.code, "recovery.integrity_failed");
     assert!(!refused.message.contains("until the operator restores"));
     assert!(refused.message.contains("not implemented"));
+    // The one restore that exists is named exactly, with the application closed.
+    assert!(refused.message.contains("g9 restore"));
+    assert!(refused.message.contains("close the application"));
     let details = refused.details.unwrap();
     assert_eq!(details["live_restore"], "NOT_IMPLEMENTED");
+    assert_eq!(details["offline_restore"], "g9 restore");
     assert_eq!(details["reason"], "pending_migrations");
 }
 

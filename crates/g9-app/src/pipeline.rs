@@ -422,14 +422,19 @@ where
     }
     if cmd.spec.mutating {
         if let Some(reason) = ctx.svc.recovery.write_block_reason() {
-            // No live-restore operation exists in this release (restoring a
-            // verified backup into the live database is PROPOSED); the message
-            // must not direct the operator to an operation that is not there.
+            // There is no in-app restore (restoring into the running database is
+            // PROPOSED). An offline restore exists (`g9 restore`, which replaces
+            // the database file while the application is closed); say exactly
+            // that and no more.
             return Err(G9Error::data_corruption(
                 "recovery.integrity_failed",
-                "integrity verification failed at open; mutations are refused. In-app restore of a verified backup into the live database is not implemented in this release (PROPOSED)",
+                "integrity verification failed at open; mutations are refused. In-app restore is not implemented in this release (PROPOSED); close the application and restore a verified backup offline with `g9 restore` (docs/runbooks/backup-restore.md)",
             )
-            .with_details(json!({ "reason": reason, "live_restore": "NOT_IMPLEMENTED" })));
+            .with_details(json!({
+                "reason": reason,
+                "live_restore": "NOT_IMPLEMENTED",
+                "offline_restore": "g9 restore",
+            })));
         }
         execute_mutating(ctx, meta, cmd, facts, handler)
     } else {

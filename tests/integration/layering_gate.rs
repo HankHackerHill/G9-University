@@ -97,10 +97,14 @@ fn allowed(package: &str) -> Option<BTreeSet<&'static str>> {
         // L6 shell, second front end (ADR-0010 addendum): the command-line
         // driver composes the same bootstrap as the Tauri bridge and drives
         // every operation through `g9_app::dispatch`. The pure domain crates
-        // and storage repositories are named only by `simulate-week` and
+        // and storage repositories are named by `simulate-week` and
         // `crash-drill` to materialize records that have no IPC creation path
-        // yet (labelled SEEDED, never reachable from `g9 call`). Nothing
-        // depends on it and it never names `rusqlite` (rule 3 test).
+        // yet (labelled SEEDED, never reachable from `g9 call`, both behind
+        // `--scratch`), and `g9-storage` is named by `g9 restore`, an offline
+        // maintenance command that replaces the database file through
+        // `g9_storage::restore` and so cannot run through the pipeline of a
+        // database it is replacing. Nothing depends on it and it never names
+        // `rusqlite` (rule 3 test).
         "g9-cli" => {
             set.extend([
                 "g9-domain",

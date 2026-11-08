@@ -11,6 +11,10 @@ All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 - Desktop UI: 12 verified and 11 fresh review findings (warnings rendering, rubric codes, time-correction flow, error states, KPI definitions, calendar hours); SYNTHETIC DATA banner for the mock transport.
 - Skill registry hash column recomputed under the runtime definition (`scripts/skill_hashes.py`); runtime pins unchanged.
 
+### Added (learning loop, backups and restore, 2026-11-08)
+- Finalized grades produce competency observations in the finalizing transaction with persisted validation eligibility (migration 0013); `competency.projection` honours it. Regress counts occasions; eligibility is fail-closed.
+- Backups usable across restarts (database-backed manifests, `system.status.last_backup`), verified offline restore `g9 restore` (`g9_storage::restore`), `--scratch` required for `simulate-week` and `crash-drill`. Smoke test: 100 assertions.
+
 ### Added
 - CLI `g9`, `scripts/smoke_test.sh` (67 assertions), testing guide; layering gate covers the CLI.
 - Reference source register (48 unverified candidates, 0 approved) with schema, validator and an offline-safe verifier (`scripts/verify_source_register.py`, dry run by default).
