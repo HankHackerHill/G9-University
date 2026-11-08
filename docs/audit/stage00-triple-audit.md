@@ -38,4 +38,4 @@ Inputs: the v5.1 audit/plan text (operator-supplied) and the v6.0 FINAL MASTER B
 | No local model benchmarked | 06 | NullRuntime; protocol defined |
 | Self-adjudication of qualitative criteria | 04 | reliability class; machine-checkable weight target |
 | Tauri shell not compiled in the build sandbox | 01/14 | CI job with system libraries; NOT RUN here |
-| Status column of `defect-register.md` section B not re-assessed against the 2026-11-06 verification (89 corrected corrections in section D) | 00 | only the 3 REFUTED rows changed Status; re-check each OPEN/ADDRESSED row against section D before closing it |
+| Status column of `defect-register.md` section B | 00 | RE-ASSESSED 2026-11-08 for the 138 rows that were OPEN: PARTIAL 76, IMPLEMENTED 21, ADDRESSED-IN-DOCS 18, OPEN 16, PROPOSED 7, with per-row evidence and remaining gaps in section E. Assessed by reading (no second independent pass); cited paths and tests mechanically checked. The 16 still-OPEN and 76 PARTIAL rows are the real backlog; six section B rows have unescaped `\|` characters in the auditors' original text (pre-existing) |
