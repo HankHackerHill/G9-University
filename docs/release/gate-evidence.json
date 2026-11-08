@@ -1,5 +1,5 @@
 {
- "collected_at": "2026-11-08T05:09:27Z",
+ "collected_at": "2026-11-08T08:48:23Z",
  "checks": [
   {
    "check": "cargo fmt --check",
@@ -101,10 +101,10 @@
   }
  ],
  "totals": {
-  "cargo_passed": 685,
+  "cargo_passed": 772,
   "cargo_failed": 0,
   "cargo_ignored": 0,
-  "vitest_passed": 186,
+  "vitest_passed": 190,
   "vitest_failed": 0
  },
  "gates": {
@@ -124,15 +124,15 @@
    "status": "PASS",
    "tests": [
     "?::a02_dst_fall_back_overlap_berlin [ok]",
-    "?::a02_daily_recurrence_through_gap_reports_adjustment_once [ok]",
     "?::a02_all_day_events_are_date_only [ok]",
-    "?::a02_feb29_only_in_leap_years [ok]",
+    "?::a02_daily_recurrence_through_gap_reports_adjustment_once [ok]",
     "?::a02_dst_spring_forward_gap_berlin [ok]",
     "?::a02_conflicts_detected_and_protected_rest_respected [ok]",
-    "?::a02_new_york_and_sydney_transitions [ok]",
+    "?::a02_feb29_only_in_leap_years [ok]",
     "?::a02_monthly_31st_skips_short_months [ok]",
-    "?::a02_weekly_byday_recurrence_preserves_wall_time_across_dst [ok]",
-    "?::a02_infeasible_schedule_reports_violations_not_silent_drop [ok]"
+    "?::a02_new_york_and_sydney_transitions [ok]",
+    "?::a02_infeasible_schedule_reports_violations_not_silent_drop [ok]",
+    "?::a02_weekly_byday_recurrence_preserves_wall_time_across_dst [ok]"
    ]
   },
   "A03": {
@@ -141,9 +141,9 @@
     "?::a03_restart_recovery_marks_sessions_interrupted [ok]",
     "?::a03_credit_uses_monotonic_delta_not_wall_clock [ok]",
     "?::a03_ledger_survives_serialization_roundtrip_after_restart [ok]",
-    "?::a03_restart_marks_open_interval_uncertain [ok]",
     "?::a03_overlapping_intervals_rejected [ok]",
-    "?::a03_uncertain_time_not_credited_without_correction [ok]"
+    "?::a03_uncertain_time_not_credited_without_correction [ok]",
+    "?::a03_restart_marks_open_interval_uncertain [ok]"
    ]
   },
   "A04": {
@@ -152,18 +152,18 @@
     "?::a04_approve_final_requires_approval_and_operator_and_is_immutable_after [ok]",
     "?::a04_model_only_criterion_blocks_finalization [ok]",
     "?::a04_adjudication_supersedes_not_mutates [ok]",
-    "?::a04_lifecycle_follows_the_machine_and_bumps_revision [ok]",
-    "?::a04_abandon_by_learner_or_system_only [ok]",
     "?::a04_model_skill_and_system_actors_are_restricted [ok]",
+    "?::a04_abandon_by_learner_or_system_only [ok]",
+    "?::a04_lifecycle_follows_the_machine_and_bumps_revision [ok]",
     "?::a04_finalized_attempt_rejects_every_mutation [ok]",
     "?::a04_retake_is_new_linked_attempt [ok]",
     "?::a04_finalized_grade_cannot_be_regraded_refinalized_reopened_or_deleted [ok]",
     "?::a04_model_advisory_grade_never_finalizes [ok]",
     "?::repos::assessment::tests::attempt_lifecycle_revision_assistance_and_a04_immutability [ok]",
+    "?::a04_trigger_blocks_audit_row_mutation [ok]",
     "?::a04_immutable_tables_reject_update_and_delete [ok]",
     "?::a04_model_output_cannot_be_competency_observation [ok]",
     "?::a04_trigger_blocks_final_grade_update [ok]",
-    "?::a04_trigger_blocks_audit_row_mutation [ok]",
     "?::a04_trigger_blocks_finalized_attempt_update [ok]",
     "?::a04_trigger_blocks_terminal_approval_update [ok]"
    ]
@@ -188,13 +188,13 @@
     "?::a06_every_gated_operation_requires_a_bound_approval_and_mutates_nothing [ok]",
     "?::a06_all_kinds_fixture_is_complete [ok]",
     "?::a06_deny_by_default_when_no_rule_matches [ok]",
-    "?::a06_exam_mode_blocks_model_teaching_proposals_and_sealed_keys [ok]",
     "?::a06_every_rule_has_unique_id [ok]",
-    "?::a06_matrix_covers_every_builtin_rule_and_default_deny [ok]",
+    "?::a06_exam_mode_blocks_model_teaching_proposals_and_sealed_keys [ok]",
+    "?::a06_builtin_rules_serialize_to_json [ok]",
+    "?::a06_decision_records_are_metadata_only [ok]",
     "?::a06_matrix_decisions_and_rule_ids [ok]",
     "?::a06_matrix_has_at_least_sixty_rows [ok]",
-    "?::a06_decision_records_are_metadata_only [ok]",
-    "?::a06_builtin_rules_serialize_to_json [ok]",
+    "?::a06_matrix_covers_every_builtin_rule_and_default_deny [ok]",
     "?::a06_secret_content_never_reaches_skill_or_model_exhaustive [ok]",
     "?::a06_self_modification_only_in_maintenance_with_approval_exhaustive [ok]",
     "?::a06_native_actions_never_plain_allow_exhaustive [ok]",
@@ -212,18 +212,18 @@
     "?::a07_note_with_embedded_instructions_grants_nothing [ok]",
     "?::a07_skill_output_requesting_execute_or_connect_is_rejected [ok]",
     "?::a07_tampered_skill_package_is_refused_and_cannot_be_invoked [ok]",
-    "?::a07_attachment_paths_and_types_are_confined [ok]",
     "?::a07_skill_or_model_cannot_redact_or_approve [ok]",
+    "?::a07_attachment_paths_and_types_are_confined [ok]",
     "?::a07_injected_note_is_labeled_and_stays_data [ok]",
-    "?::a07_malicious_note_directing_schedule_edit_is_denied [ok]",
     "?::a07_injected_allow_rule_for_skill_write_is_capped_by_invariant [ok]",
+    "?::a07_malicious_note_directing_schedule_edit_is_denied [ok]",
     "?::a07_model_cannot_decide_or_read_approvals [ok]",
     "?::a07_operator_approval_cannot_be_consumed_by_skill_for_shared_capability [ok]",
     "?::a07_skill_filesystem_write_denied_even_with_approval [ok]",
-    "?::a07_skill_model_load_and_policy_modify_denied_even_with_approval [ok]",
+    "?::a07_skill_cannot_finalize_or_delete_even_with_approval [ok]",
     "?::a07_skill_network_egress_denied_even_with_approval [ok]",
     "?::a07_skill_shell_exec_denied_even_with_approval [ok]",
-    "?::a07_skill_cannot_finalize_or_delete_even_with_approval [ok]",
+    "?::a07_skill_model_load_and_policy_modify_denied_even_with_approval [ok]",
     "?::a07_rule_table_cannot_grant_skill_native_or_operator_only_capabilities [ok]",
     "?::a07_instruction_in_evidence_cannot_change_decision [ok]",
     "?::a07_output_requesting_execute_is_rejected_at_validation [ok]",
@@ -237,12 +237,12 @@
     "?::a08_backup_verify_restore_crash_reopen_recover [ok]",
     "?::a08_backup_state_machine_requires_restore_test_before_retain [ok]",
     "?::a08_crash_mid_transaction_rolls_back [ok]",
-    "?::a08_restore_test_refuses_a_snapshot_replaced_after_verification [ok]",
     "?::a08_migration_checksum_tamper_detected [ok]",
-    "?::a08_schema_newer_than_app_refused [ok]",
-    "?::a08_snapshot_refuses_overwrite_and_live_path [ok]",
     "?::a08_restore_test_refuses_an_audit_anchor_mismatch [ok]",
+    "?::a08_restore_test_refuses_a_snapshot_replaced_after_verification [ok]",
+    "?::a08_schema_newer_than_app_refused [ok]",
     "?::a08_dry_run_migration_on_copy [ok]",
+    "?::a08_snapshot_refuses_overwrite_and_live_path [ok]",
     "?::a08_vacuum_into_export_verifies [ok]",
     "?::a08_snapshot_verify_restore_roundtrip [ok]"
    ]

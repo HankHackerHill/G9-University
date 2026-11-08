@@ -2,7 +2,7 @@
 
 Format: `GOVERNANCE.md` "Stage PASS report (required content)". Evidence labels: VERIFIED, OBSERVED, INFERRED, ASSUMED, PROPOSED, TESTED, BLOCKED, NOT RUN. **No Stage PASS is issued.** Stage 00 needs an operator PASS (decision recorded in section 13); Stages 01 to 03 have partial exit criteria (section 3). Unexecuted checks are NOT RUN, never PASS.
 
-Repository state: branch `ccr-0cea681c-p9jbru`, HEAD at report time is the commit that adds this file; baseline `f414481` (initial commit, 2026-11-05). All commits are local and **unpushed** by operator instruction ("Do not connect to GitHub only work here"); the remote branch is at `e987383`.
+Repository state: branch `ccr-0cea681c-p9jbru`; the commit that last touches this file is the report's HEAD; baseline `f414481` (initial commit, 2026-11-05). All commits are local and **unpushed** by operator instruction ("Do not connect to GitHub only work here"); the remote branch is at `e987383`.
 
 ## 1. Requested scope
 
@@ -25,7 +25,7 @@ Approved by the operator's messages: repository changes in the sandbox (items 1,
 | 00 Design | three-pass review and operator PASS | NOT MET (operator PASS pending) | Triple audit done (`docs/audit/stage00-triple-audit.md`); 152 auditor rows verified (104 CONFIRMED, 44 DOWNGRADED, 1 UPGRADED, 3 REFUTED) and status re-assessed 2026-11-08 (section 9). Deliverables: requirements matrix, ADR-0001..0014, interfaces, threat model, skill graph present. **Gaps:** no standalone resource plan (only the finding that the v5.1 estimate rows sum to 85 person-weeks, not 72: CON-32, TEC-26); curriculum gap report cannot reconcile against the original manifest because it was never supplied (C01) |
 | 01 Scaffold | reproducible clean build with logs | PARTIAL | Rust workspace (13 crates + CLI) builds clean (clippy `-D warnings`, fmt) and tests pass; SBOM job defined in CI. **Not met:** the Tauri shell has never been compiled (needs GTK/WebKit; collector check exit 101); CI has never run (NOT RUN) |
 | 02 Data and importer | reconciliation and fault-safe DB tests | PARTIAL | Fault-safe DB: A08 PASS (backup verify and restore test on a copy, crash mid-transaction rollback, migration checksum tamper, dry run on a copy). Importer: A01 PASS (12/72/216/28,800 and provenance gate). **Not met:** reconciliation against the original approved plan; canonical promotion BLOCKED |
-| 03 Deterministic UX | simulated week and crash recovery | MET on the CLI path; NOT RUN in the GUI | `g9 simulate-week` (fixed clock, 187 steps, PASS) and the two-step crash drill (open interval closed UNCERTAIN, 0 ms credited) in `scripts/smoke_test.sh`: 67 assertions passed. The same flows through the Tauri window are NOT RUN |
+| 03 Deterministic UX | simulated week and crash recovery | MET on the CLI path; NOT RUN in the GUI | `g9 simulate-week` (fixed clock, 189 steps with the seed pre-imported, PASS) and the two-step crash drill (open interval closed UNCERTAIN, 0 ms credited) in `scripts/smoke_test.sh`: 100 assertions passed. The same flows through the Tauri window are NOT RUN |
 
 Release label (proposal for the operator, `GOVERNANCE.md`): **MVP BUILT** for the deterministic backend, CLI and web UI slice. Not **MVP VERIFIED**: A12 is NOT RUN, the shell is uncompiled, A01 canonical import is blocked. No label is granted by this report.
 
@@ -60,9 +60,9 @@ Change against baseline: 973 tracked files, 39 commits since `f414481`; the base
 |---|---|---|---|
 | Rust fmt | `cargo fmt --all -- --check` | clean | VERIFIED |
 | Rust clippy | `cargo clippy --workspace --exclude g9-mentor-desktop --all-targets -- -D warnings` | exit 0 | VERIFIED |
-| Rust tests | collector run: default members `--no-fail-fast`, plus `g9-retention --features fsrs` (the collector sums both runs; the second re-runs that crate's own tests) | **685 passed, 0 failed, 0 ignored** counted by the collector; **674 passed, 0 failed** in a single `--workspace --exclude g9-mentor-desktop --no-fail-fast` run | TESTED |
-| UI | `npm run typecheck`, `npm run lint`, `npx vitest run`, `npm run build` | exit 0; **186 passed, 0 failed** (20 files) | TESTED |
-| Smoke test | `bash scripts/smoke_test.sh` | **67 assertions passed, 0 failed**; 187 simulated steps (191 on a fresh directory); 15 s wall with a warm build | TESTED |
+| Rust tests | collector run: default members `--no-fail-fast`, plus `g9-retention --features fsrs` (the collector sums both runs; the second re-runs that crate's own tests) | **772 passed, 0 failed, 0 ignored** counted by the collector; **761 passed, 0 failed** in a single `--workspace --exclude g9-mentor-desktop --no-fail-fast` run | TESTED |
+| UI | `npm run typecheck`, `npm run lint`, `npx vitest run`, `npm run build` | exit 0; **190 passed, 0 failed** (20 files) | TESTED |
+| Smoke test | `bash scripts/smoke_test.sh` | **100 assertions passed, 0 failed**; 189 simulated steps (193 on a fresh directory); includes backup, verify and restore-test in separate processes, offline restore with content proof, restore refusals and the `--scratch` guard | TESTED |
 | Content gates | `check_curriculum_seed.py`, `check_skill_packages.py` (37), `check_competency_packs.py` (8), `check_schemas.py` (151), `skill_hashes.py --check`, `check_source_register.py` | all pass | TESTED |
 | Supply chain | cargo-deny (advisories, bans, licenses, sources) | ok | TESTED |
 | npm audit | `npm audit --audit-level=high`; `npm audit --omit dev` | 0 production vulnerabilities; 7 moderate, all in the ESLint toolchain (`minimatch` DoS advisory GHSA-g3hv-75wg-m249; fixes available) | OBSERVED |
@@ -70,7 +70,7 @@ Change against baseline: 973 tracked files, 39 commits since `f414481`; the base
 | CI | `.github/workflows/ci.yml` | YAML parses; never executed | NOT RUN |
 | Model-in-the-loop | any skill against a real model | only `NullRuntime` and `ScriptedRuntime` exist | NOT RUN |
 
-Per-gate results (`docs/release/gate-evidence.md`, generated from the executed output of this run). The collector's rule is weak by design: a gate is PASS when at least one mapped test ran and none failed. Read the counts: several gates rest on one test, and a PASS here is harness-level evidence, not a stage sign-off.
+Per-gate results (`docs/release/gate-evidence.md`, generated from the executed output of this run; it maps tests to gates by name prefix `a01_`, `b02_`, `st07_`, so the restore, learning-loop and eligibility tests, which are not named that way, are counted in the totals but not in any gate). The collector's rule is weak by design: a gate is PASS when at least one mapped test ran and none failed. Read the counts: several gates rest on one test, and a PASS here is harness-level evidence, not a stage sign-off.
 
 | Gate | Result | | Gate | Result |
 |---|---|---|---|---|
@@ -88,7 +88,7 @@ Per-gate results (`docs/release/gate-evidence.md`, generated from the executed o
 
 ## 7. Actual performance
 
-NOT MEASURED. The only timings recorded are operational: the smoke test takes 15 s with a warm build. No inference benchmark (no model), no UI performance measurement, no installed-app measurement. `docs/ui/performance-budgets.md` states budgets, not results.
+NOT MEASURED. No inference benchmark (no model), no UI performance measurement, no installed-app measurement, and the smoke test duration was not re-measured after the restore section was added (15 s with a warm build before it). `docs/ui/performance-budgets.md` states budgets, not results.
 
 ## 8. Defects by severity
 
@@ -98,7 +98,8 @@ NOT MEASURED. The only timings recorded are operational: the smoke test takes 15
 | Stage 00 auditor rows, verified severities (149; 3 REFUTED excluded) | 0 | 5 | 38 | 52 | 54 | status in section 9 |
 | Repository code review, confirmed (66 reviewed, 47 confirmed) | 0 | 0 | 7 | 25 | 15 | fixed or substantially fixed except the items in section 10 |
 | Desktop review: 12 verified findings + 11 fresh findings | | | 3 | 9 | 11 | all 23 fixed; independently re-verified; 20 of the new tests fail on the old code |
-| Defects found and fixed on 2026-11-08 | | | 1 | 2 | 1 | severities as assessed here (the sweep rated the first LOW; I rate it HIGH because it disabled the mandatory backup, migration dry run and attachment verification in the desktop configuration): directory approved-roots check (backups, migration dry run and attachment verification were inert in the desktop configuration); validation evidence not tied to a graded attempt; calibration bins on edges; skill registry hash column computed under a different definition than the runtime pins |
+| Defects found and fixed on 2026-11-08, second round (learning loop, competency, restore) | | | 2 | 6 | 3 | learning-loop verifier: retake on an already-shown variant and a key shown before the attempt recorded as blind (HIGH); competency: one failing attempt triggered Regress (MEDIUM) and eligibility failed open (MEDIUM); restore verifier: swap could leave no live database (HIGH, as the verifier assessed), silent overwrite at the live path (MEDIUM), truncated snapshot accepted without checksum (MEDIUM), relative manifest path marked a backup FAILED (MEDIUM), non-UTF-8 path panic (LOW), restore plan created WAL files (LOW), leftover temp sidecars (LOW), smoke assertions that passed for a no-op restore (MEDIUM; counted here as a test defect). Severities are as assessed in this session, not by an independent auditor; each has a test that fails on the old code |
+| Defects found and fixed on 2026-11-08, first round | | | 1 | 2 | 1 | severities as assessed here (the sweep rated the first LOW; I rate it HIGH because it disabled the mandatory backup, migration dry run and attachment verification in the desktop configuration): directory approved-roots check (backups, migration dry run and attachment verification were inert in the desktop configuration); validation evidence not tied to a graded attempt; calibration bins on edges; skill registry hash column computed under a different definition than the runtime pins |
 
 ## 9. Register status (Stage 00 auditor rows, 138 formerly OPEN)
 
@@ -128,6 +129,7 @@ Open: the webview can still call `approvals.decide` (SEC-03; the UI now says so)
 
 | Risk | Owner stage | Mitigation in place |
 |---|---|---|
+| Offline restore verified only with simulated kill points (no real SIGKILL), on Linux, on a local filesystem; the swap needs hard-link support and the quarantine on the same filesystem; the desktop app has no restore button (in-app restore PROPOSED) | 14 | refuses before changing anything when unsupported; the host procedure in section 13 should include a restore drill |
 | Tauri shell never compiled; bridge code (21 unit tests) never executed here | 01 | CI job `desktop-shell` now runs `cargo test -p g9-mentor-desktop --lib` (NOT RUN); procedure in section 13 |
 | Original curriculum never supplied; canonical import blocked | 02 | seed stays PROPOSED_SEED; importer blocks promotion |
 | No local model benchmarked; no model-in-the-loop evidence | 06 | `NullRuntime`; protocol defined (`docs/evaluations/model-benchmark-protocol.md`) |
@@ -146,7 +148,7 @@ Open: the webview can still call `approvals.decide` (SEC-03; the UI now says so)
 - Expected effects: installs system development packages (about 1 to 2 GB), builds into `target/`; the window opens against the Rust bridge with transport TAURI (no SYNTHETIC DATA banner), model UNAVAILABLE, network OFF.
 - Risks: package versions on 26.04 differ from the list; the bridge's 21 tests and the skill-pin test run for the first time and may fail.
 - Rollback: `sudo apt-get remove` the packages; delete `target/`; the app data directory (`~/.local/share/com.g9.mentor`) can be deleted.
-- Verification: exit codes 0; open Settings, create a backup, verify it, run the restore test (RETAINED); run the crash flow from the testing guide.
+- Verification: exit codes 0; open Settings, create a backup, verify it, run the restore test (RETAINED); run the crash flow from the testing guide; then close the app and run the restore drill from `docs/runbooks/backup-restore.md` (`g9 restore --backup-id <id>` without confirmation to read the plan, then with `--confirm-replace-live-database`) and confirm the app reopens on the restored data.
 
 **B. Verify the reference source register (active network operation).**
 - Operation: `python3 -I scripts/verify_source_register.py` (prints 66 requests to 35 hosts, does nothing), then after reading that list, `python3 -I scripts/verify_source_register.py --approve-network --out verification-report.json`.
