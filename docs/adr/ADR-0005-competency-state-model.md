@@ -21,3 +21,11 @@ Replayable, explainable, correctable state (gates A05, B05).
 ## Verification
 
 `a05_projection_is_replayable_and_order_independent`, `a05_model_sourced_observation_rejected`, `validated_requires_exam_mode_unaided`.
+
+## Addendum (2026-11-08)
+
+- **Occasions, not observations.** "Two recent sub-threshold unaided results" counts distinct occasions: an attempt writes one observation per dimension but is one result. An occasion is sub-threshold only when every one of its unaided performance observations is, and Regress is judged only when an occasion is complete. A single failing attempt therefore cannot regress a competency (`one_failing_attempt_is_one_result_not_two_for_regress`).
+- **Validation evidence is attempt-rooted.** Only observations sourced from a graded attempt, or an operator correction chained to one, can validate; an EXAM-labelled episode cannot.
+- **Eligibility is fail-closed.** `competency_observation_evidence` records reliability class, blindness and `validation_eligible` for every observation derived from a grade decision (migration 0013). An EXAM-shaped observation with no evidence row is treated as ineligible unless it is a correction chained to an explicitly eligible one (`ineligible_observation_ids`).
+- **Difficulty is declared, never guessed.** `assessment_versions.difficulty` is nullable; a version without one derives no observations and the outcome says so.
+

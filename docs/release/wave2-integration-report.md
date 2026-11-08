@@ -1,5 +1,7 @@
 # Wave 2 integration report
 
+> Update 2026-11-08: findings D2 and D6 below (observations not derived; placeholder difficulty) were resolved by migration 0013 and the `approve_final` derivation (commit `4b404cc`). This report is otherwise a point-in-time record of 2026-11-06.
+
 **Date:** 2026-11-06. **Verifier:** wave-2 integration verifier. **Scope:** whole workspace, with a fix mandate for `crates/g9-storage/src/repos`, `crates/g9-app`, `crates/g9-evaluation`, `tests/` and `apps/desktop/src-tauri`.
 **Labels:** TESTED (executed here, result observed), INFERRED, PROPOSED (not implemented), NOT RUN.
 

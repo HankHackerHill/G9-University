@@ -796,12 +796,19 @@ pub fn observation_evidence_for_competency(
 ///   validation evidence. A superseding observation derived from a later grade
 ///   decision has its own evidence row and is judged by that row alone.
 ///
-/// Observations without an evidence row that supersede nothing listed
-/// (episodes, earlier lab observations) are not listed.
+/// Observations that cannot be validation evidence anyway (STUDY or LAB mode,
+/// assisted, Recall or Understanding) are not listed. An EXAM-shaped
+/// observation without an evidence row is listed (fail closed) unless it is a
+/// correction chained to an explicitly eligible one.
 pub fn ineligible_observation_ids(
     conn: &Connection,
     competency_id: &CompetencyId,
 ) -> RepoResult<BTreeSet<ObservationId>> {
+    // Fail closed: an observation shaped like validation evidence (EXAM mode,
+    // unaided, Application or Transfer) counts as eligible only when an
+    // evidence row says so, or when it is an operator correction chained to
+    // one that does. Without an evidence row nothing proves its reliability
+    // class or blindness, so it is listed here.
     let ids: Vec<ObservationId> = query_all(
         conn,
         "WITH RECURSIVE ineligible(id) AS (
@@ -814,9 +821,30 @@ pub fn ineligible_observation_ids(
                JOIN ineligible i ON o.supersedes = i.id
               WHERE NOT EXISTS (SELECT 1 FROM competency_observation_evidence x
                                  WHERE x.observation_id = o.id)
+         ),
+         eligible_root(id) AS (
+             SELECT e.observation_id
+               FROM competency_observation_evidence e
+              WHERE e.validation_eligible = 1
+             UNION
+             SELECT o.id
+               FROM competency_observations o
+               JOIN eligible_root r ON o.supersedes = r.id
+              WHERE NOT EXISTS (SELECT 1 FROM competency_observation_evidence x
+                                 WHERE x.observation_id = o.id)
+         ),
+         unproven(id) AS (
+             SELECT o.id
+               FROM competency_observations o
+              WHERE o.mode = 'EXAM'
+                AND o.assistance = 'UNAIDED'
+                AND o.dimension IN ('APPLICATION', 'TRANSFER')
+                AND NOT EXISTS (SELECT 1 FROM competency_observation_evidence x
+                                 WHERE x.observation_id = o.id)
+                AND o.id NOT IN (SELECT id FROM eligible_root)
          )
          SELECT i.id
-           FROM ineligible i
+           FROM (SELECT id FROM ineligible UNION SELECT id FROM unproven) i
            JOIN competency_observations o ON o.id = i.id
           WHERE o.competency_id = ?1
           ORDER BY i.id",
@@ -1731,6 +1759,73 @@ mod tests {
         let listed = ineligible_observation_ids(conn, &comp).unwrap();
         assert!(!listed.contains(&adjudicated.id));
         assert_eq!(listed.len(), 3);
+    }
+
+    #[test]
+    fn an_exam_shaped_observation_without_an_evidence_row_is_ineligible_fail_closed() {
+        let db = db();
+        let conn = db.conn();
+        seed(conn);
+        conn.execute(
+            "INSERT INTO attempts (id, assessment_version_id, state, mode, created_at, updated_at)
+             VALUES ('attempt-2', 'av-1', 'SUBMITTED', 'EXAM', 1, 1)",
+            [],
+        )
+        .unwrap();
+        decision(conn, "gd-2", "attempt-2");
+        let comp = CompetencyId::parse("comp-1").unwrap();
+        let operator = || provenance(SourceKind::OperatorInput, TrustClass::Operator);
+        let id = |s: &str| ObservationId::parse(s).unwrap();
+
+        // proven eligible: an evidence row says so
+        append_observation(conn, &attempt_observation("obs-ok", "attempt-2", t(2))).unwrap();
+        append_observation_evidence(
+            conn,
+            &evidence("obs-ok", "gd-2", ReliabilityClass::ExternalReview, true),
+        )
+        .unwrap();
+        // unproven: EXAM, unaided, Application, no evidence row (storage API only)
+        append_observation(conn, &attempt_observation("obs-bare", "attempt-1", t(1))).unwrap();
+        // a correction chained to the proven one inherits its eligibility ...
+        let mut fix_ok = observation(
+            "obs-fix-ok",
+            ObservationSource::ManualCorrection,
+            operator(),
+            t(3),
+        );
+        fix_ok.supersedes = Some(id("obs-ok"));
+        append_observation(conn, &fix_ok).unwrap();
+        // ... a correction chained to the unproven one stays ineligible
+        let mut fix_bare = observation(
+            "obs-fix-bare",
+            ObservationSource::ManualCorrection,
+            operator(),
+            t(3),
+        );
+        fix_bare.supersedes = Some(id("obs-bare"));
+        append_observation(conn, &fix_bare).unwrap();
+        // observations that can never be validation evidence are not listed:
+        // LAB mode, and assisted EXAM work
+        let mut lab = observation(
+            "obs-lab",
+            ObservationSource::Episode(EpisodeId::parse("ep-1").unwrap()),
+            provenance(SourceKind::SystemGenerated, TrustClass::SystemDeterministic),
+            t(0),
+        );
+        lab.mode = InteractionMode::Lab;
+        append_observation(conn, &lab).unwrap();
+        let mut hinted = lab.clone();
+        hinted.id = id("obs-hinted");
+        hinted.mode = InteractionMode::Exam;
+        hinted.assistance = AssistanceLevel::Hinted;
+        append_observation(conn, &hinted).unwrap();
+
+        assert_eq!(
+            ineligible_observation_ids(conn, &comp).unwrap(),
+            [id("obs-bare"), id("obs-fix-bare")]
+                .into_iter()
+                .collect::<BTreeSet<_>>()
+        );
     }
 
     #[test]

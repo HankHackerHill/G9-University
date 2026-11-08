@@ -154,7 +154,10 @@ pub fn derive_state_excluding_validation(
             state = step(state, CompetencyEvent::Introduce);
         }
 
-        if is_regress_trigger(&retained[..=i], rules) && state.can(CompetencyEvent::Regress) {
+        if completes_occasion(&retained, i)
+            && is_regress_trigger(&retained[..=i], rules)
+            && state.can(CompetencyEvent::Regress)
+        {
             state = step(state, CompetencyEvent::Regress);
             floor = i + 1;
         }
@@ -339,9 +342,45 @@ fn qualifies_validation(o: &CompetencyObservation, rules: &DerivationRules) -> b
     o.is_validation_evidence() && o.score >= rules.validated_min_score
 }
 
+/// Identity of the occasion an observation belongs to: one graded attempt
+/// writes one observation per dimension, but it is one result. A correction is
+/// its own occasion (it replaces the observation it supersedes).
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Occasion<'a> {
+    Attempt(&'a g9_domain::AttemptId),
+    Episode(&'a g9_domain::EpisodeId),
+    Review(&'a g9_domain::ReviewItemId),
+    Observation(&'a ObservationId),
+}
+
+fn occasion_of(o: &CompetencyObservation) -> Occasion<'_> {
+    match &o.source {
+        ObservationSource::Attempt(a) => Occasion::Attempt(a),
+        ObservationSource::Episode(e) => Occasion::Episode(e),
+        ObservationSource::ReviewAttempt(r) => Occasion::Review(r),
+        ObservationSource::ManualCorrection => Occasion::Observation(&o.id),
+    }
+}
+
+/// Whether `retained[i]` is the last unaided performance observation of its
+/// occasion. Regress is judged only when an occasion is complete: an attempt
+/// records its dimensions one after another, and the first of them must not
+/// decide the occasion before the others are seen.
+fn completes_occasion(retained: &[CompetencyObservation], i: usize) -> bool {
+    let key = occasion_of(&retained[i]);
+    !retained[i + 1..]
+        .iter()
+        .any(|o| o.is_unaided() && is_performance_dimension(o.dimension) && occasion_of(o) == key)
+}
+
 /// The newest observation is an unaided performance-dimension result below the
-/// independent threshold, and so are the `regress_window_count - 1` unaided
-/// performance-dimension results before it.
+/// independent threshold, and so are the `regress_window_count - 1` most recent
+/// other unaided performance **occasions** (ADR-0005: "two recent sub-threshold
+/// unaided results"). Several observations of one occasion (an attempt records
+/// an Application and a Transfer observation) are one result, and an occasion
+/// is sub-threshold only when every one of its unaided performance observations
+/// is, so a single failing attempt cannot regress a competency by itself and a
+/// pass on one dimension is not outvoted by a failure on another.
 fn is_regress_trigger(upto: &[CompetencyObservation], rules: &DerivationRules) -> bool {
     let Some(newest) = upto.last() else {
         return false;
@@ -350,13 +389,26 @@ fn is_regress_trigger(upto: &[CompetencyObservation], rules: &DerivationRules) -
         return false;
     }
     let window = usize::from(rules.regress_window_count);
-    let recent: Vec<&CompetencyObservation> = upto
+    // Occasions from newest to oldest, each with "every observation so far is below".
+    let mut occasions: Vec<(Occasion<'_>, bool)> = Vec::new();
+    for o in upto
         .iter()
         .rev()
         .filter(|o| o.is_unaided() && is_performance_dimension(o.dimension))
-        .take(window)
-        .collect();
-    recent.len() == window && recent.iter().all(|o| o.score < rules.independent_min_score)
+    {
+        let below = o.score < rules.independent_min_score;
+        let key = occasion_of(o);
+        match occasions.iter_mut().find(|(k, _)| *k == key) {
+            Some((_, all_below)) => *all_below &= below,
+            None => {
+                if occasions.len() == window {
+                    break;
+                }
+                occasions.push((key, below));
+            }
+        }
+    }
+    occasions.len() == window && occasions.iter().all(|(_, below)| *below)
 }
 
 fn per_dimension(
@@ -731,6 +783,50 @@ mod tests {
         assert_eq!(
             derive_state(&c, &exam_then_unaided, &rules(), day(4)).state,
             CompetencyState::Validated
+        );
+    }
+
+    #[test]
+    fn one_failing_attempt_is_one_result_not_two_for_regress() {
+        use crate::observation::ObservationSource;
+        let c = competency("c1");
+        let two_dims = |id: &str, app: u8, tr: u8, at| {
+            let mut a = Obs::app(&format!("{id}a"), "c1", app, at).build();
+            let mut t =
+                Obs::new(&format!("{id}t"), "c1", LearningDimension::Transfer, tr, at).build();
+            // Both observations come from one attempt.
+            let attempt = g9_domain::AttemptId::parse(&format!("attempt-{id}")).unwrap();
+            a.source = ObservationSource::Attempt(attempt.clone());
+            t.source = ObservationSource::Attempt(attempt);
+            vec![a, t]
+        };
+        // Independent through two labs ...
+        let mut obs = independent_pair();
+        assert_eq!(
+            derive_state(&c, &obs, &rules(), day(6)).state,
+            CompetencyState::Independent
+        );
+        // ... then ONE failing attempt (Application 20 and Transfer 20): not a regression.
+        obs.extend(two_dims("x", 20, 20, day(8)));
+        assert_eq!(
+            derive_state(&c, &obs, &rules(), day(9)).state,
+            CompetencyState::Independent,
+            "one occasion is one result"
+        );
+        // A second failing occasion regresses.
+        obs.extend(two_dims("y", 20, 20, day(10)));
+        assert_eq!(
+            derive_state(&c, &obs, &rules(), day(11)).state,
+            CompetencyState::Guided
+        );
+        // An occasion with a pass on one dimension is not sub-threshold.
+        let mut mixed = independent_pair();
+        mixed.extend(two_dims("x", 20, 20, day(8)));
+        mixed.extend(two_dims("y", 20, 90, day(10)));
+        assert_eq!(
+            derive_state(&c, &mixed, &rules(), day(11)).state,
+            CompetencyState::Independent,
+            "a pass on Transfer means the occasion is not a failure"
         );
     }
 
