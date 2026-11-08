@@ -31,18 +31,18 @@ jobs:
       - name: fmt
         run: cargo fmt --all --check
       - name: clippy (default members; Tauri shell needs system libs)
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --locked --all-targets -- -D warnings
       - name: test
-        run: cargo test --all-targets
+        run: cargo test --locked --all-targets
       - name: doc tests
-        run: cargo test --doc
+        run: cargo test --locked --doc
       - name: dependency graph has no cycles / tree
-        run: cargo tree -e normal --prefix none | sort -u > /tmp/tree.txt && wc -l /tmp/tree.txt
+        run: cargo tree --locked -e normal --prefix none | sort -u > /tmp/tree.txt && wc -l /tmp/tree.txt
       - name: cargo-deny (licenses, advisories, bans)
         uses: EmbarkStudios/cargo-deny-action@c3bbe7e4e3f7baeee1a3dd9aec0a3b2aded580fb # v2.1.1
         with:
           command: check
-          arguments: --all-features
+          arguments: --all-features --locked
 
   desktop-shell:
     name: tauri shell (Linux build with system webkit)
@@ -58,7 +58,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
       - name: build shell (check only)
-        run: cargo check -p g9-mentor-desktop
+        run: cargo check --locked -p g9-mentor-desktop
+      # The shell's own tests include the only automated comparison of
+      # skill-pins.json with the bundled packages, and the bridge tests;
+      # `cargo test` in the rust job covers default members only.
+      - name: shell tests (bridge, skill pins)
+        run: cargo test --locked -p g9-mentor-desktop --lib
 
   frontend:
     name: frontend (typecheck, lint, test, build)
@@ -92,6 +97,8 @@ jobs:
         run: python3 -I scripts/check_curriculum_seed.py data/curriculum/g9-ct9-480.seed.v0.json
       - name: skill package contract
         run: python3 -I scripts/check_skill_packages.py .agents/skills
+      - name: skill package hashes (pins and registry agree with package_sha256)
+        run: python3 -I scripts/skill_hashes.py --check
       - name: json schemas are valid 2020-12
         run: python3 -I scripts/check_schemas.py schemas .agents/skills
 
@@ -108,14 +115,14 @@ jobs:
           node-version: "22"
       - name: Rust SBOM (cargo-cyclonedx, linux target)
         run: |
-          cargo install cargo-cyclonedx --locked
+          cargo install cargo-cyclonedx --version 0.5.10 --locked
           cargo cyclonedx --format json --target x86_64-unknown-linux-gnu --all-features
           mkdir -p sbom && find . -name '*.cdx.json' -not -path './target/*' -exec cp --parents {} sbom/ \;
       - name: npm SBOM (production dependencies; @tauri-apps/api is a runtime dependency)
         working-directory: apps/desktop
         run: |
           npm ci
-          npx --yes @cyclonedx/cyclonedx-npm --omit dev --output-file ../../sbom/desktop-npm.cdx.json
+          npx --yes @cyclonedx/cyclonedx-npm@6.0.1 --omit dev --output-file ../../sbom/desktop-npm.cdx.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sbom

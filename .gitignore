@@ -14,3 +14,10 @@ coverage
 *.tsbuildinfo
 __pycache__/
 *.pyc
+# SQLite WAL/shared-memory/journal sidecars hold uncommitted note content; key material never belongs in the tree
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+*.sqlite3
+binding.key
+*.key

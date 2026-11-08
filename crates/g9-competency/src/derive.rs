@@ -15,7 +15,7 @@
 //! * contradictions between observations are reported, not resolved.
 
 use crate::graph::Competency;
-use crate::observation::{retained_for, CompetencyObservation};
+use crate::observation::{retained_for, CompetencyObservation, ObservationSource};
 use crate::rules::DerivationRules;
 use crate::CompetencyError;
 use g9_domain::state::CompetencyEvent;
@@ -125,8 +125,16 @@ pub fn derive_state_excluding_validation(
     now: UtcMillis,
     validation_ineligible: &BTreeSet<ObservationId>,
 ) -> CompetencyProjection {
+    // Validation evidence must trace to a graded attempt (ADR-0005/0012): an
+    // observation of any other origin never validates, whatever mode it
+    // carries; an operator correction validates only through the attempt it
+    // supersedes.
+    let by_id: BTreeMap<&ObservationId, &CompetencyObservation> =
+        observations.iter().map(|o| (&o.id, o)).collect();
     let validates = |o: &CompetencyObservation| {
-        qualifies_validation(o, rules) && !validation_ineligible.contains(&o.id)
+        qualifies_validation(o, rules)
+            && is_attempt_rooted(o, &by_id)
+            && !validation_ineligible.contains(&o.id)
     };
     let retained = retained_for(&competency.id, observations);
     let validity_ms = days_to_ms(rules.validity_window_days_for(competency));
@@ -181,9 +189,11 @@ pub fn derive_state_excluding_validation(
 
     state = apply_retest_due(state, latest_validation_at, validity_ms, now);
     let provisional = state != CompetencyState::Validated
-        && retained
-            .iter()
-            .any(|o| qualifies_validation(o, rules) && validation_ineligible.contains(&o.id));
+        && retained.iter().any(|o| {
+            qualifies_validation(o, rules)
+                && is_attempt_rooted(o, &by_id)
+                && validation_ineligible.contains(&o.id)
+        });
 
     CompetencyProjection {
         competency_id: competency.id.clone(),
@@ -298,7 +308,33 @@ fn qualifies_independent(o: &CompetencyObservation, rules: &DerivationRules) -> 
         && o.difficulty.get() >= rules.independent_min_difficulty
 }
 
+/// Whether `o` is a graded attempt, or an operator correction whose chain of
+/// `supersedes` links ends at one. Episodes, review attempts and corrections
+/// of such records are not graded attempts. The walk is bounded by the number
+/// of observations, so a malformed supersede cycle terminates as `false`.
+fn is_attempt_rooted(
+    o: &CompetencyObservation,
+    by_id: &BTreeMap<&ObservationId, &CompetencyObservation>,
+) -> bool {
+    let mut current = o;
+    for _ in 0..=by_id.len() {
+        match &current.source {
+            ObservationSource::Attempt(_) => return true,
+            ObservationSource::ManualCorrection => {
+                match current.supersedes.as_ref().and_then(|id| by_id.get(id)) {
+                    Some(target) => current = target,
+                    None => return false,
+                }
+            }
+            ObservationSource::Episode(_) | ObservationSource::ReviewAttempt(_) => return false,
+        }
+    }
+    false
+}
+
 /// Blind-exam evidence: EXAM mode, unaided, Application/Transfer, at or above the validated threshold.
+/// A necessary condition only: [`derive_state_excluding_validation`] also
+/// requires the observation to trace to a graded attempt ([`is_attempt_rooted`]).
 fn qualifies_validation(o: &CompetencyObservation, rules: &DerivationRules) -> bool {
     o.is_validation_evidence() && o.score >= rules.validated_min_score
 }
@@ -694,6 +730,114 @@ mod tests {
         ];
         assert_eq!(
             derive_state(&c, &exam_then_unaided, &rules(), day(4)).state,
+            CompetencyState::Validated
+        );
+    }
+
+    #[test]
+    fn validation_evidence_must_trace_to_a_graded_attempt() {
+        use crate::observation::ObservationSource;
+        use g9_domain::EpisodeId;
+        let c = competency("c1");
+
+        // Two unaided results make the competency Independent; the third is an
+        // EXAM-mode, unaided, 95-point Application observation of a given origin.
+        let with_exam = |exam: CompetencyObservation| {
+            let mut obs = independent_pair();
+            obs.push(exam);
+            derive_state(&c, &obs, &rules(), day(11))
+        };
+
+        // Control: a graded attempt validates.
+        let attempt = Obs::app("x1", "c1", 95, day(10))
+            .mode(InteractionMode::Exam)
+            .build();
+        assert_eq!(with_exam(attempt).state, CompetencyState::Validated);
+
+        // An episode that merely carries mode=EXAM never validates.
+        let mut episode = Obs::app("x1", "c1", 95, day(10))
+            .mode(InteractionMode::Exam)
+            .build();
+        episode.source = ObservationSource::Episode(EpisodeId::parse("ep-1").unwrap());
+        let p = with_exam(episode);
+        assert_eq!(p.state, CompetencyState::Independent);
+        assert!(
+            !p.provisional,
+            "not validation evidence, so not provisional"
+        );
+
+        // A correction that supersedes an episode never validates either ...
+        let mut ep = Obs::app("e1", "c1", 60, day(8)).build();
+        ep.source = ObservationSource::Episode(EpisodeId::parse("ep-2").unwrap());
+        let mut obs = independent_pair();
+        obs.push(ep);
+        obs.push(
+            Obs::app("x2", "c1", 95, day(10))
+                .mode(InteractionMode::Exam)
+                .supersedes("e1")
+                .build(),
+        );
+        assert_eq!(
+            derive_state(&c, &obs, &rules(), day(11)).state,
+            CompetencyState::Independent
+        );
+
+        // ... a correction with no resolvable target never validates ...
+        let mut obs = independent_pair();
+        obs.push(
+            Obs::app("x3", "c1", 95, day(10))
+                .mode(InteractionMode::Exam)
+                .supersedes("ghost")
+                .build(),
+        );
+        assert_eq!(
+            derive_state(&c, &obs, &rules(), day(11)).state,
+            CompetencyState::Independent
+        );
+
+        // ... and a supersede cycle terminates without validating.
+        let mut a = Obs::app("c-a", "c1", 95, day(10))
+            .mode(InteractionMode::Exam)
+            .supersedes("c-b")
+            .build();
+        let mut b = Obs::app("c-b", "c1", 95, day(10))
+            .mode(InteractionMode::Exam)
+            .supersedes("c-a")
+            .build();
+        a.observed_at = day(10);
+        b.observed_at = day(10);
+        let mut obs = independent_pair();
+        obs.push(a);
+        obs.push(b);
+        assert_eq!(
+            derive_state(&c, &obs, &rules(), day(11)).state,
+            CompetencyState::Independent
+        );
+    }
+
+    #[test]
+    fn an_operator_correction_of_a_graded_exam_attempt_keeps_its_validation_role() {
+        let c = competency("c1");
+        let mut obs = independent_pair();
+        obs.push(
+            Obs::app("x1", "c1", 70, day(10))
+                .mode(InteractionMode::Exam)
+                .build(),
+        );
+        assert_eq!(
+            derive_state(&c, &obs, &rules(), day(11)).state,
+            CompetencyState::Independent,
+            "70 is below the validated threshold"
+        );
+        // The regrade is a MANUAL_CORRECTION of the attempt-sourced observation.
+        let correction = Obs::app("x2", "c1", 88, day(10))
+            .mode(InteractionMode::Exam)
+            .supersedes("x1")
+            .build();
+        correction.validate_against(&obs).unwrap();
+        obs.push(correction);
+        assert_eq!(
+            derive_state(&c, &obs, &rules(), day(11)).state,
             CompetencyState::Validated
         );
     }

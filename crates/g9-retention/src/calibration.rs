@@ -37,16 +37,37 @@ pub struct ReliabilityBin {
     pub hit_rate: Option<f64>,
 }
 
+/// Lower edge of bin `i` of `n_bins` equal-width bins over [0, 1]. Computed as
+/// the correctly rounded quotient `i / n_bins`, so it is the same `f64` as the
+/// decimal literal the operator typed (`3.0 / 5.0 == 0.6`); `i * (1.0 / n)`
+/// is not (`3.0 * 0.2 == 0.6000000000000001`).
+fn lower_edge(i: usize, n_bins: usize) -> f64 {
+    i as f64 / n_bins as f64
+}
+
+/// Index of the bin holding probability `p` (the last bin is closed on 1.0).
+/// A probability on an edge belongs to the bin that starts there. The estimate
+/// `floor(p * n)` can be one off through rounding (`0.3 / 0.1` is
+/// `2.9999999999999996`), so it is corrected against the exact edges.
+fn bin_index(p: f64, n_bins: usize) -> usize {
+    let mut idx = ((p * n_bins as f64).floor() as usize).min(n_bins - 1);
+    while idx + 1 < n_bins && p >= lower_edge(idx + 1, n_bins) {
+        idx += 1;
+    }
+    while idx > 0 && p < lower_edge(idx, n_bins) {
+        idx -= 1;
+    }
+    idx
+}
+
 /// Equal-width reliability bins over [0, 1]; the last bin is closed on 1.0.
 /// The bin counts sum to `obs.len()`.
 pub fn reliability_bins(obs: &[CalibrationObservation], n_bins: usize) -> Vec<ReliabilityBin> {
     let n_bins = n_bins.max(1);
-    let width = 1.0 / n_bins as f64;
     let mut sums = vec![(0usize, 0.0f64, 0usize); n_bins];
     for o in obs {
         let p = o.stated_probability.get();
-        let idx = ((p / width).floor() as usize).min(n_bins - 1);
-        let b = &mut sums[idx];
+        let b = &mut sums[bin_index(p, n_bins)];
         b.0 += 1;
         b.1 += p;
         if o.correct {
@@ -56,11 +77,11 @@ pub fn reliability_bins(obs: &[CalibrationObservation], n_bins: usize) -> Vec<Re
     sums.into_iter()
         .enumerate()
         .map(|(i, (n, sum_p, hits))| ReliabilityBin {
-            lo: i as f64 * width,
+            lo: lower_edge(i, n_bins),
             hi: if i + 1 == n_bins {
                 1.0
             } else {
-                (i + 1) as f64 * width
+                lower_edge(i + 1, n_bins)
             },
             n,
             mean_confidence: if n > 0 { Some(sum_p / n as f64) } else { None },
@@ -110,5 +131,47 @@ mod tests {
         assert!(bins[4].n >= 1, "p = 1.0 lands in the last bin");
         let empty = reliability_bins(&[], 4);
         assert!(empty.iter().all(|b| b.n == 0 && b.hit_rate.is_none()));
+    }
+
+    #[test]
+    fn a_probability_on_a_bin_edge_belongs_to_the_bin_that_starts_there() {
+        // 0.6 / 0.2 = 2.9999999999999996 and 0.3 / 0.1 = 2.9999999999999996:
+        // plain division placed these one bin too low.
+        let bins = reliability_bins(&[obs(0.6, true)], 5);
+        assert_eq!(bins[3].n, 1, "0.6 starts bin [0.6, 0.8)");
+        assert_eq!(bins[2].n, 0);
+        let bins = reliability_bins(&[obs(0.3, true)], 10);
+        assert_eq!(bins[3].n, 1, "0.3 starts bin [0.3, 0.4)");
+        assert_eq!(bins[2].n, 0);
+        // Reported edges are the decimal values operators type.
+        let bins = reliability_bins(&[], 5);
+        assert_eq!(bins[3].lo, 0.6);
+        assert_eq!(bins[2].hi, 0.6);
+        assert_eq!(bins[4].hi, 1.0);
+    }
+
+    #[test]
+    fn every_exact_fraction_lands_in_its_own_bin_and_within_its_edges() {
+        for n_bins in 1..=64usize {
+            for k in 0..=n_bins {
+                let p = k as f64 / n_bins as f64;
+                let bins = reliability_bins(&[obs(p, true)], n_bins);
+                let want = k.min(n_bins - 1);
+                assert_eq!(bins[want].n, 1, "p = {k}/{n_bins} must start bin {want}");
+                assert_eq!(bins.iter().map(|b| b.n).sum::<usize>(), 1);
+                let b = &bins[want];
+                assert!(b.lo <= p && (p < b.hi || (want + 1 == n_bins && p <= b.hi)));
+            }
+        }
+        // Values just inside a bin stay in it.
+        for n_bins in 1..=20usize {
+            for k in 0..n_bins {
+                let lo = k as f64 / n_bins as f64;
+                let hi = (k + 1) as f64 / n_bins as f64;
+                let mid = (lo + hi) / 2.0;
+                let bins = reliability_bins(&[obs(mid, false)], n_bins);
+                assert_eq!(bins[k].n, 1, "midpoint of bin {k}/{n_bins}");
+            }
+        }
     }
 }

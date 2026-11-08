@@ -257,13 +257,17 @@ pub fn open(opts: &BootOptions) -> Result<Booted, CliError> {
     config.program_start = opts.program_start;
     config.backup_dir = Some(layout.backups.clone());
     config.scratch_dir = Some(layout.scratch.clone());
-    // The attachments directory stays the primary root (relative attachment
-    // paths resolve there, as in the bridge). The data root is the second root
-    // so that `backups/` and `scratch/` are *inside* an approved root:
-    // `ApprovedRoots::contains` refuses a path that *is* a root (TESTED:
-    // `backup.create` answers `UNAUTHORIZED backup.backup_outside_approved_roots`
-    // with the bridge's `[attachments, backups, scratch]` list; reported).
-    config.approved_roots = vec![layout.attachments.clone(), layout.root.clone()];
+    // Same list as the desktop bridge: the attachments directory is the
+    // primary root (relative attachment paths resolve there) and the backup and
+    // scratch directories are roots of their own. The data directory itself is
+    // deliberately NOT a root: it holds `binding.key` and the database, which
+    // must stay outside the attachment-read boundary. Directory checks use
+    // `ApprovedRoots::contains_directory`, which accepts a root itself.
+    config.approved_roots = vec![
+        layout.attachments.clone(),
+        layout.backups.clone(),
+        layout.scratch.clone(),
+    ];
     // `g9_app::Transport` has a single variant; `system.status.transport`
     // therefore reads `tauri` from the CLI as well (reported in the testing guide).
     config.transport = Transport::Tauri;

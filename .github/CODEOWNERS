@@ -1,0 +1,14 @@
+# Review gate for paths that carry trust (defect-register SEC-20). Effective only
+# when branch protection requires code-owner review on the default branch.
+*                              @hackytacky
+/.agents/                      @hackytacky
+/AGENTS.md                     @hackytacky
+/CLAUDE.md                     @hackytacky
+/ARCHITECTURE.md               @hackytacky
+/docs/threat-model/            @hackytacky
+/docs/adr/                     @hackytacky
+/schemas/                      @hackytacky
+/deny.toml                     @hackytacky
+/.github/                      @hackytacky
+/apps/desktop/src-tauri/       @hackytacky
+/crates/g9-policy/             @hackytacky

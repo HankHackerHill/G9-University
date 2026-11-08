@@ -171,8 +171,29 @@ impl ApprovedRoots {
     }
 
     /// Whether `path` resolves inside an approved root.
+    ///
+    /// This is the check for **files** (attachments): a path that *is* a root
+    /// is a directory, not an attachment, and is refused. Use
+    /// [`contains_directory`](Self::contains_directory) for directories.
     pub fn contains(&self, path: &Path) -> bool {
         self.resolve(path).is_ok()
+    }
+
+    /// Whether the absolute directory `dir` is an approved root or lies inside
+    /// one. Backup, scratch and attachment directories are configured as roots
+    /// themselves, so the root-equals case must be accepted here (it is
+    /// rejected by [`contains`](Self::contains), which resolves files).
+    /// Components are compared, not string prefixes: `/x/backups-evil` is not
+    /// inside `/x/backups`. Lexical only; no filesystem access.
+    pub fn contains_directory(&self, dir: &Path) -> bool {
+        let Ok((absolute, components)) = normalize(dir, true) else {
+            return false;
+        };
+        if !absolute || components.is_empty() {
+            return false;
+        }
+        let candidate = join_absolute(&components);
+        self.roots.iter().any(|root| candidate.starts_with(root))
     }
 }
 
@@ -591,6 +612,28 @@ mod tests {
             recorded_by: ActorId::parse("operator").unwrap(),
             version: None,
         }
+    }
+
+    #[test]
+    fn contains_directory_accepts_a_root_itself_and_its_descendants_only() {
+        let r = roots();
+        // A root is a directory: accepted here, refused by `contains` (a file check).
+        assert!(r.contains_directory(Path::new("/var/lib/g9/attachments")));
+        assert!(!r.contains(Path::new("/var/lib/g9/attachments")));
+        assert!(r.contains_directory(Path::new("/var/lib/g9/attachments/")));
+        assert!(r.contains_directory(Path::new("/var/lib/g9/attachments/backups")));
+        assert!(r.contains_directory(Path::new("/home/op/g9-imports")));
+        // Outside, lookalike prefix, parent of a root, relative, traversal, empty,
+        // backslash, NUL: all refused.
+        assert!(!r.contains_directory(Path::new("/var/lib/g9")));
+        assert!(!r.contains_directory(Path::new("/var/lib/g9/attachments-evil")));
+        assert!(!r.contains_directory(Path::new("/var/lib/g9/attachments/../x")));
+        assert!(!r.contains_directory(Path::new("/etc")));
+        assert!(!r.contains_directory(Path::new("/")));
+        assert!(!r.contains_directory(Path::new("attachments")));
+        assert!(!r.contains_directory(Path::new("")));
+        assert!(!r.contains_directory(Path::new("/var/lib/g9/attachments/a\\b")));
+        assert!(!r.contains_directory(Path::new("/var/lib/g9/attachments/\0")));
     }
 
     #[test]

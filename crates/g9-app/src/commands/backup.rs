@@ -76,7 +76,7 @@ fn approved_dir(svc: &Services, dir: Option<&PathBuf>, what: &str) -> Result<Pat
     if !svc
         .approved_roots
         .as_ref()
-        .is_some_and(|roots| roots.contains(dir))
+        .is_some_and(|roots| roots.contains_directory(dir))
     {
         return Err(G9Error::unauthorized(
             format!("backup.{what}_outside_approved_roots"),
@@ -93,7 +93,7 @@ pub(crate) fn verify_options(svc: &Services) -> VerifyOptions {
         attachment_root: svc.config.attachment_dir.clone().filter(|dir| {
             svc.approved_roots
                 .as_ref()
-                .is_some_and(|roots| roots.contains(dir))
+                .is_some_and(|roots| roots.contains_directory(dir))
         }),
     }
 }

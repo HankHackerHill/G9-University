@@ -130,7 +130,7 @@ fn migrate_after_backup(
     if !svc
         .approved_roots
         .as_ref()
-        .is_some_and(|roots| roots.contains(&dir))
+        .is_some_and(|roots| roots.contains_directory(&dir))
     {
         report.migration_blocked_reason =
             Some("backup directory is not inside an approved root".into());
@@ -152,7 +152,7 @@ fn migrate_after_backup(
             if !svc
                 .approved_roots
                 .as_ref()
-                .is_some_and(|roots| roots.contains(&scratch))
+                .is_some_and(|roots| roots.contains_directory(&scratch))
             {
                 report.migration_blocked_reason =
                     Some("scratch directory is not inside an approved root".into());

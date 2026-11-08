@@ -345,6 +345,17 @@ caption {
   border: 0;
 }
 
+/* Mock transport: never let synthetic data pass for the real backend */
+
+.mock-banner {
+  grid-column: 1 / -1;
+  border: 2px solid var(--amber);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  margin: 8px;
+  font-weight: 600;
+}
+
 /* Backend disclosures (CommandOutcome.warnings) */
 
 .warnings {

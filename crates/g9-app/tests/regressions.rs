@@ -514,6 +514,94 @@ fn backup_with_attachment_rows_is_never_checked_without_the_attachment_check() {
 }
 
 // ---------------------------------------------------------------------------
+// Desktop-bridge root layout: the attachments, backups and scratch directories
+// are each configured as an approved root *themselves* (apps/desktop/src-tauri
+// builds `[attachments, backups, scratch]`, no containing root). The directory
+// checks must accept a directory that equals a root; with the file-oriented
+// `ApprovedRoots::contains` they answered UNAUTHORIZED, the migration dry run
+// was skipped and the attachment manifest was never checked.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn backup_works_when_backup_scratch_and_attachment_dirs_are_themselves_the_roots() {
+    let dir = tempfile::Builder::new()
+        .prefix("g9bridge")
+        .tempdir()
+        .unwrap();
+    let root = dir.path().to_path_buf();
+    for sub in ["backups", "scratch", "attachments/ab/cd"] {
+        std::fs::create_dir_all(root.join(sub)).unwrap();
+    }
+    let r = root.clone();
+    let mut h = Harness::with(|s| {
+        s.config.approved_roots = vec![r.join("attachments"), r.join("backups"), r.join("scratch")];
+        s.config.backup_dir = Some(r.join("backups"));
+        s.config.scratch_dir = Some(r.join("scratch"));
+        s.config.attachment_dir = Some(r.join("attachments"));
+    });
+
+    // Create is authorized (was UNAUTHORIZED backup.backup_outside_approved_roots).
+    insert_attachment(&h, "ab/cd/blob");
+    let created = h.call("backup.create", json!({})).unwrap();
+    let id = created["result"]["backup_id"].as_str().unwrap().to_string();
+
+    // The attachment manifest is checked (it was silently skipped): the row has
+    // no file yet, so verification must FAIL.
+    let verified = h.call("backup.verify", json!({ "backup_id": id })).unwrap();
+    assert_eq!(verified["result"]["state"], "FAILED");
+
+    // With the file present the same layout reaches CHECKED, then RETAINED.
+    std::fs::write(root.join("attachments/ab/cd/blob"), b"pcap").unwrap();
+    let created = h.call("backup.create", json!({})).unwrap();
+    let id = created["result"]["backup_id"].as_str().unwrap().to_string();
+    let verified = h.call("backup.verify", json!({ "backup_id": id })).unwrap();
+    assert_eq!(verified["result"]["state"], "CHECKED");
+    let tested = h
+        .call("backup.restore_test", json!({ "backup_id": id }))
+        .unwrap();
+    assert_eq!(tested["result"]["state"], "RETAINED");
+
+    // A directory outside every root is still refused.
+    let outside = tempfile::Builder::new().prefix("g9out").tempdir().unwrap();
+    let out = outside.path().to_path_buf();
+    let r2 = root.clone();
+    let mut h = Harness::with(|s| {
+        s.config.approved_roots = vec![r2.join("attachments"), r2.join("scratch")];
+        s.config.backup_dir = Some(out.clone());
+        s.config.scratch_dir = Some(r2.join("scratch"));
+    });
+    let err = h.call("backup.create", json!({})).unwrap_err();
+    assert_eq!(err.code, "backup.backup_outside_approved_roots");
+}
+
+#[test]
+fn migration_dry_run_runs_when_backups_and_scratch_are_themselves_the_roots() {
+    let dir = tempfile::Builder::new()
+        .prefix("g9bridgemig")
+        .tempdir()
+        .unwrap();
+    let root = dir.path().to_path_buf();
+    std::fs::create_dir_all(root.join("backups")).unwrap();
+    std::fs::create_dir_all(root.join("scratch")).unwrap();
+    let path = root.join("live.sqlite");
+    let r = root.clone();
+    let mut h = Harness::with_database(database_at_version_9(&path), |s| {
+        s.config.approved_roots = vec![r.join("backups"), r.join("scratch")];
+        s.config.backup_dir = Some(r.join("backups"));
+        s.config.scratch_dir = Some(r.join("scratch"));
+    })
+    .unwrap();
+    let report = h.ctx().recovery_report().clone();
+    assert!(
+        report.migration_blocked_reason.is_none(),
+        "migration was blocked: {report:?}"
+    );
+    assert!(report.pending_migrations.is_empty(), "{report:?}");
+    assert!(!report.migrated.is_empty(), "{report:?}");
+    assert!(report.pre_migration_backup.is_some());
+}
+
+// ---------------------------------------------------------------------------
 // recovery.rs:160 — no migration without the mandatory dry run
 // ---------------------------------------------------------------------------
 

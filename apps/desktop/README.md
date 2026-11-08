@@ -34,7 +34,7 @@ cargo build -p g9-mentor-desktop --release
 
 The package list is the one used by the CI job `desktop-shell` (`.github/workflows/ci.yml`); it is ASSUMED, not verified on 26.04 here.
 
-Blocking prerequisite (open, outside this directory's code): `src-tauri/icons/` does not exist. `tauri::generate_context!()` reads the default window icon from the first `.png` in `bundle.icon` (fallback `icons/icon.png`) at compile time (`tauri-codegen` 2.7.4 `context.rs`), so `cargo check -p g9-mentor-desktop` fails on a prepared host until the six files listed in `tauri.conf.json` `bundle.icon` are added (for example with `npx @tauri-apps/cli@2 icon <source.png>`, run from `apps/desktop`).
+Icons: `src-tauri/icons/` holds the four PNGs listed in `tauri.conf.json` `bundle.icon` (`32x32.png`, `128x128.png`, `128x128@2x.png`, `icon.png`; added in commit `698ef3c`), which `tauri::generate_context!()` needs at compile time. The shell has still never been compiled in the build sandbox (no GTK/WebKit): NOT RUN until `cargo check -p g9-mentor-desktop` and `cargo test -p g9-mentor-desktop --lib` run on a prepared host or in the `desktop-shell` CI job.
 
 ## How the bridge is wired
 
@@ -60,7 +60,7 @@ webview (React)                               Rust process
 | Recovery | `AppContext::builder(db, config, key, operator).open()` runs `g9_app::recovery::run`: migrations only after a verified pre-migration backup into `<data>/backups`, audit-chain verification, open intervals closed `UNCERTAIN`, approval expiry. It runs inside `setup()` (window content waits). |
 | Honest status | Facts only the bridge knows are appended to `CommandOutcome.warnings` of `system.status` (nothing else is changed): `binding_key.file_fallback` (always), `binding_key.file_rotated`, `binding_key.stale_file_not_removed`, `data_dir.permissions`, `clock.zone_fallback`, `skills.registry_unpinned`, `skills.registry_refused`, `storage.read_only`, `storage.migration_blocked`. Format `WARNING <code>: <message>`. The UI client accepts `warnings` but no screen renders them yet (UI owner). |
 | Time zone | `TZ` (name, `:name` or zoneinfo path) → `/etc/localtime` link target → `/etc/timezone`; otherwise UTC with `clock.zone_fallback`. |
-| Skills | `<resource dir>/.agents/skills` (bundled by `bundle.resources`) loaded with `g9_skills::Registry::load` when the directory exists. No pinned hash manifest exists in the repository yet, so `skills.registry_unpinned` is reported (PROPOSED: `Registry::load_pinned` with a committed manifest). A refused registry leaves skills disabled (`skills.invoke` → `RESOURCE_UNAVAILABLE`) and is reported. |
+| Skills | `<resource dir>/.agents/skills` (bundled by `bundle.resources`) loaded with `g9_skills::Registry::load_pinned` against `skill-pins.json`, which is compiled into the binary (`include_str!`) so changing the bundled folder cannot change the pins. A modified, missing or unpinned package refuses the whole registry: skills are disabled (`skills.invoke` → `RESOURCE_UNAVAILABLE`) and the reason is reported in `system.status` warnings. The pins are checked against the packages by `python3 -I scripts/skill_hashes.py --check` (CI `content-gates`) and by the test `bundled_skills_match_compiled_pins_and_load` (NOT RUN here: needs the shell to compile). |
 
 ## Binding key
 

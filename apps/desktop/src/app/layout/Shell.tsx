@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { formatDateTime } from '../../lib/format';
+import { useIpc } from '../ipc-context';
 import { useCommand } from '../hooks/useCommand';
 import { SCREENS } from '../router';
 import { useContrast } from '../theme/useContrast';
@@ -8,6 +9,7 @@ import { Badge } from '../components/Badge';
 import { Warnings } from '../components/Warnings';
 
 export function Shell() {
+  const client = useIpc();
   const status = useCommand('system.status', {});
   const [contrast, toggleContrast] = useContrast();
   const s = status.data;
@@ -17,6 +19,12 @@ export function Shell() {
       <a className="skip-link" href="#main">
         Skip to main content
       </a>
+      {client.transportKind === 'mock' ? (
+        <div className="mock-banner" role="status" data-testid="mock-banner">
+          <strong>SYNTHETIC DATA.</strong> This window is running the built-in mock backend (the Tauri runtime is not present).
+          Nothing shown here is read from, or saved to, the G9 database.
+        </div>
+      ) : null}
       <header className="shell-header">
         <span className="brand" aria-label="G9 Mentor">
           G9 MENTOR
