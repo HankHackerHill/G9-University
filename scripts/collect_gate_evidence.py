@@ -32,7 +32,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TARGET = ROOT / "target" / "evidence"
+# Reuse an existing build directory instead of compiling the workspace twice:
+#   G9_EVIDENCE_TARGET=/abs/path/to/target-dir python3 -I scripts/collect_gate_evidence.py ...
+TARGET = Path(os.environ["G9_EVIDENCE_TARGET"]) if os.environ.get("G9_EVIDENCE_TARGET") else ROOT / "target" / "evidence"
 TEST_LINE = re.compile(r"^test (\S+) \.\.\. (ok|FAILED|ignored)\b")
 RUNNING = re.compile(r"^\s*Running (?:unittests )?(\S+) \(.*?deps/([A-Za-z0-9_]+)-[0-9a-f]+\)")
 GATE = re.compile(r"(?:^|(?<=[^a-z0-9]))(a(?:0[1-9]|1[0-2])|b0[1-6]|st(?:0[1-9]|1[0-2]))(?=_)", re.IGNORECASE)
