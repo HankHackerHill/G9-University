@@ -99,6 +99,10 @@ jobs:
         run: python3 -I scripts/check_skill_packages.py .agents/skills
       - name: skill package hashes (pins and registry agree with package_sha256)
         run: python3 -I scripts/skill_hashes.py --check
+      - name: reference source register (schema, honesty invariants, rendered table)
+        run: python3 -I scripts/check_source_register.py
+      - name: source register verifier helpers (offline self-test; performs no requests)
+        run: python3 -I scripts/verify_source_register.py --selftest
       - name: json schemas are valid 2020-12
         run: python3 -I scripts/check_schemas.py schemas .agents/skills
 

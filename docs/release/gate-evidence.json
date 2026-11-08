@@ -1,0 +1,394 @@
+{
+ "collected_at": "2026-11-08T05:09:27Z",
+ "checks": [
+  {
+   "check": "cargo fmt --check",
+   "command": "cargo fmt --all --check",
+   "cwd": ".",
+   "exit": 0
+  },
+  {
+   "check": "cargo clippy -D warnings",
+   "command": "cargo clippy --all-targets -- -D warnings",
+   "cwd": ".",
+   "exit": 0,
+   "summary": "clean"
+  },
+  {
+   "check": "cargo test (default members)",
+   "command": "cargo test --all-targets --no-fail-fast",
+   "cwd": ".",
+   "exit": 0
+  },
+  {
+   "check": "cargo test g9-retention --features fsrs",
+   "command": "cargo test -p g9-retention --features fsrs --no-fail-fast",
+   "cwd": ".",
+   "exit": 0
+  },
+  {
+   "check": "cargo check g9-mentor-desktop (Tauri shell)",
+   "command": "cargo check -p g9-mentor-desktop",
+   "cwd": ".",
+   "exit": 101,
+   "summary": "Package gdk-3.0 was not found in the pkg-config search path."
+  },
+  {
+   "check": "npm typecheck",
+   "command": "npm run typecheck",
+   "cwd": "apps/desktop",
+   "exit": 0
+  },
+  {
+   "check": "npm lint",
+   "command": "npm run lint",
+   "cwd": "apps/desktop",
+   "exit": 0
+  },
+  {
+   "check": "npm build",
+   "command": "npm run build",
+   "cwd": "apps/desktop",
+   "exit": 0
+  },
+  {
+   "check": "vitest",
+   "command": "npx vitest run --reporter=json --outputFile=/home/user/G9-University/target/integration/vitest.json",
+   "cwd": "apps/desktop",
+   "exit": 0
+  },
+  {
+   "check": "npm audit --audit-level=high",
+   "command": "npm audit --audit-level=high",
+   "cwd": "apps/desktop",
+   "exit": 0,
+   "summary": "7 moderate severity vulnerabilities"
+  },
+  {
+   "check": "curriculum seed (A01 static)",
+   "command": "python3 -I scripts/check_curriculum_seed.py data/curriculum/g9-ct9-480.seed.v0.json",
+   "cwd": ".",
+   "exit": 0,
+   "summary": "result: PASS (schema_errors=0 errors=0 violations=0 warnings=1)"
+  },
+  {
+   "check": "skill packages (37)",
+   "command": "python3 -I scripts/check_skill_packages.py .agents/skills --expect-count 37",
+   "cwd": ".",
+   "exit": 0,
+   "summary": "RESULT: PASS"
+  },
+  {
+   "check": "competency packs (8)",
+   "command": "python3 -I scripts/check_competency_packs.py data/competency-packs --expect-count 8",
+   "cwd": ".",
+   "exit": 0,
+   "summary": "RESULT: PASS"
+  },
+  {
+   "check": "JSON schemas",
+   "command": "python3 -I scripts/check_schemas.py schemas .agents/skills",
+   "cwd": ".",
+   "exit": 0,
+   "summary": "RESULT: PASS"
+  },
+  {
+   "check": "cargo-deny (bans licenses sources advisories)",
+   "command": "/tmp/claude-0/-home-user-G9-University/b63cb1ba-d411-5bda-a171-5d5449928451/scratchpad/tools/bin/cargo-deny --all-features check",
+   "cwd": ".",
+   "exit": 0,
+   "summary": "advisories ok, bans ok, licenses ok, sources ok"
+  }
+ ],
+ "totals": {
+  "cargo_passed": 685,
+  "cargo_failed": 0,
+  "cargo_ignored": 0,
+  "vitest_passed": 186,
+  "vitest_failed": 0
+ },
+ "gates": {
+  "A01": {
+   "status": "PASS",
+   "tests": [
+    "?::a01_curriculum_import_rejects_invariant_violation_end_to_end [ok]",
+    "?::a01_promote_requires_reconciliation_and_approval [ok]",
+    "?::a01_arithmetic_violations_come_from_domain_counts [ok]",
+    "?::a01_seed_passes_all_invariants [ok]",
+    "?::a01_seed_is_not_promotable_without_reconciliation [ok]",
+    "?::a01_rejects_each_violation [ok]",
+    "?::a01_curriculum_invariants_and_provenance_end_to_end [ok]"
+   ]
+  },
+  "A02": {
+   "status": "PASS",
+   "tests": [
+    "?::a02_dst_fall_back_overlap_berlin [ok]",
+    "?::a02_daily_recurrence_through_gap_reports_adjustment_once [ok]",
+    "?::a02_all_day_events_are_date_only [ok]",
+    "?::a02_feb29_only_in_leap_years [ok]",
+    "?::a02_dst_spring_forward_gap_berlin [ok]",
+    "?::a02_conflicts_detected_and_protected_rest_respected [ok]",
+    "?::a02_new_york_and_sydney_transitions [ok]",
+    "?::a02_monthly_31st_skips_short_months [ok]",
+    "?::a02_weekly_byday_recurrence_preserves_wall_time_across_dst [ok]",
+    "?::a02_infeasible_schedule_reports_violations_not_silent_drop [ok]"
+   ]
+  },
+  "A03": {
+   "status": "PASS",
+   "tests": [
+    "?::a03_restart_recovery_marks_sessions_interrupted [ok]",
+    "?::a03_credit_uses_monotonic_delta_not_wall_clock [ok]",
+    "?::a03_ledger_survives_serialization_roundtrip_after_restart [ok]",
+    "?::a03_restart_marks_open_interval_uncertain [ok]",
+    "?::a03_overlapping_intervals_rejected [ok]",
+    "?::a03_uncertain_time_not_credited_without_correction [ok]"
+   ]
+  },
+  "A04": {
+   "status": "PASS",
+   "tests": [
+    "?::a04_approve_final_requires_approval_and_operator_and_is_immutable_after [ok]",
+    "?::a04_model_only_criterion_blocks_finalization [ok]",
+    "?::a04_adjudication_supersedes_not_mutates [ok]",
+    "?::a04_lifecycle_follows_the_machine_and_bumps_revision [ok]",
+    "?::a04_abandon_by_learner_or_system_only [ok]",
+    "?::a04_model_skill_and_system_actors_are_restricted [ok]",
+    "?::a04_finalized_attempt_rejects_every_mutation [ok]",
+    "?::a04_retake_is_new_linked_attempt [ok]",
+    "?::a04_finalized_grade_cannot_be_regraded_refinalized_reopened_or_deleted [ok]",
+    "?::a04_model_advisory_grade_never_finalizes [ok]",
+    "?::repos::assessment::tests::attempt_lifecycle_revision_assistance_and_a04_immutability [ok]",
+    "?::a04_immutable_tables_reject_update_and_delete [ok]",
+    "?::a04_model_output_cannot_be_competency_observation [ok]",
+    "?::a04_trigger_blocks_final_grade_update [ok]",
+    "?::a04_trigger_blocks_audit_row_mutation [ok]",
+    "?::a04_trigger_blocks_finalized_attempt_update [ok]",
+    "?::a04_trigger_blocks_terminal_approval_update [ok]"
+   ]
+  },
+  "A05": {
+   "status": "PASS",
+   "tests": [
+    "?::derive::tests::a05_contradiction_detected_between_exam_and_guided_results [ok]",
+    "?::derive::tests::a05_correction_supersedes_and_changes_state [ok]",
+    "?::derive::tests::a05_regress_keeps_earlier_evidence [ok]",
+    "?::observation::tests::a05_model_sourced_observation_rejected [ok]",
+    "?::derive::tests::a05_projection_is_replayable_and_order_independent [ok]",
+    "?::a05_projection_replays_correction_supersedes_and_model_evidence_is_refused [ok]"
+   ]
+  },
+  "A06": {
+   "status": "PASS",
+   "tests": [
+    "?::a06_ui_cannot_set_actor_identity [ok]",
+    "?::a06_pipeline_order_idempotency_before_policy_and_revision_check [ok]",
+    "?::a06_ui_actor_is_refused_and_approvals_bind_to_parameters [ok]",
+    "?::a06_every_gated_operation_requires_a_bound_approval_and_mutates_nothing [ok]",
+    "?::a06_all_kinds_fixture_is_complete [ok]",
+    "?::a06_deny_by_default_when_no_rule_matches [ok]",
+    "?::a06_exam_mode_blocks_model_teaching_proposals_and_sealed_keys [ok]",
+    "?::a06_every_rule_has_unique_id [ok]",
+    "?::a06_matrix_covers_every_builtin_rule_and_default_deny [ok]",
+    "?::a06_matrix_decisions_and_rule_ids [ok]",
+    "?::a06_matrix_has_at_least_sixty_rows [ok]",
+    "?::a06_decision_records_are_metadata_only [ok]",
+    "?::a06_builtin_rules_serialize_to_json [ok]",
+    "?::a06_secret_content_never_reaches_skill_or_model_exhaustive [ok]",
+    "?::a06_self_modification_only_in_maintenance_with_approval_exhaustive [ok]",
+    "?::a06_native_actions_never_plain_allow_exhaustive [ok]",
+    "?::a06_finalized_records_never_mutated_exhaustive [ok]",
+    "?::a06_skill_and_model_never_allowed_to_write_exhaustive [ok]",
+    "?::a06_operator_only_capabilities_never_required_of_non_operators_exhaustive [ok]"
+   ]
+  },
+  "A07": {
+   "status": "PASS",
+   "tests": [
+    "?::a07_skill_invoke_output_requesting_execute_is_rejected_and_nothing_persisted [ok]",
+    "?::a07_exam_context_policy_blocks_answer_key_and_secret [ok]",
+    "?::a07_holdout_leakage_detected [ok]",
+    "?::a07_note_with_embedded_instructions_grants_nothing [ok]",
+    "?::a07_skill_output_requesting_execute_or_connect_is_rejected [ok]",
+    "?::a07_tampered_skill_package_is_refused_and_cannot_be_invoked [ok]",
+    "?::a07_attachment_paths_and_types_are_confined [ok]",
+    "?::a07_skill_or_model_cannot_redact_or_approve [ok]",
+    "?::a07_injected_note_is_labeled_and_stays_data [ok]",
+    "?::a07_malicious_note_directing_schedule_edit_is_denied [ok]",
+    "?::a07_injected_allow_rule_for_skill_write_is_capped_by_invariant [ok]",
+    "?::a07_model_cannot_decide_or_read_approvals [ok]",
+    "?::a07_operator_approval_cannot_be_consumed_by_skill_for_shared_capability [ok]",
+    "?::a07_skill_filesystem_write_denied_even_with_approval [ok]",
+    "?::a07_skill_model_load_and_policy_modify_denied_even_with_approval [ok]",
+    "?::a07_skill_network_egress_denied_even_with_approval [ok]",
+    "?::a07_skill_shell_exec_denied_even_with_approval [ok]",
+    "?::a07_skill_cannot_finalize_or_delete_even_with_approval [ok]",
+    "?::a07_rule_table_cannot_grant_skill_native_or_operator_only_capabilities [ok]",
+    "?::a07_instruction_in_evidence_cannot_change_decision [ok]",
+    "?::a07_output_requesting_execute_is_rejected_at_validation [ok]",
+    "?::a07_requested_operator_only_capability_rejected_at_load [ok]"
+   ]
+  },
+  "A08": {
+   "status": "PASS",
+   "tests": [
+    "?::a08_backup_commands_drive_state_machine_to_retained [ok]",
+    "?::a08_backup_verify_restore_crash_reopen_recover [ok]",
+    "?::a08_backup_state_machine_requires_restore_test_before_retain [ok]",
+    "?::a08_crash_mid_transaction_rolls_back [ok]",
+    "?::a08_restore_test_refuses_a_snapshot_replaced_after_verification [ok]",
+    "?::a08_migration_checksum_tamper_detected [ok]",
+    "?::a08_schema_newer_than_app_refused [ok]",
+    "?::a08_snapshot_refuses_overwrite_and_live_path [ok]",
+    "?::a08_restore_test_refuses_an_audit_anchor_mismatch [ok]",
+    "?::a08_dry_run_migration_on_copy [ok]",
+    "?::a08_vacuum_into_export_verifies [ok]",
+    "?::a08_snapshot_verify_restore_roundtrip [ok]"
+   ]
+  },
+  "A09": {
+   "status": "PASS",
+   "tests": [
+    "?::a09_cancelled_response_is_discarded [ok]",
+    "?::a09_null_runtime_reports_model_unavailable_as_resource_unavailable [ok]",
+    "?::a09_all_deterministic_commands_work_with_null_runtime [ok]",
+    "?::a09_harness_model_down_option_builds_the_null_runtime [ok]",
+    "?::a09_deterministic_commands_work_and_skills_fail_closed_with_the_model_down [ok]",
+    "?::a09_backend_unavailable_yields_error_not_panic [ok]"
+   ]
+  },
+  "A10": {
+   "status": "PASS",
+   "tests": [
+    "?::a10_deletion_request_gated_and_tombstones_content [ok]",
+    "?::a10_erasure_leaves_no_copy_in_any_table_and_replay_returns_no_erased_content [ok]",
+    "?::a10_export_requires_an_approval_bound_to_the_selection_and_is_recorded_once [ok]",
+    "?::a10_approved_deletion_redacts_note_and_versions_with_tombstone [ok]",
+    "?::a10_redaction_leaves_tombstone_and_releases_content_pointer [ok]",
+    "?::a10_deletion_request_redacts_and_tombstones [ok]",
+    "?::a10_erasure_never_lists_bytes_a_live_attachment_still_uses [ok]",
+    "?::a10_reflection_erasure_and_rejected_requests [ok]",
+    "?::a10_study_session_erasure_is_explicitly_not_implemented [ok]"
+   ]
+  },
+  "A11": {
+   "status": "PASS",
+   "tests": [
+    "?::a11_invalid_structured_output_rejected_with_paths [ok]",
+    "?::a11_valid_output_against_composed_envelope [ok]",
+    "?::a11_valid_output_is_advisory_and_invalid_output_is_rejected [ok]",
+    "?::a11_budget_and_cancellation_boundaries [ok]",
+    "?::a11_schema_invalid_output_rejected [ok]"
+   ]
+  },
+  "A12": {
+   "status": "NOT RUN",
+   "tests": []
+  },
+  "B01": {
+   "status": "PASS",
+   "tests": [
+    "?::rubric::tests::b01_rubric_weights_must_sum_100_and_baseline_valid [ok]"
+   ]
+  },
+  "B02": {
+   "status": "PASS",
+   "tests": [
+    "?::transfer::tests::b02_transfer_checks_separate_from_item_reviews [ok]",
+    "?[fsrs]::transfer::tests::b02_transfer_checks_separate_from_item_reviews [ok]"
+   ]
+  },
+  "B03": {
+   "status": "NOT RUN",
+   "tests": []
+  },
+  "B04": {
+   "status": "NOT RUN",
+   "tests": []
+  },
+  "B05": {
+   "status": "PASS",
+   "tests": [
+    "?::memory::tests::b05_rejected_hypothesis_invalidates_dependents [ok]"
+   ]
+  },
+  "B06": {
+   "status": "NOT RUN",
+   "tests": []
+  },
+  "ST01": {
+   "status": "PASS",
+   "tests": [
+    "?::st01_note_with_embedded_instructions_is_data [ok]"
+   ]
+  },
+  "ST02": {
+   "status": "PASS",
+   "tests": [
+    "?::st02_tampered_skill_package_is_refused [ok]"
+   ]
+  },
+  "ST03": {
+   "status": "PASS",
+   "tests": [
+    "?::st03_forged_model_provenance_observation_is_rejected [ok]"
+   ]
+  },
+  "ST04": {
+   "status": "PASS",
+   "tests": [
+    "?::st04_skill_output_requesting_execute_is_rejected [ok]"
+   ]
+  },
+  "ST05": {
+   "status": "PASS",
+   "tests": [
+    "?::st05_private_export_requires_approval [ok]"
+   ]
+  },
+  "ST06": {
+   "status": "PASS",
+   "tests": [
+    "?::st06_modified_model_artifact_is_refused [ok]"
+   ]
+  },
+  "ST07": {
+   "status": "PASS",
+   "tests": [
+    "?::st07_markup_payloads_are_stored_as_data [ok]"
+   ]
+  },
+  "ST08": {
+   "status": "PASS",
+   "tests": [
+    "?::st08_oversized_context_and_over_budget_reply_are_refused [ok]"
+   ]
+  },
+  "ST09": {
+   "status": "PASS",
+   "tests": [
+    "?::st09_replayed_stale_and_forged_approvals_are_denied_with_reasons [ok]"
+   ]
+  },
+  "ST10": {
+   "status": "PASS",
+   "tests": [
+    "?::st10_corrupted_backup_fails_verification_and_restore_is_refused [ok]"
+   ]
+  },
+  "ST11": {
+   "status": "PASS",
+   "tests": [
+    "?::st11_cross_domain_access_is_denied [ok]"
+   ]
+  },
+  "ST12": {
+   "status": "PASS",
+   "tests": [
+    "?::st12_late_response_after_cancellation_is_discarded [ok]"
+   ]
+  }
+ },
+ "failed_tests": []
+}
