@@ -65,6 +65,10 @@ export function SettingsRecovery() {
   };
 
   const s = today.status;
+  // `today.status` is null both while loading and after a failed read (useToday); only the
+  // first is "loading". A failed read is reported as unavailable, never as still loading.
+  const statusPending = (what: string) =>
+    today.error === null ? <Loading what={what} /> : <NoData reason={`${what} unavailable: system.status failed (${today.error.code})`} />;
 
   return (
     <div>
@@ -73,7 +77,7 @@ export function SettingsRecovery() {
       {error !== null ? <ErrorDisplay error={error} /> : null}
       <Panel title="Host and storage warnings">
         {s === null ? (
-          <Loading what="status warnings" />
+          statusPending('status warnings')
         ) : today.warnings.length === 0 ? (
           <p className="muted" data-testid="status-warnings-none">
             system.status reported no warnings.
@@ -85,7 +89,7 @@ export function SettingsRecovery() {
       <div className="grid-2">
         <Panel title="Model runtime">
           {s === null ? (
-            <Loading what="runtime status" />
+            statusPending('runtime status')
           ) : s.model.available ? (
             <p>
               <Badge tone="verified">AVAILABLE</Badge> {s.model.model_id ?? ''}
@@ -206,7 +210,7 @@ export function SettingsRecovery() {
         <Warnings warnings={exportFlow.warnings} />
       </Panel>
       <Panel title="Transport">
-        {s === null ? <Loading what="status" /> : <p>Active transport: <StateBadge state={s.transport.toUpperCase()} /> {s.transport === 'mock' ? <span className="muted">— fixture data, no storage.</span> : null}</p>}
+        {s === null ? statusPending('transport status') : <p>Active transport: <StateBadge state={s.transport.toUpperCase()} /> {s.transport === 'mock' ? <span className="muted">— fixture data, no storage.</span> : null}</p>}
       </Panel>
     </div>
   );

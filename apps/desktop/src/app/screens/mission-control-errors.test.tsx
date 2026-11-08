@@ -42,6 +42,20 @@ describe('Mission Control with failing reads', () => {
     expect(screen.queryByText('None in the next 48 h')).toBeNull();
   });
 
+  it('curriculum.daily_plan failing shows the error, not "no study blocks" or "no evidence artifact expected" (NEW-11)', async () => {
+    renderWithIpc(<MissionControl />, failing('curriculum.daily_plan'));
+    await screen.findByText('blocks completed');
+    await waitFor(() => {
+      expect(busyAlerts()).toHaveLength(1);
+    });
+    expect(screen.queryByText(/no study blocks for this date/)).toBeNull();
+    expect(screen.queryByText(/no evidence artifact expected today/)).toBeNull();
+    // Time budget and the Evidence tab (hidden tabpanel is still in the DOM) both say the plan is unavailable, with the code.
+    expect(screen.getAllByText(/daily plan unavailable \(storage\.busy\)/)).toHaveLength(2);
+    expect(screen.getByText(/NO DATA — plan unavailable \(storage\.busy\)/)).toBeInTheDocument();
+    expect(screen.queryByText(/plan not loaded/)).toBeNull();
+  });
+
   it('with every read succeeding the counts are shown with their VERIFIED label', async () => {
     renderWithIpc(<MissionControl />, failing());
     expect(await screen.findByText('blocks completed')).toBeInTheDocument();

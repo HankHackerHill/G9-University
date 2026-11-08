@@ -44,6 +44,9 @@ export function PerformanceDashboard() {
   const competency = useCommand('competency.projection', {});
 
   const loading = attempts.loading || sessions.loading || due.loading || competency.loading;
+  const warnings = mergeWarnings(attempts.warnings, sessions.warnings, due.warnings, competency.warnings);
+  // VERIFIED is claimed only when every read behind the table succeeded without a warning.
+  const verified = [attempts, sessions, due, competency].every((q) => q.data !== null && q.error === null) && warnings.length === 0;
   const allAttempts = attempts.data?.attempts ?? [];
   const finalized = allAttempts.filter((a) => a.state === 'APPROVED_FINAL' && a.grade !== null);
   // first_attempt_pass_rate: APPROVED_FINAL first attempts, EXAM mode, finalized in the rolling 4-week window (backend clock).
@@ -120,7 +123,8 @@ export function PerformanceDashboard() {
           ? noData('queue not loaded')
           : `${backlog.length} (${due.data.overdue.length} overdue · ${due.data.due.length} due today · ${due.data.overflow.length} beyond budget)`,
       evidence: `retention.due → ${backlog === null || backlog.length === 0 ? '—' : backlog.map((r) => r.review_item_id).join(', ')}`,
-      definition: 'Due review items not yet completed: overdue and due today within the budget plus the overflow beyond it (kpi-definitions.md; overflow listed separately).',
+      definition:
+        'Due review items not completed (kpi-definitions.md review_backlog, daily, no minimum n). UI decision: the headline counts overflow too, because an item beyond the budget is still due and not completed; the breakdown lists overflow separately as the definition requires.',
     },
     {
       key: 'validated',
@@ -145,7 +149,7 @@ export function PerformanceDashboard() {
       name: 'Confidence calibration (Brier)',
       value: noData('no confidence reports recorded'),
       evidence: '—',
-      definition: 'Predicted vs observed performance; needs confidence inputs on attempts.',
+      definition: 'Mean Brier score over stated probabilities with reliability bins; rolling 4 weeks; min n 20; discrete questions only (kpi-definitions.md calibration_brier). Needs confidence inputs on attempts, which do not exist yet.',
     },
   ];
 
@@ -154,14 +158,21 @@ export function PerformanceDashboard() {
       <h1>Performance Dashboard</h1>
       <p className="muted">
         Metrics are reproducible read models with drilldown to evidence (M13). A cell reads NO DATA when the underlying records do not exist; no value is estimated or
-        extrapolated. <ProvenanceBadge label="VERIFIED" />
+        extrapolated.{' '}
+        {verified ? (
+          <ProvenanceBadge label="VERIFIED" />
+        ) : (
+          <span className="muted" data-testid="dashboard-provenance-partial">
+            (provenance: partial — a read failed, is pending or carries a backend warning; see above)
+          </span>
+        )}
       </p>
       {attempts.error !== null ? <ErrorDisplay error={attempts.error} onRetry={attempts.reload} /> : null}
       {sessions.error !== null ? <ErrorDisplay error={sessions.error} onRetry={sessions.reload} /> : null}
       {due.error !== null ? <ErrorDisplay error={due.error} onRetry={due.reload} /> : null}
       {competency.error !== null ? <ErrorDisplay error={competency.error} onRetry={competency.reload} /> : null}
       {loading ? <Loading what="metrics" /> : null}
-      <Warnings warnings={mergeWarnings(attempts.warnings, sessions.warnings, due.warnings, competency.warnings)} />
+      <Warnings warnings={warnings} />
       <Panel title="Learning KPIs">
         <Table
           caption="Learning KPIs with evidence references"

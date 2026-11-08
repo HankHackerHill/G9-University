@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { isG9Error } from '../../ipc/client';
@@ -122,6 +122,20 @@ describe('CalendarGrid never hides timed events', () => {
     // An event that began before the week is listed at Monday 00:00.
     expect(screen.getByTestId('cell-2026-11-16:0')).toHaveAttribute('aria-label', expect.stringContaining('Carried over 2026-11-15 23:00 to 02:00'));
     expect(screen.queryByTestId('calendar-outside-hours')).toBeNull();
+  });
+
+  it('a chip carried over from another day shows that day in its text and tooltip, like the cell label (NEW-9)', () => {
+    render(<CalendarGrid weekStart={{ year: 2026, month: 11, day: 16 }} zone={zone} events={events} />);
+    const carried = within(screen.getByTestId('cell-2026-11-16:0')).getByText(/Carried over/);
+    // A bare "23:00" inside Monday's 00:00 row would read as Monday night; the chip carries Sunday's date.
+    expect(carried).toHaveTextContent('2026-11-15 23:00 Carried over');
+    expect(carried).toHaveAttribute('title', 'Carried over 2026-11-15 23:00 to 02:00');
+    const night = within(screen.getByTestId('cell-2026-11-17:22')).getByText(/Night shift/);
+    expect(night).toHaveTextContent('22:30 Night shift');
+    expect(night).toHaveAttribute('title', 'Night shift 22:30 to 2026-11-18 06:00');
+    const mid = within(screen.getByTestId('cell-2026-11-17:10')).getByText(/Mid call/);
+    expect(mid).toHaveTextContent('10:00 Mid call');
+    expect(mid).toHaveAttribute('title', 'Mid call 10:00 to 11:00');
   });
 
   it('with a caller-fixed range lists the events outside it in a note instead of dropping them', () => {

@@ -18,6 +18,28 @@ import { SettingsRecovery } from './SettingsRecovery';
 const KEY_FALLBACK = 'WARNING binding_key.file_fallback: the approval binding key is stored in the documented fallback file, not the OS keyring';
 const MIGRATION_BLOCKED = 'WARNING storage.migration_blocked: pre-migration backup failed; storage is read-only';
 
+/**
+ * Screens that issue no read at mount: their disclosure path is a mutation, driven here so the
+ * intercepted response actually carries the injected warning. Without this the per-screen test
+ * below would assert nothing for them.
+ */
+const DRIVE: Readonly<Record<string, (user: ReturnType<typeof userEvent.setup>) => Promise<void>>> = {
+  'Learning Journal': async (user) => {
+    await user.type(screen.getByLabelText('Title'), 'disclosure check');
+    await user.click(screen.getByRole('button', { name: 'Save note' }));
+  },
+  'Settings/Recovery': async (user) => {
+    await user.click(screen.getByRole('button', { name: 'Create backup' }));
+  },
+};
+
+/**
+ * Screens with no IPC operation besides `system.status` in this build (PROPOSED surfaces): there
+ * is no outcome whose warnings could be dropped. `system.status` warnings are covered by the
+ * shell/Settings test above.
+ */
+const NO_IPC: ReadonlySet<string> = new Set(['Executive Workspace', 'Research Center']);
+
 async function settle(): Promise<void> {
   for (let i = 0; i < 20; i += 1) {
     await act(async () => {
@@ -75,6 +97,21 @@ describe('CommandOutcome.warnings are rendered', () => {
     renderWithIpc(<Component />, harness);
     expect(await screen.findByRole('heading', { level: 1, name: screenDef.title.replace('/', ' / ') })).toBeInTheDocument();
     await settle();
+    const drive = DRIVE[screenDef.title];
+    if (drive !== undefined) {
+      await drive(userEvent.setup());
+      await settle();
+    }
+    if (NO_IPC.has(screenDef.title)) {
+      // Explicitly vacuous: the screen must not have started issuing operations without this list being updated.
+      expect(
+        harness.calls.filter((c) => c.op !== 'system.status').map((c) => c.op),
+        'screen listed as NO_IPC issued an operation',
+      ).toHaveLength(0);
+      return;
+    }
+    // NEW-10: a screen whose responses were never intercepted would make the loop below assert nothing.
+    expect(succeeded.size, `${screenDef.title} issued no successful intercepted operation; the assertions below would be vacuous`).toBeGreaterThan(0);
     for (const op of succeeded) {
       expect(screen.getAllByText(`test.injected.${op}: disclosure attached to ${op}`).length, op).toBeGreaterThan(0);
     }

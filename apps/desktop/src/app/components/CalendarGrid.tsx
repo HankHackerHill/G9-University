@@ -233,8 +233,10 @@ export function CalendarGrid({ weekStart, zone, events, startHour, endHour, onAc
                   }}
                 >
                   {cell.events.map((e) => (
-                    <span className="cal-event" data-kind={e.kind} key={e.event_id} title={`${e.title} ${formatTime(e.start, zone)}–${formatTime(e.end, zone)}`}>
-                      {e.all_day ? e.title : `${formatTime(e.start, zone)} ${e.title}`}
+                    // Chip and tooltip use the same date-qualified times as the cell label: an event carried
+                    // over from another day shows that day's date, never a bare time inside this day's row.
+                    <span className="cal-event" data-kind={e.kind} key={e.event_id} title={e.all_day ? e.title : `${e.title} ${timeRange(e, cell.date, zone)}`}>
+                      {e.all_day ? e.title : `${timeOnDay(e.start, cell.date, zone)} ${e.title}`}
                     </span>
                   ))}
                 </div>
@@ -264,10 +266,12 @@ function cellLabel(cell: Cell, zone: IanaZone): string {
   return `${base}, ${cell.events.length} ${cell.events.length === 1 ? 'event' : 'events'}: ${list}`;
 }
 
+/** `HH:MM` when `utc` falls on the cell's civil day, otherwise `YYYY-MM-DD HH:MM`. */
+function timeOnDay(utc: number, date: CivilDate, zone: IanaZone): string {
+  return formatIsoDate(civilDateOf(utc, zone)) === formatIsoDate(date) ? formatTime(utc, zone) : formatDateTime(utc, zone);
+}
+
 /** `HH:MM to HH:MM`; a start or end on another civil day than the cell carries its date. */
 function timeRange(e: CalendarEvent, date: CivilDate, zone: IanaZone): string {
-  const sameDay = (utc: number): boolean => formatIsoDate(civilDateOf(utc, zone)) === formatIsoDate(date);
-  const start = sameDay(e.start) ? formatTime(e.start, zone) : formatDateTime(e.start, zone);
-  const end = sameDay(e.end) ? formatTime(e.end, zone) : formatDateTime(e.end, zone);
-  return `${start} to ${end}`;
+  return `${timeOnDay(e.start, date, zone)} to ${timeOnDay(e.end, date, zone)}`;
 }

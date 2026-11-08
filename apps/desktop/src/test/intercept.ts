@@ -33,6 +33,7 @@ export function createInterceptHarness(intercept: Interceptor): InterceptHarness
       calls.push({ op, meta, payload });
       return intercept(op, payload, () => mock.invoke(op, meta, payload));
     },
+    onProcessRestart: () => mock.onProcessRestart(),
   };
   let n = 0;
   const client = createClient(transport, {

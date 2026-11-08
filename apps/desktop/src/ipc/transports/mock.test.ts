@@ -172,15 +172,69 @@ describe('mock transport: session machine and timer ledger', () => {
       await client.invoke('session.correct_time', { session_id: interrupted.session_id, interval_id: interval.interval_id, credited_ms: 60 * 60_000, reason: 'x' }),
     );
     expect(tooMuch.code).toBe('correction.exceeds_interval');
-    const fixed = ok(
+    const outcome = ok(
       await client.invoke('session.correct_time', { session_id: interrupted.session_id, interval_id: interval.interval_id, credited_ms: 30 * 60_000, reason: 'laptop suspended' }),
-    ).result;
+    );
+    const fixed = outcome.result;
     expect(fixed.state).toBe('PAUSED');
     expect(fixed.requires_correction).toBe(false);
     expect(fixed.credited_ms).toBe(30 * 60_000);
-    expect(fixed.uncertain_ms).toBe(40 * 60_000);
+    // `Ledger::credited`: the correction supersedes the interval, which leaves uncertain_ms.
+    expect(fixed.uncertain_ms).toBe(0);
     expect(fixed.intervals[0]?.continuity).toBe('UNCERTAIN');
     expect(fixed.corrections).toHaveLength(1);
+    expect(outcome.warnings).toBeUndefined();
+  });
+
+  it('a second interruption (process restart) reopens the correction flow; the latest correction of an interval wins', async () => {
+    const { client, clock, transport } = harness();
+    const interrupted = ok(await client.invoke('session.list', {})).result.sessions.find((s) => s.state === 'INTERRUPTED');
+    if (interrupted === undefined) {
+      throw new Error('fixture has no interrupted session');
+    }
+    const id = interrupted.session_id;
+    const i1 = interrupted.intervals[0]?.interval_id ?? '';
+    ok(await client.invoke('session.correct_time', { session_id: id, interval_id: i1, credited_ms: 30 * 60_000, reason: 'first suspend' }));
+    ok(await client.invoke('session.resume', { session_id: id }));
+    clock.advance(20 * 60_000);
+    expect(transport.onProcessRestart()).toEqual([id]);
+    const again = ok(await client.invoke('session.list', {})).result.sessions.find((s) => s.session_id === id);
+    expect(again?.state).toBe('INTERRUPTED');
+    expect(again?.requires_correction).toBe(true);
+    expect(again?.credited_ms).toBe(30 * 60_000);
+    expect(again?.uncertain_ms).toBe(20 * 60_000);
+    expect(again?.intervals.map((i) => i.continuity)).toEqual(['UNCERTAIN', 'UNCERTAIN']);
+    const i2 = again?.intervals[1]?.interval_id ?? '';
+    const recovered = ok(await client.invoke('session.correct_time', { session_id: id, interval_id: i2, credited_ms: 10 * 60_000, reason: 'second suspend' }));
+    expect(recovered.result.state).toBe('PAUSED');
+    expect(recovered.result.credited_ms).toBe(40 * 60_000);
+    expect(recovered.result.uncertain_ms).toBe(0);
+    expect(recovered.warnings).toBeUndefined();
+    // Superseding correction in a non-INTERRUPTED state: recorded, no transition, latest wins (timer.rs latest_correction_wins).
+    const superseded = ok(await client.invoke('session.correct_time', { session_id: id, interval_id: i1, credited_ms: 25 * 60_000, reason: 'typo in first correction' })).result;
+    expect(superseded.state).toBe('PAUSED');
+    expect(superseded.corrections).toHaveLength(3);
+    expect(superseded.credited_ms).toBe(35 * 60_000);
+    expect(superseded.requires_correction).toBe(false);
+  });
+
+  it('completing an INTERRUPTED session keeps requires_correction true until the uncertain interval is corrected (session_view)', async () => {
+    const { client } = harness();
+    const interrupted = ok(await client.invoke('session.list', {})).result.sessions.find((s) => s.state === 'INTERRUPTED');
+    if (interrupted === undefined) {
+      throw new Error('fixture has no interrupted session');
+    }
+    const id = interrupted.session_id;
+    const done = ok(await client.invoke('session.complete', { session_id: id })).result;
+    expect(done.state).toBe('COMPLETED');
+    expect(done.requires_correction).toBe(true);
+    expect(done.uncertain_ms).toBe(40 * 60_000);
+    const i1 = done.intervals[0]?.interval_id ?? '';
+    const corrected = ok(await client.invoke('session.correct_time', { session_id: id, interval_id: i1, credited_ms: 40 * 60_000, reason: 'after completion' })).result;
+    expect(corrected.state).toBe('COMPLETED');
+    expect(corrected.requires_correction).toBe(false);
+    expect(corrected.credited_ms).toBe(40 * 60_000);
+    expect(corrected.uncertain_ms).toBe(0);
   });
 });
 

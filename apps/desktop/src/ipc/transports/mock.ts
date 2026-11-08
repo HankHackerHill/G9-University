@@ -58,6 +58,7 @@ import type {
   SessionView,
   SkillOutputEnvelope,
   SystemStatus,
+  TimeCorrection,
   TimeInterval,
   Violation,
 } from '../operations';
@@ -325,6 +326,13 @@ export interface MockTransport extends IpcTransport {
   readonly kind: 'mock';
   readonly clock: MockClock;
   readonly zone: IanaZone;
+  /**
+   * Test-only control mirroring `g9_calendar::Ledger::on_process_restart` followed by
+   * `SessionEvent::Interrupt` (A03): every open interval is closed as UNCERTAIN at the current
+   * clock and its session becomes INTERRUPTED. Returns the affected session ids. This is how a
+   * second interruption of the same session is reached in mock mode.
+   */
+  onProcessRestart(): Id[];
 }
 
 export function createMockTransport(options: MockOptions = {}): MockTransport {
@@ -334,6 +342,7 @@ export function createMockTransport(options: MockOptions = {}): MockTransport {
     clock: state.clock,
     zone: state.zone,
     invoke: (op, meta, payload) => Promise.resolve(state.execute(op, meta, payload)),
+    onProcessRestart: () => state.onProcessRestart(),
   };
 }
 
@@ -489,8 +498,7 @@ class MockState {
         last.state = 'INTERRUPTED';
         last.started_at = start;
         last.intervals = [{ interval_id: `${last.session_id}-i1`, start_utc: start, end_utc: start + 40 * 60_000, continuity: 'UNCERTAIN' }];
-        last.uncertain_ms = 40 * 60_000;
-        last.requires_correction = true;
+        recomputeLedger(last);
         last.revision = 3;
       }
     }
@@ -1154,10 +1162,29 @@ class MockState {
       session.open_interval_started_at = null;
     }
     session.state = next;
-    session.requires_correction = next === 'INTERRUPTED';
-    recomputeTime(session);
+    recomputeLedger(session);
     session.revision += 1;
     return { result: stripSession(session), revision: session.revision, resource: { kind: 'STUDY_SESSION', id: session.session_id } };
+  }
+
+  /** See `MockTransport.onProcessRestart`. */
+  onProcessRestart(): Id[] {
+    const now = this.now();
+    const affected: Id[] = [];
+    for (const session of this.sessions.values()) {
+      const open = session.intervals.find((i) => i.end_utc === null);
+      if (open === undefined) {
+        continue;
+      }
+      open.end_utc = now;
+      open.continuity = 'UNCERTAIN';
+      session.open_interval_started_at = null;
+      session.state = applyMachine(SESSION_MACHINE, session.state, 'INTERRUPT', 'session');
+      recomputeLedger(session);
+      session.revision += 1;
+      affected.push(session.session_id);
+    }
+    return affected;
   }
 
   private sessionCorrectTime(payload: unknown, meta: CommandMeta): Handled<SessionView> {
@@ -1180,13 +1207,23 @@ class MockState {
         max_ms: interval.end_utc - interval.start_utc,
       });
     }
-    const next = applyMachine(SESSION_MACHINE, session.state, 'RECOVER', 'session');
+    // g9-app `correct_time`: a correction is accepted in every session state (policy rule
+    // `operator.correct.allow` has no finalized condition; the mode is never EXAM for a study
+    // session), supersedes the credit of the named interval, and recovers an INTERRUPTED
+    // session only once no closed UNCERTAIN interval is left without a correction.
     session.corrections.push({ correction_id: this.nextId('correction'), interval_id: intervalId, credited_ms: credited, reason, corrected_at: this.now() });
-    session.state = next;
-    session.requires_correction = false;
-    recomputeTime(session);
+    const remaining = uncorrectedUncertain(session).map((i) => i.interval_id);
+    const warnings: string[] = [];
+    if (session.state === 'INTERRUPTED') {
+      if (remaining.length > 0) {
+        warnings.push(`${UNCORRECTED_UNCERTAIN_WARNING} ${remaining.join(', ')}`);
+      } else {
+        session.state = applyMachine(SESSION_MACHINE, session.state, 'RECOVER', 'session');
+      }
+    }
+    recomputeLedger(session);
     session.revision += 1;
-    return { result: stripSession(session), revision: session.revision, resource: { kind: 'TIME_INTERVAL', id: intervalId } };
+    return { result: stripSession(session), revision: session.revision, resource: { kind: 'TIME_INTERVAL', id: intervalId }, warnings };
   }
 
   private notesCreate(payload: unknown): Handled<NoteView> {
@@ -1646,6 +1683,9 @@ const EXPORT_NOT_IMPLEMENTED_WARNING = 'export.execution_not_implemented: the pe
 const OBSERVATIONS_NOT_DERIVED_WARNING =
   'competency.observations_not_derived: assessment versions store no difficulty (wave-1 gap); observation derivation is PROPOSED';
 const NOTE_EVIDENCE_NOT_PERSISTED_WARNING = 'notes.evidence_refs_not_persisted: note-level evidence links are PROPOSED (wave-1 storage gap)';
+/** g9-app commands/sessions.rs `correct_time`; the remaining interval ids follow after a space. */
+export const UNCORRECTED_UNCERTAIN_WARNING =
+  'session.uncorrected_uncertain_time: the session stays INTERRUPTED until every UNCERTAIN interval has a correction; remaining:';
 
 function applyMachine<S extends string, E extends string>(table: TransitionTable<S, E>, from: S, event: E, area: string): S {
   const r = transition(table, from, event);
@@ -1659,25 +1699,48 @@ function applyMachine<S extends string, E extends string>(table: TransitionTable
   return r.to;
 }
 
-function recomputeTime(session: SessionRecord): void {
+/** The latest correction of each interval (`Ledger::latest_correction`: corrections are recorded in order). */
+function latestCorrections(session: SessionRecord): Map<Id, TimeCorrection> {
+  const latest = new Map<Id, TimeCorrection>();
+  for (const c of session.corrections) {
+    latest.set(c.interval_id, c);
+  }
+  return latest;
+}
+
+/** Closed UNCERTAIN intervals without any correction (`Ledger::has_uncorrected_uncertain`). */
+function uncorrectedUncertain(session: SessionRecord): TimeInterval[] {
+  const latest = latestCorrections(session);
+  return session.intervals.filter((i) => i.continuity === 'UNCERTAIN' && i.end_utc !== null && !latest.has(i.interval_id));
+}
+
+/**
+ * `Ledger::credited` + `session_view`: a closed interval with a correction is credited with its
+ * latest correction and leaves `uncertain_ms`; otherwise VERIFIED length is credited and
+ * UNCERTAIN length is uncertain. `requires_correction` is INTERRUPTED or any uncorrected
+ * closed UNCERTAIN interval, whatever the state (so it stays true after COMPLETE).
+ */
+function recomputeLedger(session: SessionRecord): void {
+  const latest = latestCorrections(session);
   let credited = 0;
   let uncertain = 0;
   for (const i of session.intervals) {
     if (i.end_utc === null) {
       continue;
     }
+    const correction = latest.get(i.interval_id);
     const len = Math.max(0, i.end_utc - i.start_utc);
-    if (i.continuity === 'VERIFIED') {
+    if (correction !== undefined) {
+      credited += correction.credited_ms;
+    } else if (i.continuity === 'VERIFIED') {
       credited += len;
     } else {
       uncertain += len;
     }
   }
-  for (const c of session.corrections) {
-    credited += c.credited_ms;
-  }
   session.credited_ms = credited;
   session.uncertain_ms = uncertain;
+  session.requires_correction = session.state === 'INTERRUPTED' || uncorrectedUncertain(session).length > 0;
 }
 
 function stripSession(s: SessionRecord): SessionView {

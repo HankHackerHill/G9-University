@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { isG9Error, type InvokeResult } from '../../ipc/client';
-import type { AnchoredLevel, AttemptView, OperationName } from '../../ipc/operations';
+import type { AnchoredLevel, AttemptView } from '../../ipc/operations';
 import type { G9Error } from '../../ipc/types';
 import { formatDateTime } from '../../lib/format';
 import { BASELINE_RUBRIC, parseLevel } from '../../lib/rubric';
@@ -25,6 +25,8 @@ interface ScoreDraft {
 
 const EMPTY_DRAFT: ScoreDraft = { attemptId: null, values: {} };
 
+type MutationOp = 'assessment.begin' | 'assessment.submit' | 'assessment.review_evidence' | 'assessment.grade_provisional';
+
 export function Assessments() {
   const today = useToday();
   const client = useIpc();
@@ -34,18 +36,36 @@ export function Assessments() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<ScoreDraft>(EMPTY_DRAFT);
   const [actionWarnings, setActionWarnings] = useState<readonly string[]>([]);
+  // The AttemptView carried by the last mutation: newer than the listed row until `assessment.list` has caught up.
+  const [fresh, setFresh] = useState<AttemptView | null>(null);
   const finalize = useApprovalFlow<'assessment.approve_final'>();
 
-  const attempts = list.data?.attempts ?? [];
+  const listed = list.data?.attempts ?? [];
+  const finalized = finalize.result !== null && !isG9Error(finalize.result) ? finalize.result.result : null;
+  const attempts = listed.map((a) => {
+    let best = a;
+    for (const f of [fresh, finalized]) {
+      if (f !== null && f.attempt_id === a.attempt_id && f.revision > best.revision) {
+        best = f;
+      }
+    }
+    return best;
+  });
   const selected: AttemptView | undefined = attempts.find((a) => a.attempt_id === selectedId) ?? attempts[0];
+  // Controls stay disabled while a mutation is in flight AND while the list revalidates, so no
+  // click can carry the pre-mutation revision (STALE_REVISION) or an already-left state.
+  const locked = busy || list.loading;
   // A draft belongs to one attempt; selecting another attempt starts from empty inputs.
   const scores: Readonly<Record<string, string>> = draft.attemptId !== null && draft.attemptId === selected?.attempt_id ? draft.values : {};
   const levels: (AnchoredLevel | null)[] = BASELINE_RUBRIC.map((c) => parseLevel(scores[c.code]));
   const allScored = levels.every((l) => l !== null);
 
-  const after = (r: InvokeResult<OperationName>) => {
+  const after = (r: InvokeResult<MutationOp>) => {
     setError(isG9Error(r) ? r : null);
     setActionWarnings(warningsOf(r));
+    if (!isG9Error(r)) {
+      setFresh(r.result);
+    }
     setBusy(false);
     list.reload();
   };
@@ -114,7 +134,7 @@ export function Assessments() {
                     d.mode,
                     <button
                       type="button"
-                      disabled={busy}
+                      disabled={locked}
                       onClick={() => {
                         void begin(d.assessment_id);
                       }}
@@ -160,7 +180,8 @@ export function Assessments() {
           {selected === undefined ? null : (
             <Panel title={selected.title}>
               <p>
-                <code>{selected.attempt_id}</code> <StateBadge state={selected.state} /> variant {selected.variant} · mode {selected.mode} · revision {selected.revision}
+                <code>{selected.attempt_id}</code> <StateBadge state={selected.state} /> variant {selected.variant} · mode {selected.mode} ·{' '}
+                <span data-testid="attempt-revision">revision {selected.revision}</span>
                 {selected.retake_of !== null ? ` · retake of ${selected.retake_of}` : ''}
               </p>
               <p className="muted">
@@ -171,7 +192,7 @@ export function Assessments() {
               <div className="row" role="group" aria-label="Attempt transitions">
                 <button
                   type="button"
-                  disabled={busy || !can(ASSESSMENT_MACHINE, selected.state, 'SUBMIT')}
+                  disabled={locked || !can(ASSESSMENT_MACHINE, selected.state, 'SUBMIT')}
                   onClick={() => {
                     void submit(selected);
                   }}
@@ -180,7 +201,7 @@ export function Assessments() {
                 </button>
                 <button
                   type="button"
-                  disabled={busy || !can(ASSESSMENT_MACHINE, selected.state, 'REVIEW_EVIDENCE')}
+                  disabled={locked || !can(ASSESSMENT_MACHINE, selected.state, 'REVIEW_EVIDENCE')}
                   onClick={() => {
                     void review(selected);
                   }}
@@ -189,7 +210,7 @@ export function Assessments() {
                 </button>
                 <button
                   type="button"
-                  disabled={busy || !allScored || !can(ASSESSMENT_MACHINE, selected.state, 'GRADE_PROVISIONAL')}
+                  disabled={locked || !allScored || !can(ASSESSMENT_MACHINE, selected.state, 'GRADE_PROVISIONAL')}
                   onClick={() => {
                     void grade(selected);
                   }}
@@ -199,7 +220,7 @@ export function Assessments() {
                 <button
                   type="button"
                   className="primary"
-                  disabled={busy || finalize.pending || !can(ASSESSMENT_MACHINE, selected.state, 'APPROVE_FINAL')}
+                  disabled={locked || finalize.pending || !can(ASSESSMENT_MACHINE, selected.state, 'APPROVE_FINAL')}
                   onClick={() => {
                     void approveFinal(selected);
                   }}

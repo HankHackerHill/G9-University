@@ -123,8 +123,12 @@ export function MissionControl() {
           </Panel>
 
           <Panel title="Time budget">
-            {plan.data === null || plan.data.unscheduled ? (
-              <NoData reason="no study blocks for this date" />
+            {plan.error !== null ? (
+              <NoData reason={`daily plan unavailable (${plan.error.code}); the blocks of this date cannot be shown`} />
+            ) : plan.data === null ? (
+              <Loading what="time budget" />
+            ) : plan.data.unscheduled ? (
+              <NoData reason="no study blocks for this date (unscheduled day)" />
             ) : (
               <Table
                 caption={`Blocks for ${plan.data.day_id}: planned ${formatMinutes(plan.data.planned_minutes)}`}
@@ -176,8 +180,12 @@ export function MissionControl() {
                   id: 'evidence',
                   label: 'Evidence',
                   content:
-                    plan.data === null || plan.data.unscheduled ? (
-                      <NoData reason="no evidence artifact expected today" />
+                    plan.error !== null ? (
+                      <NoData reason={`daily plan unavailable (${plan.error.code}); the expected evidence artifact is unknown`} />
+                    ) : plan.data === null ? (
+                      <Loading what="evidence expectation" />
+                    ) : plan.data.unscheduled ? (
+                      <NoData reason="no evidence artifact expected today (unscheduled day)" />
                     ) : (
                       <p>
                         Expected artifact: <strong>{plan.data.evidence_artifact}</strong>. Capture it in the <Link to="/journal">Learning Journal</Link>; evidence
@@ -272,7 +280,7 @@ export function MissionControl() {
           <div>
             <h3>Estimated vs actual</h3>
             {plannedMs === null ? (
-              <span className="muted">NO DATA — plan not loaded</span>
+              <span className="muted">{plan.error === null ? 'NO DATA — plan not loaded' : `NO DATA — plan unavailable (${plan.error.code})`}</span>
             ) : (
               <>
                 <span className="kpi">{formatDuration(plannedMs)}</span> <span className="muted">planned</span>

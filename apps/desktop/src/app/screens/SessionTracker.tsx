@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { isG9Error } from '../../ipc/client';
-import type { SessionView, TimeInterval } from '../../ipc/operations';
+import { useEffect, useId, useRef, useState } from 'react';
+import { isG9Error, type InvokeResult } from '../../ipc/client';
+import type { SessionView, TimeCorrection, TimeInterval } from '../../ipc/operations';
 import type { G9Error, SessionEvent } from '../../ipc/types';
 import { formatDateTime, formatDuration, humanizeEnum } from '../../lib/format';
 import { SESSION_MACHINE, can, type SESSION_OPERATION_EVENTS } from '../../lib/state-machines';
@@ -15,8 +15,9 @@ import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
 
 type SessionOp = keyof typeof SESSION_OPERATION_EVENTS;
+type TransitionOp = Exclude<SessionOp, 'session.correct_time'>;
 
-const CONTROLS: readonly { op: Exclude<SessionOp, 'session.correct_time'>; event: SessionEvent; label: string }[] = [
+const CONTROLS: readonly { op: TransitionOp; event: SessionEvent; label: string }[] = [
   { op: 'session.prepare', event: 'PREPARE', label: 'Prepare' },
   { op: 'session.start', event: 'START', label: 'Start' },
   { op: 'session.pause', event: 'PAUSE', label: 'Pause' },
@@ -24,14 +25,41 @@ const CONTROLS: readonly { op: Exclude<SessionOp, 'session.correct_time'>; event
   { op: 'session.complete', event: 'COMPLETE', label: 'Complete' },
 ];
 
+/** The latest correction per interval: corrections arrive in recording order and the backend credits the last one (timer.rs `latest_correction`). */
+function latestCorrections(session: SessionView): Map<string, TimeCorrection> {
+  const latest = new Map<string, TimeCorrection>();
+  for (const c of session.corrections) {
+    latest.set(c.interval_id, c);
+  }
+  return latest;
+}
+
 /**
- * Closed UNCERTAIN intervals that no correction references yet. A correction always names its
- * interval; a second correction of an already-corrected interval would supersede (replace) that
- * interval's credit, so already-corrected intervals are never offered.
+ * Closed UNCERTAIN intervals that no correction references yet. These are the intervals whose
+ * time is still uncredited; the backend reports `requires_correction` while any exists.
  */
 export function uncorrectedIntervals(session: SessionView): TimeInterval[] {
-  const corrected = new Set(session.corrections.map((c) => c.interval_id));
+  const corrected = latestCorrections(session);
   return session.intervals.filter((i) => i.continuity === 'UNCERTAIN' && i.end_utc !== null && !corrected.has(i.interval_id));
+}
+
+export interface Correctable {
+  interval: TimeInterval;
+  /** The correction currently credited for this interval, or null when it has none. */
+  latest: TimeCorrection | null;
+}
+
+/**
+ * Every closed UNCERTAIN interval, each with the correction currently in force. The backend
+ * accepts a further correction for an already-corrected interval and credits the latest one
+ * (`Ledger::correct`, test `latest_correction_wins`); the earlier rows are kept, so a typo
+ * can be superseded from here instead of being made permanent.
+ */
+export function correctableIntervals(session: SessionView): Correctable[] {
+  const corrected = latestCorrections(session);
+  return session.intervals
+    .filter((i) => i.continuity === 'UNCERTAIN' && i.end_utc !== null)
+    .map((interval) => ({ interval, latest: corrected.get(interval.interval_id) ?? null }));
 }
 
 function intervalLength(i: TimeInterval): number {
@@ -45,38 +73,64 @@ export function SessionTracker() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<G9Error | null>(null);
   const [busy, setBusy] = useState(false);
+  // The SessionView returned by the last mutation. `session.list` is revalidated after every
+  // mutation; until it resolves this is the newest state and revision the backend has told us.
+  const [fresh, setFresh] = useState<SessionView | null>(null);
   const [creditedMinutes, setCreditedMinutes] = useState('0');
   const [reason, setReason] = useState('');
   // The interval to correct is an explicit operator choice, scoped to one session.
   const [intervalChoice, setIntervalChoice] = useState<{ sessionId: string; intervalId: string } | null>(null);
   const [confirmComplete, setConfirmComplete] = useState<string | null>(null);
   const [actionWarnings, setActionWarnings] = useState<readonly string[]>([]);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogId = useId();
 
-  const list = sessions.data?.sessions ?? [];
+  const listed = sessions.data?.sessions ?? [];
+  const list = fresh === null ? listed : listed.map((s) => (s.session_id === fresh.session_id && fresh.revision > s.revision ? fresh : s));
   const interrupted = list.filter((s) => s.state === 'INTERRUPTED');
   const selected: SessionView | undefined = list.find((s) => s.session_id === selectedId) ?? interrupted[0] ?? list.find((s) => s.state === 'RUNNING' || s.state === 'PAUSED') ?? list[0];
-  const candidates = selected === undefined ? [] : uncorrectedIntervals(selected);
+  const uncorrected = selected === undefined ? [] : uncorrectedIntervals(selected);
+  const correctable = selected === undefined ? [] : correctableIntervals(selected);
   const chosen =
     selected !== undefined && intervalChoice !== null && intervalChoice.sessionId === selected.session_id
-      ? candidates.find((i) => i.interval_id === intervalChoice.intervalId)
+      ? correctable.find((c) => c.interval.interval_id === intervalChoice.intervalId)
       : undefined;
-  // The form is offered whenever the backend says a correction is outstanding, not only in INTERRUPTED.
-  const showCorrection = selected !== undefined && (selected.state === 'INTERRUPTED' || selected.requires_correction || candidates.length > 0);
+  // The backend says a correction is outstanding (INTERRUPTED or an uncorrected closed UNCERTAIN interval, in any state).
+  const outstanding = selected !== undefined && (selected.state === 'INTERRUPTED' || selected.requires_correction || uncorrected.length > 0);
+  // Superseding an earlier correction is offered whenever a closed UNCERTAIN interval exists.
+  const showCorrection = outstanding || correctable.length > 0;
+  const confirming = confirmComplete !== null && confirmComplete === selected?.session_id && uncorrected.length > 0;
+  // Every control stays disabled while a mutation is in flight AND while the list revalidates:
+  // a click in that window would carry the pre-mutation revision (STALE_REVISION).
+  const locked = busy || sessions.loading;
 
-  const send = async (op: Exclude<SessionOp, 'session.correct_time'>, session: SessionView) => {
-    setConfirmComplete(null);
-    setBusy(true);
-    const r = await client.invoke(op, { session_id: session.session_id }, { expectedRevision: session.revision });
+  useEffect(() => {
+    if (confirming) {
+      cancelRef.current?.focus();
+    }
+  }, [confirming]);
+
+  const applyOutcome = (r: InvokeResult<SessionOp>) => {
     setError(isG9Error(r) ? r : null);
     setActionWarnings(warningsOf(r));
+    if (!isG9Error(r)) {
+      setFresh(r.result);
+    }
     setBusy(false);
     sessions.reload();
   };
 
-  const requestTransition = (op: Exclude<SessionOp, 'session.correct_time'>, session: SessionView) => {
-    // COMPLETE from INTERRUPTED is a legal edge, but it would leave uncorrected UNCERTAIN time
-    // uncredited for good: ask first.
-    if (op === 'session.complete' && uncorrectedIntervals(session).length > 0 && confirmComplete !== session.session_id) {
+  const send = async (op: TransitionOp, session: SessionView) => {
+    setConfirmComplete(null);
+    setBusy(true);
+    applyOutcome(await client.invoke(op, { session_id: session.session_id }, { expectedRevision: session.revision }));
+  };
+
+  const requestTransition = (op: TransitionOp, session: SessionView) => {
+    // COMPLETE is a legal edge from INTERRUPTED, but it leaves uncorrected UNCERTAIN time
+    // uncredited until someone comes back to correct it: ask first. Only the dialog's own
+    // button sends; pressing Complete again only re-opens the dialog.
+    if (op === 'session.complete' && uncorrectedIntervals(session).length > 0) {
       setConfirmComplete(session.session_id);
       return;
     }
@@ -90,13 +144,10 @@ export function SessionTracker() {
       { session_id: session.session_id, interval_id: interval.interval_id, credited_ms: Math.max(0, Math.round(Number(creditedMinutes) * 60_000)), reason },
       { expectedRevision: session.revision },
     );
-    setError(isG9Error(r) ? r : null);
-    setActionWarnings(warningsOf(r));
     if (!isG9Error(r)) {
       setIntervalChoice(null);
     }
-    setBusy(false);
-    sessions.reload();
+    applyOutcome(r);
   };
 
   return (
@@ -148,7 +199,8 @@ export function SessionTracker() {
           {selected === undefined ? null : (
             <Panel title={`${selected.day_id} · ${humanizeEnum(selected.block)}`}>
               <p>
-                <StateBadge state={selected.state} /> revision {selected.revision} <ProvenanceBadge label="VERIFIED" />
+                <StateBadge state={selected.state} /> <span data-testid="revision">revision {selected.revision}</span>{' '}
+                {sessions.warnings.length === 0 ? <ProvenanceBadge label="VERIFIED" /> : <span className="muted">(read carries backend warnings, see above)</span>}
               </p>
               <dl>
                 <div className="row">
@@ -181,7 +233,7 @@ export function SessionTracker() {
                   <button
                     key={c.op}
                     type="button"
-                    disabled={busy || !can(SESSION_MACHINE, selected.state, c.event)}
+                    disabled={locked || (c.op === 'session.complete' && confirming) || !can(SESSION_MACHINE, selected.state, c.event)}
                     onClick={() => {
                       requestTransition(c.op, selected);
                     }}
@@ -190,16 +242,20 @@ export function SessionTracker() {
                   </button>
                 ))}
               </div>
-              {confirmComplete === selected.session_id && candidates.length > 0 ? (
-                <div className="banner" role="status" data-testid="complete-warning">
-                  <strong>Uncorrected UNCERTAIN time:</strong> completing now leaves {candidates.length} interval{candidates.length === 1 ? '' : 's'} (
-                  {candidates.map((i) => `${i.interval_id} ${formatDuration(intervalLength(i))}`).join(', ')}) without a correction, so that time is never credited.
-                  Record a correction below first to credit it.
+              {confirming ? (
+                <div className="banner" role="alertdialog" aria-labelledby={`${dialogId}-title`} aria-describedby={`${dialogId}-desc`} data-testid="complete-warning">
+                  <strong id={`${dialogId}-title`}>Uncorrected UNCERTAIN time</strong>
+                  <p id={`${dialogId}-desc`}>
+                    Completing now leaves {uncorrected.length} interval{uncorrected.length === 1 ? '' : 's'} (
+                    {uncorrected.map((i) => `${i.interval_id} ${formatDuration(intervalLength(i))}`).join(', ')}) without a correction. That time stays uncertain and
+                    uncredited until a correction is recorded; the backend keeps accepting corrections after completion and the correction form stays available while the
+                    session reports one outstanding. Credit is never assumed. To credit it now, cancel and record the correction first.
+                  </p>
                   <div className="row">
                     <button
                       type="button"
                       className="danger"
-                      disabled={busy}
+                      disabled={locked}
                       onClick={() => {
                         void send('session.complete', selected);
                       }}
@@ -208,6 +264,7 @@ export function SessionTracker() {
                     </button>
                     <button
                       type="button"
+                      ref={cancelRef}
                       onClick={() => {
                         setConfirmComplete(null);
                       }}
@@ -218,8 +275,8 @@ export function SessionTracker() {
                 </div>
               ) : null}
               <p className="muted">
-                Buttons are enabled only for edges in the session machine (PLANNED→READY→RUNNING⇄PAUSED→COMPLETED). The backend re-checks every transition; the UI
-                mirrors, it does not decide.
+                Buttons are enabled only for edges in the session machine (PLANNED→READY→RUNNING⇄PAUSED→COMPLETED) and only once the list has caught up with the last
+                change. The backend re-checks every transition; the UI mirrors, it does not decide.
               </p>
               {showCorrection ? (
                 <form
@@ -228,34 +285,43 @@ export function SessionTracker() {
                   onSubmit={(e) => {
                     e.preventDefault();
                     if (chosen !== undefined) {
-                      void correct(selected, chosen);
+                      void correct(selected, chosen.interval);
                     }
                   }}
                 >
-                  <h3>Correction required</h3>
-                  {candidates.length === 0 ? (
-                    <NoData reason="no closed UNCERTAIN interval without a correction; the backend still reports this session as requiring one" />
+                  <h3>{outstanding ? 'Correction required' : 'Time corrections (superseding)'}</h3>
+                  {correctable.length === 0 ? (
+                    <NoData reason="no closed UNCERTAIN interval; the backend still reports this session as requiring a correction" />
                   ) : (
                     <div className="row">
                       <label htmlFor="correction-interval">Uncertain interval to correct</label>
                       <select
                         id="correction-interval"
-                        value={chosen?.interval_id ?? ''}
+                        value={chosen?.interval.interval_id ?? ''}
                         onChange={(e) => {
                           setIntervalChoice(e.target.value === '' ? null : { sessionId: selected.session_id, intervalId: e.target.value });
                         }}
                       >
                         <option value="">Choose an interval…</option>
-                        {candidates.map((i) => (
+                        {correctable.map(({ interval: i, latest }) => (
                           <option key={i.interval_id} value={i.interval_id}>
-                            {`${i.interval_id} · ${formatDateTime(i.start_utc, today.zone)} → ${i.end_utc === null ? 'open' : formatDateTime(i.end_utc, today.zone)} · ${formatDuration(intervalLength(i))}`}
+                            {`${i.interval_id} · ${formatDateTime(i.start_utc, today.zone)} → ${i.end_utc === null ? 'open' : formatDateTime(i.end_utc, today.zone)} · ${formatDuration(intervalLength(i))}${
+                              latest === null ? ' · uncorrected' : ` · corrected ${formatDuration(latest.credited_ms)} by ${latest.correction_id} (a new correction supersedes it)`
+                            }`}
                           </option>
                         ))}
                       </select>
                     </div>
                   )}
+                  {chosen !== undefined && chosen.latest !== null ? (
+                    <p className="muted" data-testid="supersedes-note">
+                      Supersedes <code>{chosen.latest.correction_id}</code> (currently credited {formatDuration(chosen.latest.credited_ms)}): the backend keeps both rows and credits
+                      the latest one.
+                    </p>
+                  ) : null}
                   <p className="muted">
-                    Only closed UNCERTAIN intervals without a correction are offered; already-corrected intervals keep their recorded credit.
+                    Every closed UNCERTAIN interval is offered. An interval that already has a correction can be corrected again: the backend keeps every correction row and
+                    credits the latest one; the original interval is never edited.
                   </p>
                   <div className="row">
                     <label htmlFor="credited-minutes">Minutes to credit</label>
@@ -263,7 +329,7 @@ export function SessionTracker() {
                       id="credited-minutes"
                       type="number"
                       min={0}
-                      max={chosen === undefined ? undefined : Math.floor(intervalLength(chosen) / 60_000)}
+                      max={chosen === undefined ? undefined : Math.floor(intervalLength(chosen.interval) / 60_000)}
                       value={creditedMinutes}
                       onChange={(e) => {
                         setCreditedMinutes(e.target.value);
@@ -282,7 +348,7 @@ export function SessionTracker() {
                       }}
                     />
                   </div>
-                  <button type="submit" className="primary" disabled={busy || chosen === undefined || reason.trim().length === 0}>
+                  <button type="submit" className="primary" disabled={locked || chosen === undefined || reason.trim().length === 0}>
                     Record correction
                   </button>
                 </form>
