@@ -429,8 +429,10 @@ fn backup_rollback_keeps_the_in_memory_state_equal_to_the_database() {
         g9_storage::backup::manifest_state(h.conn(), &bid).unwrap(),
         Some(BackupState::SnapshotCreated)
     );
+    // The rolled-back command left the stored manifest, and so the next read of
+    // it, exactly as before; an unverified snapshot is not a "last backup".
     let status = h.call("system.status", json!({})).unwrap();
-    assert_eq!(status["result"]["last_backup"]["state"], "SNAPSHOT_CREATED");
+    assert_eq!(status["result"]["last_backup"], Value::Null);
 
     h.conn()
         .execute_batch("DROP TRIGGER inject_step7;")
@@ -438,6 +440,11 @@ fn backup_rollback_keeps_the_in_memory_state_equal_to_the_database() {
     let verified = h.call("backup.verify", json!({ "backup_id": id })).unwrap();
     assert_eq!(verified["result"]["state"], "CHECKED");
     assert_eq!(verified["result"]["revision"], 2);
+    let stored = g9_storage::backup::read_manifest(h.conn(), &bid)
+        .unwrap()
+        .unwrap();
+    assert_eq!(stored.manifest.state, BackupState::Checked);
+    assert_eq!(stored.revision, Revision::new(2));
 }
 
 // ---------------------------------------------------------------------------
@@ -676,29 +683,64 @@ fn read_only_refusal_does_not_direct_the_operator_to_a_missing_restore() {
 }
 
 // ---------------------------------------------------------------------------
-// status.rs:58 — last_backup never silently reports "no backup"
+// status.rs — last_backup is the newest RETAINED manifest in the database, so
+// it survives a restart and never silently reports "no backup"
 // ---------------------------------------------------------------------------
 
-#[test]
-fn status_warns_when_backups_from_an_earlier_process_are_not_read() {
-    let mut h = Harness::with_dirs();
-    let fresh = h.call("system.status", json!({})).unwrap();
-    assert!(!has_warning(
-        &fresh,
-        "system.status.last_backup_process_scoped"
-    ));
+fn retain_backup(h: &mut Harness) -> String {
     let created = h.call("backup.create", json!({})).unwrap();
     let id = created["result"]["backup_id"].as_str().unwrap().to_string();
     h.call("backup.verify", json!({ "backup_id": id })).unwrap();
-    h.call("backup.restore_test", json!({ "backup_id": id }))
+    let tested = h
+        .call("backup.restore_test", json!({ "backup_id": id }))
         .unwrap();
+    assert_eq!(tested["result"]["state"], "RETAINED");
+    id
+}
+
+#[test]
+fn status_reports_the_retained_backup_after_a_restart_without_a_process_scope_warning() {
+    let mut h = Harness::with_dirs();
+    let fresh = h.call("system.status", json!({})).unwrap();
+    assert_eq!(fresh["result"]["last_backup"], Value::Null);
+    assert!(warnings(&fresh).is_empty(), "{fresh}");
+    let id = retain_backup(&mut h);
     h.restart();
     let status = h.call("system.status", json!({})).unwrap();
-    assert_eq!(status["result"]["last_backup"], Value::Null);
+    assert_eq!(status["result"]["last_backup"]["backup_id"], json!(id));
+    assert_eq!(status["result"]["last_backup"]["state"], "RETAINED");
     assert!(
-        has_warning(&status, "system.status.last_backup_process_scoped: 1 "),
+        !has_warning(&status, "system.status.last_backup_process_scoped"),
         "{status}"
     );
+    assert!(warnings(&status).is_empty(), "{status}");
+}
+
+#[test]
+fn last_backup_is_the_newest_retained_manifest_not_the_newest_manifest() {
+    let mut h = Harness::with_dirs();
+    let first = retain_backup(&mut h);
+    h.advance(1_000);
+    // A newer snapshot that was never verified or restore-tested is not a usable backup.
+    let pending = h.call("backup.create", json!({})).unwrap();
+    let pending_id = pending["result"]["backup_id"].as_str().unwrap().to_string();
+    let status = h.call("system.status", json!({})).unwrap();
+    assert_eq!(status["result"]["last_backup"]["backup_id"], json!(first));
+    h.advance(1_000);
+    h.call("backup.verify", json!({ "backup_id": pending_id }))
+        .unwrap();
+    let status = h.call("system.status", json!({})).unwrap();
+    assert_eq!(status["result"]["last_backup"]["backup_id"], json!(first));
+    h.advance(1_000);
+    h.call("backup.restore_test", json!({ "backup_id": pending_id }))
+        .unwrap();
+    let status = h.call("system.status", json!({})).unwrap();
+    assert_eq!(
+        status["result"]["last_backup"]["backup_id"],
+        json!(pending_id)
+    );
+    // `created_at` is the instant the snapshot was requested (one step after the first).
+    assert_eq!(status["result"]["last_backup"]["created_at"], T0 + 1_000);
 }
 
 // ---------------------------------------------------------------------------

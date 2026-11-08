@@ -7,9 +7,13 @@
 //! Two-step drill:
 //!
 //! ```text
-//! g9 crash-drill --data-dir DIR      # prints the RUNNING session, exits without cleanup
-//! g9 init --data-dir DIR             # recovery: interrupted_sessions = [that id], interval UNCERTAIN
+//! g9 crash-drill --scratch --data-dir DIR   # prints the RUNNING session, exits without cleanup
+//! g9 init --data-dir DIR                    # recovery: interrupted_sessions = [that id], interval UNCERTAIN
 //! ```
+//!
+//! The drill writes a seed row directly to storage, so it refuses to run
+//! without `--scratch` (see [`super::require_scratch`]): point it at a throwaway
+//! data directory only.
 //!
 //! The session row itself is materialized through the storage repository
 //! (`seed::materialize_drill_session`) because planned sessions have no IPC

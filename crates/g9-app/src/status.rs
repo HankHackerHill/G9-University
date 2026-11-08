@@ -5,22 +5,26 @@
 //! runtime has no network capability at all, and storage is `READ_ONLY` when
 //! recovery refused writes (broken audit chain or unapplied migrations).
 //!
-//! `last_backup` covers backups created or advanced by this process
-//! (`g9-storage` has no manifest reader yet). When it is `null` but
-//! `backup_manifests` holds rows from an earlier process, the outcome carries
-//! the warning `system.status.last_backup_process_scoped` with their count,
-//! so "no backup" is never reported while backups are on record.
+//! `last_backup` is the newest `RETAINED` manifest in `backup_manifests` (read
+//! with `g9_storage::backup::list_manifests`, so it survives restarts and covers
+//! backups made by other processes on the same data directory); it is `null`
+//! when no manifest is `RETAINED`. A backup that was created but not yet
+//! verified and restore-tested is not a usable backup and is not reported. When
+//! the manifests cannot be read (a stored value does not decode) `last_backup` is
+//! `null` and the outcome carries the warning
+//! `system.status.last_backup_unreadable` with the storage error code, so an
+//! unreadable ledger is never reported as "no backup".
 
 use crate::commands::{rc, to_value};
 use crate::context::AppContext;
 use crate::ops::OpSpec;
 use crate::pipeline::{self, Command, Facts, Mutation};
 use g9_domain::{
-    ApprovalState, Classification, CommandMeta, CommandOutcome, DataDomain, G9Error, ResourceKind,
-    ResourceRef, Revision, SchemaVersion,
+    ApprovalState, BackupState, Classification, CommandMeta, CommandOutcome, DataDomain, G9Error,
+    ResourceKind, ResourceRef, Revision, SchemaVersion,
 };
 use g9_storage::approvals_store;
-use g9_storage::{migrations, Migrator};
+use g9_storage::{backup, Migrator};
 use serde_json::{json, Value};
 
 /// Handle `system.status`.
@@ -61,13 +65,29 @@ pub fn handle(
                 Some(_) => "READ_ONLY",
                 None => "READY",
             };
-            let last_backup = svc
-                .backups
-                .iter()
-                .max_by_key(|(id, b)| (b.manifest.created_at, (*id).clone()))
-                .map(|(id, b)| {
-                    json!({ "backup_id": id, "state": b.manifest.state, "created_at": b.manifest.created_at })
-                });
+            let (last_backup, backup_warning) = match backup::list_manifests(env.conn) {
+                Ok(manifests) => (
+                    // Newest first: the first RETAINED manifest is the last backup.
+                    manifests
+                        .into_iter()
+                        .find(|stored| stored.manifest.state == BackupState::Retained)
+                        .map(|stored| {
+                            json!({
+                                "backup_id": stored.manifest.backup_id,
+                                "state": stored.manifest.state,
+                                "created_at": stored.manifest.created_at,
+                            })
+                        }),
+                    None,
+                ),
+                Err(e) => (
+                    None,
+                    Some(format!(
+                        "system.status.last_backup_unreadable: backup manifests could not be read ({}); last_backup is not known",
+                        e.code()
+                    )),
+                ),
+            };
             let status = json!({
                 "app_version": svc.config.app_version,
                 "schema_version": SchemaVersion::V1,
@@ -88,16 +108,8 @@ pub fn handle(
                 "last_backup": last_backup,
             });
             let mut mutation = Mutation::new(to_value(&status)?, None);
-            if svc.backups.is_empty() {
-                let recorded = migrations::table_counts(env.conn)?
-                    .get("backup_manifests")
-                    .copied()
-                    .unwrap_or(0);
-                if recorded > 0 {
-                    mutation = mutation.with_warning(format!(
-                        "system.status.last_backup_process_scoped: {recorded} backup manifest(s) recorded by an earlier process are not read (no manifest reader); last_backup covers this process only"
-                    ));
-                }
+            if let Some(warning) = backup_warning {
+                mutation = mutation.with_warning(warning);
             }
             Ok(mutation)
         },

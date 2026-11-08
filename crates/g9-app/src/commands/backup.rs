@@ -20,10 +20,22 @@
 //! Hashing attachment bytes against `content_sha256` is a `g9-storage`
 //! verification change (PROPOSED).
 //!
-//! The in-memory backup map (`Services::backups`) mirrors `backup_manifests`
-//! and is updated only after the command transaction committed
-//! (`Mutation::on_commit`), so a rolled-back command never leaves it ahead of
-//! the database.
+//! `backup_manifests` is the source of truth. `backup.verify` and
+//! `backup.restore_test` read the manifest (state, path, hash, anchor,
+//! verification report) and its stored revision with
+//! `g9_storage::backup::read_manifest`, so a backup created by an earlier
+//! process, or by another front end on the same data directory, can be verified,
+//! restore-tested and retained. An unknown id is `NOT_FOUND backup.not_found`; a
+//! stored row that cannot be decoded is `DATA_CORRUPTION storage.row_decode`; a
+//! recorded snapshot path that is relative or outside the approved roots is refused
+//! (`UNAUTHORIZED backup.manifest_path_outside_approved_roots`: stored content is
+//! data, never a licence to read an arbitrary file) before any state changes. The operator label is not
+//! persisted: a manifest loaded from the database has `label: null`.
+//!
+//! The in-memory backup map (`Services::backups`) only remembers the operator
+//! label of backups this process created and is updated only after the command
+//! transaction committed (`Mutation::on_commit`), so a rolled-back command never
+//! leaves it ahead of the database.
 
 use super::{decode, parse_id, rc, to_value};
 use crate::context::{AppContext, KnownBackup, Services};
@@ -37,6 +49,7 @@ use g9_storage::backup::{
     self, AttachmentCheck, SnapshotRequest, VerificationReport, VerifyOptions,
 };
 use g9_storage::BackupManifest;
+use rusqlite::Connection;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -191,31 +204,83 @@ struct BackupRequest {
     backup_id: String,
 }
 
-fn known_facts(
+/// Load a manifest from `backup_manifests` (size from the file's metadata, label
+/// `None`, revision as stored so that the next `record_manifest` update lines up).
+fn load_known(
     svc: &Services,
-    conn: &rusqlite::Connection,
+    conn: &Connection,
     id: &BackupId,
-) -> Result<Facts, G9Error> {
-    match svc.backups.get(id) {
-        Some(known) => Ok(Facts::existing(
-            rc(
-                DataDomain::System,
-                Classification::Internal,
-                known.manifest.state.is_terminal(),
-            ),
-            known.revision,
-        )),
-        None => {
-            if backup::manifest_state(conn, id)?.is_some() {
-                Err(G9Error::precondition_failed(
-                    "backup.manifest_unavailable",
-                    "this backup was recorded by an earlier process; g9-storage exposes no manifest reader yet",
-                ))
-            } else {
-                Err(G9Error::not_found("backup.not_found", "backup not found"))
-            }
+) -> Result<Option<KnownBackup>, G9Error> {
+    let Some(stored) = backup::read_manifest(conn, id)? else {
+        return Ok(None);
+    };
+    if let Some(path) = &stored.manifest.path {
+        // `contains` is lexical and places a relative path under the primary root,
+        // but the file operations that follow use the path as stored (relative to
+        // the process directory), so a relative path would read an arbitrary file
+        // there and drive the manifest to FAILED. Only an absolute path inside an
+        // approved root is accepted.
+        if !path.is_absolute()
+            || !svc
+                .approved_roots
+                .as_ref()
+                .is_some_and(|roots| roots.contains(path))
+        {
+            return Err(G9Error::unauthorized(
+                "backup.manifest_path_outside_approved_roots",
+                "the recorded snapshot path is not inside an approved root",
+            ));
         }
     }
+    let size_bytes = stored
+        .manifest
+        .path
+        .as_ref()
+        .and_then(|path| std::fs::metadata(path).ok())
+        .map(|meta| meta.len());
+    Ok(Some(KnownBackup {
+        manifest: stored.manifest,
+        revision: stored.revision,
+        label: None,
+        size_bytes,
+    }))
+}
+
+/// The backup the command acts on: the database row is authoritative (state and
+/// revision, also when another process advanced it); the in-memory entry of this
+/// process only contributes the operator label. An entry without a row is used
+/// as is.
+fn resolve_known(
+    svc: &Services,
+    conn: &Connection,
+    id: &BackupId,
+) -> Result<Option<KnownBackup>, G9Error> {
+    let remembered = svc.backups.get(id);
+    match load_known(svc, conn, id)? {
+        Some(mut loaded) => {
+            if let Some(remembered) = remembered {
+                loaded.label = remembered.label.clone();
+            }
+            Ok(Some(loaded))
+        }
+        None => Ok(remembered.cloned()),
+    }
+}
+
+fn not_found() -> G9Error {
+    G9Error::not_found("backup.not_found", "backup not found")
+}
+
+fn known_facts(svc: &Services, conn: &Connection, id: &BackupId) -> Result<Facts, G9Error> {
+    let known = resolve_known(svc, conn, id)?.ok_or_else(not_found)?;
+    Ok(Facts::existing(
+        rc(
+            DataDomain::System,
+            Classification::Internal,
+            known.manifest.state.is_terminal(),
+        ),
+        known.revision,
+    ))
 }
 
 fn advance(
@@ -248,12 +313,7 @@ fn advance(
             } else {
                 None
             };
-            let mut known = env
-                .svc
-                .backups
-                .get(&id)
-                .cloned()
-                .ok_or_else(|| G9Error::not_found("backup.not_found", "backup not found"))?;
+            let mut known = resolve_known(env.svc, env.conn, &id)?.ok_or_else(not_found)?;
             let options = verify_options(env.svc);
             let kind = match &scratch {
                 None => {

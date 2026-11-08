@@ -1,7 +1,7 @@
 //! Command-line surface (clap derive). Global options may be written before or
 //! after the subcommand (`g9 init --data-dir D` and `g9 --data-dir D init`).
 
-use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap::{ArgGroup, Args, Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
 /// G9 MENTOR command-line driver: a thin client of the backend command pipeline.
@@ -86,10 +86,12 @@ pub enum Command {
         #[arg(long, value_name = "PATH")]
         manifest: Option<PathBuf>,
     },
-    /// Deterministic scripted week (Stage 03 exit criterion): sessions, journal, Saturday assessment, backups, audit. Exit 0 only on PASS (INCOMPLETE/FAIL exit 2).
+    /// Deterministic scripted week (Stage 03 exit criterion): sessions, journal, Saturday assessment, backups, audit. Exit 0 only on PASS (INCOMPLETE/FAIL exit 2). Writes seed rows straight to storage: requires --scratch.
     SimulateWeek(SimulateArgs),
-    /// Prepare and start a session, then exit without completing it (simulated crash); run `g9 init` afterwards.
-    CrashDrill,
+    /// Prepare and start a session, then exit without completing it (simulated crash); run `g9 init` afterwards. Writes seed rows straight to storage: requires --scratch.
+    CrashDrill(CrashDrillArgs),
+    /// Offline restore: replace the live database with a verified backup snapshot; the old database is moved to <data dir>/quarantine, never deleted. Stop the application first. Prints the plan and exits 1 unless --confirm-replace-live-database is given.
+    Restore(RestoreArgs),
 }
 
 /// `g9 call` arguments.
@@ -123,6 +125,40 @@ pub struct CallArgs {
     pub trace_id: Option<String>,
 }
 
+/// Why `simulate-week` and `crash-drill` need `--scratch`: they bypass the
+/// command pipeline.
+pub const SCRATCH_REFUSAL: &str = "this command writes seed rows directly to storage, bypassing the command pipeline, and must only be pointed at a throwaway data directory; pass --scratch to confirm that --data-dir is disposable (it does not inspect the directory)";
+
+/// `g9 crash-drill` arguments.
+#[derive(Debug, Args)]
+pub struct CrashDrillArgs {
+    /// Acknowledge that `--data-dir` is a disposable directory: the drill writes
+    /// seed rows directly to storage.
+    #[arg(long)]
+    pub scratch: bool,
+}
+
+/// `g9 restore` arguments.
+#[derive(Debug, Args)]
+#[command(group(ArgGroup::new("source").required(true).multiple(false).args(["backup_id", "snapshot"])))]
+pub struct RestoreArgs {
+    /// Restore the snapshot recorded for this backup id in the live database (the
+    /// manifest must be RETAINED and the snapshot inside <data dir>/backups).
+    #[arg(long, value_name = "ID")]
+    pub backup_id: Option<String>,
+    /// Restore this snapshot file; --expect-sha256 is then mandatory.
+    #[arg(long, value_name = "PATH", requires = "expect_sha256")]
+    pub snapshot: Option<PathBuf>,
+    /// Hex SHA-256 the snapshot must have. Mandatory with --snapshot; with
+    /// --backup-id it must equal the manifest's checksum.
+    #[arg(long, value_name = "HEX")]
+    pub expect_sha256: Option<String>,
+    /// Actually replace the live database. Without it the plan is printed and
+    /// nothing is changed (exit 1).
+    #[arg(long)]
+    pub confirm_replace_live_database: bool,
+}
+
 /// `g9 simulate-week` arguments.
 #[derive(Debug, Args)]
 pub struct SimulateArgs {
@@ -138,6 +174,10 @@ pub struct SimulateArgs {
     /// Seed manifest imported when no curriculum version exists.
     #[arg(long, value_name = "PATH")]
     pub manifest: Option<PathBuf>,
+    /// Acknowledge that `--data-dir` is a disposable directory: the week writes
+    /// seed rows directly to storage.
+    #[arg(long)]
+    pub scratch: bool,
 }
 
 /// Interaction mode (wire spelling).
@@ -278,6 +318,7 @@ mod tests {
                 assert_eq!(a.week, 1);
                 assert_eq!(a.fixed_clock, None);
                 assert!(a.manifest.is_none());
+                assert!(!a.scratch);
             }
             other => panic!("unexpected {other:?}"),
         }
@@ -332,9 +373,76 @@ mod tests {
             parse(&["g9", "import-seed"]).command,
             Command::ImportSeed { manifest: None }
         ));
-        assert!(matches!(
-            parse(&["g9", "crash-drill", "--data-dir", "d"]).command,
-            Command::CrashDrill
-        ));
+        match parse(&["g9", "crash-drill", "--data-dir", "d"]).command {
+            Command::CrashDrill(args) => assert!(!args.scratch),
+            other => panic!("unexpected {other:?}"),
+        }
+        match parse(&["g9", "crash-drill", "--scratch"]).command {
+            Command::CrashDrill(args) => assert!(args.scratch),
+            other => panic!("unexpected {other:?}"),
+        }
+        match parse(&[
+            "g9",
+            "simulate-week",
+            "--start-date",
+            "2026-11-16",
+            "--scratch",
+        ])
+        .command
+        {
+            Command::SimulateWeek(args) => assert!(args.scratch),
+            other => panic!("unexpected {other:?}"),
+        }
+    }
+
+    #[test]
+    fn restore_takes_exactly_one_source_and_a_checksum_with_a_snapshot() {
+        match parse(&["g9", "restore", "--backup-id", "b1"]).command {
+            Command::Restore(a) => {
+                assert_eq!(a.backup_id.as_deref(), Some("b1"));
+                assert!(a.snapshot.is_none() && a.expect_sha256.is_none());
+                assert!(!a.confirm_replace_live_database);
+            }
+            other => panic!("unexpected {other:?}"),
+        }
+        let hex = "ab".repeat(32);
+        match parse(&[
+            "g9",
+            "restore",
+            "--snapshot",
+            "s.sqlite",
+            "--expect-sha256",
+            &hex,
+            "--data-dir",
+            "d",
+            "--confirm-replace-live-database",
+        ])
+        .command
+        {
+            Command::Restore(a) => {
+                assert_eq!(
+                    a.snapshot.as_deref(),
+                    Some(std::path::Path::new("s.sqlite"))
+                );
+                assert_eq!(a.expect_sha256.as_deref(), Some(hex.as_str()));
+                assert!(a.confirm_replace_live_database);
+            }
+            other => panic!("unexpected {other:?}"),
+        }
+        // No source, two sources, and a snapshot without a checksum are usage errors.
+        assert!(Cli::try_parse_from(["g9", "restore"]).is_err());
+        assert!(Cli::try_parse_from([
+            "g9",
+            "restore",
+            "--backup-id",
+            "b1",
+            "--snapshot",
+            "s.sqlite",
+            "--expect-sha256",
+            &hex
+        ])
+        .is_err());
+        assert!(Cli::try_parse_from(["g9", "restore", "--snapshot", "s.sqlite"]).is_err());
+        assert!(Cli::try_parse_from(["g9", "restore", "--expect-sha256", &hex]).is_err());
     }
 }

@@ -13,14 +13,14 @@
 //!
 //! | Module | Contract |
 //! |---|---|
-//! | [`cli`] | clap definitions (`g9 init`, `status`, `ops`, `call`, `approve`, `reject`, `approvals`, `import-seed`, `simulate-week`, `crash-drill`) |
+//! | [`cli`] | clap definitions (`g9 init`, `status`, `ops`, `call`, `approve`, `reject`, `approvals`, `import-seed`, `simulate-week`, `crash-drill`, `restore`); `simulate-week` and `crash-drill` refuse to run without `--scratch` |
 //! | [`meta`] | wire `ClientCommandMeta` built like `apps/desktop/src/ipc/client.ts` (uuid v7 ids, schema version 1.0, default scope per operation, **no actor**) |
 //! | [`bootstrap`] | data layout and context construction (mirrors the bridge) |
 //! | [`client`] | dispatch wrapper: envelope/response schema checks, approval round trips |
 //! | [`clock`] | stepping clock for deterministic runs |
 //! | [`seed`] | repository-path materialization for data that has no IPC path yet (labelled `SEEDED`, never through `dispatch`) |
-//! | [`commands`] | one function per subcommand; [`commands::simulate`] is the Stage 03 exit criterion script |
-//! | [`output`] | exit codes (0 ok, 2 `G9Error` or scenario `INCOMPLETE`/`FAIL`, 1 usage/IO) and JSON/human rendering |
+//! | [`commands`] | one function per subcommand; [`commands::simulate`] is the Stage 03 exit criterion script; [`commands::restore`] is the offline restore (`g9_storage::restore`, no SQL here) |
+//! | [`output`] | exit codes (0 ok, 2 `G9Error` or scenario `INCOMPLETE`/`FAIL`, 1 usage/IO or an unconfirmed `g9 restore`) and JSON/human rendering |
 
 pub mod bootstrap;
 pub mod cli;

@@ -188,6 +188,13 @@ impl Harness {
         self.open(db);
     }
 
+    /// Continue the request/idempotency counter at `n`. A harness opened over a
+    /// database an earlier harness used must not reuse its ids (production ids
+    /// are uuid v7); give each lifetime its own range.
+    pub fn continue_ids_from(&mut self, n: u64) {
+        self.n = n;
+    }
+
     pub fn ctx(&mut self) -> &mut AppContext {
         self.ctx.as_mut().unwrap()
     }

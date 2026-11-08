@@ -439,6 +439,14 @@ pub fn recovery_drill() -> Result<ScenarioReport, G9Error> {
         json!("READY"),
         out.value()["storage"]["state"].clone(),
     );
+    r.check_eq(
+        "the pre-crash backup is the last backup after the restart (read from backup_manifests)",
+        json!({ "backup_id": backup_id, "state": "RETAINED" }),
+        json!({
+            "backup_id": out.value()["last_backup"]["backup_id"],
+            "state": out.value()["last_backup"]["state"],
+        }),
+    );
     let out = h.record(
         &mut r,
         "session.list",
@@ -477,12 +485,12 @@ pub fn recovery_drill() -> Result<ScenarioReport, G9Error> {
     );
     check_step(
         &mut r,
-        "verify the pre-crash backup from the new process",
+        "verify the pre-crash backup from the new process (already RETAINED: the stored manifest is read, the transition is refused)",
         &out,
-        "NOT_EVALUATED",
+        "ALLOW",
         "PRECONDITION_FAILED",
-        Some("backup.manifest_unavailable"),
+        Some("backup.illegal_transition"),
     );
-    r.note("Gap (g9-app/g9-storage): backup.verify and backup.restore_test only know backups created by the same process (no manifest reader); after the restart the pre-crash backup is verified at the storage boundary (verify_snapshot) above, not through IPC.");
+    r.note("The restarted process reads the pre-crash manifest from backup_manifests (g9_storage::backup::read_manifest); re-verifying a RETAINED backup is an illegal transition and changes nothing.");
     Ok(r.finish())
 }

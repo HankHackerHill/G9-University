@@ -18,6 +18,11 @@
 //! * [`BackupManifest`] drives the `BackupState` machine
 //!   Requested → SnapshotCreated → Checked → RestoreTested → Retained; failures
 //!   are explicit (`Failed` with a reason).
+//! * [`read_manifest`] and [`list_manifests`] read `backup_manifests` back into
+//!   [`StoredManifest`] values (manifest plus stored revision), so a backup
+//!   created by one process can be verified, restore-tested or restored by the
+//!   next. Stored values that cannot be decoded (unknown state text, invalid
+//!   verification JSON, inconsistent audit anchor) are errors, never defaults.
 //! * [`vacuum_into`] is the alternative for compact exports.
 
 use crate::audit::AuditChain;
@@ -25,7 +30,7 @@ use crate::error::{StorageError, StorageResult};
 use crate::migrations::{foreign_key_check, integrity_check, table_counts, Migrator};
 use crate::sql::enum_to_text;
 use g9_domain::state::BackupEvent;
-use g9_domain::{BackupId, BackupState, UtcMillis};
+use g9_domain::{BackupId, BackupState, Revision, UtcMillis};
 use rusqlite::backup::{Backup, StepResult};
 use rusqlite::{params, Connection, OpenFlags, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -653,5 +658,507 @@ pub fn manifest_state(
     match state {
         None => Ok(None),
         Some(s) => Ok(Some(crate::sql::enum_from_text(&s)?)),
+    }
+}
+
+/// A `backup_manifests` row read back from the database.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StoredManifest {
+    /// The reconstructed manifest.
+    pub manifest: BackupManifest,
+    /// `backup_manifests.revision` as maintained by [`record_manifest`].
+    pub revision: Revision,
+}
+
+const MANIFEST_COLUMNS: &str = "id, created_at, app_version, schema_version, page_count, sha256_of_file, state, \
+     path, audit_anchor_seq, audit_anchor_hash, verification_json, restore_tested_at, failure_reason, revision";
+
+/// Undecoded `backup_manifests` columns (decoding can fail with a storage error,
+/// which a `rusqlite` row mapper cannot return).
+struct RawManifestRow {
+    id: String,
+    created_at: i64,
+    app_version: String,
+    schema_version: i64,
+    page_count: i64,
+    sha256_of_file: String,
+    state: String,
+    path: Option<String>,
+    audit_anchor_seq: Option<i64>,
+    audit_anchor_hash: Option<String>,
+    verification_json: Option<String>,
+    restore_tested_at: Option<i64>,
+    failure_reason: Option<String>,
+    revision: i64,
+}
+
+fn raw_manifest_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<RawManifestRow> {
+    Ok(RawManifestRow {
+        id: row.get(0)?,
+        created_at: row.get(1)?,
+        app_version: row.get(2)?,
+        schema_version: row.get(3)?,
+        page_count: row.get(4)?,
+        sha256_of_file: row.get(5)?,
+        state: row.get(6)?,
+        path: row.get(7)?,
+        audit_anchor_seq: row.get(8)?,
+        audit_anchor_hash: row.get(9)?,
+        verification_json: row.get(10)?,
+        restore_tested_at: row.get(11)?,
+        failure_reason: row.get(12)?,
+        revision: row.get(13)?,
+    })
+}
+
+fn decode_manifest(raw: RawManifestRow) -> StorageResult<StoredManifest> {
+    let backup_id = BackupId::parse(&raw.id)
+        .map_err(|e| StorageError::RowDecode(format!("invalid backup id in row: {e}")))?;
+    let state: BackupState = crate::sql::enum_from_text(&raw.state)?;
+    let schema_version = u32::try_from(raw.schema_version)
+        .map_err(|_| StorageError::RowDecode("schema_version out of range".to_string()))?;
+    let page_count = u64::try_from(raw.page_count)
+        .map_err(|_| StorageError::RowDecode("page_count out of range".to_string()))?;
+    let revision = u64::try_from(raw.revision)
+        .ok()
+        .filter(|r| *r >= 1)
+        .map(Revision::new)
+        .ok_or_else(|| StorageError::RowDecode("revision out of range".to_string()))?;
+    if raw.sha256_of_file.len() != 64 || !raw.sha256_of_file.chars().all(|c| c.is_ascii_hexdigit())
+    {
+        return Err(StorageError::RowDecode(
+            "sha256_of_file is not a 64-char hex digest".to_string(),
+        ));
+    }
+    let audit_anchor = match (raw.audit_anchor_seq, raw.audit_anchor_hash) {
+        (Some(seq), Some(row_hash)) => Some(AuditAnchor { seq, row_hash }),
+        (None, None) => None,
+        _ => {
+            return Err(StorageError::RowDecode(
+                "audit anchor columns are inconsistent".to_string(),
+            ))
+        }
+    };
+    let verification = match raw.verification_json {
+        Some(text) => Some(
+            serde_json::from_str::<VerificationReport>(&text).map_err(|_| {
+                StorageError::RowDecode(
+                    "verification_json is not a verification report".to_string(),
+                )
+            })?,
+        ),
+        None => None,
+    };
+    Ok(StoredManifest {
+        manifest: BackupManifest {
+            backup_id,
+            created_at: UtcMillis::from_millis(raw.created_at),
+            app_version: raw.app_version,
+            schema_version,
+            page_count,
+            sha256_of_file: raw.sha256_of_file,
+            state,
+            path: raw.path.map(PathBuf::from),
+            audit_anchor,
+            verification,
+            restore_tested_at: crate::sql::opt_millis(raw.restore_tested_at),
+            failure_reason: raw.failure_reason,
+        },
+        revision,
+    })
+}
+
+/// Read one manifest with its stored revision; `None` when the id is unknown.
+///
+/// A row whose values cannot be decoded (unknown `state` text, a
+/// `verification_json` that is not a [`VerificationReport`], an inconsistent
+/// audit anchor, out-of-range numbers) is an error (`storage.row_decode`),
+/// never silently defaulted.
+pub fn read_manifest(
+    conn: &Connection,
+    backup_id: &BackupId,
+) -> StorageResult<Option<StoredManifest>> {
+    let raw = conn
+        .query_row(
+            &format!("SELECT {MANIFEST_COLUMNS} FROM backup_manifests WHERE id = ?1"),
+            params![backup_id.as_str()],
+            raw_manifest_row,
+        )
+        .optional()?;
+    raw.map(decode_manifest).transpose()
+}
+
+/// Every manifest, newest first (`created_at` descending, then `id` descending).
+///
+/// One undecodable row fails the whole listing (see [`read_manifest`]).
+pub fn list_manifests(conn: &Connection) -> StorageResult<Vec<StoredManifest>> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {MANIFEST_COLUMNS} FROM backup_manifests ORDER BY created_at DESC, id DESC"
+    ))?;
+    let rows = stmt.query_map([], raw_manifest_row)?;
+    let mut manifests = Vec::new();
+    for row in rows {
+        manifests.push(decode_manifest(row?)?);
+    }
+    Ok(manifests)
+}
+
+/// Open `db_path` read-only (no creation, no migration, no PRAGMA changes) and
+/// read one manifest. For tooling that must inspect a database without
+/// becoming a writer, such as the offline `g9 restore` planner. When no
+/// application holds the file (no `-wal`, `-shm` or `-journal` next to it) the
+/// directory is left exactly as it was found: see [`open_for_inspection`].
+pub fn read_manifest_from_file(
+    db_path: &Path,
+    backup_id: &BackupId,
+) -> StorageResult<Option<StoredManifest>> {
+    let conn = open_for_inspection(db_path)?;
+    conn.busy_timeout(Duration::from_millis(1000))?;
+    conn.pragma_update(None, "trusted_schema", false)?;
+    read_manifest(&conn, backup_id)
+}
+
+/// A read-only connection that leaves no trace in the directory.
+///
+/// A database in WAL mode that no connection holds has no sidecars, and a plain
+/// read-only open creates an empty `-wal` and a `-shm` next to it. When none of
+/// `-wal`, `-shm` and `-journal` exists, nothing holds the file and nothing is
+/// pending in a log, so it is opened `immutable=1` (no locks, no sidecars). When
+/// any of them exists, committed frames may be waiting in the log, which
+/// `immutable` would not see, so the ordinary read-only open is used.
+fn open_for_inspection(db_path: &Path) -> StorageResult<Connection> {
+    let flags = OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX;
+    #[cfg(unix)]
+    {
+        let sidecar_present = ["-wal", "-shm", "-journal"].iter().any(|suffix| {
+            let mut name = db_path.as_os_str().to_owned();
+            name.push(suffix);
+            std::fs::symlink_metadata(PathBuf::from(name)).is_ok()
+        });
+        if !sidecar_present {
+            if let Some(text) = db_path.to_str() {
+                let mut uri = String::from("file:");
+                for c in text.chars() {
+                    match c {
+                        '%' => uri.push_str("%25"),
+                        '?' => uri.push_str("%3f"),
+                        '#' => uri.push_str("%23"),
+                        other => uri.push(other),
+                    }
+                }
+                uri.push_str("?immutable=1");
+                return Ok(Connection::open_with_flags(
+                    uri,
+                    flags | OpenFlags::SQLITE_OPEN_URI,
+                )?);
+            }
+        }
+    }
+    Ok(Connection::open_with_flags(db_path, flags)?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::connection::{Database, OpenOptions};
+
+    fn db() -> Database {
+        Database::open_in_memory(OpenOptions::new("test").applied_at(UtcMillis::from_millis(1)))
+            .unwrap()
+    }
+
+    fn report(missing: Vec<String>) -> VerificationReport {
+        VerificationReport {
+            integrity_check_ok: true,
+            foreign_key_check_ok: true,
+            migration_checksums_ok: true,
+            audit_chain_ok: true,
+            table_counts: BTreeMap::from([
+                ("notes".to_string(), 3),
+                ("backup_manifests".into(), 1),
+            ]),
+            attachment_manifest: AttachmentCheck::Checked {
+                expected: 2,
+                missing,
+            },
+            errors: Vec::new(),
+        }
+    }
+
+    fn manifest(id: &str, created_at: i64, state: BackupState) -> BackupManifest {
+        BackupManifest {
+            backup_id: BackupId::parse(id).unwrap(),
+            created_at: UtcMillis::from_millis(created_at),
+            app_version: "0.1.0-test".to_string(),
+            schema_version: 13,
+            page_count: 42,
+            sha256_of_file: "ab".repeat(32),
+            state,
+            path: Some(PathBuf::from(format!("/data/backups/{id}.sqlite"))),
+            audit_anchor: Some(AuditAnchor {
+                seq: 7,
+                row_hash: "cd".repeat(32),
+            }),
+            verification: Some(report(vec!["missing/ref".to_string()])),
+            restore_tested_at: Some(UtcMillis::from_millis(created_at + 5)),
+            failure_reason: Some("reason.code".to_string()),
+        }
+    }
+
+    #[test]
+    fn every_state_round_trips_through_record_and_read() {
+        let db = db();
+        for (i, state) in BackupState::ALL.iter().enumerate() {
+            let id = format!("bk-{i}");
+            let m = manifest(&id, 1_000 + i as i64, *state);
+            record_manifest(db.conn(), &m, UtcMillis::from_millis(2_000)).unwrap();
+            let stored = read_manifest(db.conn(), &m.backup_id).unwrap().unwrap();
+            assert_eq!(stored.manifest, m, "{state:?}");
+            assert_eq!(stored.revision, Revision::INITIAL, "{state:?}");
+            // `manifest_state` agrees with the reader.
+            assert_eq!(
+                manifest_state(db.conn(), &m.backup_id).unwrap(),
+                Some(*state)
+            );
+        }
+        assert_eq!(
+            list_manifests(db.conn()).unwrap().len(),
+            BackupState::ALL.len()
+        );
+    }
+
+    #[test]
+    fn optional_fields_round_trip_as_none_and_not_checked() {
+        let db = db();
+        let request = SnapshotRequest {
+            backup_id: BackupId::parse("bk-min").unwrap(),
+            requested_at: UtcMillis::from_millis(10),
+            app_version: "0.1.0-test".to_string(),
+        };
+        let mut m = BackupManifest::requested(&request);
+        record_manifest(db.conn(), &m, UtcMillis::from_millis(11)).unwrap();
+        let stored = read_manifest(db.conn(), &m.backup_id).unwrap().unwrap();
+        assert_eq!(stored.manifest, m);
+        assert_eq!(stored.manifest.path, None);
+        assert_eq!(stored.manifest.audit_anchor, None);
+        assert_eq!(stored.manifest.verification, None);
+
+        let mut r = report(Vec::new());
+        r.attachment_manifest = AttachmentCheck::NotChecked;
+        m.verification = Some(r);
+        record_manifest(db.conn(), &m, UtcMillis::from_millis(12)).unwrap();
+        let stored = read_manifest(db.conn(), &m.backup_id).unwrap().unwrap();
+        assert_eq!(stored.manifest, m);
+    }
+
+    #[test]
+    fn stored_revision_follows_record_manifest_updates() {
+        let db = db();
+        let mut m = manifest("bk-rev", 100, BackupState::SnapshotCreated);
+        m.failure_reason = None;
+        record_manifest(db.conn(), &m, UtcMillis::from_millis(101)).unwrap();
+        m.state = BackupState::Checked;
+        record_manifest(db.conn(), &m, UtcMillis::from_millis(102)).unwrap();
+        m.state = BackupState::Retained;
+        record_manifest(db.conn(), &m, UtcMillis::from_millis(103)).unwrap();
+        let stored = read_manifest(db.conn(), &m.backup_id).unwrap().unwrap();
+        assert_eq!(stored.revision, Revision::new(3));
+        assert_eq!(stored.manifest.state, BackupState::Retained);
+    }
+
+    #[test]
+    fn unknown_id_reads_as_none() {
+        let db = db();
+        let id = BackupId::parse("bk-unknown").unwrap();
+        assert_eq!(read_manifest(db.conn(), &id).unwrap(), None);
+        assert_eq!(list_manifests(db.conn()).unwrap(), Vec::new());
+    }
+
+    #[test]
+    fn list_is_newest_first_with_id_as_tie_break() {
+        let db = db();
+        for (id, created) in [("bk-a", 10), ("bk-c", 30), ("bk-b", 20), ("bk-d", 30)] {
+            let m = manifest(id, created, BackupState::Retained);
+            record_manifest(db.conn(), &m, UtcMillis::from_millis(99)).unwrap();
+        }
+        let ids: Vec<String> = list_manifests(db.conn())
+            .unwrap()
+            .iter()
+            .map(|s| s.manifest.backup_id.as_str().to_string())
+            .collect();
+        assert_eq!(ids, ["bk-d", "bk-c", "bk-b", "bk-a"]);
+    }
+
+    /// Run `sql` with CHECK constraints off (the only way to plant a corrupt value).
+    fn corrupt(db: &Database, sql: &str) {
+        db.conn()
+            .execute_batch(&format!(
+                "PRAGMA ignore_check_constraints = ON; {sql}; PRAGMA ignore_check_constraints = OFF;"
+            ))
+            .unwrap();
+    }
+
+    #[test]
+    fn corrupt_state_text_is_an_error_not_a_default() {
+        let db = db();
+        let m = manifest("bk-bad-state", 5, BackupState::Retained);
+        record_manifest(db.conn(), &m, UtcMillis::from_millis(6)).unwrap();
+        corrupt(
+            &db,
+            "UPDATE backup_manifests SET state = 'RETAINED_MAYBE' WHERE id = 'bk-bad-state'",
+        );
+        let err = read_manifest(db.conn(), &m.backup_id).unwrap_err();
+        assert!(matches!(err, StorageError::RowDecode(_)), "{err:?}");
+        assert_eq!(err.code(), "storage.row_decode");
+        assert!(matches!(
+            list_manifests(db.conn()).unwrap_err(),
+            StorageError::RowDecode(_)
+        ));
+    }
+
+    #[test]
+    fn invalid_verification_json_is_an_error() {
+        let db = db();
+        let m = manifest("bk-bad-json", 5, BackupState::Checked);
+        record_manifest(db.conn(), &m, UtcMillis::from_millis(6)).unwrap();
+        // Valid JSON that is not a verification report passes the CHECK.
+        db.conn()
+            .execute(
+                "UPDATE backup_manifests SET verification_json = '{\"integrity_check_ok\": 1}' WHERE id = 'bk-bad-json'",
+                [],
+            )
+            .unwrap();
+        assert!(matches!(
+            read_manifest(db.conn(), &m.backup_id).unwrap_err(),
+            StorageError::RowDecode(_)
+        ));
+        // Malformed JSON (only possible with the CHECK bypassed).
+        corrupt(
+            &db,
+            "UPDATE backup_manifests SET verification_json = '{not json' WHERE id = 'bk-bad-json'",
+        );
+        assert!(matches!(
+            read_manifest(db.conn(), &m.backup_id).unwrap_err(),
+            StorageError::RowDecode(_)
+        ));
+    }
+
+    #[test]
+    fn inconsistent_audit_anchor_and_bad_numbers_are_errors() {
+        let db = db();
+        let m = manifest("bk-bad-anchor", 5, BackupState::Retained);
+        record_manifest(db.conn(), &m, UtcMillis::from_millis(6)).unwrap();
+        corrupt(
+            &db,
+            "UPDATE backup_manifests SET audit_anchor_hash = NULL WHERE id = 'bk-bad-anchor'",
+        );
+        assert!(matches!(
+            read_manifest(db.conn(), &m.backup_id).unwrap_err(),
+            StorageError::RowDecode(_)
+        ));
+        let m2 = manifest("bk-bad-sha", 6, BackupState::Retained);
+        record_manifest(db.conn(), &m2, UtcMillis::from_millis(7)).unwrap();
+        corrupt(
+            &db,
+            "UPDATE backup_manifests SET sha256_of_file = 'zz' || substr(sha256_of_file, 3) WHERE id = 'bk-bad-sha'",
+        );
+        assert!(matches!(
+            read_manifest(db.conn(), &m2.backup_id).unwrap_err(),
+            StorageError::RowDecode(_)
+        ));
+    }
+
+    #[test]
+    fn read_manifest_from_file_opens_read_only() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("live.sqlite");
+        let db = Database::open(
+            &path,
+            OpenOptions::new("test").applied_at(UtcMillis::from_millis(1)),
+        )
+        .unwrap();
+        let m = manifest("bk-file", 5, BackupState::Retained);
+        record_manifest(db.conn(), &m, UtcMillis::from_millis(6)).unwrap();
+        let stored = read_manifest_from_file(&path, &m.backup_id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(stored.manifest, m);
+        assert_eq!(
+            read_manifest_from_file(&path, &BackupId::parse("bk-none").unwrap()).unwrap(),
+            None
+        );
+        // A path that does not exist is an error, never created.
+        let missing = dir.path().join("absent.sqlite");
+        assert!(read_manifest_from_file(&missing, &m.backup_id).is_err());
+        assert!(!missing.exists());
+    }
+
+    fn directory_listing(dir: &Path) -> Vec<(String, u64)> {
+        let mut entries: Vec<(String, u64)> = std::fs::read_dir(dir)
+            .unwrap()
+            .map(|e| {
+                let e = e.unwrap();
+                (
+                    e.file_name().to_string_lossy().into_owned(),
+                    e.metadata().unwrap().len(),
+                )
+            })
+            .collect();
+        entries.sort();
+        entries
+    }
+
+    #[test]
+    fn reading_a_closed_wal_database_leaves_the_directory_as_it_was() {
+        // The application's database is in WAL mode; once its last connection is
+        // closed there is no `-wal` or `-shm`. A plain read-only open would create
+        // both, which made `g9 restore` without confirmation change the directory.
+        // The path has characters that a URI would otherwise take as syntax.
+        let dir = tempfile::tempdir().unwrap();
+        let odd = dir.path().join("a%20b?c#d");
+        std::fs::create_dir(&odd).unwrap();
+        let path = odd.join("live.sqlite");
+        let m = manifest("bk-quiet", 5, BackupState::Retained);
+        {
+            let db = Database::open(
+                &path,
+                OpenOptions::new("test").applied_at(UtcMillis::from_millis(1)),
+            )
+            .unwrap();
+            assert_eq!(db.profile().journal_mode, "wal");
+            record_manifest(db.conn(), &m, UtcMillis::from_millis(6)).unwrap();
+        }
+        let before = directory_listing(&odd);
+        assert_eq!(before.len(), 1, "{before:?}");
+        let stored = read_manifest_from_file(&path, &m.backup_id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(stored.manifest, m);
+        assert_eq!(directory_listing(&odd), before);
+    }
+
+    #[test]
+    fn reading_a_database_an_application_holds_still_sees_committed_frames() {
+        // An open WAL connection (sidecars present) with a committed manifest that
+        // sits in the log: the ordinary read-only open reads through the log.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("live.sqlite");
+        let db = Database::open(
+            &path,
+            OpenOptions::new("test").applied_at(UtcMillis::from_millis(1)),
+        )
+        .unwrap();
+        db.conn()
+            .execute_batch("PRAGMA wal_autocheckpoint = 0")
+            .unwrap();
+        let m = manifest("bk-in-wal", 5, BackupState::Retained);
+        record_manifest(db.conn(), &m, UtcMillis::from_millis(6)).unwrap();
+        assert!(std::fs::metadata(dir.path().join("live.sqlite-wal"))
+            .map(|meta| meta.len() > 0)
+            .unwrap_or(false));
+        let stored = read_manifest_from_file(&path, &m.backup_id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(stored.manifest, m);
     }
 }

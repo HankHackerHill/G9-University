@@ -34,13 +34,18 @@
 //!
 //! ## Gaps in wave-1 APIs (worked around here, reported)
 //!
-//! * `g9_storage::backup` has no manifest reader: backups created by an
-//!   earlier process cannot be verified/restore-tested through IPC
-//!   (`PRECONDITION_FAILED backup.manifest_unavailable`), and
-//!   `system.status.last_backup` covers this process only (warning
-//!   `system.status.last_backup_process_scoped` when earlier manifests exist).
-//! * No live restore: restoring a verified backup into the live database is
-//!   PROPOSED; the `READ_ONLY` refusal says so (`details.live_restore`).
+//! * Backup manifests are read back from `backup_manifests`
+//!   (`g9_storage::backup::read_manifest`/`list_manifests`): `backup.verify` and
+//!   `backup.restore_test` work on backups created by an earlier process, and
+//!   `system.status.last_backup` is the newest `RETAINED` manifest in the
+//!   database. The operator label is not persisted (`label: null` after a
+//!   restart).
+//! * Restore into the live database is offline only: `g9 restore` (`apps/cli`,
+//!   `g9_storage::restore::restore_over_live`) replaces the live file while the
+//!   application is stopped and quarantines the old one. An in-app restore
+//!   operation (a `DataDelete`-class approval bound to the backup id and the live
+//!   revision) and restoring into a running application are PROPOSED; the
+//!   `READ_ONLY` refusal says so (`details.live_restore`).
 //! * Suspend detection (TEC-07) is a stop-time wall/monotonic comparison only;
 //!   the heartbeat ledger needs a `g9-storage` table (PROPOSED).
 //! * The `retention.due` v1.0 vocabulary has no `PROCEDURAL` kind (labelled

@@ -8,6 +8,8 @@
 #   the first replayed idempotency key and executes nothing; the Saturday grade reaches
 #   competency.projection: its evidence_refs include the 3 observations derived from the
 #   finalized attempt, and the self-adjudicated grade is provisional, never VALIDATED)
+#   -> the scratch guard: simulate-week and crash-drill refuse to run without --scratch (they
+#      write seed rows directly to storage), exit 1, and create nothing
 #   -> crash-drill + init (the drill leaves exactly one open interval in storage, checked
 #      read-only in the database before recovery; recovery closes that interval UNCERTAIN
 #      and the session is INTERRUPTED with nothing credited)
@@ -18,6 +20,14 @@
 #   -> skills.invoke in EXAM mode with the registry loaded (exact observed refusal), without a
 #      registry, and in an allowed mode with no model runtime
 #   -> a PROPOSED operation -> exit-code contract
+#   -> backups across processes and the offline restore, each step its own process: a note is created,
+#      then backup.create, backup.verify and backup.restore_test reach RETAINED in three processes and
+#      `g9 status` names the backup; a second note is created after the backup; `g9 restore` without confirmation exits 1 and
+#      leaves the note (read-only SQLite check); wrong --expect-sha256 fails restore.checksum_mismatch
+#      and changes nothing; `g9 restore --confirm-replace-live-database` succeeds, the note written after
+#      the backup is gone and the note written before it is present (the live database is the snapshot,
+#      not a fresh one), the quarantine directory holds the old database with the note,
+#      restore-log.jsonl has one metadata-only line
 #   -> no key material (hex, base64, byte list of every binding.key) in any stdout/stderr.
 # Prints a summary table and exits non-zero on any failed assertion.
 #
@@ -154,6 +164,17 @@ conn.close()
 PY
 }
 
+notes_with_id() { # sqlite file, note id, mode (ro | immutable) -> notes rows with that id (read-only)
+  python3 -I - "$1" "$2" "${3:-ro}" <<'PY'
+import sqlite3, sys
+path, note, mode = sys.argv[1], sys.argv[2], sys.argv[3]
+uri = "file:" + path + ("?mode=ro" if mode == "ro" else "?immutable=1")
+conn = sqlite3.connect(uri, uri=True)
+print(conn.execute("SELECT COUNT(*) FROM notes WHERE id = ?", (note,)).fetchone()[0])
+conn.close()
+PY
+}
+
 echo "== build (CARGO_TARGET_DIR=$CARGO_TARGET_DIR)"
 (cd "$REPO/apps/cli" && cargo build --quiet)
 G9="$CARGO_TARGET_DIR/debug/g9"
@@ -189,7 +210,7 @@ code=$(run "$WORK/import2.json" import-seed --data-dir "$DATA" --no-skills)
 assert_eq "import-seed re-run reports already imported" "0/true" "$code/$(jget "$WORK/import2.json" already_imported)"
 
 echo "== simulate-week (fixed clock)"
-code=$(run "$WORK/week.json" simulate-week --data-dir "$DATA" --no-skills --start-date "$START_DATE" --zone Europe/Berlin --fixed-clock "$FIXED_CLOCK")
+code=$(run "$WORK/week.json" simulate-week --scratch --data-dir "$DATA" --no-skills --start-date "$START_DATE" --zone Europe/Berlin --fixed-clock "$FIXED_CLOCK")
 assert_eq "simulate-week exit code" 0 "$code"
 assert_eq "simulate-week result PASS and complete" "PASS/true/true" "$(jget "$WORK/week.json" result)/$(jget "$WORK/week.json" passed)/$(jget "$WORK/week.json" complete)"
 assert_eq "simulate-week failures" "[]" "$(jget "$WORK/week.json" failures)"
@@ -207,8 +228,8 @@ assert_eq "simulate-week projection lists the finalized attempt's observations" 
 assert_eq "simulate-week self-adjudicated grade is provisional, not VALIDATED" "true/false/true" "$(check_field "$WORK/week.json" "self-adjudicated grade does not validate (provisional, no VALIDATED)" passed)/$(check_field "$WORK/week.json" "self-adjudicated grade does not validate (provisional, no VALIDATED)" validated)/$(check_field "$WORK/week.json" "self-adjudicated grade does not validate (provisional, no VALIDATED)" provisional)"
 # Determinism: two runs on fresh directories (both import the seed) must produce identical step
 # tables, and their full reports may differ only in the data directory and the backend ids.
-code2=$(run "$WORK/week2.json" simulate-week --data-dir "$WORK/data2" --no-skills --start-date "$START_DATE" --zone Europe/Berlin --fixed-clock "$FIXED_CLOCK")
-code3=$(run "$WORK/week3.json" simulate-week --data-dir "$WORK/data3" --no-skills --start-date "$START_DATE" --zone Europe/Berlin --fixed-clock "$FIXED_CLOCK")
+code2=$(run "$WORK/week2.json" simulate-week --scratch --data-dir "$WORK/data2" --no-skills --start-date "$START_DATE" --zone Europe/Berlin --fixed-clock "$FIXED_CLOCK")
+code3=$(run "$WORK/week3.json" simulate-week --scratch --data-dir "$WORK/data3" --no-skills --start-date "$START_DATE" --zone Europe/Berlin --fixed-clock "$FIXED_CLOCK")
 same=$(python3 -I -c 'import json,sys; a=json.load(open(sys.argv[1]))["steps"]; b=json.load(open(sys.argv[2]))["steps"]; print("true" if a==b else "false")' "$WORK/week2.json" "$WORK/week3.json")
 differing=$(python3 -I -c 'import json,sys; a=json.load(open(sys.argv[1])); b=json.load(open(sys.argv[2])); print(",".join(sorted(k for k in set(a)|set(b) if a.get(k)!=b.get(k))))' "$WORK/week2.json" "$WORK/week3.json")
 fresh_steps=$(count_steps "$WORK/week2.json" '')
@@ -218,7 +239,7 @@ assert_eq "simulate-week fresh run = pre-imported run + 4 import steps" "$((step
 # Re-running the same week with the same fixed clock issues the same sequential idempotency keys;
 # the backend replays stored outcomes. The scenario must fail at the first replayed mutating step,
 # never pass its checks on replayed results.
-code=$(run "$WORK/week-again.json" simulate-week --data-dir "$DATA" --no-skills --start-date "$START_DATE" --zone Europe/Berlin --fixed-clock "$FIXED_CLOCK")
+code=$(run "$WORK/week-again.json" simulate-week --scratch --data-dir "$DATA" --no-skills --start-date "$START_DATE" --zone Europe/Berlin --fixed-clock "$FIXED_CLOCK")
 assert_eq "simulate-week re-run on the same data dir is FAIL (exit 2)" "2/FAIL" "$code/$(jget "$WORK/week-again.json" result)"
 again_fail=$(first_fail "$WORK/week-again.json")
 assert_eq "simulate-week re-run fails at the first replayed step; only the audit-growth check fails after it" "session.prepare/FAIL: idempotency.replayed|session.prepare,check:audit chain verifies and grew" "$again_fail"
@@ -226,7 +247,14 @@ assert_eq "simulate-week re-run executed no session (replay is not execution)" 0
 if grep -q "fresh --data-dir" "$WORK/week-again.json"; then row "simulate-week re-run carries the hint" PASS "hint present"; else row "simulate-week re-run carries the hint" FAIL "hint missing"; fi
 
 echo "== crash drill (two steps)"
-code=$(run "$WORK/drill.json" crash-drill --data-dir "$DRILL" --no-skills)
+# The scratch guard: both seed-writing commands refuse without --scratch (exit 1, message, nothing created).
+code=$(run "$WORK/guard-week.json" simulate-week --data-dir "$WORK/guard" --no-skills --start-date "$START_DATE" --zone Europe/Berlin --fixed-clock "$FIXED_CLOCK")
+assert_eq "simulate-week without --scratch is a usage error (exit 1)" 1 "$code"
+code=$(run "$WORK/guard-drill.json" crash-drill --data-dir "$WORK/guard" --no-skills)
+assert_eq "crash-drill without --scratch is a usage error (exit 1)" 1 "$code"
+if grep -q -- "--scratch" "$WORK/guard-week.json.err" && grep -q "seed rows directly to storage" "$WORK/guard-week.json.err" && grep -q "throwaway data directory" "$WORK/guard-drill.json.err"; then row "scratch refusal explains seed rows and a throwaway directory" PASS "message present"; else row "scratch refusal explains seed rows and a throwaway directory" FAIL "message missing"; fi
+assert_eq "refused seed-writing commands created no data directory" absent "$([[ -e "$WORK/guard" ]] && echo present || echo absent)"
+code=$(run "$WORK/drill.json" crash-drill --scratch --data-dir "$DRILL" --no-skills)
 assert_eq "crash-drill exit code" 0 "$code"
 assert_eq "crash-drill session RUNNING" RUNNING "$(jget "$WORK/drill.json" state)"
 session=$(jget "$WORK/drill.json" session_id)
@@ -298,12 +326,66 @@ code=$(run "$WORK/unknown.json" call nope.op --data-dir "$DATA" --no-skills)
 assert_eq "unknown op is INVALID_INPUT" "2/INVALID_INPUT" "$code/$(jget "$WORK/unknown.json" category)"
 code=$(run "$WORK/badjson.json" call system.status --data-dir "$DATA" --no-skills --payload '{bad')
 assert_eq "bad payload JSON is a usage error" 1 "$code"
-code=$(run "$WORK/tuesday.json" simulate-week --data-dir "$WORK/unused" --no-skills --start-date 2026-11-17)
+code=$(run "$WORK/tuesday.json" simulate-week --scratch --data-dir "$WORK/unused" --no-skills --start-date 2026-11-17)
 assert_eq "simulate-week on a Tuesday is a usage error" 1 "$code"
 code=$(run "$WORK/ops.json" ops --schemas)
 assert_eq "ops lists 35 operations" "0/35" "$code/$(jget "$WORK/ops.json" count)"
 code=$(run "$WORK/status.json" status --data-dir "$DATA" --no-skills)
 assert_eq "status after the week: storage READY" "0/READY" "$code/$(jget "$WORK/status.json" result.storage.state)"
+
+echo "== backups across processes and the offline restore (each step its own process)"
+RDATA="$WORK/restore"
+code=$(run "$WORK/r-init.json" init --data-dir "$RDATA" --no-skills)
+assert_eq "restore dir: init exit code" 0 "$code"
+# A note written BEFORE the backup is part of the snapshot: after the restore it must still be there,
+# which a restore that merely quarantined the old database and booted a fresh one would not satisfy.
+code=$(run "$WORK/r-marker.json" call notes.create --data-dir "$RDATA" --no-skills --payload '{"title":"before the backup","body_markdown":"written before the backup","classification":"PRIVATE","domain":"LEARNING"}')
+marker_id=$(jget "$WORK/r-marker.json" result.note_id)
+assert_eq "notes.create before the backup" "0/1" "$code/$(notes_with_id "$RDATA/g9.sqlite" "$marker_id")"
+code=$(run "$WORK/r-create.json" call backup.create --data-dir "$RDATA" --no-skills --payload '{"label":"smoke"}')
+backup_id=$(jget "$WORK/r-create.json" result.backup_id)
+assert_eq "backup.create (process 1)" "0/SNAPSHOT_CREATED" "$code/$(jget "$WORK/r-create.json" result.state)"
+code=$(run "$WORK/r-verify.json" call backup.verify --data-dir "$RDATA" --no-skills --payload "{\"backup_id\":\"$backup_id\"}")
+assert_eq "backup.verify of that backup in a separate process" "0/CHECKED" "$code/$(jget "$WORK/r-verify.json" result.state)"
+code=$(run "$WORK/r-test.json" call backup.restore_test --data-dir "$RDATA" --no-skills --payload "{\"backup_id\":\"$backup_id\"}")
+assert_eq "backup.restore_test in a third process reaches RETAINED" "0/RETAINED" "$code/$(jget "$WORK/r-test.json" result.state)"
+code=$(run "$WORK/r-status.json" status --data-dir "$RDATA" --no-skills)
+assert_eq "status in a fourth process names the retained backup" "0/$backup_id/RETAINED" "$code/$(jget "$WORK/r-status.json" result.last_backup.backup_id)/$(jget "$WORK/r-status.json" result.last_backup.state)"
+code=$(run "$WORK/r-unknown.json" call backup.verify --data-dir "$RDATA" --no-skills --payload '{"backup_id":"01a1ba37-2097-7435-97d0-f1394210d000"}')
+assert_eq "backup.verify of an unknown id is NOT_FOUND" "2/NOT_FOUND/backup.not_found" "$code/$(jget "$WORK/r-unknown.json" category)/$(jget "$WORK/r-unknown.json" code)"
+code=$(run "$WORK/r-note.json" call notes.create --data-dir "$RDATA" --no-skills --payload '{"title":"after the backup","body_markdown":"written after the backup","classification":"PRIVATE","domain":"LEARNING"}')
+note_id=$(jget "$WORK/r-note.json" result.note_id)
+assert_eq "notes.create after the backup" "0/1" "$code/$(notes_with_id "$RDATA/g9.sqlite" "$note_id")"
+live_before=$(sha256sum "$RDATA/g9.sqlite" | cut -d' ' -f1)
+listing_before=$(ls -A "$RDATA" | tr '\n' ',')
+code=$(run "$WORK/r-plan.json" restore --backup-id "$backup_id" --data-dir "$RDATA" --no-skills)
+assert_eq "restore without confirmation prints the plan and exits 1" "1/PLAN/false" "$code/$(jget "$WORK/r-plan.json" restore)/$(jget "$WORK/r-plan.json" changed)"
+assert_eq "restore plan names the snapshot, live path and quarantine directory" "true/true/true" "$([[ "$(jget "$WORK/r-plan.json" snapshot)" == "$RDATA/backups/$backup_id.sqlite" ]] && echo true || echo false)/$([[ "$(jget "$WORK/r-plan.json" live)" == "$RDATA/g9.sqlite" ]] && echo true || echo false)/$([[ "$(jget "$WORK/r-plan.json" quarantine_dir)" == "$RDATA/quarantine" ]] && echo true || echo false)"
+assert_eq "unconfirmed restore left the note in the live database" "1" "$(notes_with_id "$RDATA/g9.sqlite" "$note_id")"
+assert_eq "unconfirmed restore changed no byte of the live database and made no quarantine" "$live_before/absent" "$(sha256sum "$RDATA/g9.sqlite" | cut -d' ' -f1)/$([[ -e "$RDATA/quarantine" ]] && echo present || echo absent)"
+assert_eq "unconfirmed restore created no file in the data directory (no -wal/-shm either)" "$listing_before" "$(ls -A "$RDATA" | tr '\n' ',')"
+wrong_sha=$(printf '0%.0s' $(seq 1 64))
+code=$(run "$WORK/r-wrong.json" restore --backup-id "$backup_id" --expect-sha256 "$wrong_sha" --data-dir "$RDATA" --no-skills --confirm-replace-live-database)
+assert_eq "restore with a wrong --expect-sha256 fails restore.checksum_mismatch" "2/restore.checksum_mismatch" "$code/$(jget "$WORK/r-wrong.json" code)"
+code=$(run "$WORK/r-wrong-snap.json" restore --snapshot "$RDATA/backups/$backup_id.sqlite" --expect-sha256 "$wrong_sha" --data-dir "$RDATA" --no-skills --confirm-replace-live-database)
+assert_eq "restore --snapshot with a wrong checksum fails restore.checksum_mismatch" "2/restore.checksum_mismatch" "$code/$(jget "$WORK/r-wrong-snap.json" code)"
+assert_eq "failed restores changed nothing (live bytes, note, no quarantine, no log, no temp file)" "$live_before/1/absent/absent/0" "$(sha256sum "$RDATA/g9.sqlite" | cut -d' ' -f1)/$(notes_with_id "$RDATA/g9.sqlite" "$note_id")/$([[ -e "$RDATA/quarantine" ]] && echo present || echo absent)/$([[ -e "$RDATA/restore-log.jsonl" ]] && echo present || echo absent)/$(ls "$RDATA" | grep -c 'restore-tmp' || true)"
+code=$(run "$WORK/r-nosha.json" restore --snapshot "$RDATA/backups/$backup_id.sqlite" --data-dir "$RDATA" --no-skills --confirm-replace-live-database)
+assert_eq "restore --snapshot without --expect-sha256 is a usage error" 1 "$code"
+code=$(run "$WORK/r-restore.json" restore --backup-id "$backup_id" --data-dir "$RDATA" --no-skills --confirm-replace-live-database)
+assert_eq "restore with confirmation succeeds" "0/true" "$code/$(jget "$WORK/r-restore.json" restored)"
+assert_eq "restore verified the snapshot and booted READY with the audit chain ok" "READY/true" "$(jget "$WORK/r-restore.json" boot.status.storage.state)/$(jget "$WORK/r-restore.json" boot.recovery.audit_chain_ok)"
+assert_eq "the note written after the backup is gone from the live database" 0 "$(notes_with_id "$RDATA/g9.sqlite" "$note_id")"
+assert_eq "the note written before the backup is in the live database (the snapshot, not a fresh database)" 1 "$(notes_with_id "$RDATA/g9.sqlite" "$marker_id")"
+assert_eq "restore reports the SHA-256 of the snapshot file, which is unchanged" "$(sha256sum "$RDATA/backups/$backup_id.sqlite" | cut -d' ' -f1)" "$(jget "$WORK/r-restore.json" snapshot_sha256)"
+assert_eq "restore verified the snapshot's audit chain (rows > 0)" true "$([[ "$(jget "$WORK/r-restore.json" audit_rows_verified)" =~ ^[1-9][0-9]*$ ]] && echo true || echo false)"
+quarantined_db=$(ls "$RDATA"/quarantine/g9.sqlite.*.quarantine | head -n 1)
+assert_eq "quarantine directory (0700) holds the old database with the note" "700/1" "$(stat -c %a "$RDATA/quarantine")/$(notes_with_id "$quarantined_db" "$note_id" immutable)"
+assert_eq "restore-log.jsonl has exactly one line" 1 "$(wc -l < "$RDATA/restore-log.jsonl")"
+assert_eq "restore-log.jsonl holds metadata only (timestamp, snapshot, sha256, quarantined)" "quarantined,sha256,snapshot,timestamp" "$(python3 -I -c 'import json,sys; print(",".join(sorted(json.loads(open(sys.argv[1]).readline()).keys())))' "$RDATA/restore-log.jsonl")"
+cp "$RDATA/restore-log.jsonl" "$WORK/r-restore-log.json"
+code=$(run "$WORK/r-status-after.json" status --data-dir "$RDATA" --no-skills)
+assert_eq "status after the restore: READY (the snapshot predates its own manifest row, so no last_backup)" "0/READY/null" "$code/$(jget "$WORK/r-status-after.json" result.storage.state)/$(jget "$WORK/r-status-after.json" result.last_backup)"
 
 echo "== key material"
 # Every binding.key created above, in every text encoding (hex both cases, base64 standard and

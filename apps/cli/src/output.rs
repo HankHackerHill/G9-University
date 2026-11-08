@@ -3,7 +3,9 @@
 //! * exit 0 — success; the result is printed as JSON (or in the `--human` form).
 //! * exit 2 — the backend refused (`G9Error`, printed serialized) or a scripted
 //!   scenario did not `PASS` (`INCOMPLETE` or `FAIL`; its report is printed).
-//! * exit 1 — usage or host I/O error (message on stderr).
+//! * exit 1 — usage or host I/O error (message on stderr), or a destructive
+//!   command that was not confirmed (`g9 restore` without
+//!   `--confirm-replace-live-database`: the plan on stdout, nothing changed).
 //!
 //! Nothing here ever prints the binding key: the only key handle in the
 //! process is `g9_policy::BindingKey`, whose `Debug` output is redacted, and
@@ -34,6 +36,9 @@ pub enum CliError {
     /// A scripted scenario did not PASS (`INCOMPLETE` or `FAIL`; exit 2). Carries the report.
     #[error("scenario {}", scenario_result(.0))]
     Scenario(Value),
+    /// A destructive command was not confirmed (exit 1). Carries the plan; nothing was changed.
+    #[error("not confirmed: nothing was changed")]
+    Unconfirmed(Value),
 }
 
 /// Wire spelling of an error category (`APPROVAL_REQUIRED`, …).
@@ -71,7 +76,7 @@ impl CliError {
     /// Process exit code.
     pub fn exit_code(&self) -> i32 {
         match self {
-            CliError::Usage(_) | CliError::Io(_) => EXIT_USAGE,
+            CliError::Usage(_) | CliError::Io(_) | CliError::Unconfirmed(_) => EXIT_USAGE,
             CliError::Backend(_) | CliError::Scenario(_) => EXIT_REFUSED,
         }
     }
@@ -145,6 +150,14 @@ pub fn render_error(error: &CliError, human: bool) -> Rendered {
             stdout: Some(render_value(report, human)),
             stderr: Some(format!("g9: scenario {}", scenario_result(report))),
             code: EXIT_REFUSED,
+        },
+        CliError::Unconfirmed(plan) => Rendered {
+            stdout: Some(render_value(plan, human)),
+            stderr: Some(
+                "g9: not confirmed; nothing was changed (pass --confirm-replace-live-database to replace the live database)"
+                    .to_string(),
+            ),
+            code: EXIT_USAGE,
         },
     }
 }
@@ -271,6 +284,17 @@ mod tests {
             2
         );
         assert_eq!(CliError::Scenario(json!({})).exit_code(), 2);
+        assert_eq!(CliError::Unconfirmed(json!({})).exit_code(), 1);
+    }
+
+    #[test]
+    fn an_unconfirmed_plan_is_printed_on_stdout_with_exit_1() {
+        let plan = json!({ "confirmed": false, "live": "/d/g9.sqlite" });
+        let r = render_error(&CliError::Unconfirmed(plan.clone()), false);
+        assert_eq!(r.code, 1);
+        let printed: Value = serde_json::from_str(r.stdout.as_deref().unwrap()).unwrap();
+        assert_eq!(printed, plan);
+        assert!(r.stderr.as_deref().unwrap().contains("nothing was changed"));
     }
 
     #[test]

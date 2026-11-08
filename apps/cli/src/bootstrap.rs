@@ -33,6 +33,10 @@ pub const ATTACHMENTS_DIR: &str = "attachments";
 pub const BACKUPS_DIR: &str = "backups";
 /// Restore-test and migration dry-run scratch directory.
 pub const SCRATCH_DIR: &str = "scratch";
+/// Where `g9 restore` moves the replaced database and its sidecars (never deleted).
+pub const QUARANTINE_DIR: &str = "quarantine";
+/// Append-only, metadata-only log of `g9 restore` runs.
+pub const RESTORE_LOG_FILE: &str = "restore-log.jsonl";
 /// Default data directory name under `$XDG_DATA_HOME` / `~/.local/share`.
 pub const DEFAULT_DATA_DIR_NAME: &str = "g9-mentor";
 
@@ -137,15 +141,7 @@ impl DataLayout {
     /// Create the root if needed and build the layout over its canonical path
     /// (`g9-app` requires absolute, normalized approved roots).
     pub fn prepare(requested: &Path) -> Result<Self, CliError> {
-        let absolute = if requested.is_absolute() {
-            requested.to_path_buf()
-        } else {
-            std::env::current_dir()
-                .map_err(|e| CliError::io("current directory", &e))?
-                .join(requested)
-        };
-        platform::ensure_private_dir(&absolute).map_err(|e| CliError::io("data directory", &e))?;
-        let root = fs::canonicalize(&absolute).map_err(|e| CliError::io("data directory", &e))?;
+        let root = prepare_root(requested)?;
         let layout = Self {
             database: root.join(DATABASE_FILE),
             attachments: root.join(ATTACHMENTS_DIR),
@@ -176,6 +172,30 @@ impl DataLayout {
         }
         Ok(layout)
     }
+}
+
+/// `requested` made absolute against the working directory (no filesystem access
+/// beyond the working directory lookup).
+pub fn absolute_path(requested: &Path) -> Result<PathBuf, CliError> {
+    if requested.is_absolute() {
+        Ok(requested.to_path_buf())
+    } else {
+        Ok(std::env::current_dir()
+            .map_err(|e| CliError::io("current directory", &e))?
+            .join(requested))
+    }
+}
+
+/// Create the data directory root when needed (`0700`) and return its canonical path.
+pub fn prepare_root(requested: &Path) -> Result<PathBuf, CliError> {
+    let absolute = absolute_path(requested)?;
+    platform::ensure_private_dir(&absolute).map_err(|e| CliError::io("data directory", &e))?;
+    fs::canonicalize(&absolute).map_err(|e| CliError::io("data directory", &e))
+}
+
+/// Create (when needed) and append one line to a `0600` log file, then sync it.
+pub fn append_private_line(path: &Path, line: &str) -> std::io::Result<()> {
+    platform::append_private_line(path, line)
 }
 
 /// Everything needed to open the backend.
@@ -392,6 +412,19 @@ mod platform {
         fs::set_permissions(path, fs::Permissions::from_mode(wanted))
     }
 
+    /// Append `line` plus a newline to `path`, creating it `0600`; the data is synced.
+    pub(super) fn append_private_line(path: &Path, line: &str) -> io::Result<()> {
+        use std::io::Write;
+        let mut file = OpenOptions::new()
+            .append(true)
+            .create(true)
+            .mode(0o600)
+            .open(path)?;
+        file.write_all(line.as_bytes())?;
+        file.write_all(b"\n")?;
+        file.sync_all()
+    }
+
     /// Create an empty `0600` file unless the path exists.
     pub(super) fn precreate_private_file(path: &Path) -> io::Result<()> {
         match OpenOptions::new()
@@ -423,6 +456,17 @@ mod platform {
 
     pub(super) fn precreate_private_file(_path: &Path) -> io::Result<()> {
         Ok(())
+    }
+
+    pub(super) fn append_private_line(path: &Path, line: &str) -> io::Result<()> {
+        use std::io::Write;
+        let mut file = fs::OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(path)?;
+        file.write_all(line.as_bytes())?;
+        file.write_all(b"\n")?;
+        file.sync_all()
     }
 }
 

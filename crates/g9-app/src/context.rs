@@ -102,16 +102,16 @@ impl Transport {
     }
 }
 
-/// A backup manifest known to this process, with the bookkeeping the storage
-/// layer does not expose a reader for (`backup_manifests` has no load API in
-/// wave 1; see the crate docs "Gaps").
+/// A backup manifest as the commands act on it: the `backup_manifests` row
+/// (read with `g9_storage::backup::read_manifest`) plus the bookkeeping that is
+/// not stored (operator label, snapshot size from the file's metadata).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KnownBackup {
     /// The manifest (state machine + verification report).
     pub manifest: BackupManifest,
     /// `backup_manifests.revision` as maintained by `record_manifest`.
     pub revision: Revision,
-    /// Operator label (not persisted by storage).
+    /// Operator label (not persisted by storage; `None` after a restart).
     pub label: Option<String>,
     /// Snapshot size in bytes, when known.
     pub size_bytes: Option<u64>,
@@ -273,7 +273,8 @@ pub struct Services {
     pub config: AppConfig,
     /// Validated host roots (`None` when no root is configured).
     pub approved_roots: Option<ApprovedRoots>,
-    /// Backups created or advanced in this process.
+    /// Backups created or advanced in this process (a cache over
+    /// `backup_manifests`, which is authoritative; see `commands::backup`).
     pub backups: BTreeMap<BackupId, KnownBackup>,
     /// Ids of timer intervals opened in this process lifetime (monotonic epoch).
     pub epoch_intervals: BTreeSet<String>,

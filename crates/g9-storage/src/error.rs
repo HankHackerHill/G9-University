@@ -15,6 +15,59 @@ pub type StorageResult<T> = Result<T, StorageError>;
 /// Prefix used by every immutability trigger in the migrations (`RAISE(ABORT, 'IMMUTABLE: ...')`).
 pub const IMMUTABLE_PREFIX: &str = "IMMUTABLE:";
 
+/// Stable refusal codes of [`crate::restore::restore_over_live`]. Each maps to
+/// one closed error category; the `restore.*` code is what the operator and the
+/// command-line driver see.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RestoreCode {
+    /// The snapshot's SHA-256 differs from the expected value (or the file
+    /// changed while it was being copied).
+    ChecksumMismatch,
+    /// The snapshot's schema version is newer than the newest migration this
+    /// build knows.
+    SchemaTooNew,
+    /// Another connection holds or uses the live database; nothing was changed.
+    DatabaseInUse,
+    /// The snapshot path is unusable (missing, not a regular file, not a
+    /// self-contained snapshot) or the expected checksum is malformed.
+    SnapshotInvalid,
+    /// The snapshot and the live database are the same file.
+    SnapshotIsLive,
+    /// The live database path is unusable (missing parent directory, a directory).
+    LivePathInvalid,
+    /// Moving the files failed; the live database was put back where possible.
+    SwapFailed,
+}
+
+impl RestoreCode {
+    /// Stable machine-readable code (`restore.<name>`).
+    pub const fn code(self) -> &'static str {
+        match self {
+            RestoreCode::ChecksumMismatch => "restore.checksum_mismatch",
+            RestoreCode::SchemaTooNew => "restore.schema_too_new",
+            RestoreCode::DatabaseInUse => "restore.database_in_use",
+            RestoreCode::SnapshotInvalid => "restore.snapshot_invalid",
+            RestoreCode::SnapshotIsLive => "restore.snapshot_is_live",
+            RestoreCode::LivePathInvalid => "restore.live_path_invalid",
+            RestoreCode::SwapFailed => "restore.swap_failed",
+        }
+    }
+
+    /// Closed error category.
+    pub const fn category(self) -> ErrorCategory {
+        match self {
+            RestoreCode::ChecksumMismatch => ErrorCategory::DataCorruption,
+            RestoreCode::SchemaTooNew | RestoreCode::DatabaseInUse => {
+                ErrorCategory::PreconditionFailed
+            }
+            RestoreCode::SnapshotInvalid
+            | RestoreCode::SnapshotIsLive
+            | RestoreCode::LivePathInvalid => ErrorCategory::InvalidInput,
+            RestoreCode::SwapFailed => ErrorCategory::ResourceUnavailable,
+        }
+    }
+}
+
 /// Errors raised by the storage layer.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum StorageError {
@@ -107,6 +160,14 @@ pub enum StorageError {
     /// Stored JSON/enum text could not be decoded into the expected type.
     #[error("stored row could not be decoded: {0}")]
     RowDecode(String),
+    /// An offline restore was refused (`restore.*` code); the message is metadata only.
+    #[error("restore refused: {message}")]
+    Restore {
+        /// Stable refusal code.
+        code: RestoreCode,
+        /// Human-readable reason without paths or content.
+        message: String,
+    },
     /// Any other failure; the cause was logged locally and is redacted here.
     #[error("internal storage error ({0})")]
     Internal(&'static str),
@@ -136,6 +197,7 @@ impl StorageError {
             StorageError::NotImplemented(_) => "storage.not_implemented",
             StorageError::Verification(_) => "storage.backup_verification_failed",
             StorageError::RowDecode(_) => "storage.row_decode",
+            StorageError::Restore { code, .. } => code.code(),
             StorageError::Internal(_) => "storage.internal",
         }
     }
@@ -162,7 +224,16 @@ impl StorageError {
             StorageError::NotFound(_) => ErrorCategory::NotFound,
             StorageError::StaleRevision { .. } => ErrorCategory::StaleRevision,
             StorageError::Io { .. } => ErrorCategory::ResourceUnavailable,
+            StorageError::Restore { code, .. } => code.category(),
             StorageError::Internal(_) => ErrorCategory::Internal,
+        }
+    }
+
+    /// A restore refusal with a stable code.
+    pub fn restore(code: RestoreCode, message: impl Into<String>) -> Self {
+        StorageError::Restore {
+            code,
+            message: message.into(),
         }
     }
 
@@ -332,6 +403,10 @@ mod tests {
             StorageError::NotImplemented("deletion.study_session"),
             StorageError::Verification(vec!["integrity".into()]),
             StorageError::RowDecode("c".into()),
+            StorageError::Restore {
+                code: RestoreCode::DatabaseInUse,
+                message: "x".into(),
+            },
             StorageError::Internal("x"),
         ];
         for e in samples {
@@ -341,6 +416,55 @@ mod tests {
             assert_eq!(g.category, cat, "{e:?}");
             assert!(g.code.contains('.'), "{e:?}");
             assert!(!g.message.contains("backtrace"));
+        }
+    }
+
+    #[test]
+    fn every_restore_code_has_a_stable_restore_prefixed_code_and_closed_category() {
+        let all = [
+            (
+                RestoreCode::ChecksumMismatch,
+                "restore.checksum_mismatch",
+                ErrorCategory::DataCorruption,
+            ),
+            (
+                RestoreCode::SchemaTooNew,
+                "restore.schema_too_new",
+                ErrorCategory::PreconditionFailed,
+            ),
+            (
+                RestoreCode::DatabaseInUse,
+                "restore.database_in_use",
+                ErrorCategory::PreconditionFailed,
+            ),
+            (
+                RestoreCode::SnapshotInvalid,
+                "restore.snapshot_invalid",
+                ErrorCategory::InvalidInput,
+            ),
+            (
+                RestoreCode::SnapshotIsLive,
+                "restore.snapshot_is_live",
+                ErrorCategory::InvalidInput,
+            ),
+            (
+                RestoreCode::LivePathInvalid,
+                "restore.live_path_invalid",
+                ErrorCategory::InvalidInput,
+            ),
+            (
+                RestoreCode::SwapFailed,
+                "restore.swap_failed",
+                ErrorCategory::ResourceUnavailable,
+            ),
+        ];
+        for (code, text, category) in all {
+            let e = StorageError::restore(code, "reason");
+            assert_eq!(e.code(), text);
+            assert_eq!(e.category(), category);
+            let g: G9Error = e.into();
+            assert_eq!(g.code, text);
+            assert_eq!(g.category, category);
         }
     }
 

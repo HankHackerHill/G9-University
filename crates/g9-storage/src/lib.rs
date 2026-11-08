@@ -17,6 +17,11 @@
 //!   chain, table counts, attachment manifest), restore into a disposable copy and
 //!   the `BackupState` machine Requested → SnapshotCreated → Checked → RestoreTested
 //!   → Retained. Live-file copies and `.dump` recipes are rejected by design (C04/C05).
+//! * [`restore`] — offline restore of a verified snapshot over the live database
+//!   file ([`restore::restore_over_live`]): checksum, verification of a copy next
+//!   to the live file, exclusive access, quarantine of the replaced database and
+//!   its sidecars (never deleted), atomic rename. Restoring into a running
+//!   application and an in-app restore operation are PROPOSED.
 //! * [`audit`] — the hash-chained, metadata-only `audit_metadata` ledger
 //!   (`row_hash = sha256(prev_hash || canonical_json(row))`) with chain verification.
 //! * [`idempotency`] — the `(actor_id, idempotency_key)` replay store used by the
@@ -60,16 +65,19 @@ pub mod events;
 pub mod idempotency;
 pub mod migrations;
 pub mod repos;
+pub mod restore;
 pub(crate) mod sql;
 
 pub use audit::{AuditChain, AuditDecision, AuditEntry, AuditOutcome, AuditRecord, ChainReport};
 pub use backup::{
-    AttachmentCheck, BackupManifest, SnapshotRequest, VerificationReport, VerifyOptions,
+    AttachmentCheck, BackupManifest, SnapshotRequest, StoredManifest, VerificationReport,
+    VerifyOptions,
 };
 pub use connection::{Database, MigrationPolicy, OpenOptions, PragmaProfile, Synchronous};
-pub use error::{StorageError, StorageResult};
+pub use error::{RestoreCode, StorageError, StorageResult};
 pub use migrations::{
     AppliedMigration, ChecksumReport, DryRunReport, Migration, MigrationReport, Migrator,
     CURRENT_SCHEMA_VERSION, EMBEDDED_MIGRATIONS,
 };
 pub use repos::{ReadScope, RepoError, RepoResult};
+pub use restore::{restore_over_live, RestoreOptions, RestoreReport};

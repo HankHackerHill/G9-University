@@ -52,7 +52,7 @@ Scenarios: 24; PASS 24; FAIL 0.
 | G3 | No IPC path creates study sessions, competencies, assessment definitions or observations other than the ones `assessment.approve_final` derives from a final grade (FILL_CURRICULUM and catalogue import are PROPOSED): fixtures insert them through the g9-storage repositories. |
 | G4 | g9-app RuntimeBackend maps a structured-output schema failure (InferenceError::InvalidOutput) to BackendError::Runtime, so a schema-invalid or non-JSON model reply surfaces as INTERNAL skills.backend.runtime instead of PRECONDITION_FAILED skills.output_rejected; the reply is still rejected and nothing is persisted (A11). |
 | G5 | No model-load IPC operation: modified model weights (ST06) are checked at the g9_ai_adapter::verify_checksum boundary only; dependency bans are CI (cargo deny) and NOT RUN here. |
-| G6 | g9-app backup.verify/restore_test only know backups created by the same process (no manifest reader in g9-storage): after a restart the pre-crash backup answers PRECONDITION_FAILED backup.manifest_unavailable and is verified at the g9_storage::backup::verify_snapshot boundary instead (A08). |
+| G6 | No in-app restore operation: restoring a verified backup into the live database is the offline g9_storage::restore::restore_over_live (the `g9 restore` command, application stopped); an IPC restore with a DataDelete-class approval bound to the backup id and the live revision, and restoring into a running application, are PROPOSED (A08). |
 | G7 | skills.invoke of a LEARNING-only package in BUSINESS scope is allowed by the g9-app policy (recorded ALLOW) and refused by the g9-skills orchestrator preflight (PRECONDITION_FAILED skills.preflight_failed); the refusal holds but is not a policy decision row (ST11). |
 | G8 | ST03 expects contradicting evidence to be flagged for the operator; no IPC path ingests an observation in wave 1, so only the storage refusal of model provenance is evidenced. |
 
@@ -348,7 +348,7 @@ Gate: A03, A08 · Test: `tests/recovery/a08_recovery_drill.rs`
 | 10 | `system.status` | NO_AUDIT_ROW | OK | — |
 | 11 | `session.list` | NO_AUDIT_ROW | OK | — |
 | 12 | `notes.create` | ALLOW | OK | — |
-| 13 | `backup.verify` | NOT_EVALUATED | PRECONDITION_FAILED | `backup.manifest_unavailable` |
+| 13 | `backup.verify` | ALLOW | PRECONDITION_FAILED | `backup.illegal_transition` |
 
 | Check | Expected | Actual | Result |
 |---|---|---|---|
@@ -389,16 +389,17 @@ Gate: A03, A08 · Test: `tests/recovery/a08_recovery_drill.rs`
 | status after recovery: recorded decision | NO_AUDIT_ROW | NO_AUDIT_ROW | PASS |
 | status after recovery: outcome | OK | OK | PASS |
 | storage READY after recovery | READY | READY | PASS |
+| the pre-crash backup is the last backup after the restart (read from backup_manifests) | {"backup_id":"<uuid>","state":"RETAINED"} | {"backup_id":"<uuid>","state":"RETAINED"} | PASS |
 | session.list reports the interrupted session | INTERRUPTED | INTERRUPTED | PASS |
 | mutation after recovery: recorded decision | ALLOW | ALLOW | PASS |
 | mutation after recovery: outcome | OK | OK | PASS |
 | audit chain still verifies after new writes | true | true | PASS |
-| verify the pre-crash backup from the new process: recorded decision | NOT_EVALUATED | NOT_EVALUATED | PASS |
-| verify the pre-crash backup from the new process: outcome | PRECONDITION_FAILED | PRECONDITION_FAILED | PASS |
-| verify the pre-crash backup from the new process: error code | backup.manifest_unavailable | backup.manifest_unavailable | PASS |
+| verify the pre-crash backup from the new process (already RETAINED: the stored manifest is read, the transition is refused): recorded decision | ALLOW | ALLOW | PASS |
+| verify the pre-crash backup from the new process (already RETAINED: the stored manifest is read, the transition is refused): outcome | PRECONDITION_FAILED | PRECONDITION_FAILED | PASS |
+| verify the pre-crash backup from the new process (already RETAINED: the stored manifest is read, the transition is refused): error code | backup.illegal_transition | backup.illegal_transition | PASS |
 
 - Crash image: main database file and -wal file copied while the write transaction was open; the -shm index is rebuilt by SQLite on open.
-- Gap (g9-app/g9-storage): backup.verify and backup.restore_test only know backups created by the same process (no manifest reader); after the restart the pre-crash backup is verified at the storage boundary (verify_snapshot) above, not through IPC.
+- The restarted process reads the pre-crash manifest from backup_manifests (g9_storage::backup::read_manifest); re-verifying a RETAINED backup is an illegal transition and changes nothing.
 
 ### A09-01 — NullRuntime: deterministic commands succeed, skills.invoke is RESOURCE_UNAVAILABLE and nothing is invented (PASS)
 
