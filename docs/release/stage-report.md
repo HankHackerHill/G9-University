@@ -23,7 +23,7 @@ Approved by the operator's messages: repository changes in the sandbox (items 1,
 | Stage | Exit criterion | Status | Evidence and what is missing |
 |---|---|---|---|
 | 00 Design | three-pass review and operator PASS | NOT MET (operator PASS pending) | Triple audit done (`docs/audit/stage00-triple-audit.md`); 152 auditor rows verified (104 CONFIRMED, 44 DOWNGRADED, 1 UPGRADED, 3 REFUTED) and status re-assessed 2026-11-08 (section 9). Deliverables: requirements matrix, ADR-0001..0014, interfaces, threat model, skill graph present. **Gaps:** no standalone resource plan (only the finding that the v5.1 estimate rows sum to 85 person-weeks, not 72: CON-32, TEC-26); curriculum gap report cannot reconcile against the original manifest because it was never supplied (C01) |
-| 01 Scaffold | reproducible clean build with logs | PARTIAL | Rust workspace (13 crates + CLI) builds clean (clippy `-D warnings`, fmt) and tests pass; SBOM job defined in CI. **Not met:** the Tauri shell has never been compiled (needs GTK/WebKit; collector check exit 101); CI has never run (NOT RUN) |
+| 01 Scaffold | reproducible clean build with logs | PARTIAL | Rust workspace (13 crates + CLI) builds clean (clippy `-D warnings`, fmt) and tests pass; SBOM job defined in CI. **Not met:** the Tauri shell has never been compiled (needs GTK/WebKit; collector check exit 101); no CI result has been read by this session (`ci.yml` has triggered on every push to `ccr-*` since the first commit, so runs may exist on GitHub; GitHub access was unavailable to read them): NOT READ |
 | 02 Data and importer | reconciliation and fault-safe DB tests | PARTIAL | Fault-safe DB: A08 PASS (backup verify and restore test on a copy, crash mid-transaction rollback, migration checksum tamper, dry run on a copy). Importer: A01 PASS (12/72/216/28,800 and provenance gate). **Not met:** reconciliation against the original approved plan; canonical promotion BLOCKED |
 | 03 Deterministic UX | simulated week and crash recovery | MET on the CLI path; NOT RUN in the GUI | `g9 simulate-week` (fixed clock, 189 steps with the seed pre-imported, PASS) and the two-step crash drill (open interval closed UNCERTAIN, 0 ms credited) in `scripts/smoke_test.sh`: 100 assertions passed. The same flows through the Tauri window are NOT RUN |
 
@@ -51,7 +51,7 @@ Change against baseline: 973 tracked files, 39 commits since `f414481`; the base
 | rusqlite (bundled SQLite, backup API) / jsonschema (Rust) / rs-fsrs | 0.41.1 / 0.60.2 / 1.2.1 (feature `fsrs`, off by default) | VERIFIED |
 | React / Vite / Vitest / TypeScript / DOMPurify / marked | 19.3.1 / 7.3.7 / 4.1.12 / 5.9.3 / 3.4.17 / 18.1.3 | VERIFIED |
 | cargo-deny / jsonschema (Python gates) | 0.20.2 / 4.26.0 | VERIFIED |
-| CI runner label / target host | `ubuntu-26.04` / Ubuntu 26.04.1 LTS (released 2026-08-27) | CI never run; host not inspected: ASSUMED |
+| CI runner label / target host | `ubuntu-26.04` / Ubuntu 26.04.1 LTS (released 2026-08-27) | no CI result read (runs may exist on GitHub); whether `ubuntu-26.04` is a hosted runner label is ASSUMED (taken from a search result, not from GitHub); host not inspected: ASSUMED |
 | Reference source register | 48 candidates: VERIFIED 0, PARTIAL 22, UNVERIFIED 26, approved 0 | the sandbox blocks the hosts (every fetch ENOTFOUND); no publisher page was read |
 
 ## 6. Executed tests and results (this tree)
@@ -67,14 +67,32 @@ Change against baseline: 973 tracked files, 39 commits since `f414481`; the base
 | Supply chain | cargo-deny (advisories, bans, licenses, sources) | ok | TESTED |
 | npm audit | `npm audit --audit-level=high`; `npm audit --omit dev` | 0 production vulnerabilities; 7 moderate, all in the ESLint toolchain (`minimatch` DoS advisory GHSA-g3hv-75wg-m249; fixes available) | OBSERVED |
 | Tauri shell | `cargo check -p g9-mentor-desktop` | exit 101 (gdk-3.0 not found) | NOT RUN (BLOCKED by host libraries) |
-| CI | `.github/workflows/ci.yml` | YAML parses; never executed | NOT RUN |
+| CI | `.github/workflows/ci.yml` | YAML parses locally; every step except `desktop-shell` replicated locally in a clean export of HEAD (section 6a); no GitHub run result read | NOT READ |
 | Model-in-the-loop | any skill against a real model | only `NullRuntime` and `ScriptedRuntime` exist | NOT RUN |
+
+### 6a. CI steps replicated locally on a clean export of HEAD (2026-11-09)
+
+`git archive HEAD` into an empty directory (984 files), so nothing that exists only in the working tree can mask a failure. TESTED unless marked.
+
+| CI step | Result |
+|---|---|
+| `rust` job: fmt, clippy `-D warnings` (`--locked`), tests, `cargo test --locked --doc` (the only step not run before; 0 doctests, exit 0), `cargo tree --locked`, cargo-deny | pass (deny with local cargo-deny 0.20.2, not the pinned action) |
+| `frontend` job: `npm ci`, typecheck, lint, `npm test -- --run` (193), `npm run build`, `npm audit` | pass (audit: 0 production, 7 moderate dev-only) |
+| `content-gates` job: curriculum seed, skill packages, `skill_hashes.py --check`, source register, verifier self-test, schemas | pass |
+| `sbom` job: `cargo install cargo-cyclonedx --version 0.5.10 --locked` then `cargo cyclonedx --format json --target x86_64-unknown-linux-gnu --all-features` (16 SBOM files); `npx @cyclonedx/cyclonedx-npm@6.0.1 --omit dev` | pass |
+| `cargo check --locked --workspace --exclude g9-mentor-desktop --all-targets` in the clean export | pass: nothing needed is missing from git |
+| `desktop-shell` job: apt packages, `cargo check`, `cargo test -p g9-mentor-desktop --lib` | **NOT RUN** (needs GTK/WebKit; package names on 26.04 ASSUMED) |
+| Runner label `ubuntu-26.04` is a real hosted label | **ASSUMED** (from a search result); if it is not, every job queues and never starts |
+| Action commit SHAs match their tags (`checkout` v7.0.1, `setup-node` v7.1.0, `upload-artifact` v7.0.2, `rust-toolchain`, `rust-cache` v2.9.3, `cargo-deny-action` v2.1.1) | **NOT RUN** (no access to those repositories from here) |
+| Whole-workspace rebuild with `RUSTFLAGS=-D warnings` as CI sets it | **NOT RUN** (would rebuild every dependency; clippy `-D warnings --all-targets` covers the workspace crates) |
+
+CI may already have run on GitHub: `ci.yml` has triggered on every push to `ccr-*` since the first commit, about 27 pushes. This session read none of those results (GitHub access was unavailable), so "CI result: NOT READ", not "CI never ran".
 
 Per-gate results (`docs/release/gate-evidence.md`, generated from the executed output of this run; it maps tests to gates by name prefix `a01_`, `b02_`, `st07_`, so the restore, learning-loop and eligibility tests, which are not named that way, are counted in the totals but not in any gate). The collector's rule is weak by design: a gate is PASS when at least one mapped test ran and none failed. Read the counts: several gates rest on one test, and a PASS here is harness-level evidence, not a stage sign-off.
 
 | Gate | Result | | Gate | Result |
 |---|---|---|---|---|
-| A01 curriculum invariants | PASS (7 tests) | | A12 SBOM, licences, pins, accessibility | **NOT RUN** (the collector maps no executed test to it; CI never executed) |
+| A01 curriculum invariants | PASS (7 tests) | | A12 SBOM, licences, pins, accessibility | **NOT RUN** (the collector maps no executed test to it; no CI result read here) |
 | A02 recurrence, DST | PASS (10) | | B01 rubric validity | PASS (1 test; the content-validity review and blind re-grade are not executed) |
 | A03 timer, uncertain time | PASS (6) | | B02 retention vs transfer | PASS (2 tests; measurement PROPOSED) |
 | A04 grade immutability | PASS (17) | | B03 intervention baseline | **NOT RUN** |
@@ -139,7 +157,6 @@ Open: the webview can still call `approvals.decide` (SEC-03; the UI now says so)
 | Skill output schemas leave `items` untyped (32 of 37), so figures inside `result` are not machine-checked for `evidence_refs`; L05 outcome enum and L04 step content unenforced | 04/08 | contract rule and envelope-level checks only; typed items PROPOSED |
 | Reference sources unverified: licences are expectations; several are link-only or must not be ingested | 12 | `verify_source_register.py` (dry run by default) and `check_source_register.py` invariants; nothing approved |
 | 7 moderate advisories in the dev-only ESLint toolchain | 01 | not in production dependencies; upgrade `typescript-eslint` in a deliberate change |
-| `docs/audit/defect-register.md` has six section B rows with unescaped pipes (pre-existing) | 00 | cosmetic; auditors' text left unedited |
 | `CLAUDE.md` names a scratchpad file under `/tmp` as controlling document 3 (the v6.0 handoff text), which does not exist outside this session | 00 | operator decision needed (section 13) |
 
 ## 13. Next exact proposed operations (nothing below has been run)
