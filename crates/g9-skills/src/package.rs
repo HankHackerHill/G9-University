@@ -603,11 +603,19 @@ pub fn load_package(dir: &Path) -> Result<SkillPackage, PackageError> {
     }
 
     // references
+    // A package with no `references/` directory violates the same contract
+    // rule as one whose directory holds no `*.md` file (≥1 reference file), so
+    // an absent directory is `MissingReferences`, not an I/O fault. Version
+    // control cannot store an empty directory, so the two cases must be
+    // indistinguishable to callers. Any other I/O error stays `Io`.
     let refs_dir = dir.join("references");
-    let has_md = fs::read_dir(&refs_dir)
-        .map_err(|e| io_err("references", &e))?
-        .flatten()
-        .any(|e| e.path().is_file() && e.path().extension().is_some_and(|x| x == "md"));
+    let has_md = match fs::read_dir(&refs_dir) {
+        Ok(entries) => entries
+            .flatten()
+            .any(|e| e.path().is_file() && e.path().extension().is_some_and(|x| x == "md")),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => false,
+        Err(e) => return Err(io_err("references", &e)),
+    };
     if !has_md {
         return Err(PackageError::MissingReferences);
     }

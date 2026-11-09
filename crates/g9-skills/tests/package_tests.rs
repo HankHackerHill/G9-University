@@ -134,6 +134,70 @@ fn package_rejects_each_contract_violation() {
     ));
 }
 
+/// Copies `src` into `dst` (std only; the package has no symlinks).
+fn copy_tree(src: &std::path::Path, dst: &std::path::Path) {
+    std::fs::create_dir_all(dst).unwrap();
+    for entry in std::fs::read_dir(src).unwrap() {
+        let entry = entry.unwrap();
+        let to = dst.join(entry.file_name());
+        if entry.file_type().unwrap().is_dir() {
+            copy_tree(&entry.path(), &to);
+        } else {
+            std::fs::copy(entry.path(), &to).unwrap();
+        }
+    }
+}
+
+/// A copy of the valid fixture under `CARGO_TARGET_TMPDIR/<case>/<name>`,
+/// with a fixed path so the test stays deterministic and re-runnable.
+fn scratch_copy_of_valid(case: &str) -> std::path::PathBuf {
+    let root = std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("g9-skills-{case}"));
+    let _ = std::fs::remove_dir_all(&root);
+    let pkg = root.join("g9-session-director");
+    copy_tree(&valid_pkg_dir(), &pkg);
+    pkg
+}
+
+/// Git cannot store an empty directory, so a fixture directory that must be
+/// empty vanishes on a fresh checkout. Both shapes of the violation (directory
+/// absent, directory present with no `*.md`) must therefore be rejected with
+/// the same contract error, and each is built here rather than checked in.
+#[test]
+fn package_missing_references_is_a_contract_violation_whether_absent_or_empty() {
+    let absent = scratch_copy_of_valid("refs-absent");
+    std::fs::remove_dir_all(absent.join("references")).unwrap();
+    assert!(!absent.join("references").exists());
+    assert_eq!(
+        load_package(&absent).unwrap_err(),
+        PackageError::MissingReferences
+    );
+
+    let empty = scratch_copy_of_valid("refs-empty");
+    for e in std::fs::read_dir(empty.join("references")).unwrap() {
+        std::fs::remove_file(e.unwrap().path()).unwrap();
+    }
+    assert!(empty.join("references").is_dir());
+    assert_eq!(
+        load_package(&empty).unwrap_err(),
+        PackageError::MissingReferences
+    );
+
+    let not_markdown = scratch_copy_of_valid("refs-not-markdown");
+    for e in std::fs::read_dir(not_markdown.join("references")).unwrap() {
+        std::fs::remove_file(e.unwrap().path()).unwrap();
+    }
+    std::fs::write(not_markdown.join("references").join("notes.txt"), "x").unwrap();
+    assert_eq!(
+        load_package(&not_markdown).unwrap_err(),
+        PackageError::MissingReferences
+    );
+
+    // the unmodified copy still loads, so the three failures are caused by
+    // the removed references and nothing else
+    let intact = scratch_copy_of_valid("refs-intact");
+    assert!(load_package(&intact).is_ok());
+}
+
 #[test]
 fn a07_requested_operator_only_capability_rejected_at_load() {
     let err = load_package(&invalid_pkg_dir("operator_only_capability")).unwrap_err();
