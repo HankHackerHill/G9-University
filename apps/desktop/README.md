@@ -32,9 +32,9 @@ cargo check -p g9-mentor-desktop
 cargo build -p g9-mentor-desktop --release
 ```
 
-The package list is the one used by the CI job `desktop-shell` (`.github/workflows/ci.yml`); it is ASSUMED, not verified on 26.04 here.
+The package list is the one used by the CI job `desktop-shell` (`.github/workflows/ci.yml`); its install step succeeded on the `ubuntu-26.04` GitHub runner (runs 27 and 28, VERIFIED from the job records). It has not been tried on the G9 host: ASSUMED there.
 
-Icons: `src-tauri/icons/` holds the four PNGs listed in `tauri.conf.json` `bundle.icon` (`32x32.png`, `128x128.png`, `128x128@2x.png`, `icon.png`; added in commit `698ef3c`), which `tauri::generate_context!()` needs at compile time. The shell has still never been compiled in the build sandbox (no GTK/WebKit): NOT RUN until `cargo check -p g9-mentor-desktop` and `cargo test -p g9-mentor-desktop --lib` run on a prepared host or in the `desktop-shell` CI job.
+Icons: `src-tauri/icons/` holds the four PNGs listed in `tauri.conf.json` `bundle.icon` (`32x32.png`, `128x128.png`, `128x128@2x.png`, `icon.png`; added in commit `698ef3c`), which `tauri::generate_context!()` needs at compile time. The shell cannot be compiled in the build sandbox (no GTK/WebKit); it compiles and its `--lib` tests pass in the `desktop-shell` CI job (runs 27 and 28, VERIFIED from the job conclusions; test counts not read). Building and running it on the G9 host, and every window flow, remain NOT RUN.
 
 ## How the bridge is wired
 

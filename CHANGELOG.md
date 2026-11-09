@@ -2,6 +2,12 @@
 
 All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 
+## [0.1.0] — unreleased (2026-11-09 update)
+
+### Fixed
+- `g9-skills`: an absent `references/` directory in a skill package is now `PackageError::MissingReferences` (it was `Io`, `layout.io`); other I/O errors are unchanged. GitHub CI run 27 failed `package_rejects_each_contract_violation` because its fixture was an empty directory, which git does not store, so only a fresh checkout failed; local runs passed throughout. The test now builds the absent, empty and non-markdown cases at runtime. After the fix, GitHub CI run 28 passed all five jobs (rust incl. cargo-deny, frontend, sbom, content-gates, desktop-shell); the Tauri shell compiles and its unit tests pass on the CI runner for the first time.
+- Docs: removed the claims that the shell was never compiled and that no CI result had been read; corrected the stage-report statement that the clean-export replication covered the test step (it did not).
+
 ## [0.1.0] — unreleased (2026-11-08 update)
 
 ### Fixed

@@ -100,7 +100,7 @@ PROPOSED (not implemented): an in-app restore operation with a `DataDelete`-clas
 
 | Step | Command | Notes | Status |
 |---|---|---|---|
-| System libraries for the Tauri shell | `sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev` | the list of the CI job `desktop-shell` | ASSUMED (not verified on 26.04 here) |
+| System libraries for the Tauri shell | `sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev` | the list of the CI job `desktop-shell` | VERIFIED on the `ubuntu-26.04` CI runner (runs 27 and 28); ASSUMED on the G9 host |
 | Toolchain | `rustup` installs 1.97.0 from `rust-toolchain.toml`; Node ≥ 22.13 | | ASSUMED |
 | Backend without GUI first | `cargo build -p g9-cli` (after the crate joins the workspace; until then `cd apps/cli && cargo build`) then `bash scripts/smoke_test.sh` | proves storage, policy, recovery and backups on the host before the shell | PROPOSED |
 | Desktop dev run | `cd apps/desktop && npm ci && npm run tauri:dev` (`@tauri-apps/cli` 2.12.4, already in `package.json`) | opens the window against the Rust bridge; the four icon files listed in `tauri.conf.json` `bundle.icon` are in `src-tauri/icons/`; first-ever compile of the shell: `cargo check -p g9-mentor-desktop` then `cargo test -p g9-mentor-desktop --lib` | NOT RUN (needs the host) |
