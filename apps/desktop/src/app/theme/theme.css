@@ -235,17 +235,21 @@ caption {
   border-radius: var(--radius);
   padding: 12px;
   margin-bottom: 12px;
+  /* A wide table scrolls inside its panel instead of widening the page (WCAG 1.4.10 reflow). */
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .grid-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr): a plain 1fr has an automatic minimum, so a wide table forces the column wider than its container. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
 }
 
 .grid-3 {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 12px;
 }
 
