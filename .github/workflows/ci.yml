@@ -4,9 +4,19 @@ on:
   push:
     branches: ["main", "ccr-*"]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+# Cost: standard GitHub-hosted runners are free for a PUBLIC repository. If this repository is
+# made private, every run draws on the plan's included Actions allowance (measured here: 9 to 14
+# billed minutes per run with jobs rounded up to whole minutes, runs 27 and 28). The two guards
+# below bound that: a newer push cancels the superseded run of the same ref, and every job has
+# a time limit (the default is 360 minutes, which one hung job would consume in full).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 # Runner image: ubuntu-26.04 (x64), generally available since 2026-09-17 (public preview from
 # 2026-06-11). Keep the explicit label; do not use ubuntu-latest. Record the runner ImageVersion
@@ -21,6 +31,7 @@ jobs:
   rust:
     name: rust (fmt, clippy, test, deny)
     runs-on: ubuntu-26.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
@@ -47,6 +58,7 @@ jobs:
   desktop-shell:
     name: tauri shell (Linux build with system webkit)
     runs-on: ubuntu-26.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
@@ -68,6 +80,7 @@ jobs:
   frontend:
     name: frontend (typecheck, lint, test, build)
     runs-on: ubuntu-26.04
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: apps/desktop
@@ -89,6 +102,7 @@ jobs:
   content-gates:
     name: curriculum + skills + schema gates
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: python validator dependency (jsonschema, Draft 2020-12)
@@ -109,6 +123,7 @@ jobs:
   sbom:
     name: SBOM (CycloneDX, Rust + npm)
     runs-on: ubuntu-26.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1

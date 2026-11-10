@@ -2,6 +2,11 @@
 
 All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 
+## [0.1.0] — unreleased (2026-11-10 update)
+
+### Changed
+- CI cost guards: a newer push cancels the superseded run of the same ref (`concurrency`), every job has `timeout-minutes` (the default is 360), and the workflow can be started by hand (`workflow_dispatch`). No check was removed and the triggers are unchanged. Standard runners are free while the repository is public; a private repository draws 9 to 14 billed minutes per run (measured, runs 27 and 28) from the plan allowance.
+
 ## [0.1.0] — unreleased (2026-11-09 update)
 
 ### Fixed
