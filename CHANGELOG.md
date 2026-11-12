@@ -9,6 +9,7 @@ All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 - New shell: grouped table of contents, day rail drawn to scale from backend values, status lamps with the backend clock, command palette (`Ctrl K`), ledger key (`?`).
 - 21 themes (Ledger plus 20, including Hacker, Amber Terminal, Synthwave, Cyberpunk, Classic Desktop, Pocket Console, Clean Crisp, Modern Tech, Professional), each palette contrast-tested on every run; theme picker in the shell, preview gallery in Settings, palette commands.
 - Every screen has a page head stating its purpose; Mission Control and Session Tracker reworked (per-block meters and totals, a timesheet summary); measured columns right-aligned in the machine voice.
+- `scripts/ci_preflight.sh`: every CI job replicated on a clean `git archive` export of a revision; steps that cannot run locally are reported as SKIPPED, never as passed (testing guide §1.7).
 
 ### Changed
 - CI cost guards: a newer push cancels the superseded run of the same ref (`concurrency`), every job has `timeout-minutes` (the default is 360), and the workflow can be started by hand (`workflow_dispatch`). No check was removed and the triggers are unchanged. Standard runners are free while the repository is public; a private repository draws 9 to 14 billed minutes per run (measured, runs 27 and 28) from the plan allowance.

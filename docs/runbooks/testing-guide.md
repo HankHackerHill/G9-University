@@ -96,6 +96,21 @@ Evidence: `crates/g9-app/tests/backup_persistence.rs` (9 tests: create in one co
 
 PROPOSED (not implemented): an in-app restore operation with a `DataDelete`-class approval; restoring into a running application; replaying the deletion ledger recorded after the backup's checkpoint (content erased after the snapshot reappears in the restored database); a `recovery.restored` domain event.
 
+### 1.7 CI preflight on a clean export (`scripts/ci_preflight.sh`)
+
+Replicates every job of `.github/workflows/ci.yml` inside `git archive <rev>`, so an untracked file, an empty directory (git cannot store one) or a build output in the working tree cannot make a step pass locally that fails in CI. Uncommitted changes are never tested; the script says so when the tree is dirty.
+
+| Command | Effect |
+|---|---|
+| `scripts/ci_preflight.sh` | all jobs on `HEAD`, in a new work directory under `${TMPDIR:-/tmp}`; a fresh `CARGO_TARGET_DIR` needs several GB |
+| `scripts/ci_preflight.sh --target target/integration` | reuse an existing build directory (dependencies are not rebuilt) |
+| `scripts/ci_preflight.sh --only rust,content-gates` / `--skip sbom` | select jobs (`rust`, `desktop-shell`, `frontend`, `content-gates`, `sbom`) |
+| `scripts/ci_preflight.sh --offline` | skip the steps that need the registry; cargo-deny uses the local advisory database |
+
+A step that cannot run here (no WebKit for `desktop-shell`, no `cargo-deny` or `cargo-cyclonedx` installed, no `jsonschema` module) is printed as `SKIPPED` with the reason; SKIPPED is not PASS. Exit status: 0 when no step failed, 1 when any failed (its log path is printed), 2 on a usage error.
+
+Recorded run, 2026-11-12, `433895a`: rust (fmt, clippy, test: 762 passed, doc tests, tree, cargo-deny with the offline database), frontend (npm ci, typecheck, lint, test, build, npm audit), content gates and both SBOMs passed; `desktop-shell` SKIPPED (no WebKit in the sandbox). TESTED.
+
 ## 2. On the G9 host (Ubuntu 26.04.1 LTS)
 
 | Step | Command | Notes | Status |
