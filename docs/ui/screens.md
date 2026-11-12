@@ -14,10 +14,10 @@ Source of truth for routes and titles: `apps/desktop/src/app/router.tsx` (`SCREE
 | Clock | "Today" is `system.status.clock` (backend clock + IANA zone), never `Date.now()` in the UI. Durations are backend `credited_ms` / `uncertain_ms`; the UI never derives elapsed time from wall-clock subtraction. | `src/app/hooks/useToday.ts` |
 | Approvals | Protected operations answer `APPROVAL_REQUIRED(approval_id)`; the UI shows the `ApprovalCard` (action, resource, scope, parameters SHA-256, expected revision, expiry) and re-issues the same operation with `approval_id`. The webview requests; the trusted surface grants (Addendum A.7). | `src/app/hooks/useApprovalFlow.ts`, `src/app/components/ApprovalCard.tsx` |
 | Offline | `system.status.network.egress_allowed === false` renders `OFF` / `OFFLINE` in the shell header, Mission Control and Research Center. | `src/app/layout/Shell.tsx` |
-| Theme | Dark cinematic, restrained gold/cyan/green CSS variables; `High contrast` toggle persisted in `localStorage` (`g9.contrast`) and applied as `data-contrast` on `<html>`. Plain CSS. | `src/app/theme/theme.css`, `src/app/theme/useContrast.ts` |
+| Theme | 21 themes (Ledger plus 20); grammar of standing, three type voices, high-contrast mode and persistence are specified in `docs/ui/design-system.md`. Every palette is contrast-tested (`skins.test.ts`). | `src/app/theme/` |
 | Markdown | Rendered only through `renderMarkdown` (marked → DOMPurify allow-list). No script/style/iframe/object/svg/img/form, no `on*`, `style`, `class`, `id`, data-*/aria-* attributes; URLs limited to http(s)/mailto/anchors; `target` removed, `rel="noopener noreferrer nofollow"` forced; link clicks are intercepted (no shell capability). | `src/lib/markdown.ts`, `src/app/components/MarkdownPreview.tsx` |
 
-Global keyboard map: `Tab` through the skip link ("Skip to main content"), header controls, the 16-link navigation (`nav[aria-label=Screens]`, `aria-current=page` on the active link) and `main`. All actions are native `<button>`/`<a>`/form controls; no pointer-only interaction exists.
+Global keyboard map: `Ctrl K` opens search and commands; `?` opens the ledger key; `Tab` through the skip link ("Skip to main content"), header controls, the 16-link navigation (`nav[aria-label=Screens]`, `aria-current=page` on the active link) and `main`. All actions are native `<button>`/`<a>`/form controls; no pointer-only interaction exists.
 
 ## Screen register
 

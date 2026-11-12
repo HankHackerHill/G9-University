@@ -3,6 +3,7 @@ import { Badge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, NoData, Panel } from '../components/Panel';
 import { useToday } from '../hooks/useToday';
+import { PageHead } from '../components/PageHead';
 
 /** Research reference system (M15). Network egress is OFF by default and visibly so. */
 export function ResearchCenter() {
@@ -11,7 +12,7 @@ export function ResearchCenter() {
 
   return (
     <div>
-      <h1>Research Center</h1>
+      <PageHead title="Research Center" lede="Reference sources, their verification state, and whether this window may reach the network." />
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
       <Panel title="Network">
         {s === null ? (

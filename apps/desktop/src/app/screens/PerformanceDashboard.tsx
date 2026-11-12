@@ -8,6 +8,7 @@ import { Warnings } from '../components/Warnings';
 import { mergeWarnings } from '../../lib/warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
+import { PageHead } from '../components/PageHead';
 
 interface Metric {
   key: string;
@@ -155,7 +156,7 @@ export function PerformanceDashboard() {
 
   return (
     <div>
-      <h1>Performance Dashboard</h1>
+      <PageHead title="Performance Dashboard" lede="Learning measures, each with its definition and the evidence behind the figure." />
       <p className="muted">
         Metrics are reproducible read models with drilldown to evidence (M13). A cell reads NO DATA when the underlying records do not exist; no value is estimated or
         extrapolated.{' '}
@@ -177,6 +178,7 @@ export function PerformanceDashboard() {
         <Table
           caption="Learning KPIs with evidence references"
           headers={['Metric', 'Value', 'Evidence', 'Definition']}
+          numeric={[1]}
           rows={metrics.map((m) => ({ key: m.key, cells: [m.name, m.value, <span className="mono">{m.evidence}</span>, <span className="muted">{m.definition}</span>] }))}
         />
       </Panel>

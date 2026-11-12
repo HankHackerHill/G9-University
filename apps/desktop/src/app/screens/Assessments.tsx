@@ -16,6 +16,7 @@ import { useApprovalFlow } from '../hooks/useApprovalFlow';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
+import { PageHead } from '../components/PageHead';
 
 /** Reviewer input for one attempt. Nothing is pre-filled: a level counts only once the reviewer types it. */
 interface ScoreDraft {
@@ -108,7 +109,7 @@ export function Assessments() {
 
   return (
     <div>
-      <h1>Assessments</h1>
+      <PageHead title="Assessments" lede="Begin, submit and grade attempts. A grade is final only after you approve it." />
       <p className="muted">
         Attempt machine: AVAILABLE → STARTED → SUBMITTED → EVIDENCE_REVIEW → GRADED_PROVISIONAL → APPROVED_FINAL (immutable). A grade becomes official only through
         <code> assessment.approve_final</code>, which requires a GRADE_FINALIZE approval bound to the attempt. Model-advisory results can never finalize.
@@ -270,6 +271,7 @@ export function Assessments() {
                   <Table
                     caption="Criterion results"
                     headers={['Criterion', 'Weight', 'Score', 'Source', 'Evidence']}
+                    numeric={[1, 2]}
                     rows={selected.grade.criteria.map((c) => ({
                       key: c.criterion_code,
                       cells: [c.criterion_code, c.weight, c.score, c.source, c.evidence_refs.length === 0 ? '—' : c.evidence_refs.join(', ')],

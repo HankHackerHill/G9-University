@@ -4,6 +4,7 @@ import { Loading, ModelUnavailable, NoData, Panel } from '../components/Panel';
 import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
+import { PageHead } from '../components/PageHead';
 
 /** Learner hypotheses (M09): model output can only create PROPOSED; acceptance/rejection is an operator command. */
 export function MentorMemoryExplorer() {
@@ -13,7 +14,7 @@ export function MentorMemoryExplorer() {
 
   return (
     <div>
-      <h1>Mentor Memory Explorer</h1>
+      <PageHead title="Mentor Memory Explorer" lede="What the mentor holds about your learning, where each item came from, and how far it can be trusted." />
       <p className="muted">
         Hypotheses carry kind (MISCONCEPTION, STRENGTH, PREFERENCE, BLOCKER), supporting and contradicting evidence references, a confidence interval and provenance.
         Status: PROPOSED → ACCEPTED | REJECTED → RETIRED. Rejecting a hypothesis invalidates derived plans that referenced it.

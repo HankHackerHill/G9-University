@@ -13,6 +13,7 @@ import { Table } from '../components/Table';
 import { Warnings } from '../components/Warnings';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
+import { PageHead } from '../components/PageHead';
 
 const STARTER = '# Session notes\n\nWhat I verified today:\n\n- \n\n```text\nevidence: \n```\n';
 
@@ -55,7 +56,7 @@ export function LearningJournal() {
 
   return (
     <div>
-      <h1>Learning Journal</h1>
+      <PageHead title="Learning Journal" lede="Notes and evidence in Markdown, sanitized before display. Every save keeps a hashed revision." />
       <p className="muted">
         Notes are <ProvenanceBadge label="VERIFIED" /> operator records: each revision is content-hashed and kept. The preview is rendered through the allow-list sanitizer;
         imported or pasted HTML is data, never instructions.
@@ -134,6 +135,7 @@ export function LearningJournal() {
           <Table
             caption="Saved notes"
             headers={['Note', 'Title', 'Classification', 'Versions', 'Hash', '']}
+            numeric={[3]}
             rows={notes.map((n) => ({
               key: n.note_id,
               cells: [

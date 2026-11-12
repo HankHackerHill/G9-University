@@ -2,7 +2,13 @@
 
 All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 
-## [0.1.0] — unreleased (2026-11-10 update)
+## [0.1.0] — unreleased (2026-11-12 update)
+
+### Added
+- Desktop UI design system "The Ledger" (`docs/ui/design-system.md`): OKLCH tokens, a grammar of standing (posted, pencilled, in doubt, advice, owed, missing), the Recursive variable font (OFL-1.1, bundled, licence shipped) in three voices, cascade layers.
+- New shell: grouped table of contents, day rail drawn to scale from backend values, status lamps with the backend clock, command palette (`Ctrl K`), ledger key (`?`).
+- 21 themes (Ledger plus 20, including Hacker, Amber Terminal, Synthwave, Cyberpunk, Classic Desktop, Pocket Console, Clean Crisp, Modern Tech, Professional), each palette contrast-tested on every run; theme picker in the shell, preview gallery in Settings, palette commands.
+- Every screen has a page head stating its purpose; Mission Control and Session Tracker reworked (per-block meters and totals, a timesheet summary); measured columns right-aligned in the machine voice.
 
 ### Changed
 - CI cost guards: a newer push cancels the superseded run of the same ref (`concurrency`), every job has `timeout-minutes` (the default is 360), and the workflow can be started by hand (`workflow_dispatch`). No check was removed and the triggers are unchanged. Standard runners are free while the repository is public; a private repository draws 9 to 14 billed minutes per run (measured, runs 27 and 28) from the plan allowance.

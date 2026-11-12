@@ -14,6 +14,7 @@ import { Warnings } from '../components/Warnings';
 import { useApprovalFlow } from '../hooks/useApprovalFlow';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
+import { PageHead } from '../components/PageHead';
 import { ThemeGallery } from '../components/ThemeGallery';
 import { useContrast } from '../theme/useContrast';
 import { useSkin } from '../theme/useSkin';
@@ -86,12 +87,7 @@ export function SettingsRecovery() {
 
   return (
     <div>
-      <div className="page-head">
-        <div>
-          <h1>Settings / Recovery</h1>
-          <p className="lede">Host facts, backups and their restore tests, exports, and how this window looks.</p>
-        </div>
-      </div>
+      <PageHead title="Settings / Recovery" lede="Host facts, backups and their restore tests, exports, and how this window looks." />
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
       {error !== null ? <ErrorDisplay error={error} /> : null}
       <Panel title="Host and storage warnings">

@@ -8,6 +8,7 @@ import { Table } from '../components/Table';
 import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
+import { PageHead } from '../components/PageHead';
 
 export function DailyClassroom() {
   const today = useToday();
@@ -20,7 +21,7 @@ export function DailyClassroom() {
 
   return (
     <div>
-      <h1>Daily Classroom</h1>
+      <PageHead title="Daily Classroom" lede="Today's objectives and study blocks, and where to capture what you produce." />
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
       {plan.error !== null ? <ErrorDisplay error={plan.error} onRetry={plan.reload} /> : null}
       {plan.loading ? <Loading what="today's plan" /> : null}
@@ -47,6 +48,7 @@ export function DailyClassroom() {
               <Table
                 caption="Study blocks and their session state"
                 headers={['#', 'Block', 'Planned', 'Session state', 'Credited', '']}
+                numeric={[0, 2, 4]}
                 rows={plan.data.blocks.map((b) => {
                   const session = list.find((x) => x.session_id === b.session_id);
                   return {

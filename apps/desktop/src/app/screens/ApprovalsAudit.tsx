@@ -12,6 +12,7 @@ import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
+import { PageHead } from '../components/PageHead';
 
 export function ApprovalsAudit() {
   const today = useToday();
@@ -36,7 +37,7 @@ export function ApprovalsAudit() {
 
   return (
     <div>
-      <h1>Approvals / Audit</h1>
+      <PageHead title="Approvals / Audit" lede="Operations waiting for your decision, and the hash-chained record of what was done." />
       <p className="muted">
         An approval binds to one exact operation (action, resource, scope, parameter hash, expected revision), expires after 15 minutes and is consumed once.
       </p>

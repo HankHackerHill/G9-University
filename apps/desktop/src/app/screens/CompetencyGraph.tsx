@@ -7,6 +7,7 @@ import { Table } from '../components/Table';
 import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
+import { PageHead } from '../components/PageHead';
 
 const DIMENSIONS: readonly LearningDimension[] = ['RECALL', 'UNDERSTANDING', 'APPLICATION', 'TRANSFER'];
 
@@ -17,7 +18,7 @@ export function CompetencyGraph() {
 
   return (
     <div>
-      <h1>Competency Graph</h1>
+      <PageHead title="Competency Graph" lede="What your graded work shows you can do, dimension by dimension, and how sure each estimate is." />
       <p className="muted">
         State follows the APPLICATION dimension; <code>VALIDATED</code> requires EXAM-mode unaided evidence (Addendum A.9). Estimates are derived from observations by
         a replayable fold; when there are none, the UI shows NO DATA rather than a number.
@@ -43,6 +44,7 @@ export function CompetencyGraph() {
                     <Table
                       caption="Per-dimension estimates"
                       headers={['Dimension', 'Estimate', 'Unaided observations', 'Last observed', 'Uncertainty']}
+                      numeric={[2]}
                       rows={DIMENSIONS.map((d) => {
                         const e = p.per_dimension[d];
                         return {

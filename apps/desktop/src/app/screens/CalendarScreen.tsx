@@ -13,6 +13,7 @@ import { useApprovalFlow } from '../hooks/useApprovalFlow';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
+import { PageHead } from '../components/PageHead';
 
 export function CalendarScreen() {
   const today = useToday();
@@ -48,7 +49,7 @@ export function CalendarScreen() {
 
   return (
     <div>
-      <h1>Calendar</h1>
+      <PageHead title="Calendar" lede="Your week by the hour. Changes to the schedule are proposed first and take effect only when you apply them." />
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
       <div className="row" style={{ marginBottom: 8 }}>
         <button

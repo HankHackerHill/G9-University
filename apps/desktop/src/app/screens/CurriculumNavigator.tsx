@@ -11,6 +11,7 @@ import { Loading, NoData, Panel } from '../components/Panel';
 import { Warnings } from '../components/Warnings';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
+import { PageHead } from '../components/PageHead';
 
 interface DayNode {
   date: string;
@@ -57,7 +58,7 @@ export function CurriculumNavigator() {
 
   return (
     <div>
-      <h1>Curriculum Navigator</h1>
+      <PageHead title="Curriculum Navigator" lede="The programme by week and by day, with the objectives and the evidence each day expects." />
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
       <Panel title="Program structure">
         <p className="muted">

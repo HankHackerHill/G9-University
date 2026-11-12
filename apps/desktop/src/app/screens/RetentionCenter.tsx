@@ -7,6 +7,7 @@ import { Table } from '../components/Table';
 import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
+import { PageHead } from '../components/PageHead';
 
 export function RetentionCenter() {
   const today = useToday();
@@ -21,7 +22,7 @@ export function RetentionCenter() {
 
   return (
     <div>
-      <h1>Retention Center</h1>
+      <PageHead title="Retention Center" lede="Reviews that are overdue, due today, and beyond today's review budget." />
       <p className="muted">
         Baseline schedule: offsets 1, 3, 7, 21, 60 days after the last successful recall; a failed recall resets to day 1. The daily review budget caps the queue; overflow
         is reported, never dropped (ARCHITECTURE §9). FSRS is an optional, item-level feature that is OFF.

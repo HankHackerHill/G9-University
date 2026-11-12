@@ -5,12 +5,14 @@ import { formatDateTime, formatDuration, formatMinutes, formatTime, humanizeEnum
 import { NON_CANONICAL_WARNING, hasWarning, mergeWarnings } from '../../lib/warnings';
 import { Badge, ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
+import { Meter } from '../components/Meter';
 import { Loading, ModelUnavailable, NoData, Panel } from '../components/Panel';
 import { Table } from '../components/Table';
 import { Tabs } from '../components/Tabs';
 import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
+import { PageHead } from '../components/PageHead';
 
 const WORK_DONE: readonly SessionView['state'][] = ['COMPLETED', 'REVIEWED', 'CLOSED'];
 
@@ -36,12 +38,23 @@ export function MissionControl() {
   const credited = todaySessions === null ? null : todaySessions.reduce((acc, x) => acc + x.credited_ms, 0);
   const verifiedDone = todaySessions === null ? null : todaySessions.filter((x) => WORK_DONE.includes(x.state));
   const plannedMs = plan.data === null ? null : plan.data.planned_minutes * 60_000;
+  const blockSessions =
+    plan.data === null || todaySessions === null
+      ? null
+      : plan.data.blocks.flatMap((b) => todaySessions.filter((x) => x.session_id === b.session_id));
+  const blockTotals =
+    blockSessions === null
+      ? null
+      : {
+          credited: blockSessions.reduce((sum, x) => sum + x.credited_ms, 0),
+          uncertain: blockSessions.reduce((sum, x) => sum + x.uncertain_ms, 0),
+        };
   const hypotheses = (interventions.data?.interventions ?? []).filter((i) => i.state === 'HYPOTHESIS' || i.state === 'PROPOSED');
   const planLabel = hasWarning(plan.warnings, NON_CANONICAL_WARNING) ? 'PROPOSED' : 'VERIFIED';
 
   return (
     <div>
-      <h1>Mission Control</h1>
+      <PageHead title="Mission Control" lede="Today at a glance: what is planned, what the backend has credited, and what is waiting for your decision." />
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
       {sessions.error !== null ? <ErrorDisplay error={sessions.error} onRetry={sessions.reload} /> : null}
       {calendar.error !== null ? <ErrorDisplay error={calendar.error} onRetry={calendar.reload} /> : null}
@@ -52,7 +65,7 @@ export function MissionControl() {
         {s === null ? (
           <Loading what="system status" />
         ) : (
-          <div className="row" style={{ gap: 24 }}>
+          <div className="facts">
             <div>
               <h3>Date / zone</h3>
               <div>
@@ -132,7 +145,13 @@ export function MissionControl() {
             ) : (
               <Table
                 caption={`Blocks for ${plan.data.day_id}: planned ${formatMinutes(plan.data.planned_minutes)}`}
-                headers={['#', 'Block', 'Planned', 'Credited', 'Uncertain', 'State']}
+                headers={['#', 'Block', 'Planned', 'Credited', 'Uncertain', 'Progress', 'State']}
+                numeric={[0, 2, 3, 4]}
+                footer={
+                  blockTotals === null
+                    ? undefined
+                    : ['', 'Total', formatMinutes(plan.data.planned_minutes), formatDuration(blockTotals.credited), formatDuration(blockTotals.uncertain), '', '']
+                }
                 rows={plan.data.blocks.map((b) => {
                   const session = todaySessions?.find((x) => x.session_id === b.session_id);
                   return {
@@ -143,6 +162,16 @@ export function MissionControl() {
                       formatMinutes(b.minutes),
                       session === undefined ? '—' : formatDuration(session.credited_ms),
                       session === undefined ? '—' : formatDuration(session.uncertain_ms),
+                      session === undefined ? (
+                        <span className="muted">—</span>
+                      ) : (
+                        <Meter
+                          posted={session.credited_ms}
+                          doubted={session.uncertain_ms}
+                          of={b.minutes * 60_000}
+                          label={`${humanizeEnum(b.block)}: ${formatDuration(session.credited_ms)} credited and ${formatDuration(session.uncertain_ms)} uncertain of ${formatMinutes(b.minutes)} planned`}
+                        />
+                      ),
                       todaySessions === null ? (
                         <span className="muted">NO DATA</span>
                       ) : session === undefined ? (
@@ -266,7 +295,7 @@ export function MissionControl() {
       </div>
 
       <footer className="panel" aria-label="Day summary">
-        <div className="row" style={{ gap: 24 }}>
+        <div className="facts">
           <div>
             <h3>Verified work</h3>
             {verifiedDone === null ? (

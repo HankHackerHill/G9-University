@@ -1,12 +1,13 @@
 import { StateBadge } from '../components/Badge';
 import { NoData, Panel } from '../components/Panel';
 import { Table } from '../components/Table';
+import { PageHead } from '../components/PageHead';
 
 /** Goals/projects/milestones/decisions (M14) live in `DataDomain::Business`, isolated from learning data by policy (R-017). */
 export function ExecutiveWorkspace() {
   return (
     <div>
-      <h1>Executive Workspace</h1>
+      <PageHead title="Executive Workspace" lede="Goals, milestones and decisions for the business side of the programme." />
       <p className="muted">
         Business commitments are a separate privacy domain (<code>BUSINESS</code>). Cross-domain reads require <code>CROSS_DOMAIN_READ</code>; the model never sees this domain
         without an explicit approval.

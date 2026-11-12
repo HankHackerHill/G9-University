@@ -8,7 +8,7 @@ export interface TableProps {
   /** Zero-based indexes of the columns that hold measured numbers: right-aligned, machine voice. */
   numeric?: readonly number[];
   /** A totals row, drawn under a double rule. */
-  footer?: readonly ReactNode[];
+  footer?: readonly ReactNode[] | undefined;
 }
 
 /** Dense data table with a caption; the tabular alternative required for every chart. */

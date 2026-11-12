@@ -7,6 +7,7 @@ import { Table } from '../components/Table';
 import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
+import { PageHead } from '../components/PageHead';
 
 export function InterventionCenter() {
   const today = useToday();
@@ -15,7 +16,7 @@ export function InterventionCenter() {
 
   return (
     <div>
-      <h1>Intervention Center</h1>
+      <PageHead title="Intervention Center" lede="Hypotheses about weak skills and the interventions that would test them." />
       <p className="muted">
         Lifecycle: HYPOTHESIS → PROPOSED → REVIEWED → APPROVED → SCHEDULED → APPLIED → RETESTED → EVALUATED → RETAINED | REVISED | RETIRED (REJECTED at any review).
         Model output can only create HYPOTHESIS and PROPOSED; everything from APPROVED onward is an operator decision.

@@ -7,12 +7,14 @@ import { SESSION_MACHINE, can, type SESSION_OPERATION_EVENTS } from '../../lib/s
 import { mergeWarnings, warningsOf } from '../../lib/warnings';
 import { ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
+import { Meter } from '../components/Meter';
 import { Loading, NoData, Panel } from '../components/Panel';
 import { Table } from '../components/Table';
 import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
+import { PageHead } from '../components/PageHead';
 
 type SessionOp = keyof typeof SESSION_OPERATION_EVENTS;
 type TransitionOp = Exclude<SessionOp, 'session.correct_time'>;
@@ -152,7 +154,7 @@ export function SessionTracker() {
 
   return (
     <div>
-      <h1>Session Tracker</h1>
+      <PageHead title="Session Tracker" lede="Prepare, start, pause and complete study blocks. The backend credits the time; time it cannot vouch for waits for your correction." />
       {interrupted.length > 0 ? (
         <div className="banner" role="alert" data-testid="interrupted-banner">
           <strong>INTERRUPTED:</strong> {interrupted.length} session{interrupted.length === 1 ? '' : 's'} closed with UNCERTAIN continuity (suspend, reboot or crash). Credit is
@@ -162,19 +164,21 @@ export function SessionTracker() {
       {sessions.error !== null ? <ErrorDisplay error={sessions.error} onRetry={sessions.reload} /> : null}
       {error !== null ? <ErrorDisplay error={error} /> : null}
       <Warnings warnings={mergeWarnings(sessions.warnings, actionWarnings)} />
-      <div className="grid-2">
+      <div className="split">
         <Panel title="Sessions">
           {sessions.loading && sessions.data === null ? <Loading what="sessions" /> : null}
           {list.length === 0 && !sessions.loading ? <NoData reason="no sessions are planned" /> : null}
           {list.length > 0 ? (
             <Table
               caption="Planned and recorded sessions (backend timer ledger)"
-              headers={['Day', 'Block', 'State', 'Credited', 'Uncertain', '']}
+              headers={['Block', 'State', 'Credited', 'Uncertain', '']}
+              numeric={[2, 3]}
               rows={list.map((s) => ({
                 key: s.session_id,
                 cells: [
-                  s.day_id,
-                  humanizeEnum(s.block),
+                  <span key="block">
+                    <code>{s.day_id}</code> {humanizeEnum(s.block)}
+                  </span>,
                   <StateBadge state={s.state} />,
                   formatDuration(s.credited_ms),
                   formatDuration(s.uncertain_ms),
@@ -195,40 +199,49 @@ export function SessionTracker() {
             />
           ) : null}
         </Panel>
-        <div>
-          {selected === undefined ? null : (
-            <Panel title={`${selected.day_id} · ${humanizeEnum(selected.block)}`}>
-              <p>
+        <div className="sticky">
+          {selected === undefined ? (
+            <Panel title="Session">
+              <NoData reason="no session selected; choose one in the list" />
+            </Panel>
+          ) : (
+            <Panel title={`${selected.day_id}: ${humanizeEnum(selected.block)}`}>
+              <p className="row">
                 <StateBadge state={selected.state} /> <span data-testid="revision">revision {selected.revision}</span>{' '}
                 {sessions.warnings.length === 0 ? <ProvenanceBadge label="VERIFIED" /> : <span className="muted">(read carries backend warnings, see above)</span>}
               </p>
-              <dl>
-                <div className="row">
-                  <dt className="muted">Planned</dt>
-                  <dd>{formatDuration(selected.planned_ms)}</dd>
-                </div>
-                <div className="row">
-                  <dt className="muted">Credited (verified + corrections)</dt>
-                  <dd className="kpi" data-testid="credited">
+              <div className="timesheet">
+                <p className="timesheet-figure">
+                  <span className="kpi-xl" data-testid="credited">
                     {formatDuration(selected.credited_ms)}
-                  </dd>
-                </div>
-                <div className="row">
-                  <dt className="muted">Uncertain</dt>
-                  <dd data-testid="uncertain">{formatDuration(selected.uncertain_ms)}</dd>
-                </div>
-                <div className="row">
-                  <dt className="muted">Started</dt>
-                  <dd>{selected.started_at === null ? '—' : formatDateTime(selected.started_at, today.zone)}</dd>
-                </div>
+                  </span>
+                  <span className="muted">credited (verified time plus corrections) of {formatDuration(selected.planned_ms)} planned</span>
+                </p>
+                <Meter
+                  posted={selected.credited_ms}
+                  doubted={selected.uncertain_ms}
+                  of={selected.planned_ms}
+                  owed={selected.requires_correction}
+                  label={`${formatDuration(selected.credited_ms)} credited and ${formatDuration(selected.uncertain_ms)} uncertain of ${formatDuration(selected.planned_ms)} planned`}
+                />
+              </div>
+              <dl className="pairs">
+                <dt>Planned</dt>
+                <dd className="num">{formatDuration(selected.planned_ms)}</dd>
+                <dt>Uncertain</dt>
+                <dd className="num" data-testid="uncertain">
+                  {formatDuration(selected.uncertain_ms)}
+                </dd>
+                <dt>Started</dt>
+                <dd>{selected.started_at === null ? '—' : formatDateTime(selected.started_at, today.zone)}</dd>
                 {selected.open_interval_started_at !== null ? (
-                  <div className="row">
-                    <dt className="muted">Open interval since</dt>
-                    <dd>{formatDateTime(selected.open_interval_started_at, today.zone)} (credited on pause/complete by the backend)</dd>
-                  </div>
+                  <>
+                    <dt>Open interval since</dt>
+                    <dd>{formatDateTime(selected.open_interval_started_at, today.zone)} (credited on pause or complete by the backend)</dd>
+                  </>
                 ) : null}
               </dl>
-              <div className="row" role="group" aria-label="Session transitions">
+              <div className="toolbar transitions" role="group" aria-label="Session transitions">
                 {CONTROLS.map((c) => (
                   <button
                     key={c.op}
@@ -274,9 +287,9 @@ export function SessionTracker() {
                   </div>
                 </div>
               ) : null}
-              <p className="muted">
+              <p className="field-hint">
                 Buttons are enabled only for edges in the session machine (PLANNED→READY→RUNNING⇄PAUSED→COMPLETED) and only once the list has caught up with the last
-                change. The backend re-checks every transition; the UI mirrors, it does not decide.
+                change. The backend re-checks every transition; the window mirrors it and decides nothing.
               </p>
               {showCorrection ? (
                 <form
