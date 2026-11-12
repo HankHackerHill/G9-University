@@ -14,12 +14,26 @@ import { Warnings } from '../components/Warnings';
 import { useApprovalFlow } from '../hooks/useApprovalFlow';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
+import { ThemeGallery } from '../components/ThemeGallery';
 import { useContrast } from '../theme/useContrast';
+import { useSkin } from '../theme/useSkin';
+import { THEME_MODES, useTheme, type ThemeMode } from '../theme/useTheme';
+import { fixedScheme, skinById } from '../theme/skins';
+
+/** The scheme a Ledger preview is drawn in: the setting, or the desktop's when it follows the system. */
+function previewScheme(mode: ThemeMode): 'light' | 'dark' {
+  if (mode !== 'system') {
+    return mode;
+  }
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
 
 export function SettingsRecovery() {
   const today = useToday();
   const client = useIpc();
   const [contrast, toggleContrast] = useContrast();
+  const [skin, setSkin] = useSkin();
+  const [scheme, setScheme] = useTheme();
   const [backups, setBackups] = useState<BackupView[]>([]);
   const [error, setError] = useState<G9Error | null>(null);
   const [busy, setBusy] = useState(false);
@@ -72,7 +86,12 @@ export function SettingsRecovery() {
 
   return (
     <div>
-      <h1>Settings / Recovery</h1>
+      <div className="page-head">
+        <div>
+          <h1>Settings / Recovery</h1>
+          <p className="lede">Host facts, backups and their restore tests, exports, and how this window looks.</p>
+        </div>
+      </div>
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
       {error !== null ? <ErrorDisplay error={error} /> : null}
       <Panel title="Host and storage warnings">
@@ -104,11 +123,8 @@ export function SettingsRecovery() {
             </p>
           )}
         </Panel>
-        <Panel title="Appearance">
-          <button type="button" onClick={toggleContrast} aria-pressed={contrast === 'high'}>
-            High contrast: {contrast === 'high' ? 'on' : 'off'}
-          </button>
-          <p className="muted">Persisted in localStorage (`g9.contrast`). Both themes target WCAG 2.2 AA.</p>
+        <Panel title="Transport">
+          {s === null ? statusPending('transport status') : <p>Active transport: <StateBadge state={s.transport.toUpperCase()} /> {s.transport === 'mock' ? <span className="muted">— fixture data, no storage.</span> : null}</p>}
         </Panel>
       </div>
       <Panel title="Backups">
@@ -214,8 +230,39 @@ export function SettingsRecovery() {
         ) : null}
         <Warnings warnings={exportFlow.warnings} />
       </Panel>
-      <Panel title="Transport">
-        {s === null ? statusPending('transport status') : <p>Active transport: <StateBadge state={s.transport.toUpperCase()} /> {s.transport === 'mock' ? <span className="muted">— fixture data, no storage.</span> : null}</p>}
+      <Panel title="Appearance">
+        <p className="muted measure">
+          Twenty-one themes. Every one keeps the same marks: posted is solid, pencilled is outlined, in doubt is hatched, advice is dashed, owed is red, and
+          every mark keeps its name in words. Each palette is checked for contrast on every build.
+        </p>
+        <div className="toolbar appearance-tools">
+          <button type="button" onClick={toggleContrast} aria-pressed={contrast === 'high'}>
+            High contrast: {contrast === 'high' ? 'on' : 'off'}
+          </button>
+          {fixedScheme(skinById(skin)) === null ? (
+            <div className="seg" role="group" aria-label="Colour scheme">
+              {THEME_MODES.map((mode: ThemeMode) => (
+                <button
+                  type="button"
+                  key={mode}
+                  aria-pressed={scheme === mode}
+                  onClick={() => {
+                    setScheme(mode);
+                  }}
+                >
+                  {mode === 'system' ? 'System' : mode === 'light' ? 'Light' : 'Dark'}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <span className="muted">{skinById(skin).name} is a {fixedScheme(skinById(skin))} theme; the light or dark setting applies to Ledger.</span>
+          )}
+        </div>
+        <p className="muted measure">
+          High contrast keeps the theme&apos;s type and shapes and replaces its colours with pure ink on pure paper. Choices are kept in this window&apos;s local
+          storage (<code>g9.skin</code>, <code>g9.theme</code>, <code>g9.contrast</code>).
+        </p>
+        <ThemeGallery value={skin} onChange={setSkin} scheme={previewScheme(scheme)} />
       </Panel>
     </div>
   );

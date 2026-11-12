@@ -27,6 +27,7 @@ The workspace manifests currently declare `Apache-2.0` as a **PROPOSED** placeho
 | vitest / testing-library / jsdom | vitest 4.1.12; others pinned in package.json | MIT | tests (dev only) |
 | eslint, typescript-eslint, eslint-plugin-jsx-a11y, eslint-plugin-react-hooks | 9.x | MIT | lint |
 | marked / DOMPurify | pinned in package.json | MIT (plus the original Markdown BSD-style notice) / Apache-2.0 OR MPL-2.0 | sanitized Markdown |
+| Recursive (variable font, via @fontsource-variable/recursive 5.3.0) | pinned in package.json | SIL Open Font License 1.1 | interface typeface; bundled into the app, licence text shipped as `licenses/Recursive-OFL-1.1.txt` (from `apps/desktop/public/`) |
 | @tauri-apps/api | 2.12.4 (runtime dependency; bundled) | Apache-2.0 OR MIT | IPC transport (dynamic import) |
 
 Not used by decision: **FullCalendar** (Standard is MIT, but v7 Premium is AGPLv3/commercial; an in-house accessible grid avoids the licensing boundary — see `docs/adr/`). **fsrs-rs** (BSD-3-Clause) is not used because it pulls a full ML training stack; `rs-fsrs` (scheduler only) is sufficient.

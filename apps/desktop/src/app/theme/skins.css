@@ -1,0 +1,260 @@
+/*
+ * Theme treatments. A theme's colours and type are custom properties (skins.ts); what custom
+ * properties cannot express lives here, keyed on the attributes `applySkin` sets on <html>:
+ *   data-regions  how a region of a page is drawn (rule, card, window)
+ *   data-effect   one texture or treatment per theme
+ * Effects never apply under high contrast, and none of them animates under reduced motion.
+ * Running text never sits on a texture: grids and scan lines are faint and behind it.
+ */
+@layer skins {
+  /* ---- Regions as cards ---- */
+
+  :root[data-regions='boxed'] .panel {
+    padding: var(--s-4);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-3);
+    background: var(--sheet);
+  }
+
+  :root[data-regions='boxed'] aside.panel {
+    border-color: var(--rule);
+  }
+
+  :root[data-regions='boxed'] footer.panel {
+    border-top: 1px solid var(--rule);
+  }
+
+  /* Inside a card the table bands step one surface up, or they would vanish into the card. */
+  :root[data-regions='boxed'] .panel tbody tr:nth-child(6n + 4),
+  :root[data-regions='boxed'] .panel tbody tr:nth-child(6n + 5),
+  :root[data-regions='boxed'] .panel tbody tr:nth-child(6n) {
+    background: var(--sheet-2);
+  }
+
+  :root[data-regions='boxed'] .panel .md,
+  :root[data-regions='boxed'] .panel pre {
+    background: var(--paper);
+  }
+
+  /* ---- Regions as windows (Classic Desktop) ---- */
+
+  :root[data-effect='bevel'] {
+    --bevel-light: oklch(1 0 0);
+    --bevel-lighter: oklch(0.905 0 0);
+    --bevel-dark: oklch(0.6 0 0);
+    --bevel-darker: oklch(0.12 0 0);
+    --bevel-out: inset -1px -1px var(--bevel-darker), inset 1px 1px var(--bevel-light), inset -2px -2px var(--bevel-dark), inset 2px 2px var(--bevel-lighter);
+    --bevel-in: inset -1px -1px var(--bevel-light), inset 1px 1px var(--bevel-dark), inset -2px -2px var(--bevel-lighter), inset 2px 2px var(--bevel-darker);
+  }
+
+  :root[data-regions='window'] .panel {
+    padding: 3px 3px var(--s-3);
+    border: 0;
+    background: var(--paper);
+    box-shadow: var(--bevel-out);
+  }
+
+  :root[data-regions='window'] .panel > :not(.panel-head) {
+    margin-inline: var(--s-2);
+  }
+
+  :root[data-regions='window'] .panel-head {
+    padding: 2px var(--s-2);
+    min-height: 1.6rem;
+    align-items: center;
+    background: var(--bar);
+    color: var(--on-bar);
+  }
+
+  :root[data-regions='window'] .panel-head h2 {
+    color: var(--on-bar);
+    font-size: var(--text-sm);
+  }
+
+  :root[data-effect='bevel']:not([data-contrast='high']) button,
+  :root[data-effect='bevel']:not([data-contrast='high']) button.primary {
+    border: 0;
+    border-radius: 0;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: var(--bevel-out);
+  }
+
+  :root[data-effect='bevel']:not([data-contrast='high']) button.primary {
+    outline: 1px solid var(--ink);
+    outline-offset: -1px;
+  }
+
+  :root[data-effect='bevel']:not([data-contrast='high']) button:hover:not(:disabled) {
+    background: var(--paper);
+  }
+
+  :root[data-effect='bevel']:not([data-contrast='high']) button:active:not(:disabled),
+  :root[data-effect='bevel']:not([data-contrast='high']) button[aria-pressed='true'] {
+    box-shadow: var(--bevel-in);
+    translate: 1px 1px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  :root[data-effect='bevel']:not([data-contrast='high']) button:disabled {
+    color: var(--bevel-dark);
+    text-shadow: 1px 1px var(--bevel-light);
+  }
+
+  :root[data-effect='bevel']:not([data-contrast='high']) :is(input, select, textarea) {
+    border: 0;
+    border-radius: 0;
+    background: var(--field);
+    box-shadow: var(--bevel-in);
+  }
+
+  :root[data-effect='bevel'] .shell-nav a {
+    border-radius: 0;
+  }
+
+  :root[data-effect='bevel'] .shell-nav a[aria-current='page'] {
+    background: var(--bar);
+    color: var(--on-bar);
+  }
+
+  :root[data-effect='bevel'] .shell-nav a[aria-current='page']::before {
+    display: none;
+  }
+
+  :root[data-effect='bevel'] :focus-visible {
+    outline: 1px dotted var(--ink);
+    outline-offset: 2px;
+  }
+
+  /* ---- Glow (Hacker) ---- */
+
+  :root[data-effect='glow']:not([data-contrast='high']) :is(h1, .brand-unit, .day-code, .kpi-xl) {
+    text-shadow: 0 0 14px color-mix(in oklch, var(--accent) 55%, transparent);
+  }
+
+  /* A cursor after the wordmark. The wordmark is hidden from assistive technology, so the cursor is too. */
+  :root[data-effect='glow']:not([data-contrast='high']) .brand-role::after {
+    content: '_';
+    margin-left: 0.1ch;
+    color: var(--accent);
+    animation: cursor-blink 1.1s steps(1) infinite;
+  }
+
+  @keyframes cursor-blink {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  /* ---- Scan lines (Amber Terminal) ---- */
+
+  :root[data-effect='scanlines']:not([data-contrast='high']) .shell::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    pointer-events: none;
+    background: repeating-linear-gradient(to bottom, transparent 0 2px, oklch(0 0 0 / 0.14) 2px 3px);
+  }
+
+  :root[data-effect='scanlines']:not([data-contrast='high']) body {
+    text-shadow: 0 0 1.5px color-mix(in oklch, var(--ink) 45%, transparent);
+  }
+
+  /* ---- Neon (Synthwave) ---- */
+
+  :root[data-effect='neon']:not([data-contrast='high']) .shell-header {
+    border-bottom: 2px solid transparent;
+    border-image: linear-gradient(90deg, var(--accent), var(--advice), var(--live)) 1;
+  }
+
+  :root[data-effect='neon']:not([data-contrast='high']) :is(h1, .brand-unit) {
+    text-shadow:
+      0 0 18px color-mix(in oklch, var(--accent) 60%, transparent),
+      0 0 2px color-mix(in oklch, var(--accent) 80%, transparent);
+  }
+
+  :root[data-effect='neon']:not([data-contrast='high']) .panel {
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--accent) 25%, transparent), 0 18px 40px -24px color-mix(in oklch, var(--accent) 45%, transparent);
+  }
+
+  /* ---- Clipped corners (Cyberpunk) ---- */
+
+  :root[data-effect='clipped']:not([data-contrast='high']) .panel {
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
+    border-left: 3px solid var(--accent);
+  }
+
+  :root[data-effect='clipped']:not([data-contrast='high']) .shell-header {
+    border-bottom: 2px solid var(--accent);
+  }
+
+  :root[data-effect='clipped'] button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--paper);
+  }
+
+  /* ---- Pixels (Pocket Console) ---- */
+
+  :root[data-effect='pixel']:not([data-contrast='high']) .panel {
+    border: 3px solid var(--rule-2);
+    box-shadow: 4px 4px 0 var(--rule);
+  }
+
+  :root[data-effect='pixel']:not([data-contrast='high']) button:not(:disabled) {
+    border-width: 2px;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  :root[data-effect='pixel']:not([data-contrast='high']) button:active:not(:disabled) {
+    box-shadow: none;
+    translate: 2px 2px;
+  }
+
+  /* ---- Drafting grid (Blueprint) ---- */
+
+  :root[data-effect='grid']:not([data-contrast='high']) .shell-main {
+    background-image:
+      linear-gradient(color-mix(in oklch, var(--ink) 9%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklch, var(--ink) 9%, transparent) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-attachment: local;
+  }
+
+  /* ---- Squared paper and a red margin (Notebook) ---- */
+
+  :root[data-effect='notebook']:not([data-contrast='high']) .shell-main {
+    background-image:
+      linear-gradient(90deg, transparent calc(var(--s-5) - 10px), color-mix(in oklch, var(--owed) 55%, transparent) calc(var(--s-5) - 10px), color-mix(in oklch, var(--owed) 55%, transparent) calc(var(--s-5) - 8px), transparent calc(var(--s-5) - 8px)),
+      linear-gradient(color-mix(in oklch, var(--rule) 70%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklch, var(--rule) 70%, transparent) 1px, transparent 1px);
+    background-size:
+      100% 100%,
+      22px 22px,
+      22px 22px;
+    background-attachment: local;
+  }
+
+  /* ---- Chalk (Chalkboard) ---- */
+
+  :root[data-effect='chalk']:not([data-contrast='high']) :is(h1, h2, .brand-unit, .day-code) {
+    text-shadow:
+      0 0 1px color-mix(in oklch, var(--ink) 70%, transparent),
+      0 0 6px color-mix(in oklch, var(--ink) 18%, transparent);
+  }
+
+  :root[data-effect='chalk']:not([data-contrast='high']) .panel {
+    border-top-style: dashed;
+  }
+
+  /* ---- Still (E-ink): no motion at all ---- */
+
+  :root[data-effect='still'] *,
+  :root[data-effect='still'] ::before,
+  :root[data-effect='still'] ::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

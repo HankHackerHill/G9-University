@@ -13,6 +13,8 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: false,
     modulePreload: { polyfill: false },
+    // Never inline an asset as a data: URL: the content security policy serves fonts from 'self' only.
+    assetsInlineLimit: 0,
   },
   test: {
     environment: 'jsdom',

@@ -1,10 +1,14 @@
 import type { ReactNode } from 'react';
 
+/**
+ * A ruled region of a page: a rule, a title, optional actions on the title line. `aside` is a
+ * region in the margin column (quieter rule and title).
+ */
 export function Panel({ title, children, actions, as = 'section' }: { title: string; children: ReactNode; actions?: ReactNode; as?: 'section' | 'aside' }) {
   const Tag = as;
   return (
     <Tag className="panel" aria-label={title}>
-      <div className="row" style={{ justifyContent: 'space-between' }}>
+      <div className="panel-head">
         <h2>{title}</h2>
         {actions}
       </div>

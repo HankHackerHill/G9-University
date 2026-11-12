@@ -3,9 +3,14 @@ import type { ProvenanceLabel } from '../../ipc/types';
 
 export type BadgeTone = 'verified' | 'recommendation' | 'proposed' | 'state' | 'off';
 
-export function Badge({ tone, children, label }: { tone: BadgeTone; children: ReactNode; label?: string }) {
+/**
+ * A stamp. The tone is the standing of what it marks (components.css): `verified` is inked,
+ * `proposed` is hatched, `recommendation` is dashed, `off` is dotted. `state` is a backend
+ * state name; when the name is passed as `state` the stylesheet gives it its own standing.
+ */
+export function Badge({ tone, children, label, state }: { tone: BadgeTone; children: ReactNode; label?: string; state?: string }) {
   return (
-    <span className={`badge badge-${tone}`} aria-label={label}>
+    <span className={`badge badge-${tone}`} aria-label={label} data-state={state}>
       {children}
     </span>
   );
@@ -27,7 +32,7 @@ export function ProvenanceBadge({ label }: { label: ProvenanceLabel }) {
 
 export function StateBadge({ state }: { state: string }) {
   return (
-    <Badge tone="state" label={`State: ${state}`}>
+    <Badge tone="state" label={`State: ${state}`} state={state}>
       {state}
     </Badge>
   );

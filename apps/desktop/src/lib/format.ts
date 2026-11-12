@@ -46,3 +46,9 @@ export function shortHash(hex: string, length = 12): string {
 export function humanizeEnum(value: string): string {
   return value.toLowerCase().replace(/_/g, ' ');
 }
+
+/** `GUIDED_LAB` → `Guided lab`: an enum value as a label at the start of a line. */
+export function sentenceCase(value: string): string {
+  const text = humanizeEnum(value);
+  return text.length === 0 ? text : `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+}

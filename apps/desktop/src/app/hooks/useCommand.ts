@@ -37,13 +37,19 @@ export function useCommand<K extends OperationName>(
   op: K,
   payload: RequestOf<K> | null,
   options?: InvokeOptions,
+  /**
+   * Any change of this value re-reads the query while the last result stays visible (the same
+   * stale-while-revalidate path as `reload()`). The shell passes the mutation epoch so the day
+   * rail and the lamps follow commands issued from any screen.
+   */
+  revalidate: number | string = '',
 ): UseCommandResult<ResponseOf<K>> {
   const client = useIpc();
   const [tick, setTick] = useState(0);
   const payloadKey = payload === null ? null : canonicalJson(payload);
   const optionsKey = options === undefined ? '' : canonicalJson(options);
   const baseKey = payloadKey === null ? null : `${op}|${payloadKey}|${optionsKey}`;
-  const key = baseKey === null ? null : `${baseKey}|${tick}`;
+  const key = baseKey === null ? null : `${baseKey}|${tick}|${revalidate}`;
   const [stored, setStored] = useState<{ key: string; baseKey: string; result: InvokeResult<K> } | null>(null);
 
   useEffect(() => {

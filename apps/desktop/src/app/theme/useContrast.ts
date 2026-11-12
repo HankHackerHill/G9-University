@@ -1,16 +1,18 @@
 /**
  * Contrast preference persisted in localStorage and applied as `data-contrast` on <html>.
- * Default theme: dark cinematic with restrained gold/cyan/green; `high` raises every pair
- * above WCAG 2.2 AA with pure black/white surfaces.
+ * `high` puts pure ink on pure paper and strengthens every rule and standing colour; patterns
+ * and labels are unchanged (tokens.css).
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
+import { parsePreference, usePreference } from './preferences';
 
 export type ContrastMode = 'default' | 'high';
 export const CONTRAST_STORAGE_KEY = 'g9.contrast';
+export const CONTRAST_MODES: readonly ContrastMode[] = ['default', 'high'];
 
 export function readStoredContrast(storage: Pick<Storage, 'getItem'> | null): ContrastMode {
   try {
-    return storage?.getItem(CONTRAST_STORAGE_KEY) === 'high' ? 'high' : 'default';
+    return parsePreference(storage?.getItem(CONTRAST_STORAGE_KEY) ?? null, CONTRAST_MODES, 'default');
   } catch {
     return 'default';
   }
@@ -23,20 +25,15 @@ export function applyContrast(mode: ContrastMode, root: HTMLElement | null = typ
 }
 
 export function useContrast(): [ContrastMode, () => void] {
-  const [mode, setMode] = useState<ContrastMode>(() => readStoredContrast(typeof localStorage === 'undefined' ? null : localStorage));
+  const [mode, setMode] = usePreference<ContrastMode>(CONTRAST_STORAGE_KEY, CONTRAST_MODES, 'default');
 
   useEffect(() => {
     applyContrast(mode);
-    try {
-      localStorage.setItem(CONTRAST_STORAGE_KEY, mode);
-    } catch {
-      // Storage may be unavailable (private mode); the in-memory preference still applies.
-    }
   }, [mode]);
 
   const toggle = useCallback(() => {
-    setMode((m) => (m === 'high' ? 'default' : 'high'));
-  }, []);
+    setMode(mode === 'high' ? 'default' : 'high');
+  }, [mode, setMode]);
 
   return [mode, toggle];
 }

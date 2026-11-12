@@ -9,10 +9,11 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const css = readFileSync(fileURLToPath(new URL('./theme.css', import.meta.url)), 'utf8');
+const css = readFileSync(fileURLToPath(new URL('./components.css', import.meta.url)), 'utf8');
 
+/** Body of the first top-level rule for `selector` inside the components layer. */
 function rule(selector: string): string {
-  const pattern = new RegExp(`(?:^|\\n)${selector.replace('.', '\\.')}\\s*\\{([^}]*)\\}`);
+  const pattern = new RegExp(`\\n\\s*${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`);
   const body = pattern.exec(css)?.[1];
   if (body === undefined) {
     throw new Error(`rule ${selector} not found`);
@@ -20,16 +21,16 @@ function rule(selector: string): string {
   return body;
 }
 
-describe('theme.css layout guard', () => {
+describe('components.css layout guard', () => {
   it('multi-column grids use minmax(0, …) tracks so wide content cannot widen them', () => {
-    for (const sel of ['.grid-2', '.grid-3']) {
+    for (const sel of ['.grid-2', '.grid-3', '.split', '.with-margin']) {
       const body = rule(sel);
       expect(body, sel).toMatch(/grid-template-columns:\s*minmax\(0,/);
       expect(body, sel).not.toMatch(/grid-template-columns:\s*\d*fr\s/);
     }
   });
 
-  it('panels contain their own horizontal overflow', () => {
+  it('regions contain their own horizontal overflow', () => {
     const body = rule('.panel');
     expect(body).toMatch(/min-width:\s*0/);
     expect(body).toMatch(/overflow-x:\s*auto/);
