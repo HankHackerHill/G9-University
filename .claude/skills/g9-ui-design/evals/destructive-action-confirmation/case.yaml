@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: destructive-action-confirmation
+expected_outcome: |
+  A discard control exists only when there is unsaved text. Pressing it opens an inline confirmation in the page (an alertdialog under the control), whose title names the action as a question, whose body says what is lost and that it cannot be undone, whose destructive button is labelled with the action and styled as danger, and whose safe button says what stays and takes focus. No browser confirm or alert dialog is used, and nothing is discarded until the destructive button is pressed.

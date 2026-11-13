@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: ordered-distribution-chart
+expected_outcome: |
+  The breakdown is drawn with the design system's chart parts: a Segmented bar (or a sentence when every session is in one state) inside a ChartFigure that has a table view, with a Legend naming each mark and state names in the operator's words. Counts come only from the sessions the screen already loaded. No chart library is added and label text stays in ink.

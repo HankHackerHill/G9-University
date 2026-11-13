@@ -37,7 +37,7 @@ One family, Recursive (variable, bundled), in three voices set by its axes:
 | Voice | Axes | Role |
 |---|---|---|
 | Record | sans, linear | everything the operator reads and presses: titles 860, section titles 740, body 420 |
-| Machine | MONO 1, tabular figures | only measured values and identifiers: durations, counts, hashes, the timer, the day code |
+| Machine | MONO 1, tabular figures | measured values in tables and lists, identifiers, hashes, the session timer, the day code. A large standalone figure (a stat tile) is set in the record voice with proportional figures: equal-width digits look loose at that size |
 | Mentor | CASL 1, slant −9° | advice and the notes in the margin |
 
 Scale (px at 16 px root): 12, 13, 14, 16, 18, 22, 28, 36, 48, 72. Body 14; prose and ledes 15; line length capped at 68 characters. Labels are sentence case in the record voice; nothing is set in capitals for decoration.

@@ -159,3 +159,24 @@ export function paletteChecks(p: Palette): ContrastCheck[] {
 export function lowestTextContrast(p: Palette): number {
   return Math.min(...paletteChecks(p).filter((c) => c.minimum >= 4.5).map((c) => c.ratio));
 }
+
+/** `color-mix(in oklch, colour N%, white | black)`: an achromatic colour has no hue to contribute, so the hue is kept. */
+function mixWith(colour: Oklch, share: number, target: 'white' | 'black'): Oklch {
+  const [l, c, h] = colour;
+  return [share * l + (1 - share) * (target === 'white' ? 1 : 0), share * c, h];
+}
+
+/** Share of ink in each step of the ordinal ramp, by scheme (tokens.css `--ramp-1 … --ramp-4`). */
+export const RAMP_SHARES = { light: [0.5, 0.66, 0.83, 1], dark: [0.58, 0.72, 0.86, 1] } as const;
+
+/** The raised surface charts sit on: paper mixed 38 % with white in a light scheme, `sheet` in a dark one (tokens.css `--raised`). */
+export function raisedOf(p: Palette): Oklch {
+  return p.scheme === 'light' ? mixWith(p.paper, 0.38, 'white') : p.sheet;
+}
+
+/** The four steps of the ordinal ramp of a palette, from the step nearest the surface to full ink. */
+export function rampOf(p: Palette): Oklch[] {
+  const target = p.scheme === 'light' ? 'white' : 'black';
+  return RAMP_SHARES[p.scheme].map((share) => mixWith(p.ink, share, target));
+}
+

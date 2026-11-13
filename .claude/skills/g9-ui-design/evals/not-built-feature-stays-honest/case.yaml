@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: not-built-feature-stays-honest
+expected_outcome: |
+  The screen says in words that adding a source is not built and names the missing operation. It shows the count of sources only if the screen actually reads them; otherwise the count is a missing value with its reason, never the digit 0. No button, form or sample row pretends the feature exists. Shared components and classes of the design system are used; no hex colour and no inline style string is added.

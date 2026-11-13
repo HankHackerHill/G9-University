@@ -8,7 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { contrast, inGamut, lowestTextContrast, paletteChecks, toSrgb, type Oklch, type Palette } from './contrast';
+import { contrast, cssOklch, inGamut, lowestTextContrast, paletteChecks, raisedOf, rampOf, toSrgb, type Oklch, type Palette } from './contrast';
 import { fixedScheme, paletteOf, SKIN_GROUPS, SKINS, skinById } from './skins';
 
 const tokens = readFileSync(fileURLToPath(new URL('./tokens.css', import.meta.url)), 'utf8');
@@ -109,6 +109,33 @@ describe.each(ALL_PALETTES)('palette $name', ({ palette }) => {
       .map((c) => `${c.pair}: ${c.ratio.toFixed(2)} < ${c.minimum}`);
     expect(failing).toEqual([]);
     expect(lowestTextContrast(palette)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe.each(ALL_PALETTES)('ordinal ramp of $name', ({ palette }) => {
+  const ramp = rampOf(palette);
+
+  it('is one hue with lightness moving one way in steps a reader can tell apart', () => {
+    const hues = new Set(ramp.map(([, , h]) => h));
+    expect(hues.size).toBe(1);
+    const steps = ramp.slice(1).map(([l], i) => Math.abs(l - (ramp[i]?.[0] ?? l)));
+    // Dataviz rule for a sequential scale: monotone lightness, at least 0.06 between neighbours.
+    const direction = Math.sign((ramp[3]?.[0] ?? 0) - (ramp[0]?.[0] ?? 0));
+    for (let i = 1; i < ramp.length; i += 1) {
+      expect(Math.sign((ramp[i]?.[0] ?? 0) - (ramp[i - 1]?.[0] ?? 0))).toBe(direction);
+    }
+    expect(Math.min(...steps)).toBeGreaterThanOrEqual(0.06);
+  });
+
+  it('stays inside sRGB and keeps its faintest step visible on the raised surface (2:1 or better)', () => {
+    for (const step of ramp) {
+      expect(inGamut(step), cssOklch(step)).toBe(true);
+    }
+    const faintest = ramp[0];
+    expect(faintest).toBeDefined();
+    if (faintest !== undefined) {
+      expect(contrast(toSrgb(faintest), toSrgb(raisedOf(palette)))).toBeGreaterThanOrEqual(2);
+    }
   });
 });
 

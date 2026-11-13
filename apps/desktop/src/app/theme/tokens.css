@@ -146,12 +146,13 @@
      * The ordinal ramp for ordered parts (a distribution over ordered states): one hue, the
      * ink's own, light to dark in a light scheme and dark to light in a dark one. Mixing with
      * white or black keeps the hue (an achromatic colour has none to contribute); mixing with the
-     * paper would swing it. Checked by the dataviz validator: monotone lightness, steps of at
-     * least 0.06, light end at 2:1 or better on the raised surface.
+     * paper would swing it. The shares are the same for every theme and are checked for every
+     * theme by skins.test.ts: lightness moves one way in steps of 0.06 or more, every step is
+     * inside sRGB, and the faintest step keeps 2:1 or better on the raised surface.
      */
-    --ramp-1: light-dark(color-mix(in oklch, var(--ink) 40%, white), color-mix(in oklch, var(--ink) 50%, black));
-    --ramp-2: light-dark(color-mix(in oklch, var(--ink) 60%, white), color-mix(in oklch, var(--ink) 66%, black));
-    --ramp-3: light-dark(color-mix(in oklch, var(--ink) 80%, white), color-mix(in oklch, var(--ink) 83%, black));
+    --ramp-1: light-dark(color-mix(in oklch, var(--ink) 50%, white), color-mix(in oklch, var(--ink) 58%, black));
+    --ramp-2: light-dark(color-mix(in oklch, var(--ink) 66%, white), color-mix(in oklch, var(--ink) 72%, black));
+    --ramp-3: light-dark(color-mix(in oklch, var(--ink) 83%, white), color-mix(in oklch, var(--ink) 86%, black));
     --ramp-4: var(--ink);
     --overlay: color-mix(in oklch, var(--raised) 92%, transparent);
     --edge: color-mix(in oklch, var(--ink) 9%, transparent);
