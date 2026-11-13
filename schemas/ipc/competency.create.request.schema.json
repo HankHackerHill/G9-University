@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/competency.create.request",
+  "title": "competency.create request (v1.0)",
+  "description": "Request payload for `competency.create`: a competency the operator defines (validated by g9-competency).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string",
+      "pattern": "^[A-Z0-9][A-Z0-9-]{0,31}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "validity_days": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3650
+    }
+  },
+  "required": [
+    "code",
+    "title"
+  ]
+}

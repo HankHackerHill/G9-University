@@ -650,3 +650,113 @@ pub fn correct_time(
         },
     )
 }
+
+#[derive(Debug, Deserialize)]
+struct CreateRequest {
+    planned_minutes: u32,
+    planned_start: Option<i64>,
+    mode: Option<g9_domain::InteractionMode>,
+    objective_id: Option<String>,
+}
+
+/// `session.create`: a PLANNED study session the operator schedules, optionally
+/// linked to a curriculum objective by code. It then runs like any session
+/// (prepare, start, pause, complete).
+pub fn create(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    let req: CreateRequest = decode(payload)?;
+    let session_id: SessionId = parse_id(
+        &super::creation_id(ctx, spec, meta, || new_id("session"))?,
+        "session_id",
+    )?;
+    let resource = ResourceRef::new(ResourceKind::StudySession, session_id.as_str());
+    pipeline::execute(
+        ctx,
+        meta,
+        Command {
+            spec,
+            resource: &resource,
+            payload,
+        },
+        |_, _| {
+            Ok(Facts::new_record(rc(
+                g9_domain::DataDomain::Learning,
+                g9_domain::Classification::Internal,
+                false,
+            )))
+        },
+        |env| {
+            let objective_id = match &req.objective_id {
+                None => None,
+                Some(code) => {
+                    let code: g9_domain::ObjectiveId = parse_id(code, "objective_id")?;
+                    let version = crate::commands::curriculum::active_version(env.conn, env.svc)?
+                        .ok_or_else(|| {
+                        G9Error::not_found(
+                            "curriculum.not_imported",
+                            "no curriculum version is imported",
+                        )
+                    })?;
+                    let row = curriculum_repo::objective_by_code(env.conn, &version.id, &code)?
+                        .ok_or_else(|| {
+                            G9Error::not_found("objective.not_found", "objective not found")
+                        })?;
+                    Some(row.id)
+                }
+            };
+            let mode = req.mode.unwrap_or(g9_domain::InteractionMode::Study);
+            if !matches!(
+                mode,
+                g9_domain::InteractionMode::Study
+                    | g9_domain::InteractionMode::Lab
+                    | g9_domain::InteractionMode::Review
+            ) {
+                return Err(G9Error::invalid_input(
+                    "session.mode_invalid",
+                    "a study session runs in STUDY, LAB or REVIEW mode",
+                ));
+            }
+            let start = req.planned_start.map_or(env.now, UtcMillis::from_millis);
+            let end = start
+                .checked_add(DurationMs::from_minutes_u32(req.planned_minutes))
+                .map_err(|_| {
+                    G9Error::invalid_input(
+                        "session.planned_end_invalid",
+                        "the planned end overflows",
+                    )
+                })?;
+            let row = StudySessionRow {
+                id: session_id.clone(),
+                training_day_id: None,
+                objective_id,
+                study_block_id: None,
+                calendar_event_id: None,
+                state: SessionState::Planned,
+                mode,
+                zone: env.svc.config.zone.clone(),
+                planned_start_utc: Some(start),
+                planned_end_utc: Some(end),
+                planned_minutes: req.planned_minutes,
+                started_at: None,
+                ended_at: None,
+                credited_ms: DurationMs::ZERO,
+                uncertain_ms: DurationMs::ZERO,
+                data_domain: g9_domain::DataDomain::Learning,
+                classification: g9_domain::Classification::Internal,
+                revision: g9_domain::Revision::INITIAL,
+                created_at: env.now,
+                updated_at: env.now,
+            };
+            let revision = repo::insert_session(env.conn, &row)?;
+            Ok(
+                Mutation::new(session_view(env.conn, env.svc, &row)?, Some(revision)).with_event(
+                    EventSpec::learning("session.created", json!({ "session_id": session_id })),
+                ),
+            )
+        },
+    )
+}

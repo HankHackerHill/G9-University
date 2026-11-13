@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/evidence.list.response",
+  "title": "evidence.list response (v1.0)",
+  "description": "`result` of CommandOutcome for `evidence.list` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "evidence_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "NOTE",
+              "ATTACHMENT",
+              "SESSION",
+              "ATTEMPT_SUBMISSION",
+              "CHECKER_OUTPUT",
+              "REVIEWER_COMMENT",
+              "EXTERNAL"
+            ]
+          },
+          "note_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128
+          },
+          "attachment_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128
+          },
+          "summary": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "filename": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "media_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "size_bytes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "invalidated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "kind",
+          "note_id",
+          "attachment_id",
+          "summary",
+          "sha256",
+          "filename",
+          "media_type",
+          "size_bytes",
+          "created_at",
+          "invalidated"
+        ]
+      }
+    }
+  },
+  "required": [
+    "items"
+  ]
+}

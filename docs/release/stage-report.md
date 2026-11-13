@@ -136,7 +136,7 @@ Controls added or corrected in this reporting period: deny-by-default policy wit
 
 Security audit 2026-11-12 (triple: two independent auditors, a lead pass and adversarial verification; `docs/audit/security-audit-2026-11-12.md`): no CRITICAL or HIGH; two MEDIUM fixed on 2026-11-13 with fail-first tests (backup verification, restore and open now verify the schema itself; approvals bind to the stored revision and a stale approval request is refused) and the release-build LOW fixed (`build.rs` refuses a dev-mode release binary); five LOW and seven INFO remain open as listed there.
 
-Open: SEC-03 is PARTIAL (since 2026-11-13 an approval is granted only through the native confirmation the shell raises from Rust, on Linux; missing: an approval-request rate limit, the isolation pattern, an ACL manifest; ADR-0014 addendum); SEC-02 is PARTIAL (`RuntimeEpoch` exists in `g9-policy` but is not wired into `g9-app`, so approvals survive a restart within their TTL, 10 minutes since 2026-11-13 (ADR-0015)); no encryption at rest (rely on full-disk encryption); `export.request` records an audited, approval-gated request and writes no file (disclosed in the outcome and the UI; a fail-fast variant needs the A10-02 and ST05 evidence rewritten and is PROPOSED); idempotency records no longer store note bodies or skill output (an idempotent replay rebuilds the view from storage and warns `idempotency.replay_rebuilt`; TESTED by `a10_erasure_leaves_no_copy_in_any_table_and_replay_returns_no_erased_content`), so erasure leaves no copy, but old idempotency records are not purged on a schedule (`system.retention_sweep` is PROPOSED); CSP lacks `form-action` and `frame-ancestors` and there is no `on_navigation` guard (deferred until a host run); the CLI loads skills unpinned and accepts `--operator-id`; `simulate-week` and `crash-drill` write seed rows directly to storage (labelled `SEEDED`) and now require `--scratch`, an acknowledgement only: nothing inspects the directory for operator data (PROPOSED); the repository history contains 26 commits authored as "G9 Mentor Build" with the operator's personal email as identity.
+Open: SEC-03 is PARTIAL (since 2026-11-13 an approval is granted only through the native confirmation the shell raises from Rust, on Linux; missing: an approval-request rate limit, the isolation pattern, an ACL manifest; ADR-0014 addendum); SEC-02 is PARTIAL (`RuntimeEpoch` exists in `g9-policy` but is not wired into `g9-app`, so approvals survive a restart within their TTL, 10 minutes since 2026-11-13 (ADR-0015)); no encryption at rest (rely on full-disk encryption); `export.request` writes the export after approval since 2026-11-13 (section 14; exported files are not encrypted: they rely on the host's full-disk encryption like the database); idempotency records no longer store note bodies or skill output (an idempotent replay rebuilds the view from storage and warns `idempotency.replay_rebuilt`; TESTED by `a10_erasure_leaves_no_copy_in_any_table_and_replay_returns_no_erased_content`), so erasure leaves no copy, but old idempotency records are not purged on a schedule (`system.retention_sweep` is PROPOSED); CSP lacks `form-action` and `frame-ancestors` and there is no `on_navigation` guard (deferred until a host run); the CLI loads skills unpinned and accepts `--operator-id`; `simulate-week` and `crash-drill` write seed rows directly to storage (labelled `SEEDED`) and now require `--scratch`, an acknowledgement only: nothing inspects the directory for operator data (PROPOSED); the repository history contains 26 commits authored as "G9 Mentor Build" with the operator's personal email as identity.
 
 ## 11. Recovery status
 
@@ -149,6 +149,7 @@ Open: SEC-03 is PARTIAL (since 2026-11-13 an approval is granted only through th
 | In-app restore operation (`DataDelete`-class approval) and restoring into a running application | **PROPOSED** (the desktop app has no restore button; the operator needs the CLI) |
 | Backups across restarts | TESTED: manifests are read from the database; verify and restore-test work in a later process; `system.status.last_backup` is the newest RETAINED manifest |
 | Desktop shell backup flow | NOT RUN (shell uncompiled) |
+| Attachment files in backups (2026-11-13) | TESTED: `backup.create` copies the referenced files to `<data>/backups/attachments` (hash-checked), `g9 copy-backup` carries them, `g9 restore` puts them back and lists any missing (`apps/cli/tests/restore.rs`). Verification checks that files exist; hashing during verification is PROPOSED |
 
 ## 12. Remaining risks
 
@@ -183,8 +184,25 @@ Open: SEC-03 is PARTIAL (since 2026-11-13 an approval is granted only through th
 **C. Operator decisions.**
 1. Issue or withhold the Stage 00 operator PASS (`GOVERNANCE.md`).
 2. Supply the original approved 12-week curriculum so C01 reconciliation can run, or accept the seed as the working plan with the PROPOSED_SEED label.
-3. `export.request`: keep as an audited, disclosed request (current), or fail fast until the writer exists (rewrites A10-02 and ST05 evidence).
+3. ~~`export.request`: keep as a disclosed request or fail fast~~ resolved 2026-11-13: the owner asked for export to a file; the writer exists (section 14).
 4. Replace the `/tmp` path in `CLAUDE.md` with a repository path: copying the handoff text into `docs/` would publish it if the repository is ever pushed to a public remote.
 5. Git identity: keep or rewrite the 26 "G9 Mentor Build" commits (already on `origin`; rewriting them needs a force push, which needs the GitHub access you withheld).
 6. Pushing: 13 or more local commits are unpushed; pushing requires reversing the "work only here" instruction.
 7. Review and disable the third-party plugins synced into the Claude Code environment that you do not use (see the session audit).
+
+## 14. Owner feature requests, 2026-11-13
+
+Request (operator, verbatim): "Now finish the build doing each of the following: 1. Create a study session option 2. Add, edit, delete calendar events 3. Record a review result 4. Create your own competencies, assessments or rubrics 5. Attach evidence or files 6. Export your data to a file", plus the six correctness defects, the native confirmation, backup hardening and the decisions recorded in ADR-0015.
+
+| # | Feature | Operations | Tests (fail-first where a defect was involved) | Status |
+|---|---|---|---|---|
+| 1 | Study session | `session.create` | `crates/g9-app/tests/feature_sessions.rs` (3) | TESTED |
+| 2 | Calendar events | `calendar.create_event`, `calendar.update_event`, `calendar.delete_event` (approval) | `feature_calendar.rs` (5) | TESTED |
+| 3 | Review result | `retention.create_item`, `retention.record_review` | `feature_retention.rs` (4) | TESTED |
+| 4 | Authoring | `competency.create`, `assessment.define` | `feature_authoring.rs` (3): an authored assessment is begun, submitted, graded, finalized and projects its competency | TESTED; custom rubric criteria, QUIZ and REPORT kinds PROPOSED (no storage) |
+| 5 | Evidence and files | `evidence.attach_file`, `evidence.from_note`, `evidence.list`; `assessment.submit` takes the ids | `feature_evidence.rs` (6), `g9-storage` `attachment_store` (5, one caught a symlinked shard directory creating a folder outside the store before the fix) | TESTED; quarantine PROPOSED (mismatches are refused) |
+| 6 | Export to a file | `export.request` writes `<data>/exports/<id>/` | `feature_export.rs` (4), `g9-storage` `export` (4, one caught the unassigned `schema_migrations` table) | TESTED |
+| — | Attachments in backups | `backup.create`, `g9 copy-backup`, `g9 restore --attachments` | `apps/cli/tests/restore.rs::attachment_files_travel_with_a_copied_backup_and_come_back_on_restore` | TESTED |
+
+IPC operations: 46 (was 35). New dependency: `base64 =0.23.1` in `g9-app` (already in `Cargo.lock` through the shell's tree; default features off). Frontend: section 6 counts are updated when the final verification of this change runs.
+

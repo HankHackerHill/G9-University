@@ -482,7 +482,7 @@ Gate: A10 · Test: `tests/integration/a10_export_deletion.rs`
 | erased note cannot be revised | refused (not OK) | UNAUTHORIZED | PASS |
 | erased note unchanged by the refused revision | {"exists":true,"revision":2,"erased":true,"domain":"LEARNING","classification":"PRIVATE","body_sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","version_count":1,"erased_versions":1} | {"exists":true,"revision":2,"erased":true,"domain":"LEARNING","classification":"PRIVATE","body_sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","version_count":1,"erased_versions":1} | PASS |
 
-### A10-02 — export: approval bound to the selection; recorded once; writer PROPOSED (no file produced) (PASS)
+### A10-02 — export: approval bound to the selection; recorded once; the export folder is written with a manifest (PASS)
 
 Gate: A10 · Test: `tests/integration/a10_export_deletion.rs`
 
@@ -499,8 +499,8 @@ Gate: A10 · Test: `tests/integration/a10_export_deletion.rs`
 | export approval requires DATA_EXPORT | DATA_EXPORT | DATA_EXPORT | PASS |
 | export with approval: recorded decision | ALLOW | ALLOW | PASS |
 | export with approval: outcome | OK | OK | PASS |
-| export state REQUESTED | REQUESTED | REQUESTED | PASS |
-| outcome declares the writer PROPOSED | warning export.execution_not_implemented | ["export.execution_not_implemented: the per-domain export writer is PROPOSED; no file was produced"] | PASS |
+| export state READY | READY | READY | PASS |
+| manifest.json is on disk and hashes to manifest_sha256 | true | true | PASS |
 | one export.requested event | {"export_events":1} | {"export_events":1} | PASS |
 | replay the export approval: recorded decision | DENY | DENY | PASS |
 | replay the export approval: outcome | UNAUTHORIZED | UNAUTHORIZED | PASS |
@@ -762,7 +762,7 @@ Gate: A06 · Test: `tests/adversarial/st_adversarial_catalogue.rs`
 | 2 | `deletion.request` | DENY | UNAUTHORIZED | `approval.resource_mismatch` |
 | 3 | `deletion.request` | DENY | APPROVAL_REQUIRED | `approval.expired` |
 | 4 | `deletion.request` | DENY | NOT_FOUND | `approval.not_found` |
-| 5 | `assessment.approve_final` | ALLOW | STALE_REVISION | `revision.stale` |
+| 5 | `assessment.approve_final` | DENY | STALE_REVISION | `approval.revision_mismatch` |
 | 6 | `assessment.approve_final` | DENY | STALE_REVISION | `approval.revision_mismatch` |
 | 7 | `deletion.request` | DENY | UNAUTHORIZED | `approval.mac_invalid` |
 
@@ -787,9 +787,9 @@ Gate: A06 · Test: `tests/adversarial/st_adversarial_catalogue.rs`
 | forged approval id: outcome | NOT_FOUND | NOT_FOUND | PASS |
 | forged approval id: error code | approval.not_found | approval.not_found | PASS |
 | forged id created no approval row | {"exists":false} | {"exists":false} | PASS |
-| approval for revision r after the attempt moved to r+2: recorded decision | ALLOW | ALLOW | PASS |
-| approval for revision r after the attempt moved to r+2: outcome | STALE_REVISION | STALE_REVISION | PASS |
-| approval for revision r after the attempt moved to r+2: error code | revision.stale | revision.stale | PASS |
+| approval for revision r after the attempt moved to r+2 (retry claims r): recorded decision | DENY | DENY | PASS |
+| approval for revision r after the attempt moved to r+2 (retry claims r): outcome | STALE_REVISION | STALE_REVISION | PASS |
+| approval for revision r after the attempt moved to r+2 (retry claims r): error code | approval.revision_mismatch | approval.revision_mismatch | PASS |
 | approval bound to r presented with the current revision: recorded decision | DENY | DENY | PASS |
 | approval bound to r presented with the current revision: outcome | STALE_REVISION | STALE_REVISION | PASS |
 | approval bound to r presented with the current revision: error code | approval.revision_mismatch | approval.revision_mismatch | PASS |

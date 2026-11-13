@@ -12,12 +12,20 @@
 //!   `<backup_id>.manifest.json` is written beside it, so the copy can be
 //!   restored with `g9 restore --snapshot <copy> --expect-sha256 <sha256>` even
 //!   when this disk is gone.
+//! * The attachment files the snapshot references are copied into
+//!   `<dest>/attachments/ab/cd/<sha256>`, hash-checked while copying, from the
+//!   backup's attachment store (`<data dir>/backups/attachments`) or, for a file
+//!   not there (a backup made before attachments were copied), the live store.
+//!   Files already at the destination are kept. `g9 restore --snapshot` reads
+//!   this folder by default. A file found in neither store is listed and
+//!   reported as a warning.
 
-use crate::bootstrap::{BootOptions, DATABASE_FILE};
+use crate::bootstrap::{BootOptions, ATTACHMENTS_DIR, BACKUPS_DIR, DATABASE_FILE};
 use crate::cli::CopyBackupArgs;
 use crate::commands::restore::{data_root, from_manifest};
 use crate::CliError;
 use g9_domain::G9Error;
+use g9_storage::attachment_store::{self, CopyReport};
 use g9_storage::backup::{sha256_of_file, sync_dir, sync_file};
 use serde_json::{json, Value};
 use std::fs;
@@ -68,10 +76,12 @@ pub fn run(boot: &BootOptions, args: &CopyBackupArgs) -> Result<Value, CliError>
         )
         .into());
     }
+    let attachments = copy_attachments(&root, &dest, &dest_dir)?;
     let record = json!({
         "backup_id": args.backup_id,
         "snapshot_file": file_name.to_string_lossy(),
         "sha256": sha256,
+        "attachments": attachments_value(&attachments),
         "restore": format!(
             "g9 restore --snapshot <path to {}> --expect-sha256 {sha256} --confirm-replace-live-database",
             file_name.to_string_lossy()
@@ -86,7 +96,47 @@ pub fn run(boot: &BootOptions, args: &CopyBackupArgs) -> Result<Value, CliError>
         "manifest": manifest_path.to_string_lossy(),
         "sha256": sha256,
         "verified": true,
+        "attachments": attachments_value(&attachments),
+        "warnings": if attachments.complete() {
+            Vec::new()
+        } else {
+            vec![format!(
+                "WARNING copy_backup.attachments_missing: {} attachment file(s) were not found intact and are not in the copy",
+                attachments.missing.len() + attachments.corrupt.len()
+            )]
+        },
     }))
+}
+
+/// Copy the files the snapshot copy references: from the backup store first,
+/// then the live store for anything not there.
+fn copy_attachments(root: &Path, snapshot: &Path, dest_dir: &Path) -> Result<CopyReport, CliError> {
+    let digests = attachment_store::referenced_digests_in(snapshot).map_err(G9Error::from)?;
+    if digests.is_empty() {
+        return Ok(CopyReport::default());
+    }
+    let to = dest_dir.join(ATTACHMENTS_DIR);
+    let backup_store = root.join(BACKUPS_DIR).join(ATTACHMENTS_DIR);
+    let mut report =
+        attachment_store::copy_all(&backup_store, &to, &digests).map_err(G9Error::from)?;
+    if !report.missing.is_empty() {
+        let retry = std::mem::take(&mut report.missing);
+        let second = attachment_store::copy_all(&root.join(ATTACHMENTS_DIR), &to, &retry)
+            .map_err(G9Error::from)?;
+        report.written += second.written;
+        report.already_present += second.already_present;
+        report.missing = second.missing;
+        report.corrupt.extend(second.corrupt);
+    }
+    Ok(report)
+}
+
+fn attachments_value(report: &CopyReport) -> Value {
+    json!({
+        "copied": report.written + report.already_present,
+        "missing": report.missing,
+        "damaged": report.corrupt,
+    })
 }
 
 /// `<dest>.partial` → sync → rename → sync the directory.

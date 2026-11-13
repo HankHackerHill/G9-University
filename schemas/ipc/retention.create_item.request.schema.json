@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/retention.create_item.request",
+  "title": "retention.create_item request (v1.0)",
+  "description": "Request payload for `retention.create_item`: a review item the operator writes (baseline schedule; the optional answer is kept as an erasable note).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "prompt": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "answer": {
+      "type": "string",
+      "maxLength": 20000
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "DECLARATIVE",
+        "PROCEDURAL"
+      ]
+    },
+    "competency_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    }
+  },
+  "required": [
+    "prompt"
+  ]
+}

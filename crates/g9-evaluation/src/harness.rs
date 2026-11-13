@@ -312,13 +312,15 @@ impl Harness {
                 .map_err(|e| io_err("evaluation.tempdir", &e))?;
             let root =
                 std::fs::canonicalize(dir.path()).map_err(|e| io_err("evaluation.tempdir", &e))?;
-            for sub in ["backups", "scratch"] {
+            for sub in ["backups", "scratch", "attachments", "exports"] {
                 std::fs::create_dir_all(root.join(sub))
                     .map_err(|e| io_err("evaluation.tempdir", &e))?;
             }
             config.approved_roots = vec![root.clone()];
             config.backup_dir = Some(root.join("backups"));
             config.scratch_dir = Some(root.join("scratch"));
+            config.attachment_dir = Some(root.join("attachments"));
+            config.export_dir = Some(root.join("exports"));
             Some(dir)
         } else {
             None

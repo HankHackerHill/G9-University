@@ -900,7 +900,7 @@ pub fn a06_identity_binding_and_evidentiary_denial() -> Result<ScenarioReport, G
         "A06",
         "UI-supplied actor refused; approval bound to its parameters; evidentiary deletion denied and logged",
     );
-    let (mut h, seed) = seeded(HarnessOptions::default())?;
+    let (mut h, seed) = seeded(HarnessOptions::with_host_dirs())?;
     let audit_before = probes::audit(&h)?;
     for actor in [
         json!({ "id": "intruder", "kind": { "kind": "OPERATOR" } }),
@@ -1032,7 +1032,7 @@ pub fn a06_pipeline_order_idempotency_and_revision() -> Result<ScenarioReport, G
         "A06",
         "pipeline order: idempotent replay before policy/approval; key reuse CONFLICT; stale revision refused",
     );
-    let mut h = Harness::new()?;
+    let mut h = Harness::with_options(HarnessOptions::with_host_dirs())?;
     let note_events = |h: &Harness| -> Result<usize, G9Error> {
         Ok(probes::event_kinds(h)?
             .iter()
@@ -1475,9 +1475,9 @@ pub fn a10_export_request() -> Result<ScenarioReport, G9Error> {
     let mut r = ScenarioReport::new(
         "A10-02",
         "A10",
-        "export: approval bound to the selection; recorded once; writer PROPOSED (no file produced)",
+        "export: approval bound to the selection; recorded once; the export folder is written with a manifest",
     );
-    let (mut h, _seed) = seeded(HarnessOptions::default())?;
+    let (mut h, _seed) = seeded(HarnessOptions::with_host_dirs())?;
     let payload = json!({ "domains": ["LEARNING"], "format": "JSON", "include_private": true });
     let exports = |h: &Harness| -> Result<Value, G9Error> {
         Ok(
@@ -1515,24 +1515,25 @@ pub fn a10_export_request() -> Result<ScenarioReport, G9Error> {
     );
     check_step(&mut r, "export with approval", &out, "ALLOW", "OK", None);
     r.check_eq(
-        "export state REQUESTED",
-        json!("REQUESTED"),
+        "export state READY",
+        json!("READY"),
         out.value()["state"].clone(),
     );
+    let location = out.value()["location"]
+        .as_str()
+        .map(std::path::PathBuf::from);
+    let manifest = location
+        .as_ref()
+        .and_then(|dir| std::fs::read(dir.join("manifest.json")).ok());
+    // The export id is random, so the hash itself is not printed (the
+    // evidence document stays stable between runs); the comparison is.
+    let matches =
+        manifest.is_some_and(|bytes| json!(sha256_hex(&bytes)) == out.value()["manifest_sha256"]);
     r.check_that(
-        "outcome declares the writer PROPOSED",
-        "warning export.execution_not_implemented",
-        out.result.as_ref().ok().map(|v| v["warnings"].clone()),
-        out.result
-            .as_ref()
-            .ok()
-            .and_then(|v| v["warnings"].as_array().cloned())
-            .is_some_and(|w| {
-                w.iter().any(|x| {
-                    x.as_str()
-                        .is_some_and(|s| s.starts_with("export.execution_not_implemented"))
-                })
-            }),
+        "manifest.json is on disk and hashes to manifest_sha256",
+        "true",
+        json!(matches),
+        matches,
     );
     r.check_eq(
         "one export.requested event",

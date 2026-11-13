@@ -62,6 +62,9 @@ pub struct AppConfig {
     /// verification (must lie inside `approved_roots`). Without it a snapshot
     /// that holds attachment rows fails verification.
     pub attachment_dir: Option<PathBuf>,
+    /// Directory `export.request` writes exports to (must lie inside
+    /// `approved_roots`); without it an approved export is refused.
+    pub export_dir: Option<PathBuf>,
     /// Host directories the backend may write to.
     pub approved_roots: Vec<PathBuf>,
     /// Reported `SystemStatus.transport`.
@@ -86,6 +89,7 @@ impl AppConfig {
             backup_dir: None,
             scratch_dir: None,
             attachment_dir: None,
+            export_dir: None,
             approved_roots: Vec::new(),
             transport: Transport::Tauri,
             native_confirmation: true,

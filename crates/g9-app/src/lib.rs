@@ -66,8 +66,13 @@
 //!   deterministic checker is PROPOSED.
 //! * `g9_policy::ApprovalLedger` has no record-level restore: the ledger is
 //!   re-synchronised through its JSON snapshot form.
-//! * No export writer honours a domain selection: `export.request` records the
-//!   approved request only (PROPOSED).
+//! * Attachments cannot be quarantined (no quarantine columns): a file whose
+//!   bytes do not match its declared type is refused, not held for review
+//!   (PROPOSED). Backup verification checks that attachment files exist; hashing
+//!   them during verification is PROPOSED (copies are hash-checked).
+//! * `assessment.define` stores the baseline rubric and the storable kinds
+//!   (blind practical, capstone, transfer check); custom criteria and the quiz
+//!   and report kinds are PROPOSED.
 
 pub mod analytics;
 pub mod commands;

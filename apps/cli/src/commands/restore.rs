@@ -2,8 +2,8 @@
 //! snapshot (ADR-0001; `docs/runbooks/backup-restore.md` § Restore).
 //!
 //! ```text
-//! g9 restore --backup-id ID            [--data-dir DIR] [--confirm-replace-live-database]
-//! g9 restore --snapshot PATH --expect-sha256 HEX [--data-dir DIR] [--confirm-replace-live-database]
+//! g9 restore --backup-id ID            [--attachments DIR] [--data-dir DIR] [--confirm-replace-live-database]
+//! g9 restore --snapshot PATH --expect-sha256 HEX [--attachments DIR] [--data-dir DIR] [--confirm-replace-live-database]
 //! ```
 //!
 //! The application must be stopped: a database that another connection holds is
@@ -25,17 +25,27 @@
 //!   quarantined paths; no content, no key) is appended to
 //!   `<data dir>/restore-log.jsonl`, then the normal boot runs (recovery, and
 //!   migrations with their own pre-migration backup) and its report is printed.
+//! * Attachment files: the restored database's attachments are copied into
+//!   `<data dir>/attachments` from `--attachments <dir>`, by default the
+//!   `attachments` folder beside the snapshot (`<data dir>/backups/attachments`
+//!   for a backup id; the folder `g9 copy-backup` writes beside a copy). Each
+//!   file is hash-checked while copying; files already in place are kept. A file
+//!   that cannot be found or is damaged is listed and reported as a warning: the
+//!   database restore has happened and is not undone.
 //!
 //! The CLI writes no SQL: every database access is a `g9-storage` function.
 
 use super::init;
 use crate::bootstrap::{
-    self, BootOptions, BACKUPS_DIR, DATABASE_FILE, QUARANTINE_DIR, RESTORE_LOG_FILE,
+    self, BootOptions, ATTACHMENTS_DIR, BACKUPS_DIR, DATABASE_FILE, QUARANTINE_DIR,
+    RESTORE_LOG_FILE,
 };
 use crate::cli::RestoreArgs;
 use crate::output::CliError;
 use g9_domain::{BackupId, BackupState, G9Error, UtcMillis};
-use g9_storage::{backup, restore_over_live, RestoreCode, RestoreOptions, StorageError};
+use g9_storage::{
+    attachment_store, backup, restore_over_live, RestoreCode, RestoreOptions, StorageError,
+};
 use serde_json::{json, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -51,6 +61,7 @@ struct Plan {
     live: PathBuf,
     quarantine_dir: PathBuf,
     restore_log: PathBuf,
+    attachments_from: PathBuf,
 }
 
 /// Run `restore`.
@@ -112,6 +123,26 @@ pub fn run(boot: &BootOptions, args: &RestoreArgs) -> Result<Value, CliError> {
     let booted = init::run(boot).map_err(|e| after_restore_failure(e, &quarantined))?;
 
     let mut warnings = Vec::new();
+    let attachments = match restore_attachments(&root, &plan) {
+        Ok(report) => {
+            let missing = report["missing"].as_array().map_or(0, Vec::len)
+                + report["damaged"].as_array().map_or(0, Vec::len);
+            if missing > 0 {
+                warnings.push(format!(
+                    "WARNING restore.attachments_missing: {missing} attachment file(s) the restored database references were not found intact in {}; run the restore again with --attachments <folder> once you have them",
+                    text(&plan.attachments_from)
+                ));
+            }
+            report
+        }
+        Err(e) => {
+            warnings.push(format!(
+                "WARNING restore.attachments_not_copied: {}; the database restore completed",
+                e.code()
+            ));
+            Value::Null
+        }
+    };
     if let Some(kind) = log_error {
         warnings.push(format!(
             "WARNING restore.log_not_written: {RESTORE_LOG_FILE} could not be appended ({kind}); the restore itself completed"
@@ -129,8 +160,31 @@ pub fn run(boot: &BootOptions, args: &RestoreArgs) -> Result<Value, CliError> {
         "quarantined": quarantined,
         "restore_log": text(&plan.restore_log),
         "restore_log_written": log_error.is_none(),
+        "attachments": attachments,
         "warnings": warnings,
         "boot": booted,
+    }))
+}
+
+/// Copy the restored database's attachment files into the live store.
+fn restore_attachments(root: &Path, plan: &Plan) -> Result<Value, StorageError> {
+    let digests = attachment_store::referenced_digests_in(&plan.live)?;
+    let report = if digests.is_empty() {
+        attachment_store::CopyReport::default()
+    } else {
+        attachment_store::copy_all(
+            &plan.attachments_from,
+            &root.join(ATTACHMENTS_DIR),
+            &digests,
+        )?
+    };
+    Ok(json!({
+        "from": text(&plan.attachments_from),
+        "referenced": digests.len(),
+        "restored": report.written,
+        "already_present": report.already_present,
+        "missing": report.missing,
+        "damaged": report.corrupt,
     }))
 }
 
@@ -177,7 +231,16 @@ fn plan(root: &Path, args: &RestoreArgs) -> Result<Plan, CliError> {
     // so such a plan is refused before anything is changed.
     require_utf8(root, "the data directory")?;
     require_utf8(&snapshot, "the snapshot path")?;
+    let attachments_from = match &args.attachments {
+        Some(dir) => bootstrap::absolute_path(dir)?,
+        None => snapshot
+            .parent()
+            .map(|d| d.join(ATTACHMENTS_DIR))
+            .ok_or_else(|| CliError::Usage("the snapshot path has no directory".to_string()))?,
+    };
+    require_utf8(&attachments_from, "the attachments directory")?;
     Ok(Plan {
+        attachments_from,
         root: root.to_path_buf(),
         backup_id,
         source,
@@ -291,7 +354,8 @@ fn plan_value(plan: &Plan, actual_sha256: &str) -> Value {
         )),
     }
     command.push_str(&format!(
-        " --data-dir {} --confirm-replace-live-database",
+        " --attachments {} --data-dir {} --confirm-replace-live-database",
+        plan.attachments_from.display(),
         plan.root.display()
     ));
     json!({
@@ -317,6 +381,7 @@ fn plan_value(plan: &Plan, actual_sha256: &str) -> Value {
         "live_exists": plan.live.exists(),
         "quarantine_dir": text(&plan.quarantine_dir),
         "restore_log": text(&plan.restore_log),
+        "attachments_from": text(&plan.attachments_from),
         "note": "stop the application first; the live database and its sidecars are moved to the quarantine directory, never deleted",
         "to_confirm": command,
     })
@@ -346,6 +411,7 @@ mod tests {
             snapshot: snapshot.map(PathBuf::from),
             expect_sha256: sha.map(str::to_string),
             confirm_replace_live_database: false,
+            attachments: None,
         }
     }
 

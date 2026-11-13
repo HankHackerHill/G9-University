@@ -96,6 +96,17 @@ Evidence: `crates/g9-app/tests/backup_persistence.rs` (9 tests: create in one co
 
 PROPOSED (not implemented): an in-app restore operation with a `DataDelete`-class approval; restoring into a running application; replaying the deletion ledger recorded after the backup's checkpoint (content erased after the snapshot reappears in the restored database); a `recovery.restored` domain event.
 
+### 1.6a Operator features (2026-11-13; TESTED here by `crates/g9-app/tests/feature_*.rs` and `apps/cli/tests/restore.rs`; NOT RUN on the G9 host)
+
+| Feature | Try it from the CLI | Expected |
+|---|---|---|
+| Plan a session | `g9 call session.create --payload '{"planned_minutes":45,"mode":"STUDY"}'` then `session.prepare`, `session.start`, `session.complete` with the returned `session_id` | `PLANNED`, then `COMPLETED` with the credited time |
+| Calendar events | `g9 call calendar.create_event --payload '{"title":"Dentist","kind":"APPOINTMENT","start":<ms>,"end":<ms>}'`; `calendar.update_event` with `event_id`; `calendar.delete_event` | delete answers `APPROVAL_REQUIRED`; `g9 approve <id>` then retry with `--approval <id>` → `deleted: true` |
+| Review results | `g9 call retention.create_item --payload '{"prompt":"…","answer":"…"}'`; a day later `retention.record_review` with `"outcome":"SUCCESS"` | `stage` 1, next due 1 day later; then 3, 7, 21, 60 days; FAILURE resets to 1 day |
+| Authoring | `g9 call competency.create --payload '{"code":"WCP","title":"Web cache poisoning"}'`; `assessment.define` with that `competency_id` | the assessment is listed by `assessment.list` and can be begun |
+| Attach a file | `g9 call evidence.attach_file --payload '{"filename":"notes.txt","media_type":"text/plain","content_base64":"bGFiIGV2aWRlbmNlCg=="}'` | file at `<data>/attachments/ab/cd/<sha256>`; `evidence_id` usable in `assessment.submit` `evidence_refs` |
+| Export | `g9 call export.request --payload '{"domains":["LEARNING"],"format":"JSON","include_private":false}'` → `APPROVAL_REQUIRED`; approve; retry with `--approval <id>` | `state: READY`, `location: <data>/exports/<export_id>` with `data.json`, `attachments/`, `manifest.json` |
+
 ### 1.7 CI preflight on a clean export (`scripts/ci_preflight.sh`)
 
 Replicates every job of `.github/workflows/ci.yml` inside `git archive <rev>`, so an untracked file, an empty directory (git cannot store one) or a build output in the working tree cannot make a step pass locally that fails in CI. Uncommitted changes are never tested; the script says so when the tree is dirty.
@@ -140,9 +151,9 @@ Resolved bridge finding (2026-11-08): the bridge configures `approved_roots = [a
 | Executive workspace (Stage 07+) | `executive.goal_create`, `executive.goal_list`, `executive.decision_record`, `executive.milestone_update` | `PRECONDITION_FAILED executive.not_implemented` | `g9 call executive.goal_list` |
 | Research (Stage 07+) | `research.source_register`, `research.source_evaluate`, `research.source_approve`, `research.source_fetch` | `PRECONDITION_FAILED research.not_implemented` | `g9 call research.source_register` |
 | Curriculum fill / reschedule | `calendar.propose` with `FILL_CURRICULUM` / `RESCHEDULE` | `PRECONDITION_FAILED calendar.fill_curriculum.not_implemented` / `calendar.reschedule.not_implemented` (only `ADD_REVIEWS` is implemented) | `g9 call calendar.propose --payload '{"from":…,"to":…,"intent":"FILL_CURRICULUM"}'` |
-| Planned sessions and assessment catalogue through IPC | no creation operation (sessions come from `FILL_CURRICULUM`; catalogue import is PROPOSED) | the CLI materializes them through `g9-storage` repositories, labelled `SEEDED` | `seed:sessions`, `seed:assessment` rows of `simulate-week` |
+| Assessment catalogue import | `assessment.define` creates one assessment at a time (baseline rubric; blind practical, capstone, transfer check); importing a catalogue and custom rubric criteria are PROPOSED | the CLI still materializes the seed catalogue through `g9-storage` repositories, labelled `SEEDED` | `seed:assessment` rows of `simulate-week` |
 | Restore from inside the running application | no restore operation in the IPC set (`DataDelete`-class approval bound to the backup id and live revision: PROPOSED); the offline `g9 restore` exists (§1.6) | a mutating command on a `READ_ONLY` database answers `DATA_CORRUPTION recovery.integrity_failed` with `details.live_restore = NOT_IMPLEMENTED` | stop the application and use `g9 restore` |
 | Audit listing across processes | `g9-storage` has no audit listing query | `audit.recent` lists this process's rows and verifies the whole chain; warning `audit.recent.process_scoped` | `g9 call audit.recent` after other runs |
-| Gate failures, difficulty-derived observations, export writers, native confirmation dialog (ADR-0014) | wave-1 gaps listed in `crates/g9-app/src/lib.rs` "Gaps" | warnings on the outcome or `export.request` records the request only | `g9 call export.request --payload '{"domains":["LEARNING"],"format":"JSON","include_private":false}'` → `APPROVAL_REQUIRED`, then approve and retry → state `REQUESTED` |
+| Gate failures, difficulty-derived observations, attachment quarantine | wave-1 gaps listed in `crates/g9-app/src/lib.rs` "Gaps" | warnings on the outcome; a file whose bytes do not match its type answers `INVALID_INPUT attachment.content_mismatch` | `g9 call evidence.attach_file --payload '{"filename":"x.png","media_type":"image/png","content_base64":"eA=="}'` |
 | Desktop shell (window, IPC round trip, axe/keyboard) | needs webkit2gtk-4.1/GTK3 and the icon files | `cargo check -p g9-mentor-desktop` fails in a headless sandbox (`gdk-sys`: `gdk-3.0` not found) | §2 on the host |
 | Reject reason | `approvals.decide` carries no reason field | `g9 reject <id> --reason …` echoes the note as warning `approvals.reason_not_persisted` only | `g9 reject` |

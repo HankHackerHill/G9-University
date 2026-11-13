@@ -496,3 +496,247 @@ pub fn apply(
         },
     )
 }
+
+/// Event kinds the operator creates by hand (rest and assessment slots come
+/// from the curriculum).
+fn operator_kind(label: &str) -> Result<CalendarEventKind, G9Error> {
+    Ok(match label {
+        "STUDY_BLOCK" => CalendarEventKind::StudyBlock,
+        "APPOINTMENT" => CalendarEventKind::Appointment,
+        "REVIEW" => CalendarEventKind::Review,
+        _ => {
+            return Err(G9Error::invalid_input(
+                "calendar.event_kind_invalid",
+                "an event you add is a STUDY_BLOCK, APPOINTMENT or REVIEW",
+            ))
+        }
+    })
+}
+
+/// Start and end checked and converted to civil time in the operator's zone.
+fn placed(
+    start: UtcMillis,
+    end: UtcMillis,
+    zone: &g9_domain::IanaZone,
+) -> Result<(g9_domain::CivilDateTime, g9_domain::CivilDateTime), G9Error> {
+    if end <= start {
+        return Err(G9Error::invalid_input(
+            "calendar.event_range_invalid",
+            "an event ends after it starts",
+        ));
+    }
+    if end.as_millis() - start.as_millis() > 7 * 86_400_000 {
+        return Err(G9Error::invalid_input(
+            "calendar.event_too_long",
+            "an event lasts at most seven days",
+        ));
+    }
+    Ok((
+        g9_calendar::to_civil(start, zone)?,
+        g9_calendar::to_civil(end, zone)?,
+    ))
+}
+
+/// Only events the operator created can be changed or deleted; curriculum,
+/// scheduler and imported events, and protected or immutable ones, cannot.
+fn editable(row: &CalendarEventRow) -> Result<(), G9Error> {
+    if row.source != EventSource::Operator || row.protected || row.immutable {
+        return Err(G9Error::precondition_failed(
+            "calendar.event_not_editable",
+            "only events you added can be changed or deleted",
+        ));
+    }
+    Ok(())
+}
+
+fn load_event(
+    conn: &rusqlite::Connection,
+    id: &CalendarEventId,
+) -> Result<CalendarEventRow, G9Error> {
+    repo::get_event(conn, &ReadScope::cross_domain(DataDomain::Learning), id)?
+        .ok_or_else(|| G9Error::not_found("calendar.event_not_found", "event not found"))
+}
+
+#[derive(Debug, Deserialize)]
+struct CreateEventRequest {
+    title: String,
+    kind: String,
+    start: UtcMillis,
+    end: UtcMillis,
+    #[serde(default)]
+    all_day: bool,
+}
+
+/// `calendar.create_event`: an event the operator adds (source OPERATOR).
+pub fn create_event(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    let req: CreateEventRequest = decode(payload)?;
+    let id: CalendarEventId = parse_id(
+        &super::creation_id(ctx, spec, meta, || new_id("ev"))?,
+        "event_id",
+    )?;
+    let resource = ResourceRef::new(ResourceKind::CalendarEvent, id.as_str());
+    pipeline::execute(
+        ctx,
+        meta,
+        Command {
+            spec,
+            resource: &resource,
+            payload,
+        },
+        |_, _| {
+            Ok(Facts::new_record(rc(
+                DataDomain::Learning,
+                Classification::Internal,
+                false,
+            )))
+        },
+        |env| {
+            let kind = operator_kind(&req.kind)?;
+            let zone = env.svc.config.zone.clone();
+            let (civil_start, civil_end) = placed(req.start, req.end, &zone)?;
+            let row = CalendarEventRow {
+                id: id.clone(),
+                title: req.title.trim().to_string(),
+                kind,
+                civil_start,
+                civil_end,
+                zone,
+                start_utc: req.start,
+                end_utc: req.end,
+                all_day: req.all_day,
+                immutable: false,
+                protected: false,
+                source: EventSource::Operator,
+                training_day_id: None,
+                objective_id: None,
+                study_block_id: None,
+                dst_adjustment: None,
+                data_domain: DataDomain::Learning,
+                classification: Classification::Internal,
+                revision: Revision::INITIAL,
+                created_at: env.now,
+                updated_at: env.now,
+            };
+            let revision = repo::insert_event(env.conn, &row)?;
+            Ok(
+                Mutation::new(event_view(&row), Some(revision)).with_event(EventSpec::learning(
+                    "calendar.event_created",
+                    json!({ "event_id": id }),
+                )),
+            )
+        },
+    )
+}
+
+#[derive(Debug, Deserialize)]
+struct UpdateEventRequest {
+    event_id: String,
+    title: Option<String>,
+    kind: Option<String>,
+    start: Option<UtcMillis>,
+    end: Option<UtcMillis>,
+}
+
+/// `calendar.update_event`: change an event the operator added.
+pub fn update_event(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    let req: UpdateEventRequest = decode(payload)?;
+    let id: CalendarEventId = parse_id(&req.event_id, "event_id")?;
+    let resource = ResourceRef::new(ResourceKind::CalendarEvent, id.as_str());
+    let facts_id = id.clone();
+    pipeline::execute(
+        ctx,
+        meta,
+        Command {
+            spec,
+            resource: &resource,
+            payload,
+        },
+        move |conn, _| {
+            let row = load_event(conn, &facts_id)?;
+            Ok(Facts::existing(
+                rc(row.data_domain, row.classification, row.immutable),
+                row.revision,
+            ))
+        },
+        |env| {
+            let mut row = load_event(env.conn, &id)?;
+            editable(&row)?;
+            if let Some(title) = &req.title {
+                row.title = title.trim().to_string();
+            }
+            if let Some(kind) = &req.kind {
+                row.kind = operator_kind(kind)?;
+            }
+            let start = req.start.unwrap_or(row.start_utc);
+            let end = req.end.unwrap_or(row.end_utc);
+            let (civil_start, civil_end) = placed(start, end, &row.zone)?;
+            row.start_utc = start;
+            row.end_utc = end;
+            row.civil_start = civil_start;
+            row.civil_end = civil_end;
+            let revision = repo::update_event(env.conn, &row, row.revision, env.now)?;
+            row.revision = revision;
+            Ok(
+                Mutation::new(event_view(&row), Some(revision)).with_event(EventSpec::learning(
+                    "calendar.event_updated",
+                    json!({ "event_id": id }),
+                )),
+            )
+        },
+    )
+}
+
+#[derive(Debug, Deserialize)]
+struct DeleteEventRequest {
+    event_id: String,
+}
+
+/// `calendar.delete_event`: delete an event the operator added. Deletion needs
+/// an approval (`operator.delete.approval`, DataDelete), confirmed natively.
+pub fn delete_event(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    let req: DeleteEventRequest = decode(payload)?;
+    let id: CalendarEventId = parse_id(&req.event_id, "event_id")?;
+    let resource = ResourceRef::new(ResourceKind::CalendarEvent, id.as_str());
+    let facts_id = id.clone();
+    pipeline::execute(
+        ctx,
+        meta,
+        Command {
+            spec,
+            resource: &resource,
+            payload,
+        },
+        move |conn, _| {
+            let row = load_event(conn, &facts_id)?;
+            Ok(Facts::existing(
+                rc(row.data_domain, row.classification, row.immutable),
+                row.revision,
+            ))
+        },
+        |env| {
+            let row = load_event(env.conn, &id)?;
+            editable(&row)?;
+            repo::delete_event(env.conn, &id, row.revision)?;
+            Ok(
+                Mutation::new(json!({ "event_id": id, "deleted": true }), None).with_event(
+                    EventSpec::learning("calendar.event_deleted", json!({ "event_id": id })),
+                ),
+            )
+        },
+    )
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/calendar.create_event.request",
+  "title": "calendar.create_event request (v1.0)",
+  "description": "Request payload for `calendar.create_event`: an event the operator adds (source OPERATOR).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "STUDY_BLOCK",
+        "APPOINTMENT",
+        "REVIEW"
+      ]
+    },
+    "start": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch milliseconds."
+    },
+    "end": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch milliseconds."
+    },
+    "all_day": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "title",
+    "kind",
+    "start",
+    "end"
+  ]
+}

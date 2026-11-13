@@ -56,12 +56,14 @@
 //! pragma names); internal causes are logged with `tracing` and redacted.
 
 pub mod approvals_store;
+pub mod attachment_store;
 pub mod audit;
 pub mod backup;
 pub mod connection;
 pub mod deletion;
 pub mod error;
 pub mod events;
+pub mod export;
 pub mod idempotency;
 pub mod migrations;
 pub mod repos;

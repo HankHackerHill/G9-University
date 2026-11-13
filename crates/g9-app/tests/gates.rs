@@ -192,7 +192,15 @@ fn pipeline_approval_required_creates_request_and_returns_id() {
 
 #[test]
 fn pipeline_consumes_approval_once_and_rejects_replay() {
-    let mut h = Harness::new();
+    // The approved export writes a folder, so the harness has an export directory.
+    let dir = tempfile::Builder::new().prefix("g9gate").tempdir().unwrap();
+    let exports = dir.path().join("exports");
+    std::fs::create_dir_all(&exports).unwrap();
+    let mut h = Harness::with(|s| {
+        s.config.approved_roots = vec![exports.clone()];
+        s.config.export_dir = Some(exports.clone());
+    });
+    h.dir = Some(dir);
     let err = h.call("export.request", export_payload(false)).unwrap_err();
     let id = err.approval_id.unwrap();
     h.decide(id.as_str(), "APPROVE");
@@ -227,7 +235,7 @@ fn pipeline_consumes_approval_once_and_rejects_replay() {
             &Opts::approval(id.as_str()),
         )
         .unwrap();
-    assert_eq!(ok["result"]["state"], "REQUESTED");
+    assert_eq!(ok["result"]["state"], "READY");
     let row = approvals_store::get_request(h.conn(), &id)
         .unwrap()
         .unwrap();

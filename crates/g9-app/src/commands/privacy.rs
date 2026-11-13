@@ -11,13 +11,16 @@
 //! closed: nothing is erased without a fresh approval). Evidentiary records are
 //! never deleted (policy `evidentiary.delete.deny`, storage `ON DELETE RESTRICT`).
 //!
-//! Export: the approved request is recorded as a `export.requested` event and
-//! returned `REQUESTED`. Writing the export file is PROPOSED: `g9-storage`
-//! offers only whole-database `VACUUM INTO`, which cannot honour the domain
-//! selection or `include_private = false`, so no file is produced.
+//! Export: the approved request writes `<exports>/<export_id>/` in the command
+//! transaction (`g9_storage::export`: the selected domains, never a SECRET row,
+//! PRIVATE rows only with `include_private`, erased rows left out, attachment bytes
+//! copied and hash-checked, `manifest.json` last) and returns `READY` with the
+//! folder. A failure writes nothing and rolls the command back, so the approval
+//! is not spent. Attachments missing from the store are listed in the manifest
+//! and reported as a warning.
 
 use super::{decode, new_id, parse_id, rc, scope_of};
-use crate::context::AppContext;
+use crate::context::{AppContext, Services};
 use crate::ops::OpSpec;
 use crate::pipeline::{self, Command, EventSpec, Facts, Mutation, PostCommit};
 use g9_domain::{
@@ -25,15 +28,38 @@ use g9_domain::{
     ResourceKind, ResourceRef,
 };
 use g9_storage::deletion::{self, DeletionState, DeletionSubjectKind, NewDeletionRequest};
+use g9_storage::export::{self, ExportFormat, ExportHeader, ExportSelection};
 use g9_storage::repos::evidence as evidence_repo;
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::collections::BTreeSet;
+use std::path::PathBuf;
 
 #[derive(Debug, Deserialize)]
 struct ExportRequest {
     domains: Vec<DataDomain>,
-    format: String,
+    format: ExportFormat,
     include_private: bool,
+}
+
+fn export_dir(svc: &Services) -> Result<PathBuf, G9Error> {
+    let dir = svc.config.export_dir.clone().ok_or_else(|| {
+        G9Error::precondition_failed(
+            "export.dir_not_configured",
+            "no export directory is configured",
+        )
+    })?;
+    if !svc
+        .approved_roots
+        .as_ref()
+        .is_some_and(|roots| roots.contains_directory(&dir))
+    {
+        return Err(G9Error::precondition_failed(
+            "export.dir_outside_approved_roots",
+            "the export directory is not inside an approved root",
+        ));
+    }
+    Ok(dir)
 }
 
 /// `export.request` (approval-gated: `DataExport`).
@@ -44,9 +70,7 @@ pub fn export_request(
     payload: &Value,
 ) -> Result<CommandOutcome<Value>, G9Error> {
     let req: ExportRequest = decode(payload)?;
-    let mut domains = req.domains.clone();
-    domains.sort();
-    domains.dedup();
+    let domains: BTreeSet<DataDomain> = req.domains.iter().copied().collect();
     let label: Vec<String> = domains
         .iter()
         .filter_map(|d| serde_json::to_value(d).ok())
@@ -62,6 +86,9 @@ pub fn export_request(
             payload,
         },
         |_, _| {
+            // The export directory is checked after policy (in the mutation), so
+            // the approval request comes first and a refusal there rolls back
+            // without spending the approval.
             let classification = if req.include_private {
                 Classification::Private
             } else {
@@ -74,27 +101,75 @@ pub fn export_request(
             )))
         },
         |env| {
+            let dir = export_dir(env.svc)?;
             let export_id = new_id("export");
+            let selection = ExportSelection {
+                domains: domains.clone(),
+                include_private: req.include_private,
+            };
+            let data = export::collect(env.conn, &selection)?;
+            let attachment_root = env.svc.config.attachment_dir.clone().filter(|d| {
+                env.svc
+                    .approved_roots
+                    .as_ref()
+                    .is_some_and(|roots| roots.contains_directory(d))
+            });
+            let written = export::write(
+                &dir,
+                &ExportHeader {
+                    export_id: export_id.clone(),
+                    created_at: env.now,
+                    app_version: env.svc.config.app_version.clone(),
+                    selection,
+                    format: req.format,
+                },
+                &data,
+                attachment_root.as_deref(),
+            )?;
+            let missing = written.attachments.missing.len() + written.attachments.corrupt.len();
             let result = json!({
                 "export_id": export_id,
-                "state": "REQUESTED",
-                "domains": req.domains,
+                "state": "READY",
+                "domains": label,
                 "format": req.format,
                 "requested_at": env.now,
+                "location": written.dir.display().to_string(),
+                "files": written.files,
+                "rows": written.rows,
+                "attachments": written.attachments.written + written.attachments.already_present,
+                "manifest_sha256": written.manifest_sha256,
             });
-            Ok(Mutation::new(result, Some(g9_domain::Revision::INITIAL))
+            let mut m = Mutation::new(result, Some(g9_domain::Revision::INITIAL))
                 .with_audit_resource(ResourceRef::new(ResourceKind::Export, export_id.as_str()))
                 .with_event(EventSpec::system(
                     "export.requested",
                     json!({
                         "export_id": export_id,
-                        "domains": req.domains,
+                        "domains": label,
                         "format": req.format,
                         "include_private": req.include_private,
                         "approval_id": env.consumed.as_ref().map(|c| c.approval_id.clone()),
                     }),
                 ))
-                .with_warning("export.execution_not_implemented: the per-domain export writer is PROPOSED; no file was produced"))
+                .with_event(EventSpec::system(
+                    "export.written",
+                    json!({
+                        "export_id": export_id,
+                        "domains": label,
+                        "format": req.format,
+                        "include_private": req.include_private,
+                        "rows": written.rows,
+                        "files": written.files,
+                        "manifest_sha256": written.manifest_sha256,
+                        "approval_id": env.consumed.as_ref().map(|c| c.approval_id.clone()),
+                    }),
+                ));
+            if missing > 0 {
+                m = m.with_warning(format!(
+                    "export.attachments_missing: {missing} attachment file(s) were missing or damaged in the store and are listed in manifest.json"
+                ));
+            }
+            Ok(m)
         },
     )
 }

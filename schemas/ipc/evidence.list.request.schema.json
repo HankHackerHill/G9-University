@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/evidence.list.request",
+  "title": "evidence.list request (v1.0)",
+  "description": "Request payload for `evidence.list`: the evidence items of one note, or the newest items in scope.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "note_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500
+    }
+  },
+  "required": []
+}

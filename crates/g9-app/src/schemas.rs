@@ -29,6 +29,50 @@ pub const G9_ERROR_SCHEMA: &str = include_str!("../../../schemas/ipc/g9-error.sc
 /// `(request, response)` schema texts for an operation.
 fn texts(op: &str) -> Option<(&'static str, &'static str)> {
     Some(match op {
+        "evidence.list" => (
+            include_str!("../../../schemas/ipc/evidence.list.request.schema.json"),
+            include_str!("../../../schemas/ipc/evidence.list.response.schema.json"),
+        ),
+        "evidence.from_note" => (
+            include_str!("../../../schemas/ipc/evidence.from_note.request.schema.json"),
+            include_str!("../../../schemas/ipc/evidence.from_note.response.schema.json"),
+        ),
+        "evidence.attach_file" => (
+            include_str!("../../../schemas/ipc/evidence.attach_file.request.schema.json"),
+            include_str!("../../../schemas/ipc/evidence.attach_file.response.schema.json"),
+        ),
+        "assessment.define" => (
+            include_str!("../../../schemas/ipc/assessment.define.request.schema.json"),
+            include_str!("../../../schemas/ipc/assessment.define.response.schema.json"),
+        ),
+        "competency.create" => (
+            include_str!("../../../schemas/ipc/competency.create.request.schema.json"),
+            include_str!("../../../schemas/ipc/competency.create.response.schema.json"),
+        ),
+        "retention.record_review" => (
+            include_str!("../../../schemas/ipc/retention.record_review.request.schema.json"),
+            include_str!("../../../schemas/ipc/retention.record_review.response.schema.json"),
+        ),
+        "retention.create_item" => (
+            include_str!("../../../schemas/ipc/retention.create_item.request.schema.json"),
+            include_str!("../../../schemas/ipc/retention.create_item.response.schema.json"),
+        ),
+        "calendar.delete_event" => (
+            include_str!("../../../schemas/ipc/calendar.delete_event.request.schema.json"),
+            include_str!("../../../schemas/ipc/calendar.delete_event.response.schema.json"),
+        ),
+        "calendar.update_event" => (
+            include_str!("../../../schemas/ipc/calendar.update_event.request.schema.json"),
+            include_str!("../../../schemas/ipc/calendar.update_event.response.schema.json"),
+        ),
+        "calendar.create_event" => (
+            include_str!("../../../schemas/ipc/calendar.create_event.request.schema.json"),
+            include_str!("../../../schemas/ipc/calendar.create_event.response.schema.json"),
+        ),
+        "session.create" => (
+            include_str!("../../../schemas/ipc/session.create.request.schema.json"),
+            include_str!("../../../schemas/ipc/session.create.response.schema.json"),
+        ),
         "approvals.decide" => (
             include_str!("../../../schemas/ipc/approvals.decide.request.schema.json"),
             include_str!("../../../schemas/ipc/approvals.decide.response.schema.json"),

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/session.create.request",
+  "title": "session.create request (v1.0)",
+  "description": "Request payload for `session.create`: a PLANNED study session the operator schedules (optionally linked to a curriculum objective by code).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "planned_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 600
+    },
+    "planned_start": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch milliseconds; default: now."
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "STUDY",
+        "LAB",
+        "REVIEW"
+      ]
+    },
+    "objective_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    }
+  },
+  "required": [
+    "planned_minutes"
+  ]
+}

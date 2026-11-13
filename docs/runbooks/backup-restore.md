@@ -25,6 +25,19 @@ The destination folder must exist. The command reads the manifest from the live 
 
 Durability of the backup itself: the snapshot file is synced before it is renamed to its final name and the backups folder is synced after (VERIFIED by syscall trace, 2026-11-13).
 
+## Attachment files
+
+Attached files live outside the database, in `<data>/attachments/ab/cd/<sha256>` (content-addressed; identical bytes stored once). They travel with the backups (IMPLEMENTED, TESTED: `apps/cli/tests/restore.rs::attachment_files_travel_with_a_copied_backup_and_come_back_on_restore`, `crates/g9-app/tests/feature_evidence.rs::a_backup_carries_the_attachment_bytes`):
+
+| Step | What happens to the files |
+|---|---|
+| `backup.create` | every attachment the database references is copied to `<data>/backups/attachments/ab/cd/<sha256>`, hash-checked while copying, flushed, renamed into place; one store shared by all backups. A missing or damaged source is a warning on the backup (`backup.attachments_incomplete`); the snapshot is kept |
+| `backup.verify`, `backup.restore_test` | check that every referenced file exists in the live store (`<data>/attachments`); hashing them during verification is PROPOSED |
+| `g9 copy-backup` | copies the files the snapshot references to `<dest>/attachments/…`, from the backup store first, the live store for anything not there; reports `attachments.copied`, `missing`, `damaged`; existing files at the destination are kept |
+| `g9 restore` | after the database swap and boot, copies the restored database's files into `<data>/attachments` from `--attachments <dir>`, by default the `attachments` folder beside the snapshot (so a copy made by `copy-backup` restores with no extra flag). A file not found intact is listed in `attachments.missing`/`damaged` with the warning `restore.attachments_missing`; the database restore is not undone. Run the restore again with `--attachments <folder>` once the files are found |
+
+Exports (`export.request`, approval-gated) write `<data>/exports/<export_id>/`; they are your copy of the data, not a backup: nothing restores from them.
+
 ## Restore
 
 Offline restore is IMPLEMENTED (`g9 restore` in `apps/cli`, on `g9_storage::restore::restore_over_live`; TESTED: `crates/g9-storage` `restore::tests::*`, `apps/cli/tests/restore.rs`, the restore section of `scripts/smoke_test.sh`). Restoring from inside the running application is PROPOSED (see the end of this section). ADR-0001 still holds: the live file is never copied by hand; it is replaced only by `restore_over_live`, which keeps the old database.

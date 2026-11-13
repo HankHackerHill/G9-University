@@ -45,6 +45,29 @@
       "type": "integer",
       "minimum": 0,
       "description": "UTC instant, integer epoch milliseconds."
+    },
+    "location": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "description": "Absolute path of the export folder on this machine."
+    },
+    "files": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "rows": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "attachments": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Attachment files copied into the export."
+    },
+    "manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
     }
   },
   "required": [
@@ -52,6 +75,11 @@
     "state",
     "domains",
     "format",
-    "requested_at"
+    "requested_at",
+    "location",
+    "files",
+    "rows",
+    "attachments",
+    "manifest_sha256"
   ]
 }

@@ -170,6 +170,10 @@ pub struct RestoreArgs {
     /// nothing is changed (exit 1).
     #[arg(long)]
     pub confirm_replace_live_database: bool,
+    /// Folder to copy the restored database's attachment files from (default:
+    /// the `attachments` folder beside the snapshot).
+    #[arg(long, value_name = "DIR")]
+    pub attachments: Option<PathBuf>,
 }
 
 /// `g9 simulate-week` arguments.

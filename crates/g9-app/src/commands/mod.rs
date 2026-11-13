@@ -8,10 +8,12 @@
 pub mod approvals;
 pub mod assessment;
 pub mod audit;
+pub mod authoring;
 pub mod backup;
 pub mod calendar;
 pub mod competency;
 pub mod curriculum;
+pub mod evidence;
 pub mod notes;
 pub mod privacy;
 pub mod retention;
@@ -78,6 +80,17 @@ pub fn handler_for(name: &str) -> Option<Handler> {
         "skills.invoke" => skills::invoke,
         "export.request" => privacy::export_request,
         "deletion.request" => privacy::deletion_request,
+        "session.create" => sessions::create,
+        "calendar.create_event" => calendar::create_event,
+        "calendar.update_event" => calendar::update_event,
+        "calendar.delete_event" => calendar::delete_event,
+        "retention.create_item" => retention::create_item,
+        "retention.record_review" => retention::record_review,
+        "competency.create" => authoring::competency_create,
+        "assessment.define" => authoring::assessment_define,
+        "evidence.attach_file" => evidence::attach_file,
+        "evidence.from_note" => evidence::from_note,
+        "evidence.list" => evidence::list,
         _ => return None,
     })
 }

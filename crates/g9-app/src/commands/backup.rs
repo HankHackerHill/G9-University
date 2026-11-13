@@ -17,8 +17,16 @@
 //! lies inside an approved root). A snapshot that holds attachment rows which
 //! were not checked (no attachment directory configured) is never `CHECKED`:
 //! the manifest moves to `FAILED` with reason `backup.attachments_not_checked`.
-//! Hashing attachment bytes against `content_sha256` is a `g9-storage`
-//! verification change (PROPOSED).
+//! Hashing attachment bytes against `content_sha256` during verification is
+//! a `g9-storage` change (PROPOSED).
+//!
+//! Attachment bytes: `backup.create` copies the bytes of every attachment the
+//! database references into `<backup_dir>/attachments/ab/cd/<sha256>`
+//! (`g9_storage::attachment_store::copy_all`: hash-checked while copying,
+//! durable, identical bytes stored once for all backups). A missing or damaged
+//! source file, or a failed copy, is a warning on the created backup; the
+//! snapshot itself is kept. `g9 copy-backup` carries the referenced files to
+//! the other drive and `g9 restore` puts them back into the live store.
 //!
 //! `backup_manifests` is the source of truth. `backup.verify` and
 //! `backup.restore_test` read the manifest (state, path, hash, anchor,
@@ -48,7 +56,7 @@ use g9_domain::{
 use g9_storage::backup::{
     self, AttachmentCheck, SnapshotRequest, VerificationReport, VerifyOptions,
 };
-use g9_storage::BackupManifest;
+use g9_storage::{attachment_store, BackupManifest};
 use rusqlite::Connection;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -111,6 +119,32 @@ pub(crate) fn verify_options(svc: &Services) -> VerifyOptions {
     }
 }
 
+/// Directory beside the snapshots that holds the attachment bytes every
+/// backup references (content-addressed, shared by all backups).
+pub const BACKUP_ATTACHMENTS_DIR: &str = "attachments";
+
+/// Copy the bytes of every attachment the database references from the live
+/// store into `<backup_dir>/attachments`, hash-checked. `Ok(None)` when no
+/// attachment directory is configured.
+pub(crate) fn copy_attachments(
+    conn: &rusqlite::Connection,
+    svc: &Services,
+    backup_dir: &std::path::Path,
+) -> Result<Option<attachment_store::CopyReport>, G9Error> {
+    let Some(root) = verify_options(svc).attachment_root else {
+        return Ok(None);
+    };
+    let digests = attachment_store::referenced_digests(conn)?;
+    if digests.is_empty() {
+        return Ok(Some(attachment_store::CopyReport::default()));
+    }
+    Ok(Some(attachment_store::copy_all(
+        &root,
+        &backup_dir.join(BACKUP_ATTACHMENTS_DIR),
+        &digests,
+    )?))
+}
+
 /// Reason recorded when attachment rows exist but were not checked.
 pub(crate) const ATTACHMENTS_NOT_CHECKED: &str = "backup.attachments_not_checked";
 
@@ -155,45 +189,69 @@ pub fn create(
         move |env| {
             let dir = approved_dir(env.svc, env.svc.config.backup_dir.as_ref(), "backup")?;
             let label = req.label;
-            let step: pipeline::PostCommit =
-                Box::new(move |post| {
-                    let request = SnapshotRequest {
-                        backup_id: id.clone(),
-                        requested_at: post.now,
-                        app_version: post.svc.config.app_version.clone(),
-                    };
-                    let dest = dir.join(format!("{}.sqlite", id.as_str()));
-                    let manifest = match backup::create_snapshot(post.db.conn(), &dest, &request) {
-                        Ok(m) => m,
-                        Err(e) => {
-                            let mut failed = BackupManifest::requested(&request);
-                            failed.fail(e.code())?;
-                            backup::record_manifest(post.db.conn(), &failed, post.now)?;
-                            post.svc.backups.insert(
-                                id.clone(),
-                                KnownBackup {
-                                    manifest: failed,
-                                    revision: Revision::INITIAL,
-                                    label,
-                                    size_bytes: None,
-                                },
-                            );
-                            return Err(e.into());
-                        }
-                    };
-                    backup::record_manifest(post.db.conn(), &manifest, post.now)?;
-                    let known = KnownBackup {
-                        size_bytes: std::fs::metadata(&dest).ok().map(|m| m.len()),
-                        manifest,
-                        revision: Revision::INITIAL,
-                        label,
-                    };
-                    let result = view(&id, &known)?;
-                    post.svc.backups.insert(id.clone(), known);
-                    Ok(Mutation::new(result, Some(Revision::INITIAL)).with_event(
-                        EventSpec::system("backup.snapshot_created", json!({ "backup_id": id })),
-                    ))
-                });
+            let step: pipeline::PostCommit = Box::new(move |post| {
+                let request = SnapshotRequest {
+                    backup_id: id.clone(),
+                    requested_at: post.now,
+                    app_version: post.svc.config.app_version.clone(),
+                };
+                let dest = dir.join(format!("{}.sqlite", id.as_str()));
+                let manifest = match backup::create_snapshot(post.db.conn(), &dest, &request) {
+                    Ok(m) => m,
+                    Err(e) => {
+                        let mut failed = BackupManifest::requested(&request);
+                        failed.fail(e.code())?;
+                        backup::record_manifest(post.db.conn(), &failed, post.now)?;
+                        post.svc.backups.insert(
+                            id.clone(),
+                            KnownBackup {
+                                manifest: failed,
+                                revision: Revision::INITIAL,
+                                label,
+                                size_bytes: None,
+                            },
+                        );
+                        return Err(e.into());
+                    }
+                };
+                backup::record_manifest(post.db.conn(), &manifest, post.now)?;
+                let attachments = copy_attachments(post.db.conn(), post.svc, &dir);
+                let known = KnownBackup {
+                    size_bytes: std::fs::metadata(&dest).ok().map(|m| m.len()),
+                    manifest,
+                    revision: Revision::INITIAL,
+                    label,
+                };
+                let result = view(&id, &known)?;
+                post.svc.backups.insert(id.clone(), known);
+                let copied = attachments
+                    .as_ref()
+                    .ok()
+                    .and_then(Option::as_ref)
+                    .map(|r| r.written + r.already_present);
+                let mut m =
+                    Mutation::new(result, Some(Revision::INITIAL)).with_event(EventSpec::system(
+                        "backup.snapshot_created",
+                        json!({ "backup_id": id, "attachments_copied": copied }),
+                    ));
+                match attachments {
+                    Ok(Some(r)) if !r.complete() => {
+                        m = m.with_warning(format!(
+                                "backup.attachments_incomplete: {} attachment file(s) missing and {} damaged in the store were not copied",
+                                r.missing.len(),
+                                r.corrupt.len()
+                            ));
+                    }
+                    Ok(_) => {}
+                    Err(e) => {
+                        m = m.with_warning(format!(
+                                "backup.attachments_not_copied: {}; the snapshot was written, the attachment files were not",
+                                e.code
+                            ));
+                    }
+                }
+                Ok(m)
+            });
             Ok(Mutation::new(Value::Null, None).then(step))
         },
     )

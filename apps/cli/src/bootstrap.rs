@@ -33,6 +33,8 @@ pub const ATTACHMENTS_DIR: &str = "attachments";
 pub const BACKUPS_DIR: &str = "backups";
 /// Restore-test and migration dry-run scratch directory.
 pub const SCRATCH_DIR: &str = "scratch";
+/// Where `export.request` writes exports (an approved root of its own).
+pub const EXPORTS_DIR: &str = "exports";
 /// Where `g9 restore` moves the replaced database and its sidecars (never deleted).
 pub const QUARANTINE_DIR: &str = "quarantine";
 /// Append-only, metadata-only log of `g9 restore` runs.
@@ -135,6 +137,8 @@ pub struct DataLayout {
     pub backups: PathBuf,
     /// `<data>/scratch`.
     pub scratch: PathBuf,
+    /// `<data>/exports`.
+    pub exports: PathBuf,
 }
 
 impl DataLayout {
@@ -147,9 +151,15 @@ impl DataLayout {
             attachments: root.join(ATTACHMENTS_DIR),
             backups: root.join(BACKUPS_DIR),
             scratch: root.join(SCRATCH_DIR),
+            exports: root.join(EXPORTS_DIR),
             root,
         };
-        for dir in [&layout.attachments, &layout.backups, &layout.scratch] {
+        for dir in [
+            &layout.attachments,
+            &layout.backups,
+            &layout.scratch,
+            &layout.exports,
+        ] {
             platform::ensure_private_dir(dir).map_err(|e| CliError::io("data directory", &e))?;
         }
         for dir in [
@@ -157,6 +167,7 @@ impl DataLayout {
             &layout.attachments,
             &layout.backups,
             &layout.scratch,
+            &layout.exports,
         ] {
             platform::restrict(dir, true).map_err(|e| CliError::io("data directory", &e))?;
         }
@@ -277,6 +288,8 @@ pub fn open(opts: &BootOptions) -> Result<Booted, CliError> {
     config.program_start = opts.program_start;
     config.backup_dir = Some(layout.backups.clone());
     config.scratch_dir = Some(layout.scratch.clone());
+    config.attachment_dir = Some(layout.attachments.clone());
+    config.export_dir = Some(layout.exports.clone());
     // Same list as the desktop bridge: the attachments directory is the
     // primary root (relative attachment paths resolve there) and the backup and
     // scratch directories are roots of their own. The data directory itself is
@@ -287,6 +300,7 @@ pub fn open(opts: &BootOptions) -> Result<Booted, CliError> {
         layout.attachments.clone(),
         layout.backups.clone(),
         layout.scratch.clone(),
+        layout.exports.clone(),
     ];
     // `g9_app::Transport` has a single variant; `system.status.transport`
     // therefore reads `tauri` from the CLI as well (reported in the testing guide).

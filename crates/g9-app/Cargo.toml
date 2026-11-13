@@ -32,6 +32,10 @@ rusqlite = { workspace = true }
 # bridge so the CLI and the bridge share one implementation): 32 bytes from the
 # OS CSPRNG into a 0600 file. Exact pin; already in the lock file.
 getrandom = "=0.4.3"
+# Decoding `evidence.attach_file` payloads (file bytes travel base64 in the JSON
+# IPC). Exact pin, already in the lock file through the desktop shell's tree;
+# default features off so the SIMD path (`simd-unsafe`) is not compiled in.
+base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }

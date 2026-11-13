@@ -829,6 +829,43 @@ pub fn list_evidence_for_note(
     )
 }
 
+/// Evidence items of a note and of the note's attachments (an attachment's
+/// item references the attachment, not the note), domain-filtered in SQL.
+pub fn list_note_and_attachment_evidence(
+    conn: &Connection,
+    scope: &ReadScope,
+    note_id: &NoteId,
+) -> RepoResult<Vec<EvidenceItemRow>> {
+    query_all(
+        conn,
+        &format!(
+            "SELECT {EVIDENCE_COLUMNS} FROM evidence_items
+             WHERE (note_id = ?1 OR attachment_id IN (SELECT id FROM attachments WHERE note_id = ?1))
+               AND (?2 = 1 OR data_domain = ?3)
+             ORDER BY created_at, id"
+        ),
+        &[&note_id.as_str(), &scope.sql_flag(), &scope.sql_domain()?],
+        map_evidence,
+    )
+}
+
+/// The newest evidence items in scope, domain-filtered in SQL.
+pub fn list_recent_evidence(
+    conn: &Connection,
+    scope: &ReadScope,
+    limit: u32,
+) -> RepoResult<Vec<EvidenceItemRow>> {
+    query_all(
+        conn,
+        &format!(
+            "SELECT {EVIDENCE_COLUMNS} FROM evidence_items WHERE (?1 = 1 OR data_domain = ?2)
+             ORDER BY created_at DESC, id DESC LIMIT ?3"
+        ),
+        &[&scope.sql_flag(), &scope.sql_domain()?, &i64::from(limit)],
+        map_evidence,
+    )
+}
+
 /// Mark an evidence item invalid (content erased, superseded ...). Items are never deleted.
 pub fn invalidate_evidence_item(
     conn: &Connection,

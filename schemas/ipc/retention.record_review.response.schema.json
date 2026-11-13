@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/retention.record_review.response",
+  "title": "retention.record_review response (v1.0)",
+  "description": "`result` of CommandOutcome for `retention.record_review` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "review_item_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "SUCCESS",
+        "FAILURE",
+        "SKIPPED"
+      ]
+    },
+    "due_at": {
+      "type": "integer"
+    },
+    "stage": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "offset_days": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "review_item_id",
+    "outcome",
+    "due_at",
+    "stage",
+    "offset_days"
+  ]
+}

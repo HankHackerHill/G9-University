@@ -19,3 +19,4 @@ Each ADR resolves one or more rows of `docs/audit/defect-register.md`. Status: A
 | [ADR-0013](ADR-0013-typed-ipc-envelope-and-error-categories.md) | Closed 13-category error set, backend-assigned actor, success envelope with revision and replay flag | TEC-03, TEC-04, SEC-01 |
 | [ADR-0014](ADR-0014-skill-md-is-not-a-security-boundary.md) | SKILL.md is instructional metadata; permissions are decided in Rust; protected operations get a native confirmation | C11, SEC-03 |
 | [ADR-0015](ADR-0015-owner-decisions-2026-11-13.md) | Owner decisions: synchronous FULL, 10-minute approvals, host disk encryption, no AI yet, VALIDATED unreachable accepted, manual CI, private repository | TEC-12, SEC-02, IMP-M06 |
+| [ADR-0016](ADR-0016-operator-content-attachments-and-export.md) | Operator-authored content, attachment bytes from the webview into a content-addressed store, export to a file (SECRET never), attachments in backups | SEC-13, SEC-09, A10 |

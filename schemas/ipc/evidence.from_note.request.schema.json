@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/evidence.from_note.request",
+  "title": "evidence.from_note request (v1.0)",
+  "description": "Request payload for `evidence.from_note`: make a typed note an evidence item (usable in `assessment.submit` `evidence_refs`).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "note_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    }
+  },
+  "required": [
+    "note_id"
+  ]
+}

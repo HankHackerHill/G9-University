@@ -558,3 +558,87 @@ fn only_a_retained_backup_is_copied() {
         "nothing written"
     );
 }
+
+#[test]
+fn attachment_files_travel_with_a_copied_backup_and_come_back_on_restore() {
+    // An attached file lives outside the database: the backup copies it beside
+    // the snapshots, copy-backup carries it to the other drive, and a restore
+    // onto a fresh machine puts it back into the attachment store.
+    let env = Env::new();
+    let (code, init, _) = env.run(&["init"]);
+    assert_eq!(code, 0, "{init}");
+    let (code, attached, _) = env.call(
+        "evidence.attach_file",
+        json!({ "filename": "notes.txt", "media_type": "text/plain", "content_base64": "bGFiIGV2aWRlbmNlCg==" }),
+    );
+    assert_eq!(code, 0, "{attached}");
+    let sha = attached["result"]["sha256"].as_str().unwrap().to_string();
+    let rel = format!("{}/{}/{}", &sha[0..2], &sha[2..4], sha);
+    assert_eq!(
+        std::fs::read(env.data.join("attachments").join(&rel)).unwrap(),
+        b"lab evidence\n"
+    );
+
+    let (code, created, _) = env.call("backup.create", json!({}));
+    assert_eq!(code, 0, "{created}");
+    let id = created["result"]["backup_id"].as_str().unwrap().to_string();
+    assert!(env.data.join("backups/attachments").join(&rel).is_file());
+    for op in ["backup.verify", "backup.restore_test"] {
+        let (code, out, _) = env.call(op, json!({ "backup_id": id }));
+        assert_eq!(code, 0, "{out}");
+    }
+
+    let usb = tempfile::tempdir().unwrap();
+    let (code, copied, _) = env.run(&[
+        "copy-backup",
+        "--backup-id",
+        &id,
+        "--to",
+        usb.path().to_str().unwrap(),
+    ]);
+    assert_eq!(code, 0, "{copied}");
+    assert_eq!(copied["attachments"]["copied"], 1, "{copied}");
+    assert!(usb.path().join("attachments").join(&rel).is_file());
+    let snapshot = copied["copied_to"].as_str().unwrap().to_string();
+    let snapshot_sha = copied["sha256"].as_str().unwrap().to_string();
+
+    // This disk is gone: restore onto a fresh data directory from the copy.
+    let fresh = Env::new();
+    let (code, restored, _) = fresh.run(&[
+        "restore",
+        "--snapshot",
+        &snapshot,
+        "--expect-sha256",
+        &snapshot_sha,
+        "--confirm-replace-live-database",
+    ]);
+    assert_eq!(code, 0, "{restored}");
+    assert_eq!(restored["attachments"]["restored"], 1, "{restored}");
+    assert_eq!(
+        std::fs::read(fresh.data.join("attachments").join(&rel)).unwrap(),
+        b"lab evidence\n"
+    );
+
+    // Without the attachment folder the database still restores, and the
+    // missing file is reported.
+    std::fs::remove_dir_all(usb.path().join("attachments")).unwrap();
+    let bare = Env::new();
+    let (code, partial, _) = bare.run(&[
+        "restore",
+        "--snapshot",
+        &snapshot,
+        "--expect-sha256",
+        &snapshot_sha,
+        "--confirm-replace-live-database",
+    ]);
+    assert_eq!(code, 0, "{partial}");
+    assert_eq!(
+        partial["attachments"]["missing"].as_array().unwrap().len(),
+        1
+    );
+    assert!(partial["warnings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|w| w.as_str().unwrap().contains("restore.attachments_missing")));
+}

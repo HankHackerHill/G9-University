@@ -563,7 +563,7 @@ pub fn st05_private_export_requires_approval() -> Result<ScenarioReport, G9Error
         "export of PRIVATE notes: APPROVAL_REQUIRED; rejected approval unusable; model-proposed export rejected",
     );
     let p = payloads()?;
-    let (mut h, _seed) = seeded(HarnessOptions::default())?;
+    let (mut h, _seed) = seeded(HarnessOptions::with_host_dirs())?;
     let payload = json!({ "domains": ["LEARNING"], "format": "JSON", "include_private": true });
     let exports = |h: &Harness| -> Result<Value, G9Error> {
         Ok(json!({
@@ -895,7 +895,7 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
         "A06",
         "approval replay / re-target / expiry / forged id / stale revision / forged MAC denied with reasons",
     );
-    let (mut h, seed) = seeded(HarnessOptions::default())?;
+    let (mut h, seed) = seeded(HarnessOptions::with_host_dirs())?;
     let note_a = seed
         .notes
         .get("note-route-table")

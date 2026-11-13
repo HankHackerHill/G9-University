@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/competency.create.response",
+  "title": "competency.create response (v1.0)",
+  "description": "`result` of CommandOutcome for `competency.create` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "competency_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "code": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "validity_days": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "required": [
+    "competency_id",
+    "code",
+    "title",
+    "validity_days"
+  ]
+}

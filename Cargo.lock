@@ -1194,6 +1194,7 @@ dependencies = [
 name = "g9-app"
 version = "0.1.0"
 dependencies = [
+ "base64 0.23.1",
  "g9-ai-adapter",
  "g9-assessment",
  "g9-calendar",

@@ -56,6 +56,8 @@ pub const ATTACHMENTS_DIR: &str = "attachments";
 pub const BACKUPS_DIR: &str = "backups";
 /// Restore-test and migration dry-run scratch directory.
 pub const SCRATCH_DIR: &str = "scratch";
+/// Where `export.request` writes exports (an approved root of its own).
+pub const EXPORTS_DIR: &str = "exports";
 /// Skill packages inside the Tauri resource directory.
 pub const SKILLS_RESOURCE_DIR: &str = ".agents/skills";
 /// Pin manifest (`skill-pins.json`: skill name → `package_sha256`), compiled
@@ -91,6 +93,8 @@ pub struct DataLayout {
     pub backups: PathBuf,
     /// `<data>/scratch`.
     pub scratch: PathBuf,
+    /// `<data>/exports`.
+    pub exports: PathBuf,
 }
 
 impl DataLayout {
@@ -108,13 +112,20 @@ impl DataLayout {
             attachments: root.join(ATTACHMENTS_DIR),
             backups: root.join(BACKUPS_DIR),
             scratch: root.join(SCRATCH_DIR),
+            exports: root.join(EXPORTS_DIR),
         })
     }
 
     /// Create the directories (`0700`) and the database file (`0600`), and
     /// tighten existing ones that are accessible to other users.
     pub fn prepare(&self, warnings: &mut Vec<String>) -> Result<(), G9Error> {
-        for dir in [&self.root, &self.attachments, &self.backups, &self.scratch] {
+        for dir in [
+            &self.root,
+            &self.attachments,
+            &self.backups,
+            &self.scratch,
+            &self.exports,
+        ] {
             platform::ensure_private_dir(dir).map_err(|_| {
                 G9Error::resource_unavailable(
                     "bridge.data_dir_unavailable",
@@ -122,7 +133,13 @@ impl DataLayout {
                 )
             })?;
         }
-        for dir in [&self.root, &self.attachments, &self.backups, &self.scratch] {
+        for dir in [
+            &self.root,
+            &self.attachments,
+            &self.backups,
+            &self.scratch,
+            &self.exports,
+        ] {
             if platform::restrict(dir, true).is_err() {
                 warnings.push(keyring::warning(
                     "data_dir.permissions",
@@ -326,12 +343,16 @@ fn open_context(
     }
     config.backup_dir = Some(layout.backups.clone());
     config.scratch_dir = Some(layout.scratch.clone());
-    // `g9-app` requires the backup and scratch directories inside an approved
-    // root; the attachments root stays primary (relative paths resolve there).
+    config.attachment_dir = Some(layout.attachments.clone());
+    config.export_dir = Some(layout.exports.clone());
+    // `g9-app` requires the backup, scratch, attachment and export directories
+    // inside an approved root; the attachments root stays primary (relative
+    // paths resolve there).
     config.approved_roots = vec![
         layout.attachments.clone(),
         layout.backups.clone(),
         layout.scratch.clone(),
+        layout.exports.clone(),
     ];
     config.transport = Transport::Tauri;
 

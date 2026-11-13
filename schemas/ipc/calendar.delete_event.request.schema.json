@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/calendar.delete_event.request",
+  "title": "calendar.delete_event request (v1.0)",
+  "description": "Request payload for `calendar.delete_event`: delete an event the operator added (approval-gated).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    }
+  },
+  "required": [
+    "event_id"
+  ]
+}

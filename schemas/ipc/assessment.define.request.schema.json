@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/assessment.define.request",
+  "title": "assessment.define request (v1.0)",
+  "description": "Request payload for `assessment.define`: definition, version 1 and its baseline rubric, written in one transaction.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string",
+      "pattern": "^[A-Z0-9][A-Z0-9-]{0,31}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "BLIND_PRACTICAL",
+        "CAPSTONE",
+        "TRANSFER_CHECK"
+      ]
+    },
+    "competency_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "task_statement": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20000
+    },
+    "difficulty": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    }
+  },
+  "required": [
+    "code",
+    "title",
+    "kind",
+    "competency_id",
+    "task_statement",
+    "difficulty"
+  ]
+}

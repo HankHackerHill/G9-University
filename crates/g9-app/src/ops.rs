@@ -37,7 +37,7 @@ const fn op(
     }
 }
 
-/// Every routed IPC operation (35: the 34 UI operations plus `curriculum.promote`).
+/// Every routed IPC operation (46).
 pub const OPERATIONS: &[OpSpec] = &[
     op(
         "system.status",
@@ -214,6 +214,72 @@ pub const OPERATIONS: &[OpSpec] = &[
     op("skills.invoke", true, Action::Invoke, ResourceKind::Skill),
     op("export.request", true, Action::Export, ResourceKind::Export),
     op("deletion.request", true, Action::Delete, ResourceKind::Note),
+    op(
+        "session.create",
+        true,
+        Action::Create,
+        ResourceKind::StudySession,
+    ),
+    op(
+        "calendar.create_event",
+        true,
+        Action::Create,
+        ResourceKind::CalendarEvent,
+    ),
+    op(
+        "calendar.update_event",
+        true,
+        Action::Update,
+        ResourceKind::CalendarEvent,
+    ),
+    op(
+        "calendar.delete_event",
+        true,
+        Action::Delete,
+        ResourceKind::CalendarEvent,
+    ),
+    op(
+        "retention.create_item",
+        true,
+        Action::Create,
+        ResourceKind::ReviewItem,
+    ),
+    op(
+        "retention.record_review",
+        true,
+        Action::Update,
+        ResourceKind::ReviewItem,
+    ),
+    op(
+        "competency.create",
+        true,
+        Action::Create,
+        ResourceKind::Competency,
+    ),
+    op(
+        "assessment.define",
+        true,
+        Action::Create,
+        ResourceKind::AssessmentDefinition,
+    ),
+    op(
+        "evidence.attach_file",
+        true,
+        Action::Create,
+        ResourceKind::Attachment,
+    ),
+    op(
+        "evidence.from_note",
+        true,
+        Action::Create,
+        ResourceKind::EvidenceItem,
+    ),
+    op(
+        "evidence.list",
+        false,
+        Action::Read,
+        ResourceKind::EvidenceItem,
+    ),
 ];
 
 /// Look up an operation by wire name.
@@ -231,6 +297,7 @@ pub fn name_for_approval(action: Action, kind: ResourceKind) -> &'static str {
         (Action::Apply, ResourceKind::ScheduleProposal) => "calendar.apply",
         (Action::Finalize, ResourceKind::GradeDecision) => "assessment.approve_final",
         (Action::Export, _) => "export.request",
+        (Action::Delete, ResourceKind::CalendarEvent) => "calendar.delete_event",
         (Action::Delete, _) => "deletion.request",
         // A write gated by its data (a security-sensitive record): the single
         // mutating operation with this verb and resource kind, if there is one.
@@ -255,7 +322,7 @@ mod tests {
     fn names_are_unique_and_match_schema_files() {
         let names: BTreeSet<&str> = OPERATIONS.iter().map(|s| s.name).collect();
         assert_eq!(names.len(), OPERATIONS.len());
-        assert_eq!(OPERATIONS.len(), 35);
+        assert_eq!(OPERATIONS.len(), 46);
         for s in OPERATIONS {
             assert!(
                 crate::schemas::request_schema_text(s.name).is_some(),

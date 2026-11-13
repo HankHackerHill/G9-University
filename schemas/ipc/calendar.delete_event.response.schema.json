@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/calendar.delete_event.response",
+  "title": "calendar.delete_event response (v1.0)",
+  "description": "`result` of CommandOutcome for `calendar.delete_event` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+    },
+    "deleted": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "event_id",
+    "deleted"
+  ]
+}
