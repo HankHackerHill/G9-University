@@ -27,10 +27,11 @@ sudo apt-get update
 sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
   libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
 # toolchain: rust-toolchain.toml pins 1.97.0
-cd apps/desktop && npm ci && npm run build && cd ../..
 cargo check -p g9-mentor-desktop
-cargo build -p g9-mentor-desktop --release
+cd apps/desktop && npm ci && npm run tauri:build
 ```
+
+Build the release binary with `npm run tauri:build`, never with a bare `cargo build --release`: without tauri's `custom-protocol` feature the binary is a development build that loads its interface from `http://localhost:5173` and gives that origin IPC access, so any process listening on the port would control the app (security audit 2026-11-12). `src-tauri/build.rs` refuses such a release build. `npm run tauri:dev` has the same property by design while it runs: use it only for development, never with real data.
 
 The package list is the one used by the CI job `desktop-shell` (`.github/workflows/ci.yml`); its install step succeeded on the `ubuntu-26.04` GitHub runner (runs 27 and 28, VERIFIED from the job records). It has not been tried on the G9 host: ASSUMED there.
 
