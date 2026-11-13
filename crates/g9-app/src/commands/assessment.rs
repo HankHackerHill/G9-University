@@ -75,7 +75,7 @@
 //! records `EXTERNAL_REVIEW` / `DETERMINISTIC` decisions correctly; it is
 //! tested at crate level with a distinct learner).
 
-use super::{decode, new_id, parse_id, rc, scope_of, tail, to_value};
+use super::{creation_id, decode, new_id, parse_id, rc, scope_of, tail, to_value};
 use crate::context::AppContext;
 use crate::ops::OpSpec;
 use crate::pipeline::{self, Command, EventSpec, Facts, Mutation};
@@ -85,13 +85,15 @@ use g9_assessment::{
     Rubric,
 };
 use g9_competency::{CompetencyObservation, ObservationSource};
-use g9_domain::hashing::sha256_json;
+use g9_domain::hashing::{sha256_hex, sha256_json};
 use g9_domain::state::AssessmentEvent;
 use g9_domain::{
     Actor, ActorId, AssessmentAttemptState, AssessmentId, AttemptId, Classification, CommandMeta,
     CommandOutcome, Confidence, Difficulty, EvidenceId, G9Error, GradeDecisionId, GradeSource,
-    ObservationId, ResourceKind, ResourceRef, Revision, UtcMillis,
+    NoteId, ObservationId, Provenance, ResourceKind, ResourceRef, Revision, SourceKind, TrustClass,
+    UtcMillis,
 };
+use g9_evidence::{EvidenceItem, EvidenceKind, MAX_NOTE_BYTES};
 use g9_storage::repos::assessment::{
     self as repo, AssessmentDefinitionRow, AssessmentVersionRow, AttemptEvidenceRole,
     AttemptEvidenceRow, AttemptPatch, AttemptRow, CriterionResultRow, ExposedTo,
@@ -99,6 +101,7 @@ use g9_storage::repos::assessment::{
     RubricCriterionRow,
 };
 use g9_storage::repos::competency::{self as competency_repo, ObservationEvidenceRow};
+use g9_storage::repos::evidence::{self as evidence_repo, EvidenceItemRow, NoteKind, NoteRow};
 use g9_storage::repos::ReadScope;
 use rusqlite::Connection;
 use serde::Deserialize;
@@ -382,7 +385,10 @@ pub fn begin(
         .as_deref()
         .map(|r| parse_id(r, "retake_of"))
         .transpose()?;
-    let attempt_id = AttemptId::new_v7();
+    let attempt_id: AttemptId = parse_id(
+        &creation_id(ctx, spec, meta, || AttemptId::new_v7().as_str().to_string())?,
+        "attempt_id",
+    )?;
     let resource = ResourceRef::new(ResourceKind::Attempt, attempt_id.as_str());
     let scope = scope_of(meta);
     let facts_def = def_id.clone();
@@ -678,6 +684,16 @@ pub fn submit(
         .map(|e| parse_id(e, "evidence_refs[]"))
         .collect::<Result<_, _>>()?;
     let digest = sha256_json(&json!({ "evidence_refs": req.evidence_refs, "notes": req.notes }));
+    // app-5: the text was hashed into `submission_sha256` and otherwise lost.
+    let notes = req.notes.clone().filter(|n| !n.trim().is_empty());
+    if let Some(text) = &notes {
+        if text.len() as u64 > MAX_NOTE_BYTES {
+            return Err(G9Error::invalid_input(
+                "assessment.submit.notes_too_large",
+                format!("notes exceed {MAX_NOTE_BYTES} bytes"),
+            ));
+        }
+    }
     transition(
         ctx,
         spec,
@@ -698,9 +714,85 @@ pub fn submit(
                     },
                 )?;
             }
+            if let Some(text) = &notes {
+                store_submission_notes(
+                    env.conn,
+                    &loaded.attempt,
+                    text,
+                    &env.meta.actor.id,
+                    env.now,
+                )?;
+            }
             Ok(Some(digest))
         },
     )
+}
+
+/// Store the operator's submission notes as an erasable note, wrapped in an
+/// evidence item and linked to the attempt as SUBMISSION evidence (app-5).
+/// Runs inside the submitting transaction.
+fn store_submission_notes(
+    conn: &Connection,
+    attempt: &AttemptRow,
+    text: &str,
+    actor: &ActorId,
+    now: UtcMillis,
+) -> Result<(), G9Error> {
+    const TITLE: &str = "Submission notes";
+    let note_id = NoteId::new_v7();
+    let note = NoteRow {
+        id: note_id.clone(),
+        title: TITLE.to_string(),
+        body_markdown: text.to_string(),
+        body_sha256: String::new(),
+        kind: NoteKind::Report,
+        session_id: attempt.session_id.clone(),
+        objective_id: None,
+        source_kind: SourceKind::AssessmentSubmission,
+        trust: TrustClass::Operator,
+        data_domain: attempt.data_domain,
+        classification: attempt.classification,
+        erased: false,
+        erased_at: None,
+        erasure_request_id: None,
+        revision: Revision::INITIAL,
+        created_at: now,
+        updated_at: now,
+    };
+    evidence_repo::insert_note(conn, &note, actor, &new_id("nv"))?;
+    let content_sha256 = sha256_hex(text.as_bytes());
+    let provenance = Provenance {
+        source_kind: SourceKind::AssessmentSubmission,
+        source_ref: format!("attempt:{}", attempt.id.as_str()),
+        trust: TrustClass::Operator,
+        content_sha256: Some(content_sha256.clone()),
+        recorded_at: now,
+        recorded_by: actor.clone(),
+        version: None,
+    };
+    let item = EvidenceItem::new(
+        EvidenceId::new_v7(),
+        EvidenceKind::Note,
+        note_id.as_str(),
+        attempt.data_domain,
+        attempt.classification,
+        provenance,
+        TITLE,
+        now,
+    )
+    .map_err(|_| G9Error::internal_redacted("assessment.submit.notes_evidence"))?;
+    let row = EvidenceItemRow::from_domain(&item, &content_sha256)?;
+    evidence_repo::insert_evidence_item(conn, &row)?;
+    repo::link_attempt_evidence(
+        conn,
+        &AttemptEvidenceRow {
+            attempt_id: attempt.id.clone(),
+            evidence_item_id: item.id.clone(),
+            role: AttemptEvidenceRole::Submission,
+            added_at: now,
+        },
+    )?;
+    Ok(())
 }
 
 #[derive(Debug, Deserialize)]

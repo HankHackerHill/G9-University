@@ -296,6 +296,16 @@ fn transition(
                         .into_iter()
                         .find(|r| r.record.is_open());
                     if let Some(open) = open {
+                        // A wall clock stepped back before the interval's start
+                        // (NTP correction, manual change) must not lock the timer
+                        // (storage-repos-1): the wall end is clamped to the start,
+                        // as open-time recovery does; the monotonic clock and the
+                        // divergence check below decide what is credited.
+                        let end_wall = if env.now < open.record.start_wall {
+                            open.record.start_wall
+                        } else {
+                            env.now
+                        };
                         let divergence = clock_divergence(&open.record, env.now, mono);
                         if env.svc.epoch_intervals.contains(&open.id)
                             && divergence > CLOCK_DIVERGENCE_TOLERANCE_MS
@@ -307,7 +317,7 @@ fn transition(
                                 env.conn,
                                 &open.id,
                                 open.revision,
-                                env.now,
+                                end_wall,
                                 None,
                                 Continuity::Uncertain,
                                 ClosedBy::System,
@@ -329,12 +339,12 @@ fn transition(
                                 "session.clock_discontinuity: wall-clock and monotonic elapsed time differ by {divergence} ms (more than {CLOCK_DIVERGENCE_TOLERANCE_MS} ms: suspend or clock change); the interval was closed UNCERTAIN, is not credited and the session is INTERRUPTED until the operator records a correction"
                             ));
                         } else {
-                            ledger.stop(&id, env.now, mono).map_err(timer_err)?;
+                            ledger.stop(&id, end_wall, mono).map_err(timer_err)?;
                             repo::close_interval(
                                 env.conn,
                                 &open.id,
                                 open.revision,
-                                env.now,
+                                end_wall,
                                 Some(mono),
                                 Continuity::Verified,
                                 if event == SessionEvent::Pause {

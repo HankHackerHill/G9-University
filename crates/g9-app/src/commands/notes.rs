@@ -2,7 +2,7 @@
 //! private content and never enters an error, event or audit row (only its
 //! SHA-256 does). Imported/model text in a note is data, never instructions.
 
-use super::{decode, new_id, parse_id, rc, scope_of, to_value};
+use super::{creation_id, decode, new_id, parse_id, rc, scope_of, to_value};
 use crate::commands::curriculum::active_version;
 use crate::context::AppContext;
 use crate::ops::OpSpec;
@@ -108,7 +108,10 @@ pub fn create(
     payload: &Value,
 ) -> Result<CommandOutcome<Value>, G9Error> {
     let req: CreateRequest = decode(payload)?;
-    let note_id = NoteId::new_v7();
+    let note_id: NoteId = parse_id(
+        &creation_id(ctx, spec, meta, || NoteId::new_v7().as_str().to_string())?,
+        "note_id",
+    )?;
     let resource = ResourceRef::new(ResourceKind::Note, note_id.as_str());
     pipeline::execute(
         ctx,

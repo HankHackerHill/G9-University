@@ -76,6 +76,7 @@ pub mod dispatch;
 pub mod executive;
 pub mod ipc;
 pub mod keyfile;
+pub mod lock;
 pub mod ops;
 pub mod pipeline;
 pub mod recovery;

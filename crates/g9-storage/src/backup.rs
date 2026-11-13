@@ -521,8 +521,16 @@ fn manifest_hash_errors(manifest: &BackupManifest, path: &Path, when: &str) -> V
 }
 
 /// Restore the manifest's snapshot into `scratch_dir/<backup_id>.restore-test.sqlite`,
-/// verify it and advance Checked → RestoreTested (or → Failed). The restored copy
-/// is left for inspection; the caller removes it.
+/// verify it and advance Checked → RestoreTested (or → Failed). On success the
+/// restored copy is returned and the caller removes it; on failure it is
+/// removed here. A copy left by an interrupted restore test is our own scratch
+/// file and is replaced.
+///
+/// Only a failure that says something about the backup's content fails it: a
+/// corrupt copy, or a restored copy that does not verify. An environmental
+/// failure (scratch directory missing or unwritable, disk full, I/O, a busy
+/// file) is returned with the manifest left `Checked`, so a good backup stays
+/// usable (storage-core-2).
 ///
 /// The bytes restored must be the bytes verified under this manifest (ADR-0001,
 /// threat ST10): the snapshot file is re-hashed against
@@ -548,33 +556,55 @@ pub fn restore_test(
         "{}.restore-test.sqlite",
         manifest.backup_id.as_str()
     ));
+    crate::migrations::remove_scratch_copy(&dest)?;
     let restored = match restore_to_copy(&path, &dest) {
         Ok(p) => p,
         Err(e) => {
-            manifest.fail(e.code())?;
+            if matches!(e, StorageError::Corrupt(_)) {
+                manifest.fail(e.code())?;
+            }
+            discard_scratch_copy(&dest);
             return Err(e);
         }
     };
-    let mut errors = manifest_hash_errors(manifest, &path, "after the restore");
-    let report = verify_snapshot(&restored, options)?;
-    errors.extend(report.errors.iter().cloned());
-    let restored_head = {
-        let copy = Connection::open_with_flags(
-            &restored,
-            OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
-        )?;
-        AuditChain::head(&copy)?.map(|(seq, row_hash)| AuditAnchor { seq, row_hash })
-    };
-    if restored_head != manifest.audit_anchor {
-        errors.push("restored audit chain head differs from the manifest anchor".to_string());
+    let checked = (|| {
+        let mut errors = manifest_hash_errors(manifest, &path, "after the restore");
+        let report = verify_snapshot(&restored, options)?;
+        errors.extend(report.errors.iter().cloned());
+        let restored_head = {
+            let copy = Connection::open_with_flags(
+                &restored,
+                OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+            )?;
+            AuditChain::head(&copy)?.map(|(seq, row_hash)| AuditAnchor { seq, row_hash })
+        };
+        if restored_head != manifest.audit_anchor {
+            errors.push("restored audit chain head differs from the manifest anchor".to_string());
+        }
+        Ok::<_, StorageError>((report.ok(), errors))
+    })();
+    match checked {
+        Ok((true, errors)) if errors.is_empty() => {
+            manifest.restore_tested_at = Some(now);
+            manifest.transition(BackupEvent::TestRestore)?;
+            Ok(restored)
+        }
+        Ok((_, errors)) => {
+            manifest.fail("restore test verification failed")?;
+            discard_scratch_copy(&restored);
+            Err(StorageError::Verification(errors))
+        }
+        Err(e) => {
+            discard_scratch_copy(&restored);
+            Err(e)
+        }
     }
-    if report.ok() && errors.is_empty() {
-        manifest.restore_tested_at = Some(now);
-        manifest.transition(BackupEvent::TestRestore)?;
-        Ok(restored)
-    } else {
-        manifest.fail("restore test verification failed")?;
-        Err(StorageError::Verification(errors))
+}
+
+/// Remove a scratch copy; a failure is logged, never fatal.
+fn discard_scratch_copy(copy: &Path) {
+    if let Err(e) = crate::migrations::remove_scratch_copy(copy) {
+        tracing::warn!(code = e.code(), "scratch copy was not removed");
     }
 }
 

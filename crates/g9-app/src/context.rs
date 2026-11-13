@@ -285,6 +285,8 @@ pub struct Services {
     /// Audit rows appended by this process, oldest first (bounded).
     pub recent_audit: VecDeque<AuditRef>,
     last_monotonic: AtomicU64,
+    /// Exclusive hold on a file database's data (app-4); `None` in memory.
+    _data_lock: Option<crate::lock::DataLock>,
 }
 
 impl fmt::Debug for Services {
@@ -474,6 +476,12 @@ impl AppContextBuilder {
                 })?,
             )
         };
+        // Before recovery: a second process must not close the first one's
+        // open intervals (app-4).
+        let data_lock = match self.db.path() {
+            Some(path) => Some(crate::lock::DataLock::acquire(path)?),
+            None => None,
+        };
         let mut svc = Services {
             policy,
             approvals: ApprovalBook::default(),
@@ -492,6 +500,7 @@ impl AppContextBuilder {
             storage_wal: self.db.profile().journal_mode.eq_ignore_ascii_case("wal"),
             recent_audit: VecDeque::new(),
             last_monotonic: AtomicU64::new(0),
+            _data_lock: data_lock,
         };
         let mut db = self.db;
         svc.recovery = recovery::run(&mut db, &mut svc)?;

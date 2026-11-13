@@ -410,3 +410,34 @@ pub fn lab_observation(h: &Harness, id: &str, score: u8, days_ago: i64) {
     )
     .unwrap();
 }
+
+/// Insert a PLANNED study session `id` directly (seed data; sessions are not
+/// created through IPC in these tests).
+pub fn insert_planned_session(h: &Harness, id: &str) {
+    g9_storage::repos::sessions::insert_session(
+        h.conn(),
+        &g9_storage::repos::sessions::StudySessionRow {
+            id: g9_domain::SessionId::parse(id).unwrap(),
+            training_day_id: None,
+            objective_id: None,
+            study_block_id: None,
+            calendar_event_id: None,
+            state: g9_domain::SessionState::Planned,
+            mode: g9_domain::InteractionMode::Study,
+            zone: g9_domain::IanaZone::utc(),
+            planned_start_utc: Some(h.now()),
+            planned_end_utc: None,
+            planned_minutes: 60,
+            started_at: None,
+            ended_at: None,
+            credited_ms: g9_domain::DurationMs::ZERO,
+            uncertain_ms: g9_domain::DurationMs::ZERO,
+            data_domain: g9_domain::DataDomain::Learning,
+            classification: g9_domain::Classification::Internal,
+            revision: g9_domain::Revision::INITIAL,
+            created_at: h.now(),
+            updated_at: h.now(),
+        },
+    )
+    .unwrap();
+}

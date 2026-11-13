@@ -343,15 +343,21 @@ fn advance(
                     match backup::restore_test(&mut known.manifest, dir, &options, env.now) {
                         Ok(copy) => {
                             known.manifest.retain()?;
-                            if let Err(e) = std::fs::remove_file(&copy) {
-                                tracing::warn!(error = %e.kind(), "restore-test copy was not removed");
+                            if let Err(e) = g9_storage::migrations::remove_scratch_copy(&copy) {
+                                tracing::warn!(
+                                    code = e.code(),
+                                    "restore-test copy was not removed"
+                                );
                             }
                         }
-                        Err(e) => {
-                            if known.manifest.state == BackupState::Checked {
-                                known.manifest.fail(e.code())?;
-                            }
+                        // Storage fails the manifest when the failure concerns the
+                        // backup's content. A manifest still CHECKED means an
+                        // environmental failure (scratch directory, disk, I/O): the
+                        // command fails and the backup stays usable (storage-core-2).
+                        Err(e) if known.manifest.state == BackupState::Checked => {
+                            return Err(G9Error::from(e));
                         }
+                        Err(_) => {}
                     }
                     "backup.restore_tested"
                 }

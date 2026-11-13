@@ -11,6 +11,14 @@ All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 - `src-tauri/build.rs` refuses a release build in Tauri development mode (which would load its UI from `http://localhost:5173`); the README builds with `npm run tauri:build` (LOW).
 - Report: `docs/audit/security-audit-2026-11-12.md`.
 
+### Fixed (2026-11-10 review leads, each reproduced by a test that failed before the fix)
+- `assessment.submit` stores the operator's notes as an erasable note linked to the attempt as SUBMISSION evidence; they were hashed and discarded (app-5).
+- An approval-gated create (a security-sensitive note, an attempt) completes on the approved retry: the retry reuses the approved resource id; the whole binding is still verified (app-1).
+- A failed or interrupted migration rehearsal no longer blocks every later migration: its copy is removed on failure and a stale copy is replaced; a symlink or other non-file at the copy path is still refused (storage-core-3).
+- A restore test fails a backup only for a content failure; a leftover scratch copy is replaced and an environmental failure (scratch directory, disk, I/O) leaves the backup CHECKED (storage-core-2).
+- One process at a time holds the data: an exclusive OS lock on `<database>.lock`, taken before recovery by the desktop bridge and every CLI command, and by `g9 restore` around the file swap; a second process is refused with `app.data_in_use` instead of interrupting a live session (app-4).
+- Pause and complete no longer fail after the wall clock steps backward: the interval's wall end is clamped to its start, as recovery does (storage-repos-1).
+
 ### Changed
 - Owner decisions (ADR-0015): the application database runs with `synchronous = FULL` (`g9_app::database_options`, used by the desktop bridge and the CLI), so a power cut loses no acknowledged command; approvals expire after 10 minutes (was 15); encryption at rest is left to the host's full-disk encryption; no AI model for now (a Claude API runtime is planned and needs an architecture amendment first); `VALIDATED` stays unreachable while every grade is self-adjudicated. ARCHITECTURE.md lines 103 and 149 still state the old values (reported deviation).
 - CI runs only when started by hand (`workflow_dispatch`), by the owner's decision: the push and pull_request triggers are removed, so no push starts a run. All five jobs are unchanged. The same checks run locally with `scripts/ci_preflight.sh`. GitHub shows the "Run workflow" button only for workflows on the default branch, which does not contain `.github/workflows/ci.yml` yet.

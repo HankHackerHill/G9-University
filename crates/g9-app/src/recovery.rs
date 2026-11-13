@@ -225,15 +225,24 @@ fn migrate_after_backup(
     }
     if let (Some(path), Some(scratch)) = (file_db, scratch) {
         let migrator = Migrator::new(svc.config.app_version.clone(), now);
+        // The rehearsal copy is disposable whatever the outcome: a copy left
+        // behind would only be replaced by the next rehearsal (storage-core-3).
         match migrator.dry_run_on_copy(&path, &scratch) {
             Ok(dry) if dry.integrity_ok && dry.foreign_key_violations == 0 => {
-                // The rehearsal copy is disposable (`dry_run_on_copy` leaves it to the caller).
-                if let Err(e) = std::fs::remove_file(&dry.copy_path) {
-                    tracing::warn!(error = %e.kind(), "migration dry-run copy was not removed");
-                }
+                discard_rehearsal_copy(&dry.copy_path);
             }
-            _ => {
-                report.migration_blocked_reason = Some("migration dry run on a copy failed".into());
+            Ok(dry) => {
+                discard_rehearsal_copy(&dry.copy_path);
+                report.migration_blocked_reason = Some(format!(
+                    "migration dry run on a copy failed its checks (integrity {}, foreign-key violations {})",
+                    if dry.integrity_ok { "ok" } else { "failed" },
+                    dry.foreign_key_violations
+                ));
+                return Ok(());
+            }
+            Err(e) => {
+                report.migration_blocked_reason =
+                    Some(format!("migration dry run on a copy failed: {}", e.code()));
                 return Ok(());
             }
         }
@@ -432,4 +441,11 @@ fn recover_intervals_and_approvals(
     tx.commit()
         .map_err(|e| G9Error::from(g9_storage::StorageError::from(e)))?;
     Ok(())
+}
+
+/// Remove a migration rehearsal copy; a failure is logged, never fatal.
+fn discard_rehearsal_copy(copy: &std::path::Path) {
+    if let Err(e) = g9_storage::migrations::remove_scratch_copy(copy) {
+        tracing::warn!(code = e.code(), "migration dry-run copy was not removed");
+    }
 }

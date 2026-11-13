@@ -1628,9 +1628,11 @@ fn a08_dry_run_migration_on_copy() {
         .iter()
         .any(|t| t == "goals"));
     drop(live);
-    // a second dry run refuses to clobber the previous copy
-    let e = err_of(m.dry_run_on_copy(&path, &scratch));
-    assert!(matches!(e, StorageError::Conflict(_)));
+    // a second dry run replaces the copy the first one left: it is our own
+    // scratch file, and refusing it blocked every later migration (storage-core-3;
+    // a symlink or other non-file at that path is still refused, dry_run_cleanup.rs)
+    let again = m.dry_run_on_copy(&path, &scratch).unwrap();
+    assert!(again.integrity_ok);
     // the default policy never migrates an existing database behind the operator's back:
     // the open succeeds, reports the pending versions, and leaves the schema at 5
     let mut guarded = open_file(&path);

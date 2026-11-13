@@ -22,6 +22,11 @@ fn options() -> OpenOptions {
 /// and scratch below it). Dropping it closes the database. `generation` gives
 /// each lifetime its own request and idempotency id range.
 fn lifetime(root: &Path, generation: u64) -> Harness {
+    try_lifetime(root, generation).unwrap()
+}
+
+#[allow(clippy::result_large_err)] // test helper; G9Error is the API's error type
+fn try_lifetime(root: &Path, generation: u64) -> Result<Harness, g9_domain::G9Error> {
     std::fs::create_dir_all(root.join("backups")).unwrap();
     std::fs::create_dir_all(root.join("scratch")).unwrap();
     let db = Database::open(root.join("g9.sqlite"), options()).unwrap();
@@ -30,10 +35,9 @@ fn lifetime(root: &Path, generation: u64) -> Harness {
         s.config.approved_roots = vec![r.clone()];
         s.config.backup_dir = Some(r.join("backups"));
         s.config.scratch_dir = Some(r.join("scratch"));
-    })
-    .unwrap();
+    })?;
     h.continue_ids_from(generation * 1_000);
-    h
+    Ok(h)
 }
 
 fn tempdir(prefix: &str) -> tempfile::TempDir {
@@ -201,17 +205,25 @@ fn revision_conflicts_are_checked_against_the_stored_revision() {
 
 #[test]
 fn another_context_advancing_a_backup_is_seen_not_overwritten() {
-    // Two contexts over one file (the CLI and the desktop shell may share a data
-    // directory). The first still remembers the backup as SNAPSHOT_CREATED, but
-    // the stored manifest decides.
+    // One process at a time holds the data (app-4): while a context lives, a
+    // second one over the same file is refused, so the CLI and the desktop shell
+    // can no longer advance a backup behind each other's back. Across process
+    // lifetimes the stored manifest decides.
     let dir = tempdir("g9persist");
     let root = dir.path();
-    let mut a = lifetime(root, 1);
-    let id = create(&mut a, Some("kept label"));
+    let mut first = lifetime(root, 1);
+    let id = create(&mut first, Some("kept label"));
+    let refused = try_lifetime(root, 2)
+        .err()
+        .expect("a second context over the same file must be refused");
+    assert_eq!(refused.code, "app.data_in_use", "{refused:?}");
+    drop(first);
     let mut b = lifetime(root, 2);
     b.call("backup.verify", json!({ "backup_id": id })).unwrap();
     b.call("backup.restore_test", json!({ "backup_id": id }))
         .unwrap();
+    drop(b);
+    let mut a = lifetime(root, 3);
 
     let stale = a
         .call_with(

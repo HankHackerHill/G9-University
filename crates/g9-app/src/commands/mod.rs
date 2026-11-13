@@ -167,6 +167,30 @@ pub(crate) fn tail(id: &str) -> &str {
     id.rsplit_once(':').map_or(id, |(_, t)| t)
 }
 
+/// The id a creating command works on (app-1). A retry that carries an
+/// approval stored for this same action on this same resource kind reuses the
+/// id the approval was granted for, so the approved resource matches; every
+/// other call mints a fresh id. The id grants nothing by itself: the pipeline
+/// still verifies the whole binding (parameters hash, scope, revision, MAC)
+/// before anything is written.
+pub(crate) fn creation_id(
+    ctx: &AppContext,
+    spec: &OpSpec,
+    meta: &CommandMeta,
+    mint: impl FnOnce() -> String,
+) -> Result<String, G9Error> {
+    if let Some(approval) = &meta.approval_id {
+        if let Some(row) = g9_storage::approvals_store::get_request(ctx.db.conn(), approval)? {
+            if row.operation.action == spec.action
+                && row.operation.resource.kind == spec.resource_kind
+            {
+                return Ok(row.operation.resource.id);
+            }
+        }
+    }
+    Ok(mint())
+}
+
 /// Fresh row id `<prefix>-<uuidv7>` (time-ordered; ids never carry content).
 pub(crate) fn new_id(prefix: &str) -> String {
     format!("{prefix}-{}", g9_domain::EventId::new_v7())

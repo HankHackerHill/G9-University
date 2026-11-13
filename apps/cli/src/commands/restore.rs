@@ -75,17 +75,23 @@ pub fn run(boot: &BootOptions, args: &RestoreArgs) -> Result<Value, CliError> {
         return Err(CliError::Unconfirmed(plan_value(&plan, &actual)));
     }
 
+    // Never swap the file under a running backend (app-4): the same lock the
+    // desktop bridge and every CLI command take before recovery, held for the
+    // swap only (the backend opened below takes it again).
     let now = UtcMillis::now();
-    let report = restore_over_live(
-        &plan.snapshot,
-        &plan.live,
-        &plan.quarantine_dir,
-        &RestoreOptions {
-            expect_sha256: Some(plan.expected_sha256.clone()),
-            now,
-        },
-    )
-    .map_err(G9Error::from)?;
+    let report = {
+        let _data_lock = g9_app::lock::DataLock::acquire(&plan.live)?;
+        restore_over_live(
+            &plan.snapshot,
+            &plan.live,
+            &plan.quarantine_dir,
+            &RestoreOptions {
+                expect_sha256: Some(plan.expected_sha256.clone()),
+                now,
+            },
+        )
+        .map_err(G9Error::from)?
+    };
 
     // Metadata only: a failure to write the log must not hide a restore that happened.
     let quarantined: Vec<String> = report

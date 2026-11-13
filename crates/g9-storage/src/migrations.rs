@@ -365,47 +365,100 @@ impl Migrator {
     }
 
     /// Rehearse pending migrations on a `VACUUM INTO` copy of `db_path` placed in
-    /// `temp_dir`. The live database is opened read-only and never modified; the
-    /// copy is left in `temp_dir` for inspection and the caller removes it.
+    /// `temp_dir`. The live database is opened read-only and never modified. On
+    /// success the copy is left in `temp_dir` for inspection and the caller
+    /// removes it ([`remove_scratch_copy`]); on any error it is removed here
+    /// (storage-core-3). A copy left by an interrupted rehearsal is our own
+    /// scratch file and is replaced; anything at the copy path that is not a
+    /// regular file is refused (`Conflict`) and left alone.
     pub fn dry_run_on_copy(&self, db_path: &Path, temp_dir: &Path) -> StorageResult<DryRunReport> {
-        let src = Connection::open_with_flags(
-            db_path,
-            OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
-        )?;
         let file_name = db_path
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("database");
         let copy_path = temp_dir.join(format!("{file_name}.dry-run.sqlite"));
-        if copy_path.exists() {
-            return Err(StorageError::Conflict(
-                "dry-run copy already exists; remove it before rehearsing again".to_string(),
-            ));
-        }
-        let copy_str = copy_path.to_str().ok_or_else(|| {
-            StorageError::InvalidInput("temp_dir path is not valid UTF-8".to_string())
-        })?;
-        src.execute("VACUUM INTO ?1", params![copy_str])?;
-        drop(src);
-
-        let mut copy = Connection::open_with_flags(
-            &copy_path,
-            OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+        let copy_str = copy_path
+            .to_str()
+            .ok_or_else(|| {
+                StorageError::InvalidInput("temp_dir path is not valid UTF-8".to_string())
+            })?
+            .to_string();
+        remove_scratch_copy(&copy_path)?;
+        let src = Connection::open_with_flags(
+            db_path,
+            OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
         )?;
-        copy.pragma_update(None, "foreign_keys", true)?;
-        copy.pragma_update(None, "trusted_schema", false)?;
-        let report = self.migrate(&mut copy)?;
-        let integrity = integrity_check(&copy)?;
-        let foreign_key_violations = foreign_key_check(&copy)?;
-        let table_counts = table_counts(&copy)?;
-        Ok(DryRunReport {
-            copy_path,
-            report,
-            integrity_ok: integrity.len() == 1 && integrity[0] == "ok",
-            foreign_key_violations,
-            table_counts,
-        })
+        let rehearsal = (|| {
+            src.execute("VACUUM INTO ?1", params![copy_str])?;
+            drop(src);
+            let mut copy = Connection::open_with_flags(
+                &copy_path,
+                OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+            )?;
+            copy.pragma_update(None, "foreign_keys", true)?;
+            copy.pragma_update(None, "trusted_schema", false)?;
+            let report = self.migrate(&mut copy)?;
+            let integrity = integrity_check(&copy)?;
+            let foreign_key_violations = foreign_key_check(&copy)?;
+            let table_counts = table_counts(&copy)?;
+            Ok(DryRunReport {
+                copy_path: copy_path.clone(),
+                report,
+                integrity_ok: integrity.len() == 1 && integrity[0] == "ok",
+                foreign_key_violations,
+                table_counts,
+            })
+        })();
+        if rehearsal.is_err() {
+            if let Err(e) = remove_scratch_copy(&copy_path) {
+                tracing::warn!(code = e.code(), "failed rehearsal copy was not removed");
+            }
+        }
+        rehearsal
     }
+}
+
+/// Remove a scratch copy (migration rehearsal, restore test) and its SQLite
+/// sidecars (`-wal`, `-shm`, `-journal`). Only regular files are removed: a symlink, directory or other
+/// object at one of these paths is refused (`Conflict`) and left untouched,
+/// so a planted link can never redirect the copy or a deletion.
+pub fn remove_scratch_copy(copy: &Path) -> StorageResult<()> {
+    let mut paths = vec![copy.to_path_buf()];
+    for suffix in ["-wal", "-shm", "-journal"] {
+        let mut name = copy.as_os_str().to_owned();
+        name.push(suffix);
+        paths.push(PathBuf::from(name));
+    }
+    for path in &paths {
+        match std::fs::symlink_metadata(path) {
+            Ok(meta) if meta.file_type().is_file() => {}
+            Ok(_) => {
+                return Err(StorageError::Conflict(
+                    "a dry-run copy path holds something other than a regular file".to_string(),
+                ))
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => {
+                return Err(StorageError::Io {
+                    context: "inspecting a dry-run copy",
+                    kind: e.kind(),
+                })
+            }
+        }
+    }
+    for path in &paths {
+        match std::fs::remove_file(path) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => {
+                return Err(StorageError::Io {
+                    context: "removing a dry-run copy",
+                    kind: e.kind(),
+                })
+            }
+        }
+    }
+    Ok(())
 }
 
 /// `PRAGMA integrity_check` messages (`["ok"]` when healthy).
