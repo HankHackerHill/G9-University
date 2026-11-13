@@ -158,6 +158,17 @@ export function Shell() {
             </span>
             <kbd aria-hidden="true">Ctrl K</kbd>
           </button>
+          <button
+            type="button"
+            className="shell-help"
+            aria-label="How to read the ledger"
+            title="How to read the ledger (press ?)"
+            onClick={() => {
+              setOverlay('key');
+            }}
+          >
+            ?
+          </button>
         </div>
         <nav className="shell-nav" aria-label="Screens">
           {NAV_GROUPS.map((group) => (
@@ -208,7 +219,7 @@ export function Shell() {
             </span>
           )}
         </div>
-        <div className="shell-tools" role="group" aria-label="Appearance and help">
+        <div className="shell-tools" role="group" aria-label="Appearance">
           <label className="theme-pick">
             <span>Theme</span>
             <select
@@ -232,33 +243,21 @@ export function Shell() {
             </select>
           </label>
           {followsScheme ? (
-          <div className="seg" role="group" aria-label="Colour scheme">
-            {THEME_MODES.map((mode) => (
-              <button
-                type="button"
-                key={mode}
-                aria-pressed={theme === mode}
-                onClick={() => {
-                  setTheme(mode);
-                }}
-              >
-                {THEME_LABEL[mode]}
-              </button>
-            ))}
-          </div>
+            <div className="seg" role="group" aria-label="Colour scheme">
+              {THEME_MODES.map((mode) => (
+                <button
+                  type="button"
+                  key={mode}
+                  aria-pressed={theme === mode}
+                  onClick={() => {
+                    setTheme(mode);
+                  }}
+                >
+                  {THEME_LABEL[mode]}
+                </button>
+              ))}
+            </div>
           ) : null}
-          <button type="button" onClick={toggleContrast} aria-pressed={contrast === 'high'}>
-            High contrast
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setOverlay('key');
-            }}
-          >
-            Ledger key
-            <kbd aria-hidden="true">?</kbd>
-          </button>
         </div>
       </div>
 

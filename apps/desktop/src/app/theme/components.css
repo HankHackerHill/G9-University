@@ -156,7 +156,8 @@
     grid-template-columns: minmax(0, 1fr) var(--margin-w);
   }
 
-  @container page (width < 62rem) {
+  /* The default window (1280 px) leaves about 61rem of page: both columns must still fit there. */
+  @container page (width < 56rem) {
     .split,
     .with-margin {
       grid-template-columns: minmax(0, 1fr);

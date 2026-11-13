@@ -11,7 +11,7 @@ Stack: React 19, strict TypeScript, plain CSS in cascade layers, no CSS framewor
 | User | One operator, at this window for hours a day, expert and sceptical |
 | Job of every screen | Show what stands (posted, in doubt, owed, advice, planned) and offer the one next action |
 | Data rule | Every figure is the backend's. A value that cannot be read or does not exist is said in words (`NoData`, `Stat standing="missing"`), never drawn as zero |
-| Window | 1440 × 900 is the reference; usable from 900 px wide; sidebar 240 px, content up to 1600 px |
+| Window | opens at 1280 × 800, minimum 960 × 640 (`src-tauri/tauri.conf.json`); sidebar 240 px, content up to 1600 px. Check every screen at 1280 × 800 and at 1440 × 900 |
 
 ## 2. Layout
 
@@ -20,8 +20,8 @@ Stack: React 19, strict TypeScript, plain CSS in cascade layers, no CSS framewor
 | Shell | `.shell` | grid: side `--side-w` (15rem), head auto, main 1fr | `.shell-main` scrolls; side and head stay |
 | Page | `.stack` as the screen root | gap `--s-5` (24 px) | every screen returns `<div className="stack">` |
 | Page head | `PageHead` | h1 28 to 36 px, lede 15 px, max 68ch | `actions` holds the one primary action |
-| Record with margin | `.with-margin` | `minmax(0,1fr)` + `--margin-w` (19rem), gap 32 px | below 62rem of page width the margin folds under |
-| List that picks a detail | `.split` | 3fr / 2fr; `data-lead="end"` gives 2fr / 3fr | folds to one column below 62rem; put `.sticky` on the detail column |
+| Record with margin | `.with-margin` | `minmax(0,1fr)` + `--margin-w` (19rem), gap 32 px | below 56rem of page width the margin folds under |
+| List that picks a detail | `.split` | 3fr / 2fr; `data-lead="end"` gives 2fr / 3fr | folds to one column below 56rem; put `.sticky` on the detail column |
 | Two or three equal columns | `.grid-2`, `.grid-3` | auto-fit, min 24rem / 16rem | wraps by itself |
 | Dashboard tiles | `.bento > [data-span="3…8"]` | 12 columns | span 3 is 4-across from 60rem, 2-across from 46rem, else 1 |
 | Region you read | `Panel` (`.panel`) | top rule, title 16 px | `actions` sit on the title line; `note` is one line under it; `as="aside"` in the margin |
@@ -124,13 +124,12 @@ Buttons: default (raised outline), `.primary` (solid ink; one per screen plus on
 
 | Page width (container `page`) | Changes |
 |---|---|
-| 72rem and wider | reference layout |
-| 62rem to 72rem | unchanged; long tables scroll inside their wrapper |
-| below 62rem | `.with-margin` and `.split` fold to one column, margin after the main column |
-| below 60rem | `.bento` span 3 goes 2-across |
+| 60rem and wider (the default 1280 px window gives about 61rem) | reference layout: margin and split side by side, four tiles across |
+| 56rem to 60rem | `.bento` span 3 goes 2-across |
+| below 56rem | `.with-margin` and `.split` fold to one column, margin after the main column |
 | below 46rem | `.bento` one column; `.now` stacks its action under the text; page padding 16 px |
 
-The Tauri window has a minimum size of 900 × 600 (`src-tauri/tauri.conf.json`). There is no touch layout.
+The Tauri window has a minimum size of 960 × 640 (`src-tauri/tauri.conf.json`), which leaves about 42rem of page: everything is one column there. There is no touch layout.
 
 ## 7. Edge cases
 
