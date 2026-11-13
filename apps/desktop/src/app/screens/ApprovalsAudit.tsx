@@ -22,11 +22,15 @@ export function ApprovalsAudit() {
   const [error, setError] = useState<G9Error | null>(null);
   const [busy, setBusy] = useState(false);
   const [decideWarnings, setDecideWarnings] = useState<readonly string[]>([]);
+  const [cancelled, setCancelled] = useState(false);
 
   const decide = async (approvalId: string, decision: 'APPROVE' | 'REJECT') => {
     setBusy(true);
     const r = await client.invoke('approvals.decide', { approval_id: approvalId, decision });
-    setError(isG9Error(r) ? r : null);
+    // A cancelled native confirmation is the operator's answer, not a failure.
+    const declined = isG9Error(r) && r.code === 'approval.not_confirmed';
+    setCancelled(declined);
+    setError(isG9Error(r) && !declined ? r : null);
     setDecideWarnings(warningsOf(r));
     setBusy(false);
     approvals.reload();
@@ -41,11 +45,15 @@ export function ApprovalsAudit() {
       <p className="muted">
         An approval binds to one exact operation (action, resource, scope, parameter hash, expected revision), expires after 10 minutes and is consumed once.
       </p>
-      <p className="banner" role="note" data-testid="confirmation-surface-gap">
-        <strong>NOT IMPLEMENTED:</strong> the trusted native confirmation raised from Rust (Addendum A.7, ADR-0014) is <strong>PROPOSED</strong> (SEC-03 OPEN). In this
-        build an approval is granted by <code>approvals.decide</code> called from this webview, so script running in the webview could approve its own request. Check the
-        operation, resource and parameter hash before you approve.
+      <p className="muted" role="note" data-testid="native-confirmation-note">
+        Approving opens a confirmation window drawn by the application itself, outside this page. It shows the operation, resource and expiry as stored; only your
+        answer there grants the approval, so script running in this page can ask for an approval but cannot grant one. Rejecting needs no confirmation.
       </p>
+      {cancelled ? (
+        <p className="muted" role="status" data-testid="confirmation-cancelled">
+          Nothing was approved: the confirmation was cancelled.
+        </p>
+      ) : null}
       {error !== null ? <ErrorDisplay error={error} /> : null}
       <Warnings warnings={mergeWarnings(approvals.warnings, audit.warnings, decideWarnings)} />
       {approvals.error !== null ? <ErrorDisplay error={approvals.error} onRetry={approvals.reload} /> : null}

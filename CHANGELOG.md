@@ -10,6 +10,9 @@ All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 - The restore plan no longer prints a mismatching snapshot hash next to the confirmation command; table names read from a foreign file are quoted.
 - `src-tauri/build.rs` refuses a release build in Tauri development mode (which would load its UI from `http://localhost:5173`); the README builds with `npm run tauri:build` (LOW).
 - Report: `docs/audit/security-audit-2026-11-12.md`.
+- Approvals are granted only through a native confirmation the desktop shell raises from Rust (ADR-0014, SEC-03 now PARTIAL): `g9_app::dispatch_confirming` shows what the stored request grants and dispatches only on the operator's Approve; a grant sent from the webview alone is refused (`approval.native_confirmation_required`), a cancelled dialog answers `approval.not_confirmed`. The shell uses a GTK dialog already in the dependency tree (no new crate); other platforms fail closed; the CLI, a terminal surface, opts out. The Approvals screen describes the control and handles a cancelled confirmation.
+- Backups: after the snapshot is renamed into place the backup directory is synced (and the file explicitly before the rename), so a power cut cannot leave a snapshot without its final name; verified with a syscall trace (`fsync(partial)` → `rename` → `fsync(dir)`).
+- `g9 copy-backup --backup-id <id> --to <dir>` copies a RETAINED backup to another drive (USB, NAS): written durably, never overwriting, re-hashed against the manifest, with `<id>.manifest.json` beside it so the copy restores with `g9 restore --snapshot … --expect-sha256 …` when this disk is gone.
 
 ### Fixed (2026-11-10 review leads, each reproduced by a test that failed before the fix)
 - `assessment.submit` stores the operator's notes as an erasable note linked to the attempt as SUBMISSION evidence; they were hashed and discarded (app-5).

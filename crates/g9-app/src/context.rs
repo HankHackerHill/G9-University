@@ -66,6 +66,12 @@ pub struct AppConfig {
     pub approved_roots: Vec<PathBuf>,
     /// Reported `SystemStatus.transport`.
     pub transport: Transport,
+    /// An approval is granted only through a confirmation the operator gives
+    /// outside the webview (ADR-0014, SEC-03): [`crate::dispatch_confirming`]
+    /// shows a summary Rust writes from the stored request (the desktop bridge:
+    /// a native dialog). `true` by default (deny by default); the CLI, a terminal
+    /// surface the operator types into, sets it to `false`.
+    pub native_confirmation: bool,
 }
 
 impl AppConfig {
@@ -82,6 +88,7 @@ impl AppConfig {
             attachment_dir: None,
             approved_roots: Vec::new(),
             transport: Transport::Tauri,
+            native_confirmation: true,
         })
     }
 }
@@ -287,6 +294,9 @@ pub struct Services {
     last_monotonic: AtomicU64,
     /// Exclusive hold on a file database's data (app-4); `None` in memory.
     _data_lock: Option<crate::lock::DataLock>,
+    /// The approval the operator confirmed outside the webview for the command
+    /// being dispatched (set and cleared by [`crate::dispatch_confirming`]).
+    pub(crate) native_confirmed: Option<g9_domain::ApprovalId>,
 }
 
 impl fmt::Debug for Services {
@@ -501,6 +511,7 @@ impl AppContextBuilder {
             recent_audit: VecDeque::new(),
             last_monotonic: AtomicU64::new(0),
             _data_lock: data_lock,
+            native_confirmed: None,
         };
         let mut db = self.db;
         svc.recovery = recovery::run(&mut db, &mut svc)?;

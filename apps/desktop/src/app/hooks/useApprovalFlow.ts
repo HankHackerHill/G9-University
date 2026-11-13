@@ -4,9 +4,8 @@
  *   operator decides (approvals.decide) → re-run the SAME operation with approval_id.
  *
  * The backend binds the approval to the operation hash and consumes it once (ADR-0003); the
- * mock mirrors that behaviour. The native confirmation raised from Rust (Addendum A.7,
- * ADR-0014) is PROPOSED and NOT IMPLEMENTED (SEC-03 OPEN): in this build `decide` grants the
- * approval directly from the webview.
+ * mock mirrors that behaviour. `decide` only asks: the desktop shell raises a native
+ * confirmation (Addendum A.7, ADR-0014) and the operator's answer there grants the approval.
  */
 import { useCallback, useState } from 'react';
 import type { InvokeResult } from '../../ipc/client';

@@ -13,6 +13,18 @@ Preconditions: the app is the only writer; backups are created by the trusted ba
 
 Recovery-point objective (proposed): daily automatic request after the first session of the day plus before every migration; retention 14 daily / 8 weekly / 12 monthly.
 
+## Keep a copy on another drive
+
+A backup in `<data>/backups` is on the same disk as the database. Copy each RETAINED backup to a USB drive or a NAS mount:
+
+```
+g9 copy-backup --backup-id <id> --to /media/usb/g9-backups
+```
+
+The destination folder must exist. The command reads the manifest from the live database (read-only; the application may be running), writes `<dest>.partial`, syncs it, renames it and syncs the folder, never overwrites a file, re-hashes the copy against the manifest's checksum, and writes `<id>.manifest.json` beside it with the checksum and the restore command. When this disk is gone, restore from the copy with `g9 restore --snapshot <copy> --expect-sha256 <sha256 from the manifest file> --confirm-replace-live-database` (TESTED: `apps/cli/tests/restore.rs::a_backup_copied_to_another_drive_restores_from_its_own_manifest`). Only RETAINED backups are copied (`restore.backup_not_retained` otherwise).
+
+Durability of the backup itself: the snapshot file is synced before it is renamed to its final name and the backups folder is synced after (VERIFIED by syscall trace, 2026-11-13).
+
 ## Restore
 
 Offline restore is IMPLEMENTED (`g9 restore` in `apps/cli`, on `g9_storage::restore::restore_over_live`; TESTED: `crates/g9-storage` `restore::tests::*`, `apps/cli/tests/restore.rs`, the restore section of `scripts/smoke_test.sh`). Restoring from inside the running application is PROPOSED (see the end of this section). ADR-0001 still holds: the live file is never copied by hand; it is replaced only by `restore_over_live`, which keeps the old database.

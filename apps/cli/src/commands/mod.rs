@@ -3,6 +3,7 @@
 
 pub mod approvals;
 pub mod call;
+pub mod copy_backup;
 pub mod crash_drill;
 pub mod import_seed;
 pub mod init;
@@ -103,6 +104,9 @@ pub fn run(cli: &Cli) -> Result<Completion, CliError> {
             crash_drill::run(&boot_options(cli)?)
         }
         Command::Restore(args) => Ok(Completion::of(restore::run(&boot_options(cli)?, args)?)),
+        Command::CopyBackup(args) => {
+            Ok(Completion::of(copy_backup::run(&boot_options(cli)?, args)?))
+        }
     }
 }
 

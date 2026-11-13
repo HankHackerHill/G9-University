@@ -33,6 +33,12 @@ g9-skills = { workspace = true }
 # (apps/desktop/README.md "Binding key").
 getrandom = "=0.4.3"
 
+# Native approval confirmation (ADR-0014): a GTK message dialog raised by Rust
+# on the GTK main thread. Exact pin, already in the lock file through tauri; no
+# dialog plugin (no new crates, and nothing the webview can invoke).
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "=0.18.2"
+
 [dev-dependencies]
 tempfile = { workspace = true }
 

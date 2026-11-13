@@ -95,7 +95,7 @@ extern crate self as g9_app;
 mod test_harness;
 
 pub use context::{AppConfig, AppContext, AppContextBuilder, Transport};
-pub use dispatch::dispatch;
+pub use dispatch::{approval_summary, dispatch, dispatch_confirming, ApprovalSummary};
 pub use g9_domain::{CommandOutcome, ErrorCategory, G9Error};
 pub use recovery::RecoveryReport;
 

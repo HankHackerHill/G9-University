@@ -489,3 +489,72 @@ fn a_path_that_is_not_utf8_is_refused_before_anything_changes() {
     assert!(!env.data.join("restore-log.jsonl").exists());
     assert!(has_note(&env.live(), &marker));
 }
+
+#[test]
+fn a_backup_copied_to_another_drive_restores_from_its_own_manifest() {
+    // Keep a copy off this disk (a USB drive, a NAS): `g9 copy-backup` writes the
+    // snapshot and a manifest with its checksum, synced and re-hashed; a later
+    // `g9 restore --snapshot <copy> --expect-sha256 <manifest sha256>` needs
+    // nothing from this disk.
+    let env = Env::new();
+    let (id, marker) = env.retained_backup_with_marker();
+    let usb = tempfile::tempdir().unwrap();
+    let to = usb.path().to_str().unwrap();
+
+    let (code, out, _) = env.run(&["copy-backup", "--backup-id", &id, "--to", to]);
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(out["verified"], true);
+    let copy = PathBuf::from(out["copied_to"].as_str().unwrap());
+    assert!(copy.starts_with(std::fs::canonicalize(usb.path()).unwrap()));
+    let manifest: Value =
+        serde_json::from_str(&std::fs::read_to_string(out["manifest"].as_str().unwrap()).unwrap())
+            .unwrap();
+    assert_eq!(manifest["sha256"], out["sha256"]);
+    assert_eq!(manifest["backup_id"], id.as_str());
+
+    let (code, again, _) = env.run(&["copy-backup", "--backup-id", &id, "--to", to]);
+    assert_ne!(code, 0, "a copy never overwrites: {again}");
+    assert_eq!(again["code"], "copy_backup.destination_exists");
+
+    let note_after = env.create_note("after the backup");
+    let sha = manifest["sha256"].as_str().unwrap();
+    let (code, restored, _) = env.run(&[
+        "restore",
+        "--snapshot",
+        copy.to_str().unwrap(),
+        "--expect-sha256",
+        sha,
+        "--confirm-replace-live-database",
+    ]);
+    assert_eq!(code, 0, "{restored}");
+    assert!(
+        has_note(&env.live(), &marker),
+        "the snapshot's content is back"
+    );
+    assert!(!has_note(&env.live(), &note_after), "later content is gone");
+}
+
+#[test]
+fn only_a_retained_backup_is_copied() {
+    let env = Env::new();
+    let (code, init, _) = env.run(&["init"]);
+    assert_eq!(code, 0, "{init}");
+    let (code, created, _) = env.call("backup.create", json!({ "label": "unverified" }));
+    assert_eq!(code, 0, "{created}");
+    let id = created["result"]["backup_id"].as_str().unwrap().to_string();
+    let usb = tempfile::tempdir().unwrap();
+    let (code, refused, _) = env.run(&[
+        "copy-backup",
+        "--backup-id",
+        &id,
+        "--to",
+        usb.path().to_str().unwrap(),
+    ]);
+    assert_ne!(code, 0, "{refused}");
+    assert_eq!(refused["code"], "restore.backup_not_retained");
+    assert_eq!(
+        std::fs::read_dir(usb.path()).unwrap().count(),
+        0,
+        "nothing written"
+    );
+}

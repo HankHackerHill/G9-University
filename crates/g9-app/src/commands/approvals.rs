@@ -158,6 +158,17 @@ pub fn decide(
             ))
         },
         move |env| {
+            // ADR-0014, SEC-03: the webview's request is a proposal; the grant is
+            // the operator's confirmation outside it. Rejecting needs none.
+            if matches!(req.decision, Verdict::Approve)
+                && env.svc.config.native_confirmation
+                && env.svc.native_confirmed.as_ref() != Some(&id)
+            {
+                return Err(G9Error::unauthorized(
+                    "approval.native_confirmation_required",
+                    "an approval is granted only in the confirmation dialog the application shows",
+                ));
+            }
             let operator = env.svc.operator.clone();
             env.svc.approvals.refresh(env.conn, &id, &operator)?;
             let row = approvals_store::get_request(env.conn, &id)?

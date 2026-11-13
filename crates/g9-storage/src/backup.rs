@@ -313,7 +313,15 @@ pub fn create_snapshot(
         ]));
     }
     let sha = sha256_of_file(&partial)?;
+    // Durable before it is visible, and visible durably (TEC-11): the file's
+    // data is synced before the rename (the copy connection syncs on commit;
+    // this does not rely on its settings), and the directory after it, so a
+    // power cut cannot leave the snapshot without its final name.
+    sync_file(&partial)?;
     std::fs::rename(&partial, dest_path).map_err(|e| StorageError::io("rename snapshot", &e))?;
+    if let Some(dir) = dest_path.parent() {
+        sync_dir(dir)?;
+    }
 
     manifest.schema_version = schema_version;
     manifest.page_count = page_count;
@@ -322,6 +330,25 @@ pub fn create_snapshot(
     manifest.audit_anchor = anchor;
     manifest.transition(BackupEvent::Snapshot)?;
     Ok(manifest)
+}
+
+/// Flush a file's data and metadata to stable storage.
+pub fn sync_file(path: &Path) -> StorageResult<()> {
+    std::fs::File::open(path)
+        .and_then(|f| f.sync_all())
+        .map_err(|e| StorageError::io("sync a backup file", &e))
+}
+
+/// Flush a directory's entries (a rename into it) to stable storage. On
+/// non-unix systems there is no portable equivalent and this does nothing.
+pub fn sync_dir(dir: &Path) -> StorageResult<()> {
+    #[cfg(unix)]
+    std::fs::File::open(dir)
+        .and_then(|f| f.sync_all())
+        .map_err(|e| StorageError::io("sync a backup directory", &e))?;
+    #[cfg(not(unix))]
+    let _ = dir;
+    Ok(())
 }
 
 /// Verify a snapshot file (opened read-only; the file is not modified).

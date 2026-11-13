@@ -195,8 +195,22 @@ impl Bridge {
         self.ctx.as_ref().err()
     }
 
-    /// Run one IPC call through `g9_app::dispatch`.
+    /// Run one IPC call with no confirmation available: an approval grant is
+    /// never confirmed, so it is refused (fail closed; ADR-0014).
     pub fn handle(&self, op: &str, meta: Value, payload: Value) -> Result<Value, Value> {
+        self.handle_confirming(op, meta, payload, &mut |_| false)
+    }
+
+    /// Run one IPC call through `g9_app::dispatch_confirming`: an approval grant
+    /// is first shown to the operator through `confirm` (the shell: a native
+    /// dialog whose text Rust writes from the stored request; ADR-0014).
+    pub fn handle_confirming(
+        &self,
+        op: &str,
+        meta: Value,
+        payload: Value,
+        confirm: &mut dyn FnMut(&g9_app::ApprovalSummary) -> bool,
+    ) -> Result<Value, Value> {
         let ctx = match &self.ctx {
             Ok(ctx) => ctx,
             Err(error) => return Err(error_value(error)),
@@ -206,8 +220,8 @@ impl Bridge {
         let mut guard = ctx
             .lock()
             .map_err(|_| error_value(&G9Error::internal_redacted("bridge.state_poisoned")))?;
-        let outcome =
-            g9_app::dispatch(&mut guard, op, meta, payload).map_err(|e| error_value(&e))?;
+        let outcome = g9_app::dispatch_confirming(&mut guard, op, meta, payload, confirm)
+            .map_err(|e| error_value(&e))?;
         drop(guard);
         Ok(self.with_status_warnings(op, outcome))
     }
@@ -252,10 +266,22 @@ impl AppState {
         self.slot.get()
     }
 
-    /// Handle one IPC call (`Err` is a serialized `G9Error`).
+    /// Handle one IPC call (`Err` is a serialized `G9Error`) with no
+    /// confirmation available: approval grants are refused.
     pub fn handle(&self, op: &str, meta: Value, payload: Value) -> Result<Value, Value> {
+        self.handle_confirming(op, meta, payload, &mut |_| false)
+    }
+
+    /// Handle one IPC call; an approval grant goes through `confirm` first.
+    pub fn handle_confirming(
+        &self,
+        op: &str,
+        meta: Value,
+        payload: Value,
+        confirm: &mut dyn FnMut(&g9_app::ApprovalSummary) -> bool,
+    ) -> Result<Value, Value> {
         match self.slot.get() {
-            Some(bridge) => bridge.handle(op, meta, payload),
+            Some(bridge) => bridge.handle_confirming(op, meta, payload, confirm),
             None => Err(error_value(&G9Error::resource_unavailable(
                 "bridge.starting",
                 "the backend is still starting; retry",
@@ -538,19 +564,62 @@ mod shell {
     /// window's event loop.
     #[tauri::command]
     async fn g9_command(
+        app: tauri::AppHandle,
         state: tauri::State<'_, AppState>,
         op: String,
         meta: Value,
         payload: Value,
     ) -> Result<Value, Value> {
         let state = state.inner().clone();
-        tauri::async_runtime::spawn_blocking(move || state.handle(&op, meta, payload))
-            .await
-            .unwrap_or_else(|_| {
-                Err(error_value(&G9Error::internal_redacted(
-                    "bridge.worker_failed",
-                )))
+        tauri::async_runtime::spawn_blocking(move || {
+            state.handle_confirming(&op, meta, payload, &mut |summary| {
+                native_confirm(&app, summary)
             })
+        })
+        .await
+        .unwrap_or_else(|_| {
+            Err(error_value(&G9Error::internal_redacted(
+                "bridge.worker_failed",
+            )))
+        })
+    }
+
+    /// Ask the operator, in a native dialog the webview cannot script, whether
+    /// to grant an approval (ADR-0014, SEC-03). The text comes from
+    /// `g9_app::ApprovalSummary`, which Rust reads from the stored request.
+    /// Runs the dialog on the GTK main thread and waits for the answer on this
+    /// worker thread; any failure is a refusal.
+    #[cfg(target_os = "linux")]
+    fn native_confirm(app: &tauri::AppHandle, summary: &g9_app::ApprovalSummary) -> bool {
+        use gtk::prelude::{DialogExt, GtkWindowExt};
+        let (answer, wait) = std::sync::mpsc::channel();
+        let text = summary.text();
+        let window = app.get_webview_window("main");
+        let posted = app.run_on_main_thread(move || {
+            let parent = window.and_then(|w| w.gtk_window().ok());
+            let dialog = gtk::MessageDialog::new(
+                parent.as_ref(),
+                gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
+                gtk::MessageType::Warning,
+                gtk::ButtonsType::None,
+                &text,
+            );
+            dialog.set_title("G9 Mentor: approve this operation?");
+            dialog.add_button("Cancel", gtk::ResponseType::Cancel);
+            dialog.add_button("Approve", gtk::ResponseType::Accept);
+            dialog.set_default_response(gtk::ResponseType::Cancel);
+            let approved = dialog.run() == gtk::ResponseType::Accept;
+            dialog.close();
+            let _ = answer.send(approved);
+        });
+        posted.is_ok() && wait.recv().unwrap_or(false)
+    }
+
+    /// No native dialog is wired on this platform: approvals are refused in
+    /// the window (fail closed) and can be given with the `g9` CLI.
+    #[cfg(not(target_os = "linux"))]
+    fn native_confirm(_app: &tauri::AppHandle, _summary: &g9_app::ApprovalSummary) -> bool {
+        false
     }
 
     /// Resolve host paths through Tauri's path resolver and bootstrap once.
@@ -678,6 +747,51 @@ mod tests {
         out
     }
 
+    /// The operator answers the native confirmation dialog with Approve.
+    fn approve(state: &AppState, n: &str, id: &str) -> Result<Value, Value> {
+        let op = "approvals.decide";
+        let out = state.handle_confirming(
+            op,
+            meta(op, n, None),
+            json!({ "approval_id": id, "decision": "APPROVE" }),
+            &mut |_| true,
+        );
+        assert_schema(op, &out);
+        out
+    }
+
+    #[test]
+    fn an_approval_without_the_native_dialog_is_refused() {
+        // ADR-0014, SEC-03: the webview's request alone never grants.
+        let dir = tempfile::tempdir().unwrap();
+        let state = start(dir.path());
+        let err = call(&state, "export.request", "1", export_payload()).unwrap_err();
+        let id = err["approval_id"].as_str().unwrap().to_string();
+        let refused = call(
+            &state,
+            "approvals.decide",
+            "2",
+            json!({ "approval_id": id, "decision": "APPROVE" }),
+        )
+        .unwrap_err();
+        assert_eq!(refused["code"], "approval.not_confirmed");
+        // The dialog shows what Rust reads from the stored request.
+        let mut shown = String::new();
+        let op = "approvals.decide";
+        let granted = state.handle_confirming(
+            op,
+            meta(op, "3", None),
+            json!({ "approval_id": id, "decision": "APPROVE" }),
+            &mut |summary| {
+                shown = summary.text();
+                true
+            },
+        );
+        assert_schema(op, &granted);
+        assert!(granted.is_ok(), "{granted:?}");
+        assert!(shown.contains("export.request"), "{shown}");
+    }
+
     /// Every bridge answer conforms to the IPC schemas the UI is built against.
     fn assert_schema(op: &str, out: &Result<Value, Value>) {
         match out {
@@ -791,13 +905,7 @@ mod tests {
         let err = call(&first, "export.request", "1", export_payload()).unwrap_err();
         assert_eq!(err["category"], "APPROVAL_REQUIRED");
         let id = err["approval_id"].as_str().unwrap().to_string();
-        let decided = call(
-            &first,
-            "approvals.decide",
-            "2",
-            json!({ "approval_id": id, "decision": "APPROVE" }),
-        )
-        .unwrap();
+        let decided = approve(&first, "2", &id).unwrap();
         assert_eq!(decided["result"]["state"], "APPROVED");
         drop(first);
 
@@ -830,13 +938,7 @@ mod tests {
         let first = start(dir.path());
         let err = call(&first, "export.request", "1", export_payload()).unwrap_err();
         let id = err["approval_id"].as_str().unwrap().to_string();
-        call(
-            &first,
-            "approvals.decide",
-            "2",
-            json!({ "approval_id": id, "decision": "APPROVE" }),
-        )
-        .unwrap();
+        approve(&first, "2", &id).unwrap();
         drop(first);
         fs::remove_file(dir.path().join("data").join(KEY_FILE_NAME)).unwrap();
 
@@ -867,13 +969,7 @@ mod tests {
         let state = start(dir.path());
         let err = call(&state, "export.request", "1", export_payload()).unwrap_err();
         let id = err["approval_id"].as_str().unwrap().to_string();
-        call(
-            &state,
-            "approvals.decide",
-            "2",
-            json!({ "approval_id": id, "decision": "APPROVE" }),
-        )
-        .unwrap();
+        approve(&state, "2", &id).unwrap();
         // Same approval, wider export: refused, and the approval is not spent.
         let wider = json!({
             "domains": ["LEARNING", "PERSONAL"],

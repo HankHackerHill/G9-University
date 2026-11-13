@@ -92,6 +92,19 @@ pub enum Command {
     CrashDrill(CrashDrillArgs),
     /// Offline restore: replace the live database with a verified backup snapshot; the old database is moved to <data dir>/quarantine, never deleted. Stop the application first. Prints the plan and exits 1 unless --confirm-replace-live-database is given.
     Restore(RestoreArgs),
+    /// Copy a RETAINED backup to another directory (a USB drive, a NAS mount): the snapshot plus <id>.manifest.json, synced and re-hashed against the manifest. Reads only; the application may be running.
+    CopyBackup(CopyBackupArgs),
+}
+
+/// `g9 copy-backup` arguments.
+#[derive(Debug, Args)]
+pub struct CopyBackupArgs {
+    /// Backup id (a RETAINED backup of this installation).
+    #[arg(long, value_name = "ID")]
+    pub backup_id: String,
+    /// Destination directory; it must exist (for example a folder on a mounted USB drive).
+    #[arg(long, value_name = "DIR")]
+    pub to: PathBuf,
 }
 
 /// `g9 call` arguments.

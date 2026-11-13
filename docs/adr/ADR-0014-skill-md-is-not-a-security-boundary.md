@@ -21,3 +21,15 @@ Compromised content or webview cannot escalate to protected operations without a
 ## Verification
 
 `a07_requested_operator_only_capability_rejected_at_load`, `a07_output_requesting_execute_is_rejected_at_validation`; dialog wiring NOT RUN until Stage 03.
+
+## Addendum (2026-11-13): native confirmation implemented for approval grants
+
+| Part | Implementation |
+|---|---|
+| Chokepoint | The approval grant (`approvals.decide` APPROVE). Every protected operation listed above is approval-gated, so none proceeds without a granted approval. |
+| Backend | `g9_app::dispatch_confirming` reads what the approval grants from storage (`ApprovalSummary`: operation, resource, revision, request and expiry times; nothing from the payload but the approval id), asks `confirm`, and dispatches only on `true`. A plain `dispatch` of an APPROVE is refused `UNAUTHORIZED approval.native_confirmation_required` while `AppConfig::native_confirmation` is on (the default). REJECT needs no confirmation. |
+| Desktop shell | `g9_command` passes a closure that raises a GTK `MessageDialog` (Cancel default, Approve) on the GTK main thread via `AppHandle::run_on_main_thread`, transient for the main window, and waits for the answer; any failure is a refusal. Other platforms answer `false` (fail closed; approve with the CLI there). |
+| CLI | Sets `native_confirmation = false`: a terminal surface the operator types into. Whether the CLI stays an approval surface is an open operator decision. |
+| Deviation | `tauri-plugin-dialog` is not used: GTK is already in the locked dependency tree (`gtk 0.18.2` through tauri), so no new crate enters the build and nothing is invocable from the webview (no dialog permission exists in the capabilities). The crate host `static.crates.io` was also not reachable from the build sandbox. |
+
+Verification: `crates/g9-app/tests/native_confirmation.rs` (a webview-only grant refused, failing before with the gate off; a declined dialog refused; a confirmed grant with the dialog text read from the stored request; REJECT unconfirmed); shell bridge test `an_approval_without_the_native_dialog_is_refused`; the shell type-checks and passes clippy `-D warnings` (all targets) against placeholder pkg-config metadata. NOT RUN here: the shell's tests (they need the GTK/WebKit libraries to link) and the dialog on a display; run them on the G9 host or in CI started by hand. Still missing for SEC-03: an approval-request rate limit, Tauri's isolation pattern, an app ACL manifest.

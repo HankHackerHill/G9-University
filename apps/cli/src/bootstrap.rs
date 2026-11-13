@@ -291,6 +291,10 @@ pub fn open(opts: &BootOptions) -> Result<Booted, CliError> {
     // `g9_app::Transport` has a single variant; `system.status.transport`
     // therefore reads `tauri` from the CLI as well (reported in the testing guide).
     config.transport = Transport::Tauri;
+    // A terminal surface: the operator types the approval command, so there is
+    // no webview to confirm against (ADR-0014). Whether the CLI stays an
+    // approval surface is an open operator decision (stage report).
+    config.native_confirmation = false;
 
     let open_options = match &opts.clock {
         Some(clock) => g9_app::database_options(APP_VERSION).applied_at(clock.now()),

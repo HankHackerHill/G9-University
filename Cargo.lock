@@ -1346,6 +1346,7 @@ dependencies = [
  "g9-skills",
  "g9-storage",
  "getrandom 0.4.3",
+ "gtk",
  "serde",
  "serde_json",
  "tauri",

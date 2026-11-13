@@ -329,6 +329,12 @@ export interface MockOptions {
    * `FIXTURE_DECLARED_DIFFICULTY`.
    */
   assessmentsWithoutDifficulty?: readonly Id[];
+  /**
+   * The operator's answer in the native confirmation dialog the desktop shell raises for an
+   * APPROVE (ADR-0014). Default: confirms. `false` answers `UNAUTHORIZED approval.not_confirmed`
+   * and leaves the approval pending, as the backend does when the dialog is cancelled.
+   */
+  confirmApproval?: (approvalId: Id) => boolean;
 }
 
 export interface MockTransport extends IpcTransport {
@@ -375,12 +381,14 @@ class MockState {
   private readonly audit: AuditEntry[] = [];
   private events: CalendarEvent[] = [];
   private readonly undeclared: ReadonlySet<Id>;
+  private readonly confirmApproval: (approvalId: Id) => boolean;
 
   constructor(options: MockOptions) {
     this.clock = options.clock ?? createMockClock();
     this.fixture = options.fixture ?? WEEK3_FIXTURE;
     this.zone = options.zone ?? this.fixture.zone;
     this.undeclared = new Set(options.assessmentsWithoutDifficulty ?? []);
+    this.confirmApproval = options.confirmApproval ?? (() => true);
     this.seed();
   }
 
@@ -1598,6 +1606,9 @@ class MockState {
     const approval = this.approvals.get(id);
     if (approval === undefined) {
       throw fail('NOT_FOUND', 'approval.not_found', 'approval not found', { approval_id: id });
+    }
+    if (decision === 'APPROVE' && !this.confirmApproval(id)) {
+      throw fail('UNAUTHORIZED', 'approval.not_confirmed', 'the approval was not confirmed');
     }
     this.checkRevision(meta, approval.revision);
     this.expireIfDue(approval);

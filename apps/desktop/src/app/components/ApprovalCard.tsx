@@ -16,10 +16,10 @@ export interface ApprovalCardProps {
  * Shows exactly what an approval binds to: action, resource, parameter hash, expiry.
  * "Apply" re-issues the original operation with the approval id.
  *
- * Addendum A.7 requires that the webview only requests and a native confirmation raised from
- * Rust grants (ADR-0014). That surface is PROPOSED and NOT IMPLEMENTED (SEC-03 OPEN): in this
- * build Approve calls `approvals.decide` directly from the webview. Every card says so until the
- * Rust dialog ships.
+ * Addendum A.7, ADR-0014: this page only asks. Approve sends `approvals.decide`; the desktop
+ * shell then raises a native confirmation dialog whose text Rust writes from the stored request,
+ * and only the operator's answer there grants the approval (a cancelled dialog answers
+ * `approval.not_confirmed`).
  */
 export function ApprovalCard({ approval, zone, now, onDecide, onApply, disabled = false }: ApprovalCardProps) {
   const expired = now !== undefined && now > approval.expires_at;
@@ -82,9 +82,8 @@ export function ApprovalCard({ approval, zone, now, onDecide, onApply, disabled 
           </dd>
         </div>
       </dl>
-      <p className="banner" role="note" data-testid="approval-webview-grant">
-        <strong>Webview approval:</strong> the native Rust confirmation is PROPOSED, not implemented (SEC-03 OPEN). In this build Approve grants the request directly
-        from the webview.
+      <p className="muted" role="note" data-testid="approval-native-confirmation">
+        Approve opens a confirmation window drawn by the application, outside this page; the approval is granted only when you confirm there.
       </p>
       <div className="row">
         {approval.state === 'PENDING' && onDecide !== undefined ? (

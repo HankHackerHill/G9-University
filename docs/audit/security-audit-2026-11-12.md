@@ -120,7 +120,7 @@ Fix:
 - Bind what is being approved: add a backend-computed hash of the effective criterion results to approve_final's parameters (covered by the MAC) and show it in the approval summary.
 - Test (fail first): approve_final with `expected_revision = stored + 2` returns STALE_REVISION and creates no `approval_requests` row.
 
-Residual risk: the operator must still see what the approval covers; today the approval summary shows no grade content, and SEC-03 (webview self-approval) remains open.
+Residual risk: the operator must still see what the approval covers; today the approval summary shows no grade content, and SEC-03 (webview self-approval) remains open (2026-11-13: approval grants now need the native confirmation on Linux; SEC-03 PARTIAL, ADR-0014 addendum).
 
 ### [LOW] Deleting the newest audit rows is not detected although the backup anchors prove the rows existed
 

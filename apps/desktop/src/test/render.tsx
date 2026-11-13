@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { IpcProvider } from '../app/ipc-context';
 import { createClient, type IpcClient } from '../ipc/client';
-import { createMockTransport, type MockTransport } from '../ipc/transports/mock';
+import { createMockTransport, type MockOptions, type MockTransport } from '../ipc/transports/mock';
 
 export interface Harness {
   transport: MockTransport;
@@ -13,8 +13,8 @@ export interface Harness {
 let counter = 0;
 
 /** Deterministic client: fixed clock from the mock, sequential ids instead of crypto.randomUUID. */
-export function createHarness(): Harness {
-  const transport = createMockTransport();
+export function createHarness(options: MockOptions = {}): Harness {
+  const transport = createMockTransport(options);
   const client = createClient(transport, {
     now: () => transport.clock.now(),
     uuid: () => {

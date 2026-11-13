@@ -567,7 +567,9 @@ impl Harness {
     /// `INTERNAL` error with code `evaluation.envelope_schema_violation` so
     /// that scenarios fail.
     pub fn raw(&mut self, op: &str, meta: Value, payload: Value) -> Result<Value, G9Error> {
-        let out = g9_app::dispatch(self.ctx()?, op, meta, payload);
+        // The operator answers every native confirmation with Approve (ADR-0014);
+        // scenarios model the operator, not a webview acting alone.
+        let out = g9_app::dispatch_confirming(self.ctx()?, op, meta, payload, &mut |_| true);
         let envelope_ok = match &out {
             Ok(v) => {
                 g9_app::schemas::validate_outcome(v).is_ok()

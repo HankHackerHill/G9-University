@@ -135,7 +135,7 @@ pub fn run(boot: &BootOptions, args: &RestoreArgs) -> Result<Value, CliError> {
 }
 
 /// The data directory as an absolute path, canonical when it exists; no creation.
-fn data_root(data_dir: &Path) -> Result<PathBuf, CliError> {
+pub(crate) fn data_root(data_dir: &Path) -> Result<PathBuf, CliError> {
     let absolute = bootstrap::absolute_path(data_dir)?;
     Ok(fs::canonicalize(&absolute).unwrap_or(absolute))
 }
@@ -207,7 +207,11 @@ fn text(path: &Path) -> String {
 }
 
 /// Snapshot path and checksum of a `RETAINED` manifest in the live database.
-fn from_manifest(root: &Path, live: &Path, raw_id: &str) -> Result<(PathBuf, String), CliError> {
+pub(crate) fn from_manifest(
+    root: &Path,
+    live: &Path,
+    raw_id: &str,
+) -> Result<(PathBuf, String), CliError> {
     let id = BackupId::parse(raw_id)
         .map_err(|_| CliError::Usage(format!("--backup-id {raw_id:?} is not a valid backup id")))?;
     if !live.is_file() {

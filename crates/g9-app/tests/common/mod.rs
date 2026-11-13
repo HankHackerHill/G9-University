@@ -269,10 +269,29 @@ impl Harness {
         self.call_with(op, payload, &retry).unwrap()
     }
 
+    /// Dispatch the way the desktop bridge does after the operator answered the
+    /// native confirmation dialog (ADR-0014): `confirm` plays the operator.
+    pub fn confirmed_with(
+        &mut self,
+        op: &str,
+        payload: Value,
+        confirm: &mut dyn FnMut(&g9_app::ApprovalSummary) -> bool,
+    ) -> Result<Value, G9Error> {
+        let meta = self.meta(op, &Opts::default());
+        let out = g9_app::dispatch_confirming(self.ctx(), op, meta, payload, confirm);
+        match &out {
+            Ok(v) => g9_app::schemas::validate_outcome(v).unwrap(),
+            Err(e) => g9_app::schemas::validate_error(&serde_json::to_value(e).unwrap()).unwrap(),
+        }
+        out
+    }
+
+    /// The operator's decision, confirmed in the native dialog.
     pub fn decide(&mut self, approval_id: &str, decision: &str) -> Value {
-        self.call(
+        self.confirmed_with(
             "approvals.decide",
             json!({ "approval_id": approval_id, "decision": decision }),
+            &mut |_| true,
         )
         .unwrap()
     }

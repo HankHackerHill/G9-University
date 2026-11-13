@@ -232,7 +232,17 @@ pub fn name_for_approval(action: Action, kind: ResourceKind) -> &'static str {
         (Action::Finalize, ResourceKind::GradeDecision) => "assessment.approve_final",
         (Action::Export, _) => "export.request",
         (Action::Delete, _) => "deletion.request",
-        _ => "unknown",
+        // A write gated by its data (a security-sensitive record): the single
+        // mutating operation with this verb and resource kind, if there is one.
+        _ => {
+            let mut matching = OPERATIONS
+                .iter()
+                .filter(|s| s.mutating && s.action == action && s.resource_kind == kind);
+            match (matching.next(), matching.next()) {
+                (Some(only), None) => only.name,
+                _ => "unknown",
+            }
+        }
     }
 }
 
