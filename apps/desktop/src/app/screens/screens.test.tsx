@@ -138,7 +138,7 @@ describe('Assessments and Approvals/Audit', () => {
     await user.click(approve);
     const card = await screen.findByTestId('approval-card');
     expect(within(card).getByTestId('approval-hash')).toHaveTextContent(/^[0-9a-f]{64}$/);
-    expect(within(card).getByTestId('approval-expiry')).toHaveTextContent('2026-11-18 09:45');
+    expect(within(card).getByTestId('approval-expiry')).toHaveTextContent('2026-11-18 09:40');
     expect(within(card).getByText('PENDING')).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveAttribute('data-category', 'APPROVAL_REQUIRED');
     await user.click(within(card).getByRole('button', { name: 'Approve' }));
@@ -154,7 +154,7 @@ describe('Assessments and Approvals/Audit', () => {
     renderWithIpc(<ApprovalsAudit />, harness);
     const card = await screen.findByTestId('approval-card');
     expect(within(card).getByTestId('approval-hash')).toHaveTextContent(/^[0-9a-f]{64}$/);
-    expect(within(card).getByTestId('approval-expiry')).toHaveTextContent('2026-11-18 09:45');
+    expect(within(card).getByTestId('approval-expiry')).toHaveTextContent('2026-11-18 09:40');
     expect(within(card).getByText('assessment.approve_final')).toBeInTheDocument();
     expect(await screen.findByText('INTACT')).toBeInTheDocument();
     expect(screen.getByText('mock.seed')).toBeInTheDocument();

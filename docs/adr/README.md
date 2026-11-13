@@ -18,3 +18,4 @@ Each ADR resolves one or more rows of `docs/audit/defect-register.md`. Status: A
 | [ADR-0012](ADR-0012-assessment-pass-rule-and-reliability.md) | Non-compensatory pass rule with enumerated gates and a reliability class on every grade decision | LRN-10, LRN-11, LRN-14 |
 | [ADR-0013](ADR-0013-typed-ipc-envelope-and-error-categories.md) | Closed 13-category error set, backend-assigned actor, success envelope with revision and replay flag | TEC-03, TEC-04, SEC-01 |
 | [ADR-0014](ADR-0014-skill-md-is-not-a-security-boundary.md) | SKILL.md is instructional metadata; permissions are decided in Rust; protected operations get a native confirmation | C11, SEC-03 |
+| [ADR-0015](ADR-0015-owner-decisions-2026-11-13.md) | Owner decisions: synchronous FULL, 10-minute approvals, host disk encryption, no AI yet, VALIDATED unreachable accepted, manual CI, private repository | TEC-12, SEC-02, IMP-M06 |

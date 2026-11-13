@@ -8,7 +8,7 @@ v5.1 modelled approvals as PENDING/APPROVED/REJECTED with no binding (TEC-08, SE
 
 ## Decision
 
-`OperationDescriptor { action, resource, scope, parameters_sha256 }` where the hash is SHA-256 over canonical JSON (sorted keys, no whitespace, `g9_domain::hashing`). An approval records `binding_mac = HMAC-SHA256(install_secret, canonical(operation) || expected_revision || approval_id)`, an expiry (default 15 min) and the expected revision. `verify_and_consume` runs inside the applying transaction, compares in constant time, and moves the approval to `CONSUMED` (single use). Operator-only capabilities (shell, network, filesystem write, policy modify, grade finalize, curriculum promote, data delete, model load, lab orchestrate) are never granted to skill or model actors, approval or not.
+`OperationDescriptor { action, resource, scope, parameters_sha256 }` where the hash is SHA-256 over canonical JSON (sorted keys, no whitespace, `g9_domain::hashing`). An approval records `binding_mac = HMAC-SHA256(install_secret, canonical(operation) || expected_revision || approval_id)`, an expiry (default 10 min since 2026-11-13, ADR-0015; was 15) and the expected revision. `verify_and_consume` runs inside the applying transaction, compares in constant time, and moves the approval to `CONSUMED` (single use). Operator-only capabilities (shell, network, filesystem write, policy modify, grade finalize, curriculum promote, data delete, model load, lab orchestrate) are never granted to skill or model actors, approval or not.
 
 ## Alternatives considered
 

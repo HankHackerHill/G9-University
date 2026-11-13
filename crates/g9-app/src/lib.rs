@@ -98,6 +98,15 @@ pub use dispatch::dispatch;
 pub use g9_domain::{CommandOutcome, ErrorCategory, G9Error};
 pub use recovery::RecoveryReport;
 
+/// Storage options for the application's own database. `synchronous = FULL`
+/// (owner decision 2026-11-13, TEC-12): every commit is fsynced before it is
+/// acknowledged, so a power cut loses no committed command. The desktop bridge
+/// and the CLI both open the database through this, so the choice lives in one
+/// place (ARCHITECTURE.md §6 still says NORMAL: a reported deviation, ADR-0015).
+pub fn database_options(app_version: impl Into<String>) -> g9_storage::OpenOptions {
+    g9_storage::OpenOptions::new(app_version).synchronous(g9_storage::Synchronous::Full)
+}
+
 /// The explicit answer of a later-stage area (`<area>.not_implemented`).
 pub fn not_implemented(op: &str) -> G9Error {
     let area = op.split('.').next().unwrap_or("app");

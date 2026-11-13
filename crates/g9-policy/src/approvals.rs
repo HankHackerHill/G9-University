@@ -45,8 +45,10 @@ use g9_domain::{
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-/// Default validity window of an approval (ARCHITECTURE.md §11: 15 minutes).
-pub const DEFAULT_APPROVAL_TTL: DurationMs = DurationMs::from_minutes_u32(15);
+/// Default validity window of an approval: 10 minutes (owner decision
+/// 2026-11-13, the SEC-02 correction's "10 minutes or less"; ARCHITECTURE.md §11
+/// still says 15, a reported deviation recorded in ADR-0015).
+pub const DEFAULT_APPROVAL_TTL: DurationMs = DurationMs::from_minutes_u32(10);
 
 /// Every way an approval can fail to be created, decided or consumed. Each
 /// variant has a stable machine code ([`ApprovalError::code`]) that becomes the
@@ -820,14 +822,15 @@ mod tests {
     }
 
     #[test]
-    fn default_ttl_is_fifteen_minutes() {
+    fn default_ttl_is_ten_minutes() {
+        // Owner decision 2026-11-13 (SEC-02 correction: 10 minutes or less).
         let req = request(
             "apr-1",
             operator(),
             Capability::DataExport,
             op(Action::Export, ResourceKind::Note, "n", "aa"),
         );
-        assert_eq!(req.expires_at, UtcMillis::from_millis(1_000 + 15 * 60_000));
+        assert_eq!(req.expires_at, UtcMillis::from_millis(1_000 + 10 * 60_000));
         assert!(req.is_expired_at(req.expires_at));
         assert!(!req.is_expired_at(UtcMillis::from_millis(req.expires_at.as_millis() - 1)));
         assert_eq!(
@@ -1077,7 +1080,7 @@ mod tests {
                 &key(),
             )
             .unwrap();
-        let expired = ledger.expire_due(UtcMillis::from_millis(1_000 + 15 * 60_000));
+        let expired = ledger.expire_due(UtcMillis::from_millis(1_000 + 10 * 60_000));
         assert_eq!(expired.len(), 2);
         assert_eq!(ledger.get(&approved).unwrap().state, ApprovalState::Expired);
         assert_eq!(
@@ -1096,7 +1099,7 @@ mod tests {
         );
         // Sweeping again changes nothing.
         assert!(ledger
-            .expire_due(UtcMillis::from_millis(1_000 + 15 * 60_000))
+            .expire_due(UtcMillis::from_millis(1_000 + 10 * 60_000))
             .is_empty());
     }
 

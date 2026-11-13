@@ -12,6 +12,7 @@ All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 - Report: `docs/audit/security-audit-2026-11-12.md`.
 
 ### Changed
+- Owner decisions (ADR-0015): the application database runs with `synchronous = FULL` (`g9_app::database_options`, used by the desktop bridge and the CLI), so a power cut loses no acknowledged command; approvals expire after 10 minutes (was 15); encryption at rest is left to the host's full-disk encryption; no AI model for now (a Claude API runtime is planned and needs an architecture amendment first); `VALIDATED` stays unreachable while every grade is self-adjudicated. ARCHITECTURE.md lines 103 and 149 still state the old values (reported deviation).
 - CI runs only when started by hand (`workflow_dispatch`), by the owner's decision: the push and pull_request triggers are removed, so no push starts a run. All five jobs are unchanged. The same checks run locally with `scripts/ci_preflight.sh`. GitHub shows the "Run workflow" button only for workflows on the default branch, which does not contain `.github/workflows/ci.yml` yet.
 
 ## [0.1.0] — unreleased (2026-11-12 update)

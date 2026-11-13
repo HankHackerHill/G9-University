@@ -39,7 +39,7 @@ export function ApprovalsAudit() {
     <div>
       <PageHead title="Approvals / Audit" lede="Operations waiting for your decision, and the hash-chained record of what was done." />
       <p className="muted">
-        An approval binds to one exact operation (action, resource, scope, parameter hash, expected revision), expires after 15 minutes and is consumed once.
+        An approval binds to one exact operation (action, resource, scope, parameter hash, expected revision), expires after 10 minutes and is consumed once.
       </p>
       <p className="banner" role="note" data-testid="confirmation-surface-gap">
         <strong>NOT IMPLEMENTED:</strong> the trusted native confirmation raised from Rust (Addendum A.7, ADR-0014) is <strong>PROPOSED</strong> (SEC-03 OPEN). In this

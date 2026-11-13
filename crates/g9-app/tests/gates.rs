@@ -164,7 +164,8 @@ fn pipeline_approval_required_creates_request_and_returns_id() {
         row.operation.parameters_sha256,
         g9_app::pipeline::parameters_sha256("export.request", &export_payload(false))
     );
-    assert_eq!(row.expires_at.as_millis(), T0 + 15 * 60_000);
+    // 10-minute window (owner decision 2026-11-13, ADR-0015).
+    assert_eq!(row.expires_at.as_millis(), T0 + 10 * 60_000);
     // The decision row links the created request.
     let decisions =
         approvals_store::list_policy_decisions_for(h.conn(), &row.operation.resource, 10).unwrap();

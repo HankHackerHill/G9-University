@@ -251,7 +251,7 @@ describe('mock transport: approvals', () => {
     const approval = listed.find((a) => a.approval_id === approvalId);
     expect(approval?.operation_name).toBe('assessment.approve_final');
     expect(approval?.operation.parameters_sha256).toMatch(/^[0-9a-f]{64}$/);
-    expect(approval?.expires_at).toBe(MOCK_DEFAULT_NOW + 15 * 60_000);
+    expect(approval?.expires_at).toBe(MOCK_DEFAULT_NOW + 10 * 60_000);
 
     // Using a pending approval is refused.
     expect(err(await client.invoke('assessment.approve_final', { attempt_id: attemptId }, { approvalId })).code).toBe('approval.not_decided');
@@ -273,7 +273,7 @@ describe('mock transport: approvals', () => {
     expect(err(await client.invoke('assessment.approve_final', { attempt_id: attemptId }, { approvalId })).category).toBe('PRECONDITION_FAILED');
   });
 
-  it('expires approvals after 15 minutes and refuses to consume them', async () => {
+  it('expires approvals after 10 minutes and refuses to consume them', async () => {
     const { client, clock } = harness();
     const first = err(await client.invoke('calendar.propose', { from: 0, to: 1, intent: 'RESCHEDULE' }));
     expect(first.code).toBe('calendar.reschedule.not_implemented');
@@ -282,7 +282,7 @@ describe('mock transport: approvals', () => {
     expect(need.category).toBe('APPROVAL_REQUIRED');
     const approvalId = need.approval_id ?? '';
     ok(await client.invoke('approvals.decide', { approval_id: approvalId, decision: 'APPROVE' }));
-    clock.advance(16 * 60_000);
+    clock.advance(10 * 60_000 + 1);
     const late = err(await client.invoke('calendar.apply', { proposal_id: proposal.proposal_id }, { approvalId }));
     expect(['approval.expired', 'approval.not_approved', 'proposal.expired']).toContain(late.code);
   });

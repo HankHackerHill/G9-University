@@ -14,7 +14,7 @@ use g9_app::{keyfile, AppConfig, AppContext, Transport};
 use g9_curriculum::CivilDate;
 use g9_domain::{ActorId, G9Error, IanaZone};
 use g9_skills::Registry;
-use g9_storage::{Database, OpenOptions};
+use g9_storage::Database;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -293,8 +293,8 @@ pub fn open(opts: &BootOptions) -> Result<Booted, CliError> {
     config.transport = Transport::Tauri;
 
     let open_options = match &opts.clock {
-        Some(clock) => OpenOptions::new(APP_VERSION).applied_at(clock.now()),
-        None => OpenOptions::new(APP_VERSION),
+        Some(clock) => g9_app::database_options(APP_VERSION).applied_at(clock.now()),
+        None => g9_app::database_options(APP_VERSION),
     };
     let db = Database::open(&layout.database, open_options).map_err(G9Error::from)?;
     let operator = ActorId::parse(&opts.operator_id).map_err(|_| {

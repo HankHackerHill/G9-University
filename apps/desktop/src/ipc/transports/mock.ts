@@ -301,7 +301,7 @@ interface Criterion {
 export const BASELINE_CRITERIA: readonly Criterion[] = BASELINE_RUBRIC.map((c) => ({ code: c.code, weight: c.weight, critical: c.critical_gate }));
 
 const GENESIS_HASH = '0'.repeat(64);
-const APPROVAL_TTL_MS = 15 * 60_000;
+const APPROVAL_TTL_MS = 10 * 60_000; // owner decision 2026-11-13 (g9-policy DEFAULT_APPROVAL_TTL)
 const REVIEW_OFFSETS_DAYS = [1, 3, 7, 21, 60];
 const REVIEW_ITEM_MS = 3 * 60_000;
 const REVIEW_BUDGET_MS = 15 * 60_000;

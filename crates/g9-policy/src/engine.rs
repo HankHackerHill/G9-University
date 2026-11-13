@@ -928,7 +928,7 @@ mod tests {
         assert_eq!(
             req.expires_at,
             e.now()
-                .checked_add(DurationMs::from_minutes_u32(15))
+                .checked_add(crate::approvals::DEFAULT_APPROVAL_TTL)
                 .unwrap()
         );
         assert_eq!(

@@ -34,7 +34,7 @@ pub mod keyring;
 use g9_app::{AppConfig, AppContext, Transport};
 use g9_domain::{ActorId, G9Error, IanaZone, SkillId};
 use g9_skills::{Registry, RegistryError};
-use g9_storage::{Database, OpenOptions};
+use g9_storage::Database;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
@@ -309,7 +309,7 @@ fn open_context(
     ];
     config.transport = Transport::Tauri;
 
-    let db = Database::open(&layout.database, OpenOptions::new(APP_VERSION))?;
+    let db = Database::open(&layout.database, g9_app::database_options(APP_VERSION))?;
     let operator = ActorId::parse(OPERATOR_ID)
         .map_err(|_| G9Error::internal_redacted("bridge.operator_id"))?;
     let mut builder = AppContext::builder(db, config, provisioned.key, operator);

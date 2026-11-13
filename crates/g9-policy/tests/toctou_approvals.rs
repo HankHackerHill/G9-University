@@ -720,7 +720,13 @@ fn toctou_expire_due_sweeps_only_due_records() {
     assert_eq!(ledger.expire_due(clock.now()), vec![early.clone()]);
     assert_eq!(ledger.get(&early).unwrap().state, ApprovalState::Expired);
     assert_eq!(ledger.get(&late).unwrap().state, ApprovalState::Pending);
-    clock.advance(DurationMs::from_minutes_u32(45));
+    // Up to `late`'s own 60-minute window, whatever the default TTL is.
+    clock.advance(
+        DurationMs::new(
+            DurationMs::from_minutes_u32(60).as_millis() - DEFAULT_APPROVAL_TTL.as_millis(),
+        )
+        .unwrap(),
+    );
     assert_eq!(ledger.expire_due(clock.now()), vec![late.clone()]);
     assert!(ledger.expire_due(clock.now()).is_empty());
 }
