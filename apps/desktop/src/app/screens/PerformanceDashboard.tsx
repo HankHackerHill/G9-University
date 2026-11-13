@@ -1,11 +1,10 @@
 import type { ReactNode } from 'react';
-import type { CompetencyState } from '../../ipc/types';
 import { stateLabel } from '../../lib/copy';
 import { formatDuration, formatMinutes } from '../../lib/format';
 import { dayNumber, programMap } from '../../lib/program';
 import { mergeWarnings } from '../../lib/warnings';
 import { ProvenanceBadge } from '../components/Badge';
-import { Bars, ChartFigure, Legend, Segmented, onlyPart, type Mark, type Part } from '../components/charts';
+import { COMPETENCY_STATE_MARKS, Bars, ChartFigure, Legend, Segmented, onlyPart, type Mark, type Part } from '../components/charts';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, NoData, Panel } from '../components/Panel';
 import { PageHead } from '../components/PageHead';
@@ -47,16 +46,6 @@ const FIRST_ATTEMPT_WINDOW_MS = 28 * DAY_MS;
 const PASS_RATE_MIN_N = 4;
 /** How many recorded days the study-time chart shows (one program week). */
 const DAYS_SHOWN = 6;
-
-/** Competency states in the order a competency moves through them, with the mark each takes. */
-const STATE_MARKS: readonly { state: CompetencyState; mark: Mark }[] = [
-  { state: 'UNASSESSED', mark: 'quiet' },
-  { state: 'INTRODUCED', mark: 'ramp-1' },
-  { state: 'GUIDED', mark: 'ramp-2' },
-  { state: 'INDEPENDENT', mark: 'ramp-3' },
-  { state: 'VALIDATED', mark: 'ramp-4' },
-  { state: 'RETEST_DUE', mark: 'owed' },
-];
 
 /** The steps of the review ladder take the ordered marks, shortest interval first. */
 const LADDER_MARKS: readonly Mark[] = ['quiet', 'ramp-1', 'ramp-2', 'ramp-3', 'ramp-4'];
@@ -119,7 +108,7 @@ export function PerformanceDashboard() {
       ? null
       : programMap(allSessions.data.sessions, null).filter((d) => d.planned_ms !== null && (todayNumber === null || (dayNumber(d.id) ?? 0) <= todayNumber));
   const shownDays = recordedDays === null ? null : recordedDays.slice(-DAYS_SHOWN);
-  const stateParts: Part[] = STATE_MARKS.map(({ state, mark }) => ({
+  const stateParts: Part[] = COMPETENCY_STATE_MARKS.map(({ state, mark }) => ({
     key: state,
     name: stateLabel(state),
     n: projections.filter((p) => p.state === state).length,

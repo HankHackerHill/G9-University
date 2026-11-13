@@ -39,7 +39,7 @@ export function Instrument({ title, children, actions, label }: { title?: string
  * Explicit empty state: what is missing and why, and what to do about it when there is
  * something to do. Never substitute a number or a placeholder for missing data.
  */
-export function NoData({ reason, title = 'No data', action }: { reason: string; title?: string; action?: ReactNode }) {
+export function NoData({ reason, title = 'No data', action }: { reason: ReactNode; title?: string; action?: ReactNode }) {
   return (
     <div className="nodata" role="status">
       <strong>{title}</strong>

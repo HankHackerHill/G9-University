@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import type { CompetencyState } from '../../ipc/types';
 
 /**
  * Charts, drawn in the fill grammar from the design tokens (no chart library; the content
@@ -16,6 +17,19 @@ import type { CSSProperties, ReactNode } from 'react';
  */
 
 export type Mark = 'posted' | 'doubt' | 'pencil' | 'owed' | 'accent' | 'live' | 'today' | 'rest' | 'quiet' | 'ramp-1' | 'ramp-2' | 'ramp-3' | 'ramp-4';
+
+/**
+ * Competency states in the order a competency moves through them, with the mark each takes in a
+ * distribution: nothing there yet is quiet, the four levels take the ramp, a retest that is due is owed.
+ */
+export const COMPETENCY_STATE_MARKS: readonly { state: CompetencyState; mark: Mark }[] = [
+  { state: 'UNASSESSED', mark: 'quiet' },
+  { state: 'INTRODUCED', mark: 'ramp-1' },
+  { state: 'GUIDED', mark: 'ramp-2' },
+  { state: 'INDEPENDENT', mark: 'ramp-3' },
+  { state: 'VALIDATED', mark: 'ramp-4' },
+  { state: 'RETEST_DUE', mark: 'owed' },
+];
 
 function share(part: number, whole: number): number {
   if (!Number.isFinite(part) || !Number.isFinite(whole) || whole <= 0) {

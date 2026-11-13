@@ -58,7 +58,7 @@
     margin-inline: var(--s-2);
   }
 
-  :root[data-regions='window'] .panel-head {
+  :root[data-regions='window'] .panel > .panel-head {
     padding: 2px var(--s-2);
     min-height: 1.6rem;
     align-items: center;
@@ -66,9 +66,16 @@
     color: var(--on-bar);
   }
 
-  :root[data-regions='window'] .panel-head h2 {
+  :root[data-regions='window'] .panel > .panel-head h2 {
     color: var(--on-bar);
     font-size: var(--text-sm);
+  }
+
+  /* A stamp in a title bar sits on its own paper label, so it reads whatever the bar's colour is. */
+  :root[data-regions='window'] .panel > .panel-head .badge {
+    border-color: var(--on-bar);
+    background: var(--paper);
+    color: var(--ink);
   }
 
   :root[data-effect='bevel']:not([data-contrast='high']) button,
@@ -90,7 +97,7 @@
   }
 
   :root[data-effect='bevel']:not([data-contrast='high']) button:active:not(:disabled),
-  :root[data-effect='bevel']:not([data-contrast='high']) button[aria-pressed='true'] {
+  :root[data-effect='bevel']:not([data-contrast='high']) button:is([aria-pressed='true'], [aria-checked='true']) {
     box-shadow: var(--bevel-in);
     translate: 1px 1px;
     background: var(--paper);
@@ -102,7 +109,7 @@
     text-shadow: 1px 1px var(--bevel-light);
   }
 
-  :root[data-effect='bevel']:not([data-contrast='high']) :is(input, select, textarea) {
+  :root[data-effect='bevel']:not([data-contrast='high']) :is(input:not([type='radio'], [type='checkbox'], [type='file']), select, textarea) {
     border: 0;
     border-radius: 0;
     background: var(--field);

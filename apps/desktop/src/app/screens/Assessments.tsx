@@ -760,7 +760,7 @@ export function Assessments() {
                     )}
                   </dl>
                   {stepsDone === undefined ? null : (
-                    <ol className="steps attempt-steps" aria-label="Steps of this attempt">
+                    <ol className="steps" aria-label="Steps of this attempt">
                       {STEPS.map((step, i) => (
                         <li key={step} data-step={i < stepsDone ? 'done' : i === stepsDone ? 'current' : undefined} aria-current={i === stepsDone ? 'step' : undefined}>
                           {step}

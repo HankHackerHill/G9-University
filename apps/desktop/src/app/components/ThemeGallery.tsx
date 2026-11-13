@@ -1,4 +1,5 @@
 import { useId, type CSSProperties } from 'react';
+import { stateLabel } from '../../lib/copy';
 import { lowestTextContrast } from '../theme/contrast';
 import { fixedScheme, paletteOf, previewStyle, SKIN_GROUPS, SKINS, type SkinId } from '../theme/skins';
 
@@ -7,6 +8,9 @@ import { fixedScheme, paletteOf, previewStyle, SKIN_GROUPS, SKINS, type SkinId }
  * `.skin-scope` element with that theme's custom properties), so what you pick is what you get.
  * The contrast figure is computed from the palette (contrast.ts), the same check the theme
  * test asserts; it does not include textures such as scan lines.
+ *
+ * A preview is a specimen, not a record: a heading, a duration in the machine voice, the meter
+ * drawn to match that duration, and the four marks with the words the window uses for them.
  */
 export function ThemeGallery({ value, onChange, scheme }: { value: SkinId; onChange: (id: SkinId) => void; scheme: 'light' | 'dark' }) {
   const name = useId();
@@ -49,15 +53,15 @@ export function ThemeGallery({ value, onChange, scheme }: { value: SkinId; onCha
                     aria-hidden="true"
                   >
                     {skin.regions === 'window' ? <span className="skin-bar">Mission Control</span> : null}
-                    <span className="skin-title">D15</span>
-                    <span className="skin-line">Credited 1:15:00 of 2:00:00</span>
+                    <span className="skin-title">Aa</span>
+                    <span className="skin-line">0:33:00 of 1:00:00</span>
                     <span className="meter" style={{ '--posted': 0.55, '--doubted': 0.2 } as CSSProperties} />
                     <span className="skin-marks">
-                      <span className="badge badge-verified">VERIFIED</span>
-                      <span className="badge badge-proposed">PROPOSED</span>
-                      <span className="badge badge-recommendation">ADVICE</span>
+                      <span className="badge badge-verified">{stateLabel('VERIFIED')}</span>
+                      <span className="badge badge-proposed">{stateLabel('PROPOSED')}</span>
+                      <span className="badge badge-recommendation">{stateLabel('RECOMMENDATION')}</span>
                       <span className="badge badge-state" data-state="FAILED">
-                        FAILED
+                        {stateLabel('FAILED')}
                       </span>
                     </span>
                   </span>

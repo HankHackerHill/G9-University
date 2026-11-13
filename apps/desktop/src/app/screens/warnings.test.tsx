@@ -79,11 +79,11 @@ describe('CommandOutcome.warnings are rendered', () => {
     const user = userEvent.setup();
     renderWithIpc(<SettingsRecovery />, harness);
     expect(await screen.findByTestId('status-warnings-none')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Request LEARNING export (JSON)' }));
+    await user.click(screen.getByRole('button', { name: 'Request export' }));
     const card = await screen.findByTestId('approval-card');
     await user.click(within(card).getByRole('button', { name: 'Approve' }));
     await user.click(await within(card).findByRole('button', { name: 'Apply with approval' }));
-    expect(await screen.findByTestId('export-result')).toHaveTextContent('READY');
+    expect(await screen.findByTestId('export-result')).toHaveTextContent('Ready');
     const warnings = await screen.findByTestId('outcome-warnings');
     expect(within(warnings).getByText(MISSING)).toBeInTheDocument();
   });

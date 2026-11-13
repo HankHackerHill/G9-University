@@ -127,6 +127,9 @@
     align-items: start;
   }
 
+  /* A grid item is as wide as its widest content unless told otherwise: every child of a layout grid may shrink. */
+  .stack > *,
+  .stack-sm > *,
   .grid-2 > *,
   .grid-3 > *,
   .split > *,
@@ -679,6 +682,24 @@
     margin-top: var(--s-1);
   }
 
+  /*
+   * Not every refusal is a failure. "Needs your approval" and "Cancelled" are the system waiting
+   * for the operator or doing as told: drawn as a notice (highlighter, like the voucher under
+   * it), never in red ink.
+   */
+  .error[data-severity='info'] {
+    background: var(--doubt-fill);
+  }
+
+  .error[data-severity='info']::before {
+    background-color: color-mix(in oklch, var(--doubt) 30%, transparent);
+    background-image: var(--hatch-doubt);
+  }
+
+  .error[data-severity='info'] > strong {
+    color: var(--ink);
+  }
+
   [role='status'].muted {
     font-size: var(--text-sm);
   }
@@ -991,6 +1012,15 @@
   .row-title {
     font-weight: 620;
     overflow-wrap: anywhere;
+  }
+
+  /* A link that stands alone (the title of a line, the action of an empty state) is 24 px tall at least. */
+  a.row-title,
+  .nodata > a,
+  .nodata > p > a:only-child {
+    display: inline-block;
+    padding-block: 0.125rem;
+    justify-self: start;
   }
 
   .row-sub {

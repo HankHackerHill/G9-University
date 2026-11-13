@@ -49,6 +49,13 @@ describe('components.css layout guard', () => {
     }
   });
 
+  it('every child of a layout grid may shrink below its content (found by measurement: a table in a .stack-sm widened the page at 960 px)', () => {
+    const shared = /((?:\s*\.[a-z0-9-]+ > \*,?)+)\s*\{\s*min-width:\s*0;/.exec(css)?.[1] ?? '';
+    for (const sel of ['.stack', '.stack-sm', '.grid-2', '.grid-3', '.split', '.with-margin']) {
+      expect(shared, sel).toContain(`${sel} > *`);
+    }
+  });
+
   it('regions cannot be widened by their content, and a table scrolls inside its own wrapper', () => {
     expect(rule('.panel')).toMatch(/min-width:\s*0/);
     expect(rule('.instrument')).toMatch(/min-width:\s*0/);

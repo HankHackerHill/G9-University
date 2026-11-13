@@ -38,8 +38,15 @@ describe('all 16 screens render against the mock transport', () => {
     const { Component } = await screenDef.load();
     const { unmount } = renderWithIpc(<Component />);
     expect(await screen.findByRole('heading', { level: 1, name: screenDef.title.replace('/', ' / ') })).toBeInTheDocument();
-    // Every screen labels what it shows: a provenance stamp (Verified, Proposed, Advice, Provisional) or an explicit "No data" / "no model" state. Never a blank.
-    expect(await screen.findAllByText(/No data|no model|Not enough data|None configured|Verified|Proposed|Provisional|Advice/)).not.toHaveLength(0);
+    // Every screen labels what it shows: a provenance stamp (Verified, Proposed, Advice) on its records, or an explicit
+    // empty state that says in words why nothing is there (`NoData`, "no model", a "No data" tile). Never a blank.
+    await waitFor(() => {
+      expect(document.querySelectorAll('[aria-label^="Provenance:"], .nodata, .stat[data-standing="missing"]').length).toBeGreaterThan(0);
+    });
+    for (const empty of document.querySelectorAll('.nodata')) {
+      // An empty state has a title and a reason: two pieces of text at least.
+      expect(empty.textContent.trim().length).toBeGreaterThan(20);
+    }
     // No error alerts (ErrorDisplay carries data-category); the INTERRUPTED banner is a legitimate alert.
     expect(screen.queryAllByRole('alert').filter((a) => a.hasAttribute('data-category'))).toHaveLength(0);
     unmount();
@@ -185,16 +192,17 @@ describe('Settings/Recovery', () => {
   it('shows no model runtime, drives the backup machine with legal buttons only and persists the contrast toggle', async () => {
     const user = userEvent.setup();
     renderWithIpc(<SettingsRecovery />);
-    expect(await screen.findByTestId('runtime-none')).toHaveTextContent('NONE CONFIGURED');
+    expect(await screen.findByTestId('runtime-none')).toHaveTextContent('None configured');
     await user.click(screen.getByRole('button', { name: 'Create backup' }));
     const verify = await screen.findByRole('button', { name: 'Verify' });
-    const restore = screen.getByRole('button', { name: 'Restore test' });
+    const restore = screen.getByRole('button', { name: 'Test restore' });
     expect(verify).toBeEnabled();
     expect(restore).toBeDisabled();
     await user.click(verify);
     const table = screen.getByRole('table', { name: 'Backups in this session' });
-    expect(await within(table).findByText('CHECKED')).toBeInTheDocument();
-    expect(within(table).getByRole('button', { name: 'Restore test' })).toBeEnabled();
+    // CHECKED in the backend's words; the stamp says Verified and keeps the exact name in its title.
+    expect(await within(table).findByText('Verified')).toHaveAttribute('title', 'CHECKED');
+    expect(within(table).getByRole('button', { name: 'Test restore' })).toBeEnabled();
     expect(within(table).getByRole('button', { name: 'Verify' })).toBeDisabled();
     const toggle = screen.getByRole('button', { name: /High contrast/ });
     await user.click(toggle);

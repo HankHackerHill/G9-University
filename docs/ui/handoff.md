@@ -29,6 +29,8 @@ Stack: React 19, strict TypeScript, plain CSS in cascade layers, no CSS framewor
 
 Container queries use the container named `page` (set on `.shell-main`). Do not write `@media (width …)` for layout.
 
+Cascade layers: `reset < tokens < base < layout < components < screens < skins < utilities`. The first stylesheet that names a layer fixes its rank, so `theme.css` is the first import of `src/main.tsx` and every screen stylesheet repeats the order statement before its rules. Without it a screen rule loses to the component rule it adjusts.
+
 ## 3. Design tokens used
 
 Values are in `src/app/theme/tokens.css`; themes override the colours only. Never write a colour, a font size or a spacing value that is not a token.
@@ -88,7 +90,7 @@ React components are in `src/app/components/`. Class-only patterns are in `src/a
 | `.rows` with `.row-pick` | `<li data-selected><button class="row-pick" aria-pressed>…` | a list whose lines select what the detail column shows |
 | `dl.pairs` | `<dl class="pairs"><dt/><dd/>…` | facts about the thing in view, name left, value right; `dd.num` for measured values |
 | `.facts` | `<dl class="facts"><div><dt/><dd/></div>…` | three to six facts in a line, name above value |
-| `.steps` | `<ol class="steps"><li data-step="done \| current">` | a real sequence only (attempt lifecycle, review ladder) |
+| `.steps` | `<ol class="steps"><li data-step="done \| current">`; add `data-layout="list"` in a narrow column | a real sequence only (attempt lifecycle, review ladder). Equal columns with the name under each mark, so five steps hold in the detail column; the list layout puts one step per line |
 | `.seg` | `<div class="seg" role="group" aria-label><button aria-pressed>` | two to four exclusive choices |
 | `.check` | `<label class="check"><input type="checkbox"/> text</label>` | a boolean |
 | `.banner` | `role="alert"` or `role="alertdialog"` | something that needs the operator now (interrupted time, an inline confirmation) |
@@ -212,7 +214,7 @@ Route and title of each screen are fixed by `src/app/router.tsx`. "Primary" is t
 | Do | Do not |
 |---|---|
 | reuse a component or class from section 4 | add a new visual pattern for one screen |
-| put screen-only rules in `src/app/theme/screens/<screen>.css` inside `@layer screens { … }` and import it from the screen file | edit `tokens.css`, `base.css`, `components.css`, `shell.css` for one screen |
+| put screen-only rules in `src/app/theme/screens/<screen>.css`: first the layer order statement (`@layer reset, tokens, base, layout, components, screens, skins, utilities;`), then the rules inside `@layer screens { … }`; import the file from the screen (`layer-order.test.ts` checks both) | edit `tokens.css`, `base.css`, `components.css`, `shell.css` for one screen |
 | take every word from `docs/ui/ux-copy.md` and `src/lib/copy.ts` | print a backend enum, an operation name or an id as a label |
 | render the warnings of every read and action | drop a read's warnings because it "only" feeds a chart |
 | keep `data-testid` hooks and landmark names when moving markup | delete or weaken a test to make a redesign pass |

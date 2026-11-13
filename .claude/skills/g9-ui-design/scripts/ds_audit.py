@@ -45,7 +45,8 @@ for f in tsx_files:
             text = next((x for x in lit if x), '') if isinstance(lit, tuple) else lit
             text = re.sub(r'\$\{[^}]*\}', ' ', text)
             for c in text.split():
-                if re.match(r'^[a-zA-Z][a-zA-Z0-9_-]*$', c):
+                # A class name here is lower-case; an ALL_CAPS token in a className expression is an enum value being compared.
+                if re.match(r'^[a-z][a-zA-Z0-9_-]*$', c) and not c.isupper():
                     used[c] += 1
                     used_where[c].add(os.path.relpath(f, root))
 

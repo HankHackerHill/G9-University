@@ -1,4 +1,7 @@
 /* Competency Graph: screen-only rules. Everything else is the documented classes of components.css. */
+/* The layer order, repeated in every screen stylesheet: whichever stylesheet loads first fixes it. */
+@layer reset, tokens, base, layout, components, screens, skins, utilities;
+
 @layer screens {
   /* Five columns in the detail column of the default window: a two-word header may break instead of widening the table. */
   .dimension-table thead th {
