@@ -1,30 +1,13 @@
 /*
- * Intervention Center. Two adjustments to documented patterns, for this screen only:
- * the lifecycle has eight steps and sits in the margin column, so the `.steps` sequence runs
- * down the column; an intervention is a record of several lines, so its stamps stay on the
- * first line instead of floating beside the middle of the record.
+ * Intervention Center. One adjustment to a documented pattern, for this screen only: an
+ * intervention is a record of several lines, so its stamps stay on the first line instead of
+ * floating beside the middle of the record. (The lifecycle uses the shared list layout of
+ * `.steps`.)
  */
+/* The layer order, repeated in every screen stylesheet: whichever stylesheet loads first fixes it. */
+@layer reset, tokens, base, layout, components, screens, skins, utilities;
+
 @layer screens {
-  .intervention-lifecycle {
-    flex-direction: column;
-    flex-wrap: nowrap;
-    gap: var(--s-2) 0;
-  }
-
-  .intervention-lifecycle > li {
-    position: relative;
-  }
-
-  /* The connector joins a step to the one above it. */
-  .intervention-lifecycle > li + li::after {
-    position: absolute;
-    left: calc(0.7rem - 0.5px);
-    bottom: 100%;
-    width: 1px;
-    height: var(--s-2);
-    margin: 0;
-  }
-
   .intervention-rows > li {
     align-items: start;
   }

@@ -1,4 +1,7 @@
 /* Learning Journal: screen-only rules. Everything else is the documented classes of components.css. */
+/* The layer order, repeated in every screen stylesheet: whichever stylesheet loads first fixes it. */
+@layer reset, tokens, base, layout, components, screens, skins, utilities;
+
 @layer screens {
   /* The preview keeps the height of the editor it stands in for, so the Save button does not move when the tab changes. */
   .journal-preview {

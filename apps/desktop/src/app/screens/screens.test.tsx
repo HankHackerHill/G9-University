@@ -155,12 +155,15 @@ describe('Assessments and Approvals/Audit', () => {
     const card = await screen.findByTestId('approval-card');
     expect(within(card).getByTestId('approval-hash')).toHaveTextContent(/^[0-9a-f]{64}$/);
     expect(within(card).getByTestId('approval-expiry')).toHaveTextContent('2026-11-18 09:40');
-    expect(within(card).getByText('PENDING')).toBeInTheDocument();
+    // The request waits for the operator; the backend's own state name stays in the stamp's title.
+    expect(within(card).getByText('Waiting for you')).toHaveAttribute('title', 'PENDING');
     expect(screen.getByRole('alert')).toHaveAttribute('data-category', 'APPROVAL_REQUIRED');
     await user.click(within(card).getByRole('button', { name: 'Approve' }));
     await user.click(await within(card).findByRole('button', { name: 'Apply with approval' }));
-    expect(await screen.findByText('CONSUMED')).toBeInTheDocument();
-    expect(await screen.findAllByText('APPROVED_FINAL')).not.toHaveLength(0);
+    // The approval is spent (CONSUMED) and the attempt is final (APPROVED_FINAL), each in the operator's words.
+    expect(await screen.findByTitle('CONSUMED')).toHaveTextContent('Used');
+    expect(await screen.findAllByTitle('APPROVED_FINAL')).not.toHaveLength(0);
+    expect(screen.getAllByTitle('APPROVED_FINAL')[0]).toHaveTextContent('Final');
   });
 
   it('lists approval requests with hash and expiry and shows an intact audit chain', async () => {
@@ -172,7 +175,8 @@ describe('Assessments and Approvals/Audit', () => {
     expect(within(card).getByTestId('approval-hash')).toHaveTextContent(/^[0-9a-f]{64}$/);
     expect(within(card).getByTestId('approval-expiry')).toHaveTextContent('2026-11-18 09:40');
     expect(within(card).getByText('assessment.approve_final')).toBeInTheDocument();
-    expect(await screen.findByText('INTACT')).toBeInTheDocument();
+    expect((await screen.findByText('Audit chain')).closest('.stat')).toHaveTextContent('Intact');
+    expect(screen.getByText('Audit chain').closest('.stat')).toHaveAttribute('data-standing', 'posted');
     expect(screen.getByText('mock.seed')).toBeInTheDocument();
   });
 });

@@ -1,0 +1,13 @@
+/* Competency Graph: screen-only rules. Everything else is the documented classes of components.css. */
+@layer screens {
+  /* Five columns in the detail column of the default window: a two-word header may break instead of widening the table. */
+  .dimension-table thead th {
+    white-space: normal;
+  }
+
+  /* Words that stand for a missing value keep the record voice inside a column of measured numbers. */
+  .dimension-table td.num .unobserved {
+    --mono: 0;
+    font-family: var(--font);
+  }
+}

@@ -1,3 +1,6 @@
+// First import, on purpose: theme.css declares the order of the cascade layers, and the first
+// stylesheet to name a layer fixes its rank (see app/theme/layer-order.test.ts).
+import './app/theme/theme.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
@@ -6,7 +9,6 @@ import { applyContrast, readStoredContrast } from './app/theme/useContrast';
 import { applyTheme, readStoredTheme } from './app/theme/useTheme';
 import { applySkin, skinById } from './app/theme/skins';
 import { readStoredSkin } from './app/theme/useSkin';
-import './app/theme/theme.css';
 
 const container = document.getElementById('root');
 if (container === null) {

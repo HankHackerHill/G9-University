@@ -2,6 +2,9 @@
  * Calendar: the week grid is the record of this screen. Everything else is drawn by the
  * documented classes (.toolbar, .seg, .cal, .cal-event, .rows, .slip, dl.pairs).
  */
+/* The layer order, repeated in every screen stylesheet: whichever stylesheet loads first fixes it. */
+@layer reset, tokens, base, layout, components, screens, skins, utilities;
+
 @layer screens {
   /* Nothing in the grid is cut short: a title wraps inside its cell and the hour row grows with it. */
   .cal-event {

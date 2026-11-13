@@ -2,6 +2,9 @@
  * The two overlays of the shell: the ledger key and the command palette. Their base rules are in
  * shell.css; these are the rules the rebuilt key adds, and one correction to the palette.
  */
+/* The layer order, repeated in every screen stylesheet: whichever stylesheet loads first fixes it. */
+@layer reset, tokens, base, layout, components, screens, skins, utilities;
+
 @layer screens {
   /* The key holds two columns: what a mark means on the left; where you are, who speaks and the keys on the right. */
   .key-dialog {

@@ -24,7 +24,7 @@ const FINDINGS = '# Findings\n\nX-Forwarded-Host is unkeyed.\n';
 
 async function saveNote(user: ReturnType<typeof userEvent.setup>, title: string): Promise<HTMLElement> {
   // Nothing attaches to a note the backend does not have yet: the evidence region says so instead of offering controls.
-  expect(await screen.findByText(/Save it first: files and evidence attach to a saved note/)).toBeInTheDocument();
+  expect(await screen.findByText(/Files and evidence attach to a saved note\. Save this one first\./)).toBeInTheDocument();
   expect(screen.queryByLabelText('File to attach')).toBeNull();
   await user.type(screen.getByLabelText('Title'), title);
   await user.click(screen.getByRole('button', { name: 'Save note' }));

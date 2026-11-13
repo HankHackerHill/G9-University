@@ -109,7 +109,7 @@ export function InterventionCenter() {
 
         <Margin label="How an intervention moves">
           <Panel title="Lifecycle" as="aside">
-            <ol className="steps intervention-lifecycle" aria-label="The steps of an intervention, in order">
+            <ol className="steps" data-layout="list" aria-label="The steps of an intervention, in order">
               {SEQUENCE.map((state) => (
                 <li key={state} title={state}>
                   {interventionStateLabel(state)}

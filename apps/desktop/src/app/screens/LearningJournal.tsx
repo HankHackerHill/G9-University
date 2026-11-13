@@ -480,7 +480,7 @@ export function LearningJournal() {
             note="Evidence is what you hand in with an assessment. A file is kept under its SHA-256, once for identical bytes, and is never opened or run by the application."
           >
             {current === null ? (
-              <NoData reason="This note is not saved yet. Save it first: files and evidence attach to a saved note." />
+              <NoData title="Not saved yet" reason="Files and evidence attach to a saved note. Save this one first." />
             ) : (
               <div className="stack-sm">
                 <Field

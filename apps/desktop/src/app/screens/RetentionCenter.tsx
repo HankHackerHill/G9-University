@@ -1,29 +1,48 @@
 import { useState } from 'react';
 import { isG9Error } from '../../ipc/client';
 import type { ReviewItem, ReviewOutcome, ReviewRecord } from '../../ipc/operations';
-import type { G9Error } from '../../ipc/types';
-import { formatDateTime, formatMinutes } from '../../lib/format';
+import type { G9Error, IanaZone } from '../../ipc/types';
+import { formatDateTime, formatMinutes, sentenceCase } from '../../lib/format';
 import { mergeWarnings, warningsOf } from '../../lib/warnings';
 import { ProvenanceBadge } from '../components/Badge';
+import { Composer } from '../components/Composer';
 import { ErrorDisplay } from '../components/ErrorDisplay';
+import { Field } from '../components/Field';
+import { Margin, MarginNote } from '../components/Margin';
+import { PageHead } from '../components/PageHead';
 import { Loading, NoData, Panel } from '../components/Panel';
-import { Table } from '../components/Table';
+import { Stat } from '../components/Stat';
 import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
-import { PageHead } from '../components/PageHead';
 
 const OUTCOMES: readonly { outcome: ReviewOutcome; label: string }[] = [
   { outcome: 'SUCCESS', label: 'Recalled' },
-  { outcome: 'FAILURE', label: 'Forgot' },
+  { outcome: 'FAILURE', label: 'Did not recall' },
   { outcome: 'SKIPPED', label: 'Skip' },
 ];
+
+/** The baseline ladder (ARCHITECTURE §9): the wait before the next review, in days, shortest first. */
+const LADDER_DAYS: readonly number[] = [1, 3, 7, 21, 60];
+
+/** The kind of a review item in the operator's words; the backend's name stays in the `title`. */
+const KIND_WORDS: Readonly<Record<string, string>> = {
+  DECLARATIVE: 'Knowledge',
+  PRACTICAL_TRANSFER: 'Practical task',
+};
+
+function days(n: number): string {
+  return n === 1 ? '1 day' : `${n} days`;
+}
+
+type Group = 'overdue' | 'due' | 'overflow';
 
 export function RetentionCenter() {
   const today = useToday();
   const client = useIpc();
   const due = useCommand('retention.due', today.now === null ? null : { as_of: today.now });
+  const [composing, setComposing] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [answer, setAnswer] = useState('');
   const [busy, setBusy] = useState(false);
@@ -33,6 +52,14 @@ export function RetentionCenter() {
   const [recorded, setRecorded] = useState<{ prompt: string; record: ReviewRecord } | null>(null);
   // While a review is recorded or the queue re-reads, no second click can record the same item twice.
   const locked = busy || due.loading;
+  const queue = due.data;
+  // Why there is no figure, when there is none: said on every tile instead of a zero.
+  const missing =
+    due.error !== null
+      ? `The review queue could not be read (${due.error.code}).`
+      : today.error !== null
+        ? `The backend clock could not be read (${today.error.code}), so the queue cannot be asked for.`
+        : 'The review queue is still being read.';
 
   const addItem = async () => {
     setBusy(true);
@@ -41,11 +68,13 @@ export function RetentionCenter() {
     setActionWarnings(warningsOf(r));
     if (isG9Error(r)) {
       setError(r);
+      setAdded(null);
     } else {
       setError(null);
       setAdded(r.result);
       setPrompt('');
       setAnswer('');
+      setComposing(false);
     }
     setBusy(false);
     due.reload();
@@ -66,137 +95,250 @@ export function RetentionCenter() {
     due.reload();
   };
 
-  const rows = (items: ReviewItem[], actions: boolean) =>
-    items.map((r) => ({
-      key: r.review_item_id,
-      cells: [
-        r.prompt,
-        r.kind,
-        `+${r.offset_days} d`,
-        formatDateTime(r.due_at, today.zone),
-        r.objective_id ?? '—',
-        formatMinutes(Math.round(r.estimated_ms / 60_000)),
-        ...(actions
-          ? [
-              <div key="record" className="row" role="group" aria-label={`Record review: ${r.prompt}`}>
-                {OUTCOMES.map((o) => (
-                  <button
-                    key={o.outcome}
-                    type="button"
-                    disabled={locked}
-                    onClick={() => {
-                      void record(r, o.outcome);
-                    }}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>,
-            ]
-          : []),
-      ],
-    }));
-  const headers = ['Prompt', 'Kind', 'Offset', 'Due', 'Objective', 'Est.'];
-  const withActions = [...headers, 'Record'];
+  const line = (r: ReviewItem, group: Group) => (
+    <li key={r.review_item_id}>
+      <div className="row-main">
+        <span className="row-title">{r.prompt}</span>
+        {group === 'overdue' ? (
+          <span className="row-sub" data-standing="owed">
+            Overdue since {formatDateTime(r.due_at, today.zone)}
+          </span>
+        ) : (
+          <span className="row-sub">Due {formatDateTime(r.due_at, today.zone)}</span>
+        )}
+        <span className="row-sub">
+          <span title={r.kind}>{KIND_WORDS[r.kind] ?? sentenceCase(r.kind)}</span>, {r.offset_days}-day step, about {formatMinutes(Math.round(r.estimated_ms / 60_000))}
+          {r.objective_id === null ? null : (
+            <>
+              , objective <code>{r.objective_id}</code>
+            </>
+          )}
+        </span>
+      </div>
+      {/* What is beyond the budget is listed, never dropped; it is recorded once it has moved into today's queue. */}
+      {group === 'overflow' ? null : (
+        <div className="row-end" role="group" aria-label={`Record review: ${r.prompt}`}>
+          {OUTCOMES.map((o) => (
+            <button
+              key={o.outcome}
+              type="button"
+              className="sm"
+              disabled={locked}
+              onClick={() => {
+                void record(r, o.outcome);
+              }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </li>
+  );
 
   return (
-    <div>
-      <PageHead title="Retention Center" lede="Reviews that are overdue, due today, and beyond today's review budget." />
-      <p className="muted">
-        Baseline schedule: offsets 1, 3, 7, 21, 60 days after the last successful recall; a failed recall resets to day 1. The daily review budget caps the queue; overflow
-        is reported, never dropped (ARCHITECTURE §9). FSRS is an optional, item-level feature that is OFF.
-      </p>
+    <div className="stack">
+      <PageHead
+        title="Retention Center"
+        lede="Recall what is due and record how it went. The backend sets the date of every next review."
+        actions={
+          <button
+            type="button"
+            className="primary"
+            disabled={composing}
+            onClick={() => {
+              setComposing(true);
+              setAdded(null);
+            }}
+          >
+            Add a review item
+          </button>
+        }
+      />
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
       {due.error !== null ? <ErrorDisplay error={due.error} onRetry={due.reload} /> : null}
       {error !== null ? <ErrorDisplay error={error} /> : null}
-      {due.loading ? <Loading what="review queue" /> : null}
       <Warnings warnings={mergeWarnings(due.warnings, actionWarnings)} />
-      {recorded !== null ? <RecordedReview prompt={recorded.prompt} record={recorded.record} zone={today.zone} /> : null}
-      {due.data !== null ? (
-        <>
-          <p>
-            As of {formatDateTime(due.data.as_of, today.zone)} · budget {formatMinutes(Math.round(due.data.budget_ms / 60_000))} <ProvenanceBadge label="VERIFIED" />
-          </p>
-          <p className="muted">
-            Record each review as you do it: Recalled moves the item to the next offset, Forgot sends it back to one day, Skip records the attempt and keeps the due
-            date. The backend computes the next date; this window only shows it.
-          </p>
-          <Panel title="Overdue">
-            {due.data.overdue.length === 0 ? <NoData reason="nothing overdue" /> : <Table caption="Overdue reviews" headers={withActions} rows={rows(due.data.overdue, true)} />}
-          </Panel>
-          <Panel title="Due today">
-            {due.data.due.length === 0 ? <NoData reason="nothing due today" /> : <Table caption="Due today" headers={withActions} rows={rows(due.data.due, true)} />}
-          </Panel>
-          <Panel title="Beyond budget (overflow)">
-            {due.data.overflow.length === 0 ? <NoData reason="queue fits the budget" /> : <Table caption="Overflow" headers={headers} rows={rows(due.data.overflow, false)} />}
-          </Panel>
-        </>
+      {added !== null && !composing ? (
+        <p className="receipt" role="status" data-testid="review-item-added">
+          Review item added: “{added.prompt}”. Its first review is due {formatDateTime(added.due_at, today.zone)}. <ProvenanceBadge label="VERIFIED" />
+        </p>
       ) : null}
-      <Panel title="Add review item">
-        <form
-          aria-label="Add review item"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (prompt.trim() !== '') {
-              void addItem();
-            }
+
+      {composing ? (
+        <Composer
+          title="Add a review item"
+          onClose={() => {
+            setComposing(false);
           }}
         >
-          <div className="field">
-            <label htmlFor="review-prompt">Prompt</label>
-            <textarea
-              id="review-prompt"
-              required
-              maxLength={2000}
-              rows={2}
-              value={prompt}
-              onChange={(e) => {
-                setPrompt(e.target.value);
-              }}
+          <form
+            aria-label="Add a review item"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!busy && prompt.trim() !== '') {
+                void addItem();
+              }
+            }}
+          >
+            <div className="form-grid">
+              <Field wide label="Prompt" hint="What you will ask yourself. At most 2000 characters.">
+                {({ id, describedBy }) => (
+                  <textarea
+                    id={id}
+                    required
+                    maxLength={2000}
+                    rows={2}
+                    value={prompt}
+                    aria-describedby={describedBy}
+                    onChange={(e) => {
+                      setPrompt(e.target.value);
+                    }}
+                  />
+                )}
+              </Field>
+              <Field wide label="Answer (optional)" hint="Kept as a note you can erase, never on the item itself.">
+                {({ id, describedBy }) => (
+                  <textarea
+                    id={id}
+                    maxLength={20000}
+                    rows={3}
+                    value={answer}
+                    aria-describedby={describedBy}
+                    onChange={(e) => {
+                      setAnswer(e.target.value);
+                    }}
+                  />
+                )}
+              </Field>
+            </div>
+            <div className="form-actions">
+              <button type="submit" className="primary" disabled={busy || prompt.trim() === ''}>
+                Add review item
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setComposing(false);
+                }}
+              >
+                Cancel
+              </button>
+              <span className="form-note">The first review is due one day after you add the item.</span>
+            </div>
+          </form>
+        </Composer>
+      ) : null}
+
+      <section className="bento" aria-label="The queue in numbers">
+        <div data-span="3">
+          {queue === null ? (
+            <Stat label="Overdue" value="No data" standing="missing" foot={missing} />
+          ) : (
+            <Stat
+              label="Overdue"
+              value={queue.overdue.length}
+              standing={queue.overdue.length > 0 ? 'owed' : 'posted'}
+              foot={queue.overdue.length > 0 ? 'Due before today and still open.' : 'Nothing is left from earlier days.'}
             />
-          </div>
-          <div className="field">
-            <label htmlFor="review-answer">Answer (optional)</label>
-            <textarea
-              id="review-answer"
-              maxLength={20000}
-              rows={3}
-              aria-describedby="review-answer-hint"
-              value={answer}
-              onChange={(e) => {
-                setAnswer(e.target.value);
-              }}
-            />
-            <span id="review-answer-hint" className="field-hint">
-              Kept as a note you can erase, never on the item itself. The first review is due one day after you add the item.
-            </span>
-          </div>
-          <button type="submit" className="primary" disabled={busy || prompt.trim() === ''}>
-            Add review item
-          </button>
-        </form>
-        {added !== null ? (
-          <p role="status" data-testid="review-item-added">
-            Added “{added.prompt}”: first review {formatDateTime(added.due_at, today.zone)} <ProvenanceBadge label="VERIFIED" />
-          </p>
-        ) : null}
-      </Panel>
+          )}
+        </div>
+        <div data-span="3">
+          {queue === null ? <Stat label="Due today" value="No data" standing="missing" foot={missing} /> : <Stat label="Due today" value={queue.due.length} foot="Due today, within the budget." />}
+        </div>
+        <div data-span="3">
+          {queue === null ? (
+            <Stat label="Beyond today’s budget" value="No data" standing="missing" foot={missing} />
+          ) : (
+            <Stat label="Beyond today’s budget" value={queue.overflow.length} foot="Due as well. They wait until there is room." />
+          )}
+        </div>
+        <div data-span="3">
+          {queue === null ? (
+            <Stat label="Today’s budget" value="No data" standing="missing" foot={missing} />
+          ) : (
+            <Stat label="Today’s budget" value={Math.round(queue.budget_ms / 60_000)} unit="min" foot="What does not fit is listed, never dropped." />
+          )}
+        </div>
+      </section>
+
+      <div className="with-margin">
+        {/* The queue is a backend record: stamped Verified unless the read came with a warning. */}
+        <Panel
+          title="Review queue"
+          actions={queue !== null && due.warnings.length === 0 ? <ProvenanceBadge label="VERIFIED" /> : undefined}
+          note={queue === null ? undefined : `The queue as of ${formatDateTime(queue.as_of, today.zone)}, most overdue first.`}
+        >
+          {recorded !== null ? <RecordedReview prompt={recorded.prompt} record={recorded.record} zone={today.zone} /> : null}
+          {queue === null ? (
+            due.error !== null || today.error !== null ? (
+              <NoData reason={missing} />
+            ) : (
+              <Loading what="the review queue" />
+            )
+          ) : (
+            <>
+              <section className="stack-sm" aria-label="Overdue reviews">
+                <h3>Overdue</h3>
+                {queue.overdue.length === 0 ? <p className="muted">Nothing is overdue.</p> : <ul className="rows">{queue.overdue.map((r) => line(r, 'overdue'))}</ul>}
+              </section>
+              <section className="stack-sm" aria-label="Reviews due today">
+                <h3>Due today</h3>
+                {queue.due.length === 0 ? <p className="muted">Nothing is due today.</p> : <ul className="rows">{queue.due.map((r) => line(r, 'due'))}</ul>}
+              </section>
+              <section className="stack-sm" aria-label="Reviews beyond today’s budget">
+                <h3>Beyond today’s budget</h3>
+                {queue.overflow.length === 0 ? (
+                  <p className="muted">The queue fits today’s budget.</p>
+                ) : (
+                  <>
+                    <p className="muted small">Due as well, but today’s budget is used up. A line moves into the queue above as you record the ones before it.</p>
+                    <ul className="rows">{queue.overflow.map((r) => line(r, 'overflow'))}</ul>
+                  </>
+                )}
+              </section>
+            </>
+          )}
+        </Panel>
+
+        <Margin label="How the ladder works">
+          <Panel title="The ladder" as="aside" note="Five steps. Each is the wait before the next review.">
+            <ol className="steps" data-layout="list" aria-label="The review ladder, shortest wait first">
+              {LADDER_DAYS.map((d) => (
+                <li key={d}>{days(d)}</li>
+              ))}
+            </ol>
+          </Panel>
+          <MarginNote title="Recalled">
+            <p>The item moves one step up the ladder. The backend sets the date of the next review and the receipt shows it.</p>
+          </MarginNote>
+          <MarginNote title="Did not recall">
+            <p>The item goes back to the first step. Its next review is one day later.</p>
+          </MarginNote>
+          <MarginNote title="Skip">
+            <p>The attempt is recorded. The step and the due date stay as they are.</p>
+          </MarginNote>
+          <MarginNote title="The budget">
+            <p>Today’s budget caps the queue. A per-item schedule (FSRS) is optional and switched off.</p>
+          </MarginNote>
+        </Margin>
+      </div>
     </div>
   );
 }
 
-/** What the backend did with the last recorded review (its next due date, stage and offset). */
-function RecordedReview({ prompt, record, zone }: { prompt: string; record: ReviewRecord; zone: string }) {
+/** What the backend did with the last recorded review: its next due date and its place on the ladder. */
+function RecordedReview({ prompt, record, zone }: { prompt: string; record: ReviewRecord; zone: IanaZone }) {
   const next = formatDateTime(record.due_at, zone);
-  const text =
-    record.outcome === 'SUCCESS'
-      ? `Recalled “${prompt}”: next review ${next} (stage ${record.stage}, ${record.offset_days} day${record.offset_days === 1 ? '' : 's'} later).`
-      : record.outcome === 'FAILURE'
-        ? `Forgot “${prompt}”: back to the first stage; next review ${next}.`
-        : `Skipped “${prompt}”: recorded; the due date stays ${next}.`;
+  // The backend's own ladder index stays one step away, in the title.
+  const stage = `Ladder stage ${record.stage} of the baseline schedule`;
   return (
-    <p role="status" data-testid="review-recorded">
-      {text}
+    <p className="receipt" role="status" data-testid="review-recorded" title={stage}>
+      {record.outcome === 'SUCCESS'
+        ? `Recalled: “${prompt}”. Next review ${next}, in ${days(record.offset_days)}.`
+        : record.outcome === 'FAILURE'
+          ? `Did not recall: “${prompt}”. It is back on the first step. Next review ${next}, in ${days(record.offset_days)}.`
+          : `Skipped: “${prompt}”. The attempt is recorded and the due date stays ${next}.`}
     </p>
   );
 }

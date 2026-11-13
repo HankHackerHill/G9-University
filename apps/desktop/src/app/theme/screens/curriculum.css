@@ -2,6 +2,9 @@
  * Curriculum Navigator: the week as a tree of days. Everything else on the screen is drawn by
  * the documented classes (.tree, .day-group, .rows, .facts, dl.pairs).
  */
+/* The layer order, repeated in every screen stylesheet: whichever stylesheet loads first fixes it. */
+@layer reset, tokens, base, layout, components, screens, skins, utilities;
+
 @layer screens {
   /* The day's name is the title of its line; the rest of the line stays secondary. */
   .tree-day > summary > strong {
