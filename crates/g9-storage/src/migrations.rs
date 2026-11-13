@@ -15,8 +15,8 @@
 //!   `VACUUM INTO` copy and reports integrity, foreign-key and count results
 //!   without touching the live file.
 //! * [`verify_schema`] compares the schema itself (every table, index, trigger
-//!   and view in `sqlite_master`) with what the embedded migrations produce at
-//!   the version the file records. Checksums alone only prove that the
+//!   and view in `sqlite_master`, its SQL text exactly) with what the embedded
+//!   migrations produce at the version the file records. Checksums alone only prove that the
 //!   `schema_migrations` rows are genuine: they are data inside the file, and a
 //!   copied genuine database keeps them while its triggers are dropped or
 //!   replaced (security audit 2026-11-12). Backup verification, restore and
@@ -480,28 +480,32 @@ impl SchemaCheck {
     }
 }
 
-/// `(type, name)` -> `(tbl_name, sql)`.
+/// `(type, name)` -> `(tbl_name, sql)`, with the SQL exactly as stored.
+///
+/// The text is compared byte for byte, never with whitespace collapsed:
+/// whitespace is not cosmetic in SQL, because a newline ends a `--` comment.
+/// Replacing the newline after a comment lets the comment swallow the line
+/// below it, for example a CHECK constraint, while every whitespace-collapsed
+/// form stays identical. Exact text cannot cause a false positive on a genuine
+/// file: SQLite stores each CREATE statement as written (after fixed
+/// normalizations of its leading keywords), and ALTER TABLE ADD COLUMN, the only
+/// ALTER the migrations use, splices its text in the same way every time.
 type SchemaMap = BTreeMap<(String, String), (String, Option<String>)>;
 
-/// Objects SQLite creates and maintains itself. Everything else in
-/// `sqlite_master`, whatever its name, must come from the embedded migrations:
-/// a `sqlite_`-prefixed trigger written through `writable_schema` is loaded and
-/// fires like any other, so names alone never exempt an object.
-fn is_internal(kind: &str, name: &str, sql: Option<&str>) -> bool {
-    match kind {
-        "table" => matches!(
+/// The statistics tables `ANALYZE` creates and fills. Their rows steer query
+/// plans and never run code, and nothing in this application creates them, so a
+/// manual `ANALYZE` on the file must not block writes. Everything else in
+/// `sqlite_master` must come from the embedded migrations, whatever its name: a
+/// `sqlite_`-prefixed trigger written through `writable_schema` is loaded and
+/// fires like any other, and what SQLite derives from the migrations (the
+/// indexes behind PRIMARY KEY / UNIQUE constraints, `sqlite_sequence`) is
+/// deterministic, so it is compared too.
+fn is_internal(kind: &str, name: &str) -> bool {
+    kind == "table"
+        && matches!(
             name,
-            "sqlite_sequence" | "sqlite_stat1" | "sqlite_stat2" | "sqlite_stat3" | "sqlite_stat4"
-        ),
-        // Indexes behind PRIMARY KEY / UNIQUE constraints carry no SQL of their own.
-        "index" => sql.is_none() && name.starts_with("sqlite_autoindex_"),
-        _ => false,
-    }
-}
-
-/// Whitespace runs collapse to one space, so formatting cannot cause a mismatch.
-fn normalize_sql(sql: &str) -> String {
-    sql.split_whitespace().collect::<Vec<_>>().join(" ")
+            "sqlite_stat1" | "sqlite_stat2" | "sqlite_stat3" | "sqlite_stat4"
+        )
 }
 
 fn schema_map(conn: &Connection) -> StorageResult<SchemaMap> {
@@ -517,8 +521,8 @@ fn schema_map(conn: &Connection) -> StorageResult<SchemaMap> {
     let mut map = SchemaMap::new();
     for row in rows {
         let (kind, name, table, sql) = row?;
-        if !is_internal(&kind, &name, sql.as_deref()) {
-            map.insert((kind, name), (table, sql.as_deref().map(normalize_sql)));
+        if !is_internal(&kind, &name) {
+            map.insert((kind, name), (table, sql));
         }
     }
     Ok(map)
@@ -596,6 +600,33 @@ pub fn verify_schema(conn: &Connection) -> StorageResult<SchemaCheck> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// SHA-256 over the expected schema at version 13 (`type`, `name`,
+    /// `tbl_name`, exact `sql` of every compared object, in key order). Computed
+    /// with the bundled SQLite 3.54.1 and reproduced independently with SQLite
+    /// 3.53.1 from the same SQL files (452 objects).
+    const SCHEMA_V13_SHA256: &str =
+        "64c8f2009d165d8943d819613ae23de74a1c287e604fdb3ee7ea0a57d3305b5f";
+
+    #[test]
+    fn the_schema_existing_databases_are_verified_against_is_pinned() {
+        // `verify_schema` compares a database with the schema this build's migrations
+        // produce at the version it records, text exactly. Tests always build fresh
+        // databases, so a change to that text passes every other test while every
+        // database created by an earlier build fails verification (schema_drift,
+        // read-only). Causes: an edit to BOOTSTRAP_SQL or to an applied migration
+        // (never allowed: add a migration instead), or a SQLite upgrade that stores
+        // CREATE or ALTER TABLE ADD COLUMN text differently, which must be resolved
+        // before release. Pinned at version 13, so adding a migration needs no update.
+        let mut text = String::new();
+        for ((kind, name), (table, sql)) in &expected_schema(13).unwrap() {
+            text.push_str(&format!(
+                "{kind}\u{0}{name}\u{0}{table}\u{0}{}\n",
+                sql.as_deref().unwrap_or("NULL")
+            ));
+        }
+        assert_eq!(sha256_hex(text.as_bytes()), SCHEMA_V13_SHA256);
+    }
 
     #[test]
     fn embedded_versions_are_contiguous_and_named_uniquely() {

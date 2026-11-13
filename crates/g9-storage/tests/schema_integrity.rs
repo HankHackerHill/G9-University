@@ -126,6 +126,103 @@ fn a_table_name_with_a_double_quote_is_reported_not_an_internal_error() {
     );
 }
 
+fn stored_table_sql(path: &Path, table: &str) -> String {
+    Connection::open(path)
+        .unwrap()
+        .query_row(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?1",
+            [table],
+            |r| r.get(0),
+        )
+        .unwrap()
+}
+
+#[test]
+fn a_line_comment_stretched_over_a_check_constraint_fails_verification() {
+    // Whitespace is not cosmetic in SQL: a newline ends a `--` comment. Replacing
+    // the one newline after the comment above a CHECK lets the comment swallow the
+    // constraint, while the text with whitespace collapsed stays identical. The
+    // tampered file still opens and passes integrity_check, and then accepts rows
+    // the genuine schema refuses: integrity_check validates CHECK constraints, so
+    // without this the snapshot would carry them past every row-level check.
+    let dir = tempfile::tempdir().unwrap();
+    let path = genuine(dir.path(), "evil.sqlite");
+    let sql = stored_table_sql(&path, "decisions");
+    let comment = "-- a decision is DECIDED only by an operator (model output can only propose)\n";
+    assert!(sql.contains(comment), "fixture drifted: {sql}");
+    let stretched = sql.replacen(comment, &comment.replace('\n', " "), 1);
+    assert_eq!(
+        stretched.split_whitespace().collect::<Vec<_>>(),
+        sql.split_whitespace().collect::<Vec<_>>(),
+        "the tamper changes whitespace only"
+    );
+    {
+        let c = Connection::open(&path).unwrap();
+        c.execute_batch("PRAGMA writable_schema = ON;").unwrap();
+        c.execute(
+            "UPDATE sqlite_master SET sql = ?1 WHERE type = 'table' AND name = 'decisions'",
+            [&stretched],
+        )
+        .unwrap();
+    }
+
+    // The constraint is gone: a DECIDED decision with no operator is accepted.
+    const UNDECIDED: &str =
+        "INSERT INTO decisions (id, title, context, state, trust, created_at, updated_at)
+         VALUES ('d-1', 't', 'c', 'DECIDED', 'OPERATOR', 0, 0)";
+    let honest = genuine(dir.path(), "honest.sqlite");
+    assert!(
+        Connection::open(&honest)
+            .unwrap()
+            .execute(UNDECIDED, [])
+            .is_err(),
+        "the genuine schema refuses a DECIDED decision without an operator"
+    );
+    Connection::open(&path)
+        .unwrap()
+        .execute(UNDECIDED, [])
+        .unwrap();
+
+    let (ok, errors) = errors_of(&path);
+    assert!(!ok, "a snapshot with a stretched comment must not verify");
+    assert!(
+        errors.join("\n").contains("changed table \"decisions\""),
+        "{errors:?}"
+    );
+}
+
+#[test]
+fn only_planner_statistics_are_exempt_from_the_comparison() {
+    // What SQLite derives deterministically from the migrations (the indexes behind
+    // PRIMARY KEY / UNIQUE constraints, the AUTOINCREMENT counter table) is part of
+    // the expected schema. Only the statistics ANALYZE writes are exempt: they
+    // steer query plans and never run code.
+    let dir = tempfile::tempdir().unwrap();
+    let analyzed = genuine(dir.path(), "analyzed.sqlite");
+    tamper(&analyzed, "ANALYZE;");
+    let (ok, errors) = errors_of(&analyzed);
+    assert!(
+        ok,
+        "planner statistics alone must not fail verification: {errors:?}"
+    );
+
+    let path = genuine(dir.path(), "evil.sqlite");
+    tamper(
+        &path,
+        "PRAGMA writable_schema = ON;
+         UPDATE sqlite_master SET sql = 'CREATE TABLE sqlite_sequence(name,seq,planted)'
+           WHERE type = 'table' AND name = 'sqlite_sequence';",
+    );
+    let (ok, errors) = errors_of(&path);
+    assert!(!ok, "a changed sqlite_sequence must not verify");
+    assert!(
+        errors
+            .join("\n")
+            .contains("changed table \"sqlite_sequence\""),
+        "{errors:?}"
+    );
+}
+
 #[test]
 fn restore_refuses_a_snapshot_with_a_planted_trigger_and_leaves_the_live_file_alone() {
     let dir = tempfile::tempdir().unwrap();

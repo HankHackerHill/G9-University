@@ -30,11 +30,12 @@ Corrected:
 
 | Check | Where |
 |---|---|
-| `migrations::verify_schema`: every table, index, trigger and view in `sqlite_master` must equal what the embedded migrations produce at the recorded version (built in memory with the same migrator; SQL compared with whitespace collapsed; only SQLite's own `sqlite_sequence`, `sqlite_stat*` and constraint autoindexes are exempt, by exact name and type, so a `sqlite_`-named trigger written through `writable_schema` is still caught) | `crates/g9-storage/src/migrations.rs` |
+| `migrations::verify_schema`: every table, index, trigger and view in `sqlite_master` must equal what the embedded migrations produce at the recorded version (built in memory with the same migrator; SQL text compared exactly, never with whitespace collapsed: a newline ends a `--` comment, so a collapsed comparison let a moved newline stretch a comment over a CHECK constraint, found while verifying this fix; only the `sqlite_stat1`–`sqlite_stat4` planner statistics are exempt, by exact name and type, so a `sqlite_`-named trigger written through `writable_schema` is still caught, and constraint autoindexes and `sqlite_sequence` are compared) | `crates/g9-storage/src/migrations.rs` |
 | Backup verification and restore (`verify_connection`, so `verify_snapshot` and `restore_over_live`'s copy check) fail on any difference; `VerificationReport.schema_ok` | `crates/g9-storage/src/backup.rs`, `restore.rs` |
 | Open-time recovery checks the schema before it writes anything; a difference blocks every mutation (`write_block_reason = schema_drift`, `RecoveryReport.schema_differences`), as a broken audit chain does | `crates/g9-app/src/recovery.rs` |
 | The restore plan no longer prints the snapshot's actual SHA-256 next to the confirmation command when it does not match the expected one | `apps/cli/src/commands/restore.rs` |
 | `table_counts` quotes table names read from a foreign file | `crates/g9-storage/src/migrations.rs` |
+| A pinned SHA-256 of the expected schema at version 13: a change of stored text (an edit to `BOOTSTRAP_SQL`, a SQLite upgrade that stores CREATE or ADD COLUMN text differently) would put every existing database into `schema_drift`, so it fails CI instead (`the_schema_existing_databases_are_verified_against_is_pinned`; reproduced with SQLite 3.53.1 against the bundled 3.54.1) | `crates/g9-storage/src/migrations.rs` (tests) |
 
 Residual: a snapshot with the correct schema and fabricated rows still verifies; backups carry no keyed MAC (IMP-M08 PROPOSED) and the audit chain is unkeyed (ADR-0004).
 
