@@ -24,6 +24,10 @@
 //! 4. **Approval expiry sweep.** `PENDING`/`APPROVED` requests past their
 //!    expiry move to `EXPIRED` (audited).
 
+// Step 0 (before the steps above): the schema itself is compared with the
+// embedded migrations at the recorded version; a difference blocks every write,
+// recovery's own included (`schema_drift`).
+
 use crate::context::{KnownBackup, Services};
 use crate::pipeline::{audit_entry, insert_decision};
 use g9_calendar::{Continuity, SessionEventRow};
@@ -67,12 +71,19 @@ pub struct RecoveryReport {
     pub closed_intervals: Vec<String>,
     /// Approvals moved to `EXPIRED`.
     pub expired_approvals: Vec<ApprovalId>,
+    /// Schema objects that differ from what the embedded migrations produce at the
+    /// recorded version (`g9_storage::migrations::verify_schema`); empty when the
+    /// schema matches. Mutations are refused while non-empty.
+    #[serde(default)]
+    pub schema_differences: Vec<String>,
 }
 
 impl RecoveryReport {
     /// Why mutations must be refused, if they must.
     pub fn write_block_reason(&self) -> Option<&'static str> {
-        if !self.audit_chain_ok {
+        if !self.schema_differences.is_empty() {
+            Some("schema_drift")
+        } else if !self.audit_chain_ok {
             Some("audit_chain_broken")
         } else if !self.pending_migrations.is_empty() {
             Some("pending_migrations")
@@ -91,6 +102,25 @@ pub fn run(db: &mut Database, svc: &mut Services) -> Result<RecoveryReport, G9Er
             .unwrap_or_default(),
         ..RecoveryReport::default()
     };
+
+    // Before anything is written: a schema that is not exactly the one the
+    // migrations produce may carry triggers that would run inside recovery's own
+    // writes (and every later command). Report it and write nothing.
+    let schema = g9_storage::migrations::verify_schema(db.conn())?;
+    if !schema.ok() {
+        report.schema_differences = schema.differences;
+        let chain = AuditChain::verify_chain(db.conn())?;
+        report.audit_chain_ok = chain.ok;
+        report.audit_rows = chain.rows;
+        report.audit_first_bad_seq = chain.first_bad_seq;
+        tracing::error!(
+            version = schema.version,
+            differences = report.schema_differences.len(),
+            "schema differs from the embedded migrations; mutations are refused"
+        );
+        return Ok(report);
+    }
+
     migrate_after_backup(db, svc, &mut report)?;
 
     let chain = AuditChain::verify_chain(db.conn())?;

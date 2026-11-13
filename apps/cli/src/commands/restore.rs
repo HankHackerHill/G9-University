@@ -270,6 +270,7 @@ fn normalize_sha256(text: &str) -> Result<String, CliError> {
 }
 
 fn plan_value(plan: &Plan, actual_sha256: &str) -> Value {
+    let matches = actual_sha256 == plan.expected_sha256;
     let mut command = String::from("g9 restore");
     match &plan.backup_id {
         Some(id) => command.push_str(&format!(" --backup-id {id}")),
@@ -291,8 +292,17 @@ fn plan_value(plan: &Plan, actual_sha256: &str) -> Value {
         "backup_id": plan.backup_id,
         "snapshot": text(&plan.snapshot),
         "expected_sha256": plan.expected_sha256,
-        "snapshot_sha256": actual_sha256,
-        "snapshot_matches_expected": actual_sha256 == plan.expected_sha256,
+        // The actual hash is printed only when it already matches: printed next to
+        // the confirmation command on a mismatch, it would invite copying it into
+        // --expect-sha256, which then authenticates nothing (security audit
+        // 2026-11-12). Compare against this installation's manifest or your own record.
+        "snapshot_sha256": if matches { Value::String(actual_sha256.to_string()) } else { Value::Null },
+        "snapshot_matches_expected": matches,
+        "checksum": if matches {
+            "the snapshot's SHA-256 matches the expected value"
+        } else {
+            "the snapshot's SHA-256 does not match the expected value; it is not shown here. Take the expected value from this installation's backup manifest (--backup-id) or from your own record of the file, never from this output"
+        },
         "live": text(&plan.live),
         "live_exists": plan.live.exists(),
         "quarantine_dir": text(&plan.quarantine_dir),
@@ -407,6 +417,11 @@ mod tests {
         assert_eq!(
             plan_value(&p, &"00".repeat(32))["snapshot_matches_expected"],
             false
+        );
+        assert_eq!(
+            plan_value(&p, &"00".repeat(32))["snapshot_sha256"],
+            Value::Null,
+            "a mismatching hash is never printed next to the confirmation command"
         );
     }
 }

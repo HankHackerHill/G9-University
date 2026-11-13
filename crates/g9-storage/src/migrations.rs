@@ -14,6 +14,13 @@
 //! * [`Migrator::dry_run_on_copy`] rehearses pending migrations on a
 //!   `VACUUM INTO` copy and reports integrity, foreign-key and count results
 //!   without touching the live file.
+//! * [`verify_schema`] compares the schema itself (every table, index, trigger
+//!   and view in `sqlite_master`) with what the embedded migrations produce at
+//!   the version the file records. Checksums alone only prove that the
+//!   `schema_migrations` rows are genuine: they are data inside the file, and a
+//!   copied genuine database keeps them while its triggers are dropped or
+//!   replaced (security audit 2026-11-12). Backup verification, restore and
+//!   open-time recovery all call it.
 
 use crate::error::{StorageError, StorageResult};
 use g9_domain::hashing::sha256_hex;
@@ -22,6 +29,7 @@ use rusqlite::{params, Connection, OpenFlags, TransactionBehavior};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
 
 /// One embedded migration.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -439,13 +447,150 @@ pub fn app_tables(conn: &Connection) -> StorageResult<Vec<String>> {
 pub fn table_counts(conn: &Connection) -> StorageResult<BTreeMap<String, u64>> {
     let mut counts = BTreeMap::new();
     for table in app_tables(conn)? {
-        // Table names come from sqlite_master (our own DDL), never from input.
-        let n: i64 = conn.query_row(&format!("SELECT COUNT(*) FROM \"{table}\""), [], |r| {
+        // Names come from the file's own sqlite_master, which may be a foreign
+        // snapshot under verification: quote them as identifiers.
+        let quoted = table.replace('"', "\"\"");
+        let n: i64 = conn.query_row(&format!("SELECT COUNT(*) FROM \"{quoted}\""), [], |r| {
             r.get(0)
         })?;
         counts.insert(table, n.max(0) as u64);
     }
     Ok(counts)
+}
+
+/// At most this many differences are listed; the rest are counted.
+const MAX_REPORTED_DIFFERENCES: usize = 20;
+
+/// Result of [`verify_schema`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SchemaCheck {
+    /// The schema version the file records (`MAX(schema_migrations.version)`, 0 when unreadable).
+    pub version: u32,
+    /// What differs from the schema the embedded migrations produce at that version,
+    /// for example `unexpected trigger "zz"`, `missing trigger "trg_x"` or
+    /// `changed table "notes"`. Names are printed escaped (`{:?}`): they come from
+    /// the file. Empty when the schema matches.
+    pub differences: Vec<String>,
+}
+
+impl SchemaCheck {
+    /// `true` when the schema equals the expected one.
+    pub fn ok(&self) -> bool {
+        self.differences.is_empty()
+    }
+}
+
+/// `(type, name)` -> `(tbl_name, sql)`.
+type SchemaMap = BTreeMap<(String, String), (String, Option<String>)>;
+
+/// Objects SQLite creates and maintains itself. Everything else in
+/// `sqlite_master`, whatever its name, must come from the embedded migrations:
+/// a `sqlite_`-prefixed trigger written through `writable_schema` is loaded and
+/// fires like any other, so names alone never exempt an object.
+fn is_internal(kind: &str, name: &str, sql: Option<&str>) -> bool {
+    match kind {
+        "table" => matches!(
+            name,
+            "sqlite_sequence" | "sqlite_stat1" | "sqlite_stat2" | "sqlite_stat3" | "sqlite_stat4"
+        ),
+        // Indexes behind PRIMARY KEY / UNIQUE constraints carry no SQL of their own.
+        "index" => sql.is_none() && name.starts_with("sqlite_autoindex_"),
+        _ => false,
+    }
+}
+
+/// Whitespace runs collapse to one space, so formatting cannot cause a mismatch.
+fn normalize_sql(sql: &str) -> String {
+    sql.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn schema_map(conn: &Connection) -> StorageResult<SchemaMap> {
+    let mut stmt = conn.prepare("SELECT type, name, tbl_name, sql FROM sqlite_master")?;
+    let rows = stmt.query_map([], |r| {
+        Ok((
+            r.get::<_, String>(0)?,
+            r.get::<_, String>(1)?,
+            r.get::<_, String>(2)?,
+            r.get::<_, Option<String>>(3)?,
+        ))
+    })?;
+    let mut map = SchemaMap::new();
+    for row in rows {
+        let (kind, name, table, sql) = row?;
+        if !is_internal(&kind, &name, sql.as_deref()) {
+            map.insert((kind, name), (table, sql.as_deref().map(normalize_sql)));
+        }
+    }
+    Ok(map)
+}
+
+/// The schema the embedded migrations produce at `version`, built the way a
+/// fresh install builds it (same migrator, foreign keys on) in memory, and kept
+/// for the life of the process.
+fn expected_schema(version: u32) -> StorageResult<SchemaMap> {
+    static CACHE: OnceLock<Mutex<BTreeMap<u32, SchemaMap>>> = OnceLock::new();
+    let cache = CACHE.get_or_init(|| Mutex::new(BTreeMap::new()));
+    {
+        let guard = cache
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(map) = guard.get(&version) {
+            return Ok(map.clone());
+        }
+    }
+    let mut conn = Connection::open_in_memory()?;
+    conn.pragma_update(None, "foreign_keys", true)?;
+    Migrator::new("schema-reference", UtcMillis::from_millis(0))
+        .migrate_up_to(&mut conn, version)?;
+    let map = schema_map(&conn)?;
+    cache
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .insert(version, map.clone());
+    Ok(map)
+}
+
+/// Compare the schema of `conn` with the schema the embedded migrations produce
+/// at the version the database records. Reads only; never fails on a foreign
+/// schema (the differences say what is wrong); fails only when the database
+/// cannot be read at all.
+pub fn verify_schema(conn: &Connection) -> StorageResult<SchemaCheck> {
+    // A file without a readable schema_migrations table records no version.
+    let version = Migrator::schema_version(conn).unwrap_or(0);
+    if version > CURRENT_SCHEMA_VERSION {
+        return Ok(SchemaCheck {
+            version,
+            differences: vec![format!(
+                "schema version {version} is newer than this build ({CURRENT_SCHEMA_VERSION})"
+            )],
+        });
+    }
+    let expected = expected_schema(version)?;
+    let actual = schema_map(conn)?;
+    let mut differences = Vec::new();
+    for ((kind, name), definition) in &actual {
+        match expected.get(&(kind.clone(), name.clone())) {
+            None => differences.push(format!("unexpected {kind} {name:?}")),
+            Some(wanted) if wanted != definition => {
+                differences.push(format!("changed {kind} {name:?}"))
+            }
+            Some(_) => {}
+        }
+    }
+    for (kind, name) in expected.keys() {
+        if !actual.contains_key(&(kind.clone(), name.clone())) {
+            differences.push(format!("missing {kind} {name:?}"));
+        }
+    }
+    if differences.len() > MAX_REPORTED_DIFFERENCES {
+        let more = differences.len() - MAX_REPORTED_DIFFERENCES;
+        differences.truncate(MAX_REPORTED_DIFFERENCES);
+        differences.push(format!("and {more} more"));
+    }
+    Ok(SchemaCheck {
+        version,
+        differences,
+    })
 }
 
 #[cfg(test)]

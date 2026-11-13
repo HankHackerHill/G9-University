@@ -397,6 +397,9 @@ fn verify_copy(copy: &Path) -> StorageResult<(u32, u64)> {
         copy,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
     )?;
+    // The copy's schema is not trusted until verified: no function call from its
+    // views or triggers (verify_snapshot below also compares the schema itself).
+    conn.pragma_update(None, "trusted_schema", false)?;
     // A copy whose schema table cannot be read is reported by the verification below.
     if let Ok(version) = Migrator::schema_version(&conn) {
         if version > CURRENT_SCHEMA_VERSION {

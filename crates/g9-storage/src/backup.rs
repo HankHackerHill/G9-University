@@ -90,6 +90,11 @@ pub struct VerificationReport {
     pub migration_checksums_ok: bool,
     /// The audit chain recomputed cleanly.
     pub audit_chain_ok: bool,
+    /// The schema (tables, indexes, triggers, views) equals what the embedded
+    /// migrations produce at the recorded version (`migrations::verify_schema`).
+    /// `None` only in reports stored before this check existed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schema_ok: Option<bool>,
     /// Row count per application table.
     pub table_counts: BTreeMap<String, u64>,
     /// Attachment manifest result.
@@ -105,6 +110,7 @@ impl VerificationReport {
             && self.foreign_key_check_ok
             && self.migration_checksums_ok
             && self.audit_chain_ok
+            && self.schema_ok != Some(false)
             && self.errors.is_empty()
             && !matches!(&self.attachment_manifest, AttachmentCheck::Checked { missing, .. } if !missing.is_empty())
     }
@@ -382,6 +388,21 @@ pub fn verify_connection(
             false
         }
     };
+    let schema_ok = match crate::migrations::verify_schema(conn) {
+        Ok(check) if check.ok() => true,
+        Ok(check) => {
+            errors.push(format!(
+                "schema differs from the migrations at version {}: {}",
+                check.version,
+                check.differences.join("; ")
+            ));
+            false
+        }
+        Err(e) => {
+            errors.push(format!("schema unreadable: {}", e.code()));
+            false
+        }
+    };
     let counts = table_counts(conn)?;
     let attachment_manifest = match &options.attachment_root {
         None => AttachmentCheck::NotChecked,
@@ -392,6 +413,7 @@ pub fn verify_connection(
         foreign_key_check_ok,
         migration_checksums_ok,
         audit_chain_ok,
+        schema_ok: Some(schema_ok),
         table_counts: counts,
         attachment_manifest,
         errors,
@@ -873,6 +895,7 @@ mod tests {
             foreign_key_check_ok: true,
             migration_checksums_ok: true,
             audit_chain_ok: true,
+            schema_ok: Some(true),
             table_counts: BTreeMap::from([
                 ("notes".to_string(), 3),
                 ("backup_manifests".into(), 1),

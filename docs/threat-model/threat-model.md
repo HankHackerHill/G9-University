@@ -98,7 +98,7 @@ Goal: alter authoritative state / exfiltrate / destroy data
 | ST07 | XSS payloads in note (`<img onerror>`, `javascript:` link, `<svg onload>`) | Rendered inert | TESTED (UI) |
 | ST08 | Rapid repeated expensive skill calls; oversized context | Budget/queue refusal; drops reported | per-invocation budget refusal and context drops TESTED (adapter/skills); rate/queue limit on repeated calls PROPOSED (not implemented) |
 | ST09 | Stale approval replayed on a different resource / after consumption / after expiry | Denied with explicit reason; policy decision logged | TESTED |
-| ST10 | Corrupted DB file or forged backup presented for restore | `verify_snapshot` fails; restore refused | TESTED |
+| ST10 | Corrupted DB file or forged backup presented for restore | `verify_snapshot` fails and restore is refused for integrity, foreign-key, migration-checksum, audit-chain and schema differences (every table, index, trigger and view must equal the embedded migrations at the recorded version, since 2026-11-13); open-time recovery refuses writes on schema drift. Not covered: a snapshot with the correct schema and fabricated rows (unkeyed chain, unsigned backups; IMP-M08 PROPOSED) | TESTED (`schema_integrity.rs`, `schema_drift.rs`) |
 | ST11 | Business/personal records appear in learning context | Cross-domain read denied without `CrossDomainRead` | TESTED (policy: rule `sm.read.cross_domain.approval`, `a06_*` cross-domain rows); end-to-end refusals come from storage scope checks and the orchestrator preflight (gate-evidence G7) |
 | ST12 | Late model response after cancellation applies old command | Response discarded; invocation `Cancelled` | TESTED |
 
