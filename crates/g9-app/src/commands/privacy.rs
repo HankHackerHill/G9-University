@@ -90,7 +90,10 @@ pub fn export_request(
     };
     let resource = ResourceRef::new(
         ResourceKind::Export,
-        format!("export:{}:{ceiling}:{format_label}", label.join("+")),
+        // Domains joined with `.`: the id must match the resource-id pattern
+        // `[A-Za-z0-9._:-]` of the approvals schemas (a `+` made the pending
+        // request unlistable and so unapprovable).
+        format!("export:{}:{ceiling}:{format_label}", label.join(".")),
     );
     pipeline::execute(
         ctx,

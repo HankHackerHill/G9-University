@@ -11,9 +11,10 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { buildMeta, createClient, isG9Error } from './client';
+import { buildMeta, createClient, isG9Error, type InvokeOptions } from './client';
 import { OPERATION_NAMES, type OperationName } from './operations';
 import { createMockClock, createMockTransport } from './transports/mock';
+import { encodeBase64 } from './transports/mock-attachments';
 
 const SCHEMA_DIR = fileURLToPath(new URL('../../../../schemas/ipc/', import.meta.url));
 
@@ -134,8 +135,8 @@ describe('mock responses validate against the response schemas', () => {
   });
   const outcomeValidator = validator('command-outcome.schema.json');
 
-  async function check<K extends OperationName>(op: K, payload: Parameters<typeof client.invoke<K>>[1]) {
-    const r = await client.invoke(op, payload);
+  async function check<K extends OperationName>(op: K, payload: Parameters<typeof client.invoke<K>>[1], options?: InvokeOptions) {
+    const r = await client.invoke(op, payload, options);
     if (isG9Error(r)) {
       throw new Error(`${op} failed: ${r.category} ${r.code}`);
     }
@@ -200,5 +201,59 @@ describe('mock responses validate against the response schemas', () => {
   });
   it('curriculum.validate', async () => {
     await check('curriculum.validate', { manifest: { curriculum_id: 'x' } });
+  });
+
+  /** Ask, approve (the mock confirms natively) and return the approval id. */
+  async function approved<K extends OperationName>(op: K, payload: Parameters<typeof client.invoke<K>>[1], options: InvokeOptions = {}): Promise<string> {
+    const r = await client.invoke(op, payload, options);
+    if (!isG9Error(r) || r.category !== 'APPROVAL_REQUIRED' || r.approval_id === undefined) {
+      throw new Error(`${op}: expected APPROVAL_REQUIRED`);
+    }
+    await check('approvals.decide', { approval_id: r.approval_id, decision: 'APPROVE' });
+    return r.approval_id;
+  }
+
+  it('session.create', async () => {
+    await check('session.create', { planned_minutes: 45, mode: 'LAB', objective_id: 'D15-O1', planned_start: Date.UTC(2026, 10, 19, 9, 0) });
+  });
+  it('calendar.create_event / update_event / delete_event (approval-gated)', async () => {
+    const start = Date.UTC(2026, 10, 19, 9, 0);
+    const event = await check('calendar.create_event', { title: 'Dentist', kind: 'APPOINTMENT', start, end: start + 3_600_000 });
+    await check('calendar.update_event', { event_id: event.event_id, title: 'Dentist (moved)', kind: 'REVIEW', start: start + 3_600_000, end: start + 7_200_000 });
+    const payload = { event_id: event.event_id };
+    const approvalId = await approved('calendar.delete_event', payload);
+    expect((await check('calendar.delete_event', payload, { approvalId })).deleted).toBe(true);
+  });
+  it('retention.create_item / record_review', async () => {
+    const item = await check('retention.create_item', { prompt: 'What does HSTS prevent?', answer: 'Protocol downgrade.', kind: 'PROCEDURAL' });
+    await check('retention.record_review', { review_item_id: item.review_item_id, outcome: 'SUCCESS', response_ms: 4000, rating: 3 });
+    await check('retention.record_review', { review_item_id: item.review_item_id, outcome: 'SKIPPED' });
+  });
+  it('competency.create / assessment.define', async () => {
+    const comp = await check('competency.create', { code: 'WCP', title: 'Web cache poisoning', description: 'Unkeyed inputs.', validity_days: 120 });
+    await check('assessment.define', {
+      code: 'WCP-01',
+      title: 'Poison a cache key',
+      kind: 'TRANSFER_CHECK',
+      competency_id: comp.competency_id,
+      task_statement: 'Find an unkeyed header.',
+      difficulty: 3,
+    });
+  });
+  it('evidence.attach_file / from_note / list', async () => {
+    const note = await check('notes.create', { title: 'Lab write-up', body_markdown: 'Findings.', classification: 'INTERNAL', domain: 'LEARNING' });
+    const content = encodeBase64(new TextEncoder().encode('{"finding": "unkeyed header"}'));
+    await check('evidence.attach_file', { note_id: note.note_id, filename: 'finding.json', media_type: 'application/json', content_base64: content });
+    await check('evidence.attach_file', { filename: 'loose.json', media_type: 'application/json', content_base64: content, classification: 'PUBLIC' });
+    await check('evidence.from_note', { note_id: note.note_id });
+    expect((await check('evidence.list', { note_id: note.note_id })).items).toHaveLength(2);
+    expect((await check('evidence.list', { limit: 10 })).items.length).toBeGreaterThanOrEqual(3);
+  });
+  it('export.request (approved: READY with the folder)', async () => {
+    // Two domains: the resource id joins them with `.` (`export:LEARNING.SYSTEM:PRIVATE:CSV`), inside
+    // the resource-id pattern of the approvals.* response schemas (a `+` broke approvals.list).
+    const payload = { domains: ['SYSTEM', 'LEARNING'] as ('LEARNING' | 'SYSTEM')[], format: 'CSV' as const, include_private: true };
+    const approvalId = await approved('export.request', payload);
+    expect((await check('export.request', payload, { approvalId })).state).toBe('READY');
   });
 });

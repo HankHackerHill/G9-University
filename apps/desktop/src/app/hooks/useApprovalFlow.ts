@@ -22,6 +22,11 @@ export interface ApprovalFlow<K extends OperationName> {
   pending: boolean;
   approval: ApprovalRequest | null;
   error: G9Error | null;
+  /**
+   * True after an APPROVE whose native confirmation was cancelled (`approval.not_confirmed`):
+   * the operator's answer, not a failure. Nothing was approved; the request stays pending.
+   */
+  cancelled: boolean;
   result: InvokeResult<K> | null;
   /** `CommandOutcome.warnings` of a successful `result`; empty otherwise. */
   warnings: readonly string[];
@@ -36,6 +41,7 @@ export function useApprovalFlow<K extends OperationName>(): ApprovalFlow<K> {
   const [pending, setPending] = useState(false);
   const [approval, setApproval] = useState<ApprovalRequest | null>(null);
   const [error, setError] = useState<G9Error | null>(null);
+  const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<InvokeResult<K> | null>(null);
   const [invoker, setInvoker] = useState<ApprovalInvoke<K> | null>(null);
 
@@ -55,6 +61,7 @@ export function useApprovalFlow<K extends OperationName>(): ApprovalFlow<K> {
     async (invoke: ApprovalInvoke<K>): Promise<void> => {
       setPending(true);
       setError(null);
+      setCancelled(false);
       setResult(null);
       setApproval(null);
       setInvoker(() => invoke);
@@ -78,8 +85,11 @@ export function useApprovalFlow<K extends OperationName>(): ApprovalFlow<K> {
       }
       setPending(true);
       const r = await client.invoke('approvals.decide', { approval_id: approval.approval_id, decision });
+      // A cancelled native confirmation is the operator's answer, not a failure (ApprovalsAudit does the same).
+      const declined = isG9Error(r) && r.code === 'approval.not_confirmed';
+      setCancelled(declined);
       if (isG9Error(r)) {
-        setError(r);
+        setError(declined ? null : r);
       } else {
         setError(null);
         setApproval(r.result);
@@ -94,6 +104,7 @@ export function useApprovalFlow<K extends OperationName>(): ApprovalFlow<K> {
       return;
     }
     setPending(true);
+    setCancelled(false);
     const r = await invoker(approval.approval_id);
     setResult(r);
     if (isG9Error(r)) {
@@ -109,9 +120,10 @@ export function useApprovalFlow<K extends OperationName>(): ApprovalFlow<K> {
     setPending(false);
     setApproval(null);
     setError(null);
+    setCancelled(false);
     setResult(null);
     setInvoker(null);
   }, []);
 
-  return { pending, approval, error, result, warnings: warningsOf(result), run, decide, applyWithApproval, reset };
+  return { pending, approval, error, cancelled, result, warnings: warningsOf(result), run, decide, applyWithApproval, reset };
 }

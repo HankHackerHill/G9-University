@@ -1,12 +1,21 @@
 import { useState } from 'react';
 import { isG9Error, type InvokeResult } from '../../ipc/client';
-import type { AnchoredLevel, AttemptView } from '../../ipc/operations';
+import {
+  AUTHORED_CODE_PATTERN,
+  type AnchoredLevel,
+  type AssessmentDefined,
+  type AttemptView,
+  type AuthoredAssessmentKind,
+  type Difficulty,
+  type EvidenceItemView,
+} from '../../ipc/operations';
 import type { G9Error } from '../../ipc/types';
-import { formatDateTime } from '../../lib/format';
+import { formatBytes } from '../../lib/attachment';
+import { formatDateTime, sentenceCase } from '../../lib/format';
 import { BASELINE_RUBRIC, parseLevel } from '../../lib/rubric';
 import { ASSESSMENT_MACHINE, can } from '../../lib/state-machines';
 import { mergeWarnings, warningsOf } from '../../lib/warnings';
-import { ApprovalCard } from '../components/ApprovalCard';
+import { ApprovalCard, ConfirmationCancelled } from '../components/ApprovalCard';
 import { ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, NoData, Panel } from '../components/Panel';
@@ -26,6 +35,36 @@ interface ScoreDraft {
 
 const EMPTY_DRAFT: ScoreDraft = { attemptId: null, values: {} };
 
+/** Evidence picked for one attempt's submission; picking another attempt starts from none. */
+interface EvidencePick {
+  attemptId: string | null;
+  ids: readonly string[];
+}
+
+const NO_PICK: EvidencePick = { attemptId: null, ids: [] };
+
+const AUTHORED_KINDS: readonly AuthoredAssessmentKind[] = ['BLIND_PRACTICAL', 'CAPSTONE', 'TRANSFER_CHECK'];
+const DIFFICULTIES: readonly Difficulty[] = [1, 2, 3, 4, 5];
+const ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
+
+/** "Define an assessment" form; `competency` is the chosen projection id, or '' to use `typedCompetency`. */
+interface DefineDraft {
+  code: string;
+  title: string;
+  kind: AuthoredAssessmentKind;
+  competency: string;
+  typedCompetency: string;
+  task: string;
+  difficulty: Difficulty;
+}
+
+const EMPTY_DEFINE: DefineDraft = { code: '', title: '', kind: 'BLIND_PRACTICAL', competency: '', typedCompetency: '', task: '', difficulty: 3 };
+
+function evidenceLabel(item: EvidenceItemView): string {
+  const file = item.filename === null ? '' : ` · ${item.media_type ?? 'file'}${item.size_bytes === null ? '' : `, ${formatBytes(item.size_bytes)}`}`;
+  return `${item.summary} (${sentenceCase(item.kind)}${file})`;
+}
+
 type MutationOp = 'assessment.begin' | 'assessment.submit' | 'assessment.review_evidence' | 'assessment.grade_provisional';
 
 export function Assessments() {
@@ -40,6 +79,22 @@ export function Assessments() {
   // The AttemptView carried by the last mutation: newer than the listed row until `assessment.list` has caught up.
   const [fresh, setFresh] = useState<AttemptView | null>(null);
   const finalize = useApprovalFlow<'assessment.approve_final'>();
+  // Competencies to define an assessment for, and the newest evidence items for a submission.
+  const projection = useCommand('competency.projection', {});
+  const evidence = useCommand('evidence.list', {});
+  const [pick, setPick] = useState<EvidencePick>(NO_PICK);
+  const [define, setDefine] = useState<DefineDraft>(EMPTY_DEFINE);
+  const [defined, setDefined] = useState<AssessmentDefined | null>(null);
+  const [defineError, setDefineError] = useState<G9Error | null>(null);
+  const [defineWarnings, setDefineWarnings] = useState<readonly string[]>([]);
+  const [defining, setDefining] = useState(false);
+  const competencyId = define.competency !== '' ? define.competency : define.typedCompetency.trim();
+  const defineValid =
+    AUTHORED_CODE_PATTERN.test(define.code) &&
+    define.title.trim() !== '' &&
+    Array.from(define.title).length <= 200 &&
+    ID_PATTERN.test(competencyId) &&
+    define.task.trim() !== '';
 
   const listed = list.data?.attempts ?? [];
   const finalized = finalize.result !== null && !isG9Error(finalize.result) ? finalize.result.result : null;
@@ -60,6 +115,8 @@ export function Assessments() {
   const scores: Readonly<Record<string, string>> = draft.attemptId !== null && draft.attemptId === selected?.attempt_id ? draft.values : {};
   const levels: (AnchoredLevel | null)[] = BASELINE_RUBRIC.map((c) => parseLevel(scores[c.code]));
   const allScored = levels.every((l) => l !== null);
+  // Evidence picked for the selected attempt only.
+  const picked: readonly string[] = pick.attemptId !== null && pick.attemptId === selected?.attempt_id ? pick.ids : [];
 
   const after = (r: InvokeResult<MutationOp>) => {
     setError(isG9Error(r) ? r : null);
@@ -77,7 +134,36 @@ export function Assessments() {
   };
   const submit = async (a: AttemptView) => {
     setBusy(true);
-    after(await client.invoke('assessment.submit', { attempt_id: a.attempt_id, evidence_refs: [] }, { expectedRevision: a.revision }));
+    const r = await client.invoke('assessment.submit', { attempt_id: a.attempt_id, evidence_refs: [...picked] }, { expectedRevision: a.revision });
+    if (!isG9Error(r)) {
+      setPick(NO_PICK);
+    }
+    after(r);
+  };
+  const togglePick = (attemptId: string, evidenceId: string, on: boolean) => {
+    const current = pick.attemptId === attemptId ? pick.ids : [];
+    setPick({ attemptId, ids: on ? [...current.filter((x) => x !== evidenceId), evidenceId] : current.filter((x) => x !== evidenceId) });
+  };
+  const defineAssessment = async () => {
+    setDefining(true);
+    const r = await client.invoke('assessment.define', {
+      code: define.code,
+      title: define.title.trim(),
+      kind: define.kind,
+      competency_id: competencyId,
+      task_statement: define.task.trim(),
+      difficulty: define.difficulty,
+    });
+    setDefineWarnings(warningsOf(r));
+    if (isG9Error(r)) {
+      setDefineError(r);
+    } else {
+      setDefineError(null);
+      setDefined(r.result);
+      setDefine(EMPTY_DEFINE);
+      list.reload();
+    }
+    setDefining(false);
   };
   const review = async (a: AttemptView) => {
     setBusy(true);
@@ -116,7 +202,7 @@ export function Assessments() {
       </p>
       {list.error !== null ? <ErrorDisplay error={list.error} onRetry={list.reload} /> : null}
       {error !== null ? <ErrorDisplay error={error} /> : null}
-      <Warnings warnings={mergeWarnings(list.warnings, actionWarnings, finalize.warnings)} />
+      <Warnings warnings={mergeWarnings(list.warnings, projection.warnings, evidence.warnings, actionWarnings, finalize.warnings, defineWarnings)} />
       <div className="grid-2">
         <div>
           <Panel title="Definitions">
@@ -176,6 +262,136 @@ export function Assessments() {
               />
             ) : null}
           </Panel>
+          <Panel title="Define an assessment">
+            <p className="muted">
+              Version 1 is written with the task statement, the difficulty you declare and the baseline rubric (six criteria); attempts run in EXAM mode. Custom
+              criteria are PROPOSED.
+            </p>
+            {projection.error !== null ? <ErrorDisplay error={projection.error} onRetry={projection.reload} /> : null}
+            <form
+              aria-label="Define an assessment"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (defineValid && !defining) {
+                  void defineAssessment();
+                }
+              }}
+            >
+              <div className="row">
+                <label htmlFor="define-code">Code</label>
+                <input
+                  id="define-code"
+                  type="text"
+                  required
+                  maxLength={32}
+                  placeholder="WCP-01"
+                  value={define.code}
+                  aria-invalid={define.code !== '' && !AUTHORED_CODE_PATTERN.test(define.code)}
+                  onChange={(e) => {
+                    setDefine({ ...define, code: e.target.value.toUpperCase() });
+                  }}
+                />
+                <label htmlFor="define-title">Title</label>
+                <input
+                  id="define-title"
+                  type="text"
+                  required
+                  maxLength={200}
+                  value={define.title}
+                  onChange={(e) => {
+                    setDefine({ ...define, title: e.target.value });
+                  }}
+                />
+              </div>
+              <div className="row">
+                <label htmlFor="define-kind">Kind</label>
+                <select
+                  id="define-kind"
+                  value={define.kind}
+                  onChange={(e) => {
+                    setDefine({ ...define, kind: e.target.value as AuthoredAssessmentKind });
+                  }}
+                >
+                  {AUTHORED_KINDS.map((k) => (
+                    <option key={k} value={k}>
+                      {sentenceCase(k)}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="define-difficulty">Difficulty</label>
+                <select
+                  id="define-difficulty"
+                  value={define.difficulty}
+                  onChange={(e) => {
+                    setDefine({ ...define, difficulty: Number(e.target.value) as Difficulty });
+                  }}
+                >
+                  {DIFFICULTIES.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="row">
+                <label htmlFor="define-competency">Competency</label>
+                <select
+                  id="define-competency"
+                  value={define.competency}
+                  onChange={(e) => {
+                    setDefine({ ...define, competency: e.target.value });
+                  }}
+                >
+                  <option value="">Type an id below…</option>
+                  {(projection.data?.projections ?? []).map((p) => (
+                    <option key={p.competency_id} value={p.competency_id}>
+                      {p.name} ({p.competency_id})
+                    </option>
+                  ))}
+                </select>
+                {define.competency === '' ? (
+                  <>
+                    <label htmlFor="define-competency-id">Competency id</label>
+                    <input
+                      id="define-competency-id"
+                      type="text"
+                      value={define.typedCompetency}
+                      aria-invalid={define.typedCompetency.trim() !== '' && !ID_PATTERN.test(define.typedCompetency.trim())}
+                      onChange={(e) => {
+                        setDefine({ ...define, typedCompetency: e.target.value });
+                      }}
+                    />
+                  </>
+                ) : null}
+              </div>
+              <div className="field">
+                <label htmlFor="define-task">Task statement</label>
+                <textarea
+                  id="define-task"
+                  required
+                  rows={3}
+                  maxLength={20000}
+                  value={define.task}
+                  onChange={(e) => {
+                    setDefine({ ...define, task: e.target.value });
+                  }}
+                />
+              </div>
+              <button type="submit" className="primary" disabled={!defineValid || defining}>
+                Define assessment
+              </button>
+            </form>
+            {defineError !== null ? <ErrorDisplay error={defineError} /> : null}
+            {defined !== null ? (
+              <div role="status" data-testid="assessment-defined">
+                <p>
+                  Defined <code>{defined.code}</code> “{defined.title}” (<code>{defined.assessment_id}</code>, version <code>{defined.version_id}</code>) for{' '}
+                  <code>{defined.competency_id}</code>: {sentenceCase(defined.kind)}, difficulty {defined.difficulty}. It is listed above under its code.
+                </p>
+                <p className="muted">Rubric criteria: {defined.criteria.join(', ')}.</p>
+              </div>
+            ) : null}
+          </Panel>
         </div>
         <div>
           {selected === undefined ? null : (
@@ -229,6 +445,40 @@ export function Assessments() {
                   Approve final
                 </button>
               </div>
+              {can(ASSESSMENT_MACHINE, selected.state, 'SUBMIT') ? (
+                <fieldset>
+                  <legend>Evidence for this submission</legend>
+                  <p className="muted">
+                    The newest evidence items: files you attached and notes you made evidence in the Learning Journal. Checked items go with Submit as the
+                    attempt&apos;s evidence ({picked.length} checked).
+                  </p>
+                  {evidence.error !== null ? <ErrorDisplay error={evidence.error} onRetry={evidence.reload} /> : null}
+                  {evidence.data !== null && evidence.data.items.length === 0 ? (
+                    <NoData reason="no evidence items yet; attach a file to a note or use a note as evidence in the Learning Journal" />
+                  ) : null}
+                  {(evidence.data?.items ?? []).map((item) => (
+                    <div className="row" key={item.evidence_id}>
+                      <input
+                        id={`pick-${item.evidence_id}`}
+                        type="checkbox"
+                        checked={picked.includes(item.evidence_id)}
+                        disabled={locked || item.invalidated}
+                        onChange={(e) => {
+                          togglePick(selected.attempt_id, item.evidence_id, e.target.checked);
+                        }}
+                      />
+                      <label htmlFor={`pick-${item.evidence_id}`}>
+                        {evidenceLabel(item)}
+                        {item.invalidated ? ' · invalidated (its content was erased)' : ''}
+                      </label>
+                      <code>{item.evidence_id}</code>
+                    </div>
+                  ))}
+                  <button type="button" disabled={evidence.loading} onClick={evidence.reload}>
+                    Refresh evidence list
+                  </button>
+                </fieldset>
+              ) : null}
               {can(ASSESSMENT_MACHINE, selected.state, 'GRADE_PROVISIONAL') ? (
                 <fieldset>
                   <legend>Reviewer scores (anchored levels 0–4, source HUMAN_REVIEWER)</legend>
@@ -283,6 +533,7 @@ export function Assessments() {
               )}
               {finalize.error !== null && finalize.error.category !== 'APPROVAL_REQUIRED' ? <ErrorDisplay error={finalize.error} /> : null}
               {finalize.error !== null && finalize.error.category === 'APPROVAL_REQUIRED' ? <ErrorDisplay error={finalize.error} /> : null}
+              {finalize.cancelled ? <ConfirmationCancelled /> : null}
               {finalize.approval !== null ? (
                 <ApprovalCard
                   approval={finalize.approval}

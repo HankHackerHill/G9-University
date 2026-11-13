@@ -3,6 +3,18 @@ import type { IanaZone } from '../../ipc/types';
 import { formatDateTime } from '../../lib/format';
 import { StateBadge } from './Badge';
 
+/**
+ * After a cancelled native confirmation (`approval.not_confirmed`): the operator's answer, not an
+ * error. Nothing was approved and the request stays pending until it is decided or expires.
+ */
+export function ConfirmationCancelled() {
+  return (
+    <p className="muted" role="status" data-testid="flow-confirmation-cancelled">
+      Nothing was approved: the confirmation was cancelled. The request stays pending until you decide it or it expires.
+    </p>
+  );
+}
+
 export interface ApprovalCardProps {
   approval: ApprovalRequest;
   zone: IanaZone;

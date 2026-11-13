@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_ATTACHMENT_BYTES } from '../../lib/attachment';
+import { sha256HexBytes } from '../../lib/sha256';
 import { createClient, isG9Error, type InvokeResult } from '../client';
-import { OPERATIONS, type CriterionResult, type GradeSource, type OperationName } from '../operations';
+import { OPERATIONS, type CriterionResult, type GradeSource, type OperationName, type RequestOf } from '../operations';
 import type { ClientCommandMeta } from '../types';
-import { BASELINE_CRITERIA, MOCK_DEFAULT_NOW, computeGrade, createMockClock, createMockTransport } from './mock';
+import { BASELINE_CRITERIA, MOCK_DEFAULT_NOW, MOCK_EXPORT_DIR, computeGrade, createMockClock, createMockTransport, type MockOptions } from './mock';
+import { encodeBase64 } from './mock-attachments';
 
-function harness() {
+function harness(options: Omit<MockOptions, 'clock'> = {}) {
   const clock = createMockClock();
-  const transport = createMockTransport({ clock });
+  const transport = createMockTransport({ ...options, clock });
   let n = 0;
   const client = createClient(transport, {
     now: () => clock.now(),
@@ -532,14 +535,16 @@ describe('mock transport: fidelity with g9-app (review findings)', () => {
     expect(consumed?.state).toBe('CONSUMED');
   });
 
-  it('emits the backend disclosure warnings: non-canonical daily plan, export not implemented', async () => {
+  it('emits the backend disclosure warnings: non-canonical daily plan; an approved export is READY and carries none', async () => {
     const { client } = harness();
     const plan = ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-18' }));
     expect(plan.warnings).toEqual(['curriculum.non_canonical: plan derived from a version that is not APPROVED_CANONICAL']);
     const need = err(await client.invoke('export.request', { domains: ['LEARNING'], format: 'JSON', include_private: false }));
     ok(await client.invoke('approvals.decide', { approval_id: need.approval_id ?? '', decision: 'APPROVE' }));
     const exported = ok(await client.invoke('export.request', { domains: ['LEARNING'], format: 'JSON', include_private: false }, { approvalId: need.approval_id ?? '' }));
-    expect(exported.warnings?.[0]).toMatch(/^export\.execution_not_implemented: .*no file was produced$/);
+    expect(exported.result.state).toBe('READY');
+    // `export.attachments_missing` is the only export warning; every attachment is in the mock store.
+    expect(exported.warnings).toBeUndefined();
     const status = ok(await client.invoke('system.status', {}));
     expect(status.warnings).toBeUndefined();
   });
@@ -636,5 +641,467 @@ describe('mock transport: grade decision -> competency observations (mirrors g9-
     for (const d of ['RECALL', 'UNDERSTANDING', 'APPLICATION', 'TRANSFER'] as const) {
       expect(untouched?.per_dimension[d]).toEqual({ score_estimate: null, n_unaided: 0, last_observed_at: null, uncertainty: null });
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Wave-2 operations: parity with g9-app (sessions.rs, calendar.rs, retention.rs, authoring.rs,
+// evidence.rs, privacy.rs) and their feature tests in crates/g9-app/tests/feature_*.rs.
+// ---------------------------------------------------------------------------
+
+const HOUR = 3_600_000;
+const DAY = 86_400_000;
+const WEEK = { from: Date.UTC(2026, 10, 16), to: Date.UTC(2026, 10, 23) };
+const utf8 = (text: string) => new TextEncoder().encode(text);
+
+type Client = ReturnType<typeof harness>['client'];
+
+/** Request, approve (native confirmation answered yes) and return the approval id. */
+async function approvalFor(client: Client, refused: InvokeResult<OperationName>): Promise<string> {
+  const need = err(refused);
+  expect(need.category).toBe('APPROVAL_REQUIRED');
+  const approvalId = need.approval_id ?? '';
+  ok(await client.invoke('approvals.decide', { approval_id: approvalId, decision: 'APPROVE' }));
+  return approvalId;
+}
+
+async function approvalState(client: Client, approvalId: string) {
+  return ok(await client.invoke('approvals.list', {})).result.approvals.find((a) => a.approval_id === approvalId);
+}
+
+describe('mock transport: session.create', () => {
+  it('plans an UNLINKED session that runs like any other and is listed on the date of its planned start', async () => {
+    const { client, clock } = harness();
+    const created = ok(await client.invoke('session.create', { planned_minutes: 45 }));
+    expect(created.result).toMatchObject({ state: 'PLANNED', day_id: 'UNLINKED', block: 'UNLINKED', block_seq: 1, planned_ms: 45 * 60_000, credited_ms: 0, revision: 1 });
+    expect(created.revision).toBe(1);
+    const id = created.result.session_id;
+    ok(await client.invoke('session.prepare', { session_id: id }));
+    ok(await client.invoke('session.start', { session_id: id }));
+    clock.advance(20 * 60_000);
+    ok(await client.invoke('session.complete', { session_id: id }));
+    const listed = ok(await client.invoke('session.list', {})).result.sessions.find((s) => s.session_id === id);
+    expect(listed).toMatchObject({ state: 'COMPLETED', credited_ms: 20 * 60_000 });
+
+    const tomorrow = ok(
+      await client.invoke('session.create', { planned_minutes: 30, planned_start: Date.UTC(2026, 10, 19, 9, 0), mode: 'REVIEW', objective_id: 'D15-O1' }),
+    ).result;
+    expect(ok(await client.invoke('session.list', { date: '2026-11-19' })).result.sessions.map((s) => s.session_id)).toContain(tomorrow.session_id);
+    expect(ok(await client.invoke('session.list', { date: '2026-11-18' })).result.sessions.map((s) => s.session_id)).not.toContain(tomorrow.session_id);
+  });
+
+  it('refuses EXAM mode and out-of-range minutes at the boundary and an unknown objective as NOT_FOUND', async () => {
+    const { client } = harness();
+    const exam = { planned_minutes: 30, mode: 'EXAM' } as unknown as RequestOf<'session.create'>;
+    expect(err(await client.invoke('session.create', exam)).category).toBe('INVALID_INPUT');
+    expect(err(await client.invoke('session.create', { planned_minutes: 601 })).category).toBe('INVALID_INPUT');
+    expect(err(await client.invoke('session.create', { planned_minutes: 0 })).category).toBe('INVALID_INPUT');
+    expect(err(await client.invoke('session.create', { planned_minutes: 30, objective_id: 'NO-SUCH-OBJECTIVE' }))).toMatchObject({
+      category: 'NOT_FOUND',
+      code: 'objective.not_found',
+    });
+  });
+});
+
+describe('mock transport: calendar events the operator adds', () => {
+  it('creates, moves and lists an OPERATOR event; a stale expected revision is refused', async () => {
+    const { client } = harness();
+    const start = Date.UTC(2026, 10, 19, 9, 0);
+    const created = ok(await client.invoke('calendar.create_event', { title: '  Dentist ', kind: 'APPOINTMENT', start, end: start + HOUR }));
+    expect(created.result).toMatchObject({ title: 'Dentist', kind: 'APPOINTMENT', provenance: 'OPERATOR', immutable: false, all_day: false, adjusted: null, day_id: null });
+    expect(created.revision).toBe(1);
+    const id = created.result.event_id;
+    expect(ok(await client.invoke('calendar.list', WEEK)).result.events.some((e) => e.event_id === id)).toBe(true);
+    const moved = ok(await client.invoke('calendar.update_event', { event_id: id, title: 'Dentist (moved)', start: start + 2 * HOUR, end: start + 3 * HOUR }, { expectedRevision: 1 }));
+    expect(moved.result).toMatchObject({ title: 'Dentist (moved)', kind: 'APPOINTMENT', start: start + 2 * HOUR, end: start + 3 * HOUR });
+    expect(moved.revision).toBe(2);
+    expect(err(await client.invoke('calendar.update_event', { event_id: id, title: 'again' }, { expectedRevision: 1 })).category).toBe('STALE_REVISION');
+    expect(err(await client.invoke('calendar.update_event', { event_id: id, start: start + 4 * HOUR })).code).toBe('calendar.event_range_invalid');
+  });
+
+  it('deletes an added event only with a DATA_DELETE approval bound to its stored revision, consumed once', async () => {
+    const { client } = harness();
+    const start = Date.UTC(2026, 10, 20, 14, 0);
+    const id = ok(await client.invoke('calendar.create_event', { title: 'Temporary', kind: 'REVIEW', start, end: start + HOUR })).result.event_id;
+    // A request from a stale view gets no approval at all.
+    expect(err(await client.invoke('calendar.delete_event', { event_id: id }, { expectedRevision: 3 })).category).toBe('STALE_REVISION');
+    expect(ok(await client.invoke('approvals.list', { state: 'PENDING' })).result.approvals).toHaveLength(0);
+    const first = await client.invoke('calendar.delete_event', { event_id: id }, { expectedRevision: 1 });
+    expect(err(first).details).toMatchObject({ required_capability: 'DATA_DELETE' });
+    const approvalId = await approvalFor(client, first);
+    expect(await approvalState(client, approvalId)).toMatchObject({
+      operation_name: 'calendar.delete_event',
+      expected_revision: 1,
+      operation: { action: 'DELETE', resource: { kind: 'CALENDAR_EVENT', id } },
+      summary: `calendar.delete_event: CALENDAR_EVENT ${id} (requires DATA_DELETE)`,
+    });
+    const deleted = ok(await client.invoke('calendar.delete_event', { event_id: id }, { approvalId, expectedRevision: 1 }));
+    expect(deleted.result).toEqual({ event_id: id, deleted: true });
+    expect(deleted.revision).toBeUndefined();
+    expect(ok(await client.invoke('calendar.list', WEEK)).result.events.some((e) => e.event_id === id)).toBe(false);
+    expect((await approvalState(client, approvalId))?.state).toBe('CONSUMED');
+  });
+
+  it('refuses an approval when the event changed between grant and use, and leaves it unspent', async () => {
+    const { client } = harness();
+    const start = Date.UTC(2026, 10, 20, 16, 0);
+    const id = ok(await client.invoke('calendar.create_event', { title: 'Moving target', kind: 'STUDY_BLOCK', start, end: start + HOUR })).result.event_id;
+    const approvalId = await approvalFor(client, await client.invoke('calendar.delete_event', { event_id: id }));
+    ok(await client.invoke('calendar.update_event', { event_id: id, title: 'Moved after the grant' }));
+    const refused = err(await client.invoke('calendar.delete_event', { event_id: id }, { approvalId }));
+    expect(refused).toMatchObject({ category: 'STALE_REVISION', code: 'approval.revision_mismatch', details: { expected: 2, bound: 1 } });
+    expect((await approvalState(client, approvalId))?.state).toBe('APPROVED');
+  });
+
+  it('refuses invalid ranges and leaves curriculum, scheduler and immutable events alone, as calendar.rs does', async () => {
+    const { client } = harness();
+    const start = Date.UTC(2026, 10, 19, 9, 0);
+    expect(err(await client.invoke('calendar.create_event', { title: 'x', kind: 'REVIEW', start, end: start - 1 }))).toMatchObject({
+      category: 'INVALID_INPUT',
+      code: 'calendar.event_range_invalid',
+    });
+    expect(err(await client.invoke('calendar.create_event', { title: 'x', kind: 'REVIEW', start, end: start + 8 * DAY })).code).toBe('calendar.event_too_long');
+    expect(err(await client.invoke('calendar.update_event', { event_id: 'mock-event-missing', title: 'x' })).code).toBe('calendar.event_not_found');
+    // A curriculum study block (SYSTEM_DETERMINISTIC): not editable; its deletion is refused after
+    // the approval, which the rolled-back command does not spend.
+    const block = 'mock-event-D15-2';
+    expect(err(await client.invoke('calendar.update_event', { event_id: block, title: 'mine now' })).code).toBe('calendar.event_not_editable');
+    const approvalId = await approvalFor(client, await client.invoke('calendar.delete_event', { event_id: block }));
+    expect(err(await client.invoke('calendar.delete_event', { event_id: block }, { approvalId })).code).toBe('calendar.event_not_editable');
+    expect((await approvalState(client, approvalId))?.state).toBe('APPROVED');
+    // Immutable slots (protected rest, the assessment block) are denied by policy before any approval.
+    expect(err(await client.invoke('calendar.delete_event', { event_id: 'mock-event-rest-sunday' }))).toMatchObject({
+      category: 'UNAUTHORIZED',
+      code: 'policy.denied',
+      details: { rule_id: 'immutable.finalized.deny', action: 'DELETE', resource_kind: 'CALENDAR_EVENT' },
+    });
+    expect(err(await client.invoke('calendar.update_event', { event_id: 'mock-event-D18-1', title: 'x' })).code).toBe('policy.denied');
+    // Events a schedule proposal created come from the scheduler: listed SYSTEM_DETERMINISTIC.
+    const proposal = ok(await client.invoke('calendar.propose', { from: MOCK_DEFAULT_NOW, to: MOCK_DEFAULT_NOW + 7 * DAY, intent: 'ADD_REVIEWS' })).result;
+    const applyId = await approvalFor(client, await client.invoke('calendar.apply', { proposal_id: proposal.proposal_id }));
+    const applied = ok(await client.invoke('calendar.apply', { proposal_id: proposal.proposal_id }, { approvalId: applyId })).result.events;
+    const listed = ok(await client.invoke('calendar.list', { from: MOCK_DEFAULT_NOW, to: MOCK_DEFAULT_NOW + 7 * DAY })).result.events;
+    const created = listed.filter((e) => applied.some((a) => a.event_id === e.event_id));
+    expect(created.length).toBeGreaterThan(0);
+    expect(created.every((e) => e.provenance === 'SYSTEM_DETERMINISTIC')).toBe(true);
+  });
+});
+
+describe('mock transport: review items and the baseline ladder (g9-retention BaselineSchedule)', () => {
+  it('a new item is due a day later at stage 0; successes climb 1, 3, 7 days; a failure resets; a skip moves nothing', async () => {
+    const { client, clock } = harness();
+    const created = ok(await client.invoke('retention.create_item', { prompt: ' What does HSTS prevent? ', answer: 'Protocol downgrade to plain HTTP.' }));
+    expect(created.result).toMatchObject({
+      prompt: 'What does HSTS prevent?',
+      kind: 'DECLARATIVE',
+      due_at: MOCK_DEFAULT_NOW + DAY,
+      offset_days: 1,
+      last_success_at: null,
+      competency_id: null,
+      objective_id: null,
+      estimated_ms: 180_000,
+    });
+    const id = created.result.review_item_id;
+    const before = ok(await client.invoke('retention.due', {})).result;
+    expect([...before.overdue, ...before.due, ...before.overflow].some((i) => i.review_item_id === id)).toBe(false);
+    clock.advance(DAY);
+    const due = ok(await client.invoke('retention.due', {})).result;
+    expect([...due.overdue, ...due.due, ...due.overflow].some((i) => i.review_item_id === id)).toBe(true);
+
+    const record = async (outcome: 'SUCCESS' | 'FAILURE' | 'SKIPPED') => ok(await client.invoke('retention.record_review', { review_item_id: id, outcome }));
+    const first = await record('SUCCESS');
+    expect(first.result).toEqual({ review_item_id: id, outcome: 'SUCCESS', stage: 1, offset_days: 1, due_at: clock.now() + DAY });
+    clock.advance(DAY);
+    expect((await record('SUCCESS')).result).toMatchObject({ stage: 2, offset_days: 3, due_at: clock.now() + 3 * DAY });
+    clock.advance(3 * DAY);
+    expect((await record('SUCCESS')).result).toMatchObject({ stage: 3, offset_days: 7, due_at: clock.now() + 7 * DAY });
+    const failed = await record('FAILURE');
+    expect(failed.result).toMatchObject({ stage: 0, offset_days: 1, due_at: clock.now() + DAY });
+    clock.advance(HOUR);
+    const skipped = await record('SKIPPED');
+    expect(skipped.result).toEqual({ review_item_id: id, outcome: 'SKIPPED', stage: 0, offset_days: 1, due_at: failed.result.due_at });
+    expect(skipped.revision).toBe(failed.revision);
+  });
+
+  it('records a fixture item from the due queue and moves it out of the queue', async () => {
+    const { client } = harness();
+    const before = ok(await client.invoke('retention.due', {})).result;
+    const item = before.due[0];
+    if (item === undefined) {
+      throw new Error('fixture has nothing due today');
+    }
+    const recorded = ok(await client.invoke('retention.record_review', { review_item_id: item.review_item_id, outcome: 'SUCCESS' })).result;
+    expect(recorded).toMatchObject({ stage: 1, offset_days: 1, due_at: MOCK_DEFAULT_NOW + DAY });
+    const after = ok(await client.invoke('retention.due', {})).result;
+    expect([...after.overdue, ...after.due, ...after.overflow].some((i) => i.review_item_id === item.review_item_id)).toBe(false);
+    // The overflow item moves into the budget.
+    expect(after.overflow).toHaveLength(0);
+  });
+
+  it('lists a PROCEDURAL item as PRACTICAL_TRANSFER with the backend warning; unknown items and competencies are NOT_FOUND', async () => {
+    const { client, clock } = harness();
+    const procedural = ok(await client.invoke('retention.create_item', { prompt: 'Rotate the TLS key', kind: 'PROCEDURAL', competency_id: 'mock-competency-D13' })).result;
+    expect(procedural).toMatchObject({ kind: 'PRACTICAL_TRANSFER', competency_id: 'mock-competency-D13' });
+    clock.advance(DAY);
+    const due = ok(await client.invoke('retention.due', {}));
+    expect(due.warnings).toEqual([expect.stringMatching(/^retention\.due\.procedural_label: 1 PROCEDURAL review item\(s\) /)]);
+    expect(err(await client.invoke('retention.record_review', { review_item_id: 'mock-review-missing', outcome: 'SUCCESS' })).code).toBe('retention.item_not_found');
+    expect(err(await client.invoke('retention.create_item', { prompt: 'x', competency_id: 'comp-missing' })).code).toBe('competency.not_found');
+  });
+});
+
+describe('mock transport: authoring (competency.create, assessment.define)', () => {
+  it('authors a competency and an assessment usable end to end; codes are unique; an unknown competency is NOT_FOUND', async () => {
+    const { client } = harness();
+    const comp = ok(await client.invoke('competency.create', { code: 'WCP', title: ' Web cache poisoning ', validity_days: 120 })).result;
+    expect(comp).toMatchObject({ code: 'WCP', title: 'Web cache poisoning', validity_days: 120 });
+    expect(err(await client.invoke('competency.create', { code: 'WCP', title: 'again' }))).toMatchObject({ category: 'CONFLICT', code: 'storage.unique_violation' });
+    expect(err(await client.invoke('competency.create', { code: 'BLANK', title: '   ' })).code).toBe('competency.invalid');
+    expect(err(await client.invoke('competency.create', { code: 'lower', title: 'x' })).category).toBe('INVALID_INPUT');
+    expect(ok(await client.invoke('competency.create', { code: 'DEF', title: 'Default validity' })).result.validity_days).toBe(180);
+    const listedComp = ok(await client.invoke('competency.projection', { competency_id: comp.competency_id })).result.projections[0];
+    expect(listedComp).toMatchObject({ name: 'Web cache poisoning', state: 'UNASSESSED', evidence_refs: [] });
+
+    const definition = {
+      code: 'WCP-01',
+      title: 'Poison a cache key',
+      kind: 'BLIND_PRACTICAL' as const,
+      competency_id: comp.competency_id,
+      task_statement: 'Find an unkeyed header that changes the cached response.',
+      difficulty: 4 as const,
+    };
+    expect(err(await client.invoke('assessment.define', { ...definition, competency_id: 'comp-missing' }))).toMatchObject({
+      category: 'NOT_FOUND',
+      code: 'competency.not_found',
+    });
+    const defined = ok(await client.invoke('assessment.define', definition)).result;
+    expect(defined).toMatchObject({ code: 'WCP-01', title: 'Poison a cache key', kind: 'BLIND_PRACTICAL', competency_id: comp.competency_id, difficulty: 4 });
+    expect(defined.version_id).toBe(`${defined.assessment_id}:v1`);
+    expect(defined.criteria).toEqual(BASELINE_CRITERIA.map((c) => c.code));
+    expect(err(await client.invoke('assessment.define', definition)).code).toBe('storage.unique_violation');
+    const listed = ok(await client.invoke('assessment.list', {})).result.definitions.find((d) => d.assessment_id === defined.assessment_id);
+    expect(listed).toEqual({ assessment_id: defined.assessment_id, title: 'Poison a cache key', day_id: 'WCP-01', mode: 'EXAM' });
+
+    // The finalized attempt feeds the authored competency with the declared difficulty (no warning).
+    const attempt = ok(await client.invoke('assessment.begin', { assessment_id: defined.assessment_id })).result.attempt_id;
+    ok(await client.invoke('assessment.submit', { attempt_id: attempt, evidence_refs: [] }));
+    ok(await client.invoke('assessment.review_evidence', { attempt_id: attempt }));
+    const criteria = BASELINE_CRITERIA.map((c) => ({ criterion_code: c.code, score: 4 as const, source: 'HUMAN_REVIEWER' as const, evidence_refs: [] }));
+    ok(await client.invoke('assessment.grade_provisional', { attempt_id: attempt, criteria }));
+    const finalId = await approvalFor(client, await client.invoke('assessment.approve_final', { attempt_id: attempt }));
+    const final = ok(await client.invoke('assessment.approve_final', { attempt_id: attempt }, { approvalId: finalId }));
+    expect(final.warnings).toBeUndefined();
+    const projected = ok(await client.invoke('competency.projection', { competency_id: comp.competency_id })).result.projections[0];
+    expect(projected).toMatchObject({ state: 'GUIDED', provisional: true });
+    expect(projected?.per_dimension.APPLICATION).toMatchObject({ score_estimate: 100, n_unaided: 1 });
+  });
+});
+
+describe('mock transport: evidence (attach_file, from_note, list)', () => {
+  it('stores bytes by content (identical bytes once), lists a note\'s evidence oldest first and the newest items first', async () => {
+    const { client } = harness();
+    const note = ok(await client.invoke('notes.create', { title: 'Cache poisoning lab', body_markdown: 'Lab write-up.', classification: 'INTERNAL', domain: 'LEARNING' })).result;
+    const bytes = utf8('# Findings\n\nX-Forwarded-Host is unkeyed.\n');
+    const payload = { note_id: note.note_id, filename: 'findings.md', media_type: 'text/markdown' as const, content_base64: encodeBase64(bytes) };
+    const first = ok(await client.invoke('evidence.attach_file', payload)).result;
+    expect(first).toMatchObject({ note_id: note.note_id, filename: 'findings.md', media_type: 'text/markdown', size_bytes: bytes.length, sha256: sha256HexBytes(bytes), already_stored: false });
+    const again = ok(await client.invoke('evidence.attach_file', { ...payload, filename: ' copy.md ' })).result;
+    expect(again).toMatchObject({ filename: 'copy.md', sha256: first.sha256, already_stored: true });
+    expect(again.attachment_id).not.toBe(first.attachment_id);
+    const fromNote = ok(await client.invoke('evidence.from_note', { note_id: note.note_id })).result;
+    expect(fromNote).toMatchObject({ kind: 'NOTE', note_id: note.note_id, summary: 'Cache poisoning lab' });
+
+    const listed = ok(await client.invoke('evidence.list', { note_id: note.note_id })).result.items;
+    expect(listed.map((i) => [i.kind, i.filename])).toEqual([
+      ['ATTACHMENT', 'findings.md'],
+      ['ATTACHMENT', 'copy.md'],
+      ['NOTE', null],
+    ]);
+    expect(listed[0]).toMatchObject({ evidence_id: first.evidence_id, attachment_id: first.attachment_id, note_id: null, media_type: 'text/markdown', size_bytes: bytes.length, invalidated: false });
+    expect(listed[2]).toMatchObject({ evidence_id: fromNote.evidence_id, note_id: note.note_id, attachment_id: null, sha256: sha256HexBytes(utf8('Lab write-up.')) });
+    const recent = ok(await client.invoke('evidence.list', { limit: 2 })).result.items;
+    expect(recent.map((i) => i.evidence_id)).toEqual([fromNote.evidence_id, again.evidence_id]);
+    // An item of another domain's scope is not listed; an unknown note lists nothing.
+    expect(ok(await client.invoke('evidence.list', {}, { domain: 'BUSINESS' })).result.items).toHaveLength(0);
+    expect(ok(await client.invoke('evidence.list', { note_id: 'mock-note-missing' })).result.items).toHaveLength(0);
+
+    // The evidence goes into a submission; an id that names no evidence item is refused (foreign key).
+    const attempt = ok(await client.invoke('assessment.begin', { assessment_id: 'mock-assessment-D18' })).result.attempt_id;
+    expect(err(await client.invoke('assessment.submit', { attempt_id: attempt, evidence_refs: ['mock-evidence-missing'] })).code).toBe('storage.foreign_key');
+    expect(ok(await client.invoke('assessment.submit', { attempt_id: attempt, evidence_refs: [first.evidence_id, fromNote.evidence_id] })).result.state).toBe('SUBMITTED');
+  });
+
+  it('refuses executables, archives, mismatched types, bad base64 and file names, and oversized payloads; nothing is stored', async () => {
+    const { client } = harness();
+    const attach = async (filename: string, mediaType: RequestOf<'evidence.attach_file'>['media_type'], content: string) =>
+      err(await client.invoke('evidence.attach_file', { filename, media_type: mediaType, content_base64: content }));
+    const b64 = (bytes: number[] | string) => encodeBase64(typeof bytes === 'string' ? utf8(bytes) : new Uint8Array(bytes));
+    expect(await attach('tool', 'text/plain', b64([0x7f, 0x45, 0x4c, 0x46, 2, 1, 1, 0, 0x70]))).toMatchObject({
+      category: 'INVALID_INPUT',
+      code: 'attachment.refused',
+      message: 'ELF executable: executables, archives and packet captures are not stored; attach a written report instead',
+    });
+    expect((await attach('a.csv', 'text/csv', b64('PK\u0003\u0004rest'))).code).toBe('attachment.refused');
+    expect((await attach('a.json', 'application/json', b64([0x1f, 0x8b, 0x08]))).code).toBe('attachment.refused');
+    expect((await attach('cap.png', 'image/png', b64([0xd4, 0xc3, 0xb2, 0xa1, 2, 0, 4, 0]))).code).toBe('attachment.refused');
+    expect((await attach('report.md', 'text/markdown', b64('MZ is not a heading'))).code).toBe('attachment.refused');
+    expect(await attach('shot.png', 'image/png', b64('not a png at all'))).toMatchObject({
+      code: 'attachment.content_mismatch',
+      message: "the file's bytes do not match image/png; quarantine is not stored yet (PROPOSED), so it was not attached",
+    });
+    expect((await attach('scan.pdf', 'application/pdf', b64([0xff, 0xd8, 0xff, 0xe0]))).code).toBe('attachment.content_mismatch');
+    expect((await attach('a.json', 'application/json', b64('{not json'))).code).toBe('attachment.content_mismatch');
+    expect((await attach('bom.json', 'application/json', b64('﻿{}'))).code).toBe('attachment.content_mismatch');
+    expect((await attach('nul.txt', 'text/plain', b64('abc\u0000def'))).code).toBe('attachment.content_mismatch');
+    expect((await attach('latin1.txt', 'text/plain', b64([0x63, 0x61, 0x66, 0xe9]))).code).toBe('attachment.content_mismatch');
+    for (const bad of ['%%%%', 'aGkx=', 'aGl=', 'aG k=', 'aGk=aGk=']) {
+      expect((await attach('a.txt', 'text/plain', bad)).code, bad).toBe('attachment.content_invalid');
+    }
+    // Shorter than the request schema's minimum (4): refused at step 1.
+    expect((await attach('a.txt', 'text/plain', 'aGk')).code).toBe('ipc.payload_invalid');
+    for (const name of ['../../etc/passwd', 'a\\b', '..', '   ', 'tab\there', 'x'.repeat(256)]) {
+      expect((await attach(name, 'text/plain', b64('x'))).code, name).toBe(name === 'x'.repeat(256) ? 'ipc.payload_invalid' : 'attachment.filename_invalid');
+    }
+    // 255 characters but more than 255 UTF-8 bytes.
+    expect((await attach('é'.repeat(200), 'text/plain', b64('x'))).code).toBe('attachment.filename_invalid');
+    // The schema allows ceil(16 MiB / 3) * 4 characters: unpadded, that decodes to 16 MiB + 2 bytes.
+    const atSchemaLimit = 'A'.repeat(Math.ceil(MAX_ATTACHMENT_BYTES / 3) * 4);
+    expect(await attach('big.txt', 'text/plain', atSchemaLimit)).toMatchObject({
+      code: 'attachment.too_large',
+      message: `a file attached through the app is at most ${MAX_ATTACHMENT_BYTES} bytes`,
+    });
+    expect((await attach('big.txt', 'text/plain', `${atSchemaLimit}AAAA`)).code).toBe('ipc.payload_invalid');
+    expect(ok(await client.invoke('evidence.list', {})).result.items).toHaveLength(0);
+    // The same bytes with a matching type are accepted and were not "already stored".
+    expect(ok(await client.invoke('evidence.attach_file', { filename: 'ok.txt', media_type: 'text/plain', content_base64: b64('plain bytes') })).result.already_stored).toBe(false);
+  });
+
+  it('a file on a SECURITY_SENSITIVE note needs a PROTECTED_RECORD_WRITE approval in that domain, granted for the attachment id', async () => {
+    const { client } = harness();
+    const scope = { domain: 'SECURITY_SENSITIVE' as const };
+    const notePayload = { title: 'Scope letter', body_markdown: 'Authorized targets.', classification: 'SECRET' as const, domain: 'SECURITY_SENSITIVE' as const };
+    const needNote = await client.invoke('notes.create', notePayload, scope);
+    expect(err(needNote).details).toMatchObject({ required_capability: 'PROTECTED_RECORD_WRITE' });
+    const noteApproval = await approvalFor(client, needNote);
+    const note = ok(await client.invoke('notes.create', notePayload, { ...scope, approvalId: noteApproval })).result;
+    expect(note.note_id).toBe((await approvalState(client, noteApproval))?.operation.resource.id);
+
+    const payload = { note_id: note.note_id, filename: 'letter.pdf', media_type: 'application/pdf' as const, content_base64: encodeBase64(utf8('%PDF-1.7\n...')) };
+    // The same bytes attached in the LEARNING scope are not "already stored" for another domain's scope.
+    expect(ok(await client.invoke('evidence.attach_file', { filename: 'copy.pdf', media_type: 'application/pdf', content_base64: payload.content_base64 })).result.already_stored).toBe(false);
+    // Read in the LEARNING scope, the note is a refused cross-domain read.
+    expect(err(await client.invoke('evidence.attach_file', payload))).toMatchObject({ category: 'UNAUTHORIZED', code: 'storage.cross_domain_read' });
+    const first = await client.invoke('evidence.attach_file', payload, scope);
+    expect(err(first).details).toMatchObject({ required_capability: 'PROTECTED_RECORD_WRITE' });
+    const approvalId = await approvalFor(client, first);
+    const attached = ok(await client.invoke('evidence.attach_file', payload, { ...scope, approvalId })).result;
+    expect(attached).toMatchObject({ note_id: note.note_id, already_stored: false });
+    const approval = await approvalState(client, approvalId);
+    expect(approval?.operation.resource).toEqual({ kind: 'ATTACHMENT', id: attached.attachment_id });
+    expect(approval?.state).toBe('CONSUMED');
+    expect(ok(await client.invoke('evidence.list', { note_id: note.note_id }, scope)).result.items.map((i) => i.attachment_id)).toEqual([attached.attachment_id]);
+    // Making the note evidence needs the same approval in that domain.
+    expect(err(await client.invoke('evidence.from_note', { note_id: note.note_id }, scope)).category).toBe('APPROVAL_REQUIRED');
+  });
+
+  it('an erased note takes no attachment; its files and evidence items are erased and invalidated', async () => {
+    const { client } = harness();
+    const note = ok(await client.invoke('notes.create', { title: 'Diary', body_markdown: 'private', classification: 'PRIVATE', domain: 'LEARNING' })).result;
+    const payload = { note_id: note.note_id, filename: 'day.txt', media_type: 'text/plain' as const, content_base64: encodeBase64(utf8('dear diary')) };
+    ok(await client.invoke('evidence.attach_file', payload));
+    ok(await client.invoke('evidence.from_note', { note_id: note.note_id }));
+    const erase = { resource: { kind: 'NOTE' as const, id: note.note_id }, reason: 'no longer needed' };
+    const deletion = ok(await client.invoke('deletion.request', erase, { approvalId: await approvalFor(client, await client.invoke('deletion.request', erase)) }));
+    expect(deletion.result.state).toBe('APPLIED');
+    expect(deletion.warnings).toEqual(['deletion.attachment_bytes_not_purged: removing attachment files needs a FilesystemWrite approval; PROPOSED']);
+    expect(err(await client.invoke('evidence.attach_file', payload))).toMatchObject({ category: 'CONFLICT', code: 'note.erased' });
+    expect(err(await client.invoke('evidence.from_note', { note_id: note.note_id }))).toMatchObject({ category: 'CONFLICT', code: 'note.erased' });
+    const items = ok(await client.invoke('evidence.list', { note_id: note.note_id })).result.items;
+    expect(items).toHaveLength(2);
+    expect(items.every((i) => i.invalidated)).toBe(true);
+    expect(items.map((i) => i.filename)).toEqual([null, null]);
+    // The summaries repeated the file name and the note title: redacted with the items.
+    expect(items.map((i) => i.summary)).toEqual(['[REDACTED]', '[REDACTED]']);
+    expect(err(await client.invoke('evidence.attach_file', { ...payload, note_id: 'mock-note-missing' }))).toMatchObject({ category: 'NOT_FOUND', code: 'note.not_found' });
+    // `already_stored` consults non-erased attachments only: it never reveals erased content.
+    const unowned = { filename: payload.filename, media_type: payload.media_type, content_base64: payload.content_base64 };
+    expect(ok(await client.invoke('evidence.attach_file', unowned)).result.already_stored).toBe(false);
+  });
+
+  it('rebuilds an attach_file or from_note replay from the current rows (names and titles are not retained) and says so', async () => {
+    const { client } = harness();
+    const note = ok(await client.invoke('notes.create', { title: '  Lab\u0007 log\n', body_markdown: 'b', classification: 'INTERNAL', domain: 'LEARNING' })).result;
+    const payload = { note_id: note.note_id, filename: 'log.txt', media_type: 'text/plain' as const, content_base64: encodeBase64(utf8('log line')) };
+    const first = ok(await client.invoke('evidence.attach_file', payload, { idempotencyKey: 'attach-once' }));
+    expect(first.warnings).toBeUndefined();
+    const again = ok(await client.invoke('evidence.attach_file', payload, { idempotencyKey: 'attach-once' }));
+    expect(again).toMatchObject({ replayed: true, result: first.result });
+    expect(again.warnings).toEqual([expect.stringMatching(/^idempotency\.replay_rebuilt: names and titles are not retained/)]);
+    // evidence.rs `summary_of`: control characters become spaces, then the line is trimmed.
+    const made = ok(await client.invoke('evidence.from_note', { note_id: note.note_id }, { idempotencyKey: 'note-once' }));
+    expect(made.result.summary).toBe('Lab  log');
+    const madeAgain = ok(await client.invoke('evidence.from_note', { note_id: note.note_id }, { idempotencyKey: 'note-once' }));
+    expect(madeAgain).toMatchObject({ replayed: true, result: made.result });
+    expect(madeAgain.warnings).toHaveLength(1);
+    const blank = ok(await client.invoke('notes.create', { title: ' ', body_markdown: 'b', classification: 'INTERNAL', domain: 'LEARNING' })).result;
+    expect(ok(await client.invoke('evidence.from_note', { note_id: blank.note_id })).result.summary).toBe('Note');
+    // After the note is erased, the rebuilt replay shows the redacted file name.
+    const erase = { resource: { kind: 'NOTE' as const, id: note.note_id }, reason: 'erase' };
+    ok(await client.invoke('deletion.request', erase, { approvalId: await approvalFor(client, await client.invoke('deletion.request', erase)) }));
+    expect(ok(await client.invoke('evidence.attach_file', payload, { idempotencyKey: 'attach-once' })).result.filename).toBe('[REDACTED]');
+    expect(ok(await client.invoke('evidence.from_note', { note_id: note.note_id }, { idempotencyKey: 'note-once' })).result.summary).toBe('[REDACTED]');
+  });
+
+  it('without an attachment directory nothing is attached', async () => {
+    const { client } = harness({ attachmentDir: null });
+    const refused = err(await client.invoke('evidence.attach_file', { filename: 'a.txt', media_type: 'text/plain', content_base64: encodeBase64(utf8('x')) }));
+    expect(refused).toMatchObject({ category: 'PRECONDITION_FAILED', code: 'attachment.store_not_configured' });
+  });
+});
+
+describe('mock transport: export.request writes the export after approval', () => {
+  async function exported(client: Client, payload: RequestOf<'export.request'>) {
+    const approvalId = await approvalFor(client, await client.invoke('export.request', payload));
+    return ok(await client.invoke('export.request', payload, { approvalId }));
+  }
+
+  it('answers READY with the folder, counts and manifest hash; SECRET rows never, PRIVATE rows only with include_private', async () => {
+    const { client } = harness();
+    const shared = ok(await client.invoke('notes.create', { title: 'Shared lab', body_markdown: 'b', classification: 'INTERNAL', domain: 'LEARNING' })).result;
+    ok(await client.invoke('notes.create', { title: 'Private diary', body_markdown: 'b', classification: 'PRIVATE', domain: 'LEARNING' }));
+    ok(await client.invoke('notes.create', { title: 'Key material', body_markdown: 'b', classification: 'SECRET', domain: 'LEARNING' }));
+    ok(await client.invoke('evidence.attach_file', { note_id: shared.note_id, filename: 'summary.txt', media_type: 'text/plain', content_base64: encodeBase64(utf8('capture summary')) }));
+
+    const plain = await exported(client, { domains: ['LEARNING'], format: 'JSON', include_private: false });
+    expect(plain.result).toMatchObject({ state: 'READY', domains: ['LEARNING'], format: 'JSON', attachments: 1, files: 3, requested_at: MOCK_DEFAULT_NOW });
+    expect(plain.result.location).toBe(`${MOCK_EXPORT_DIR}/${plain.result.export_id}`);
+    expect(plain.result.manifest_sha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(plain.warnings).toBeUndefined();
+    const withPrivate = await exported(client, { domains: ['LEARNING'], format: 'JSON', include_private: true });
+    // The PRIVATE note and the PRIVATE fixture attempt are added; the SECRET note never is.
+    expect(withPrivate.result.rows - plain.result.rows).toBe(2);
+    const csv = await exported(client, { domains: ['LEARNING'], format: 'CSV', include_private: false });
+    expect(csv.result.rows).toBe(plain.result.rows);
+    expect(csv.result.files).toBeGreaterThan(plain.result.files);
+    expect(csv.result.manifest_sha256).not.toBe(plain.result.manifest_sha256);
+  });
+
+  it('labels the selection in domain order and binds the approval to it', async () => {
+    const { client } = harness();
+    const payload: RequestOf<'export.request'> = { domains: ['SYSTEM', 'LEARNING', 'LEARNING'], format: 'JSON', include_private: false };
+    const first = await client.invoke('export.request', payload);
+    const approvalId = await approvalFor(client, first);
+    // The resource names the selection, the privacy ceiling and the format (privacy.rs).
+    expect((await approvalState(client, approvalId))?.operation.resource).toEqual({ kind: 'EXPORT', id: 'export:LEARNING.SYSTEM:INTERNAL:JSON' });
+    const done = ok(await client.invoke('export.request', payload, { approvalId })).result;
+    expect(done.domains).toEqual(['LEARNING', 'SYSTEM']);
+  });
+
+  it('without an export directory the approval comes first; the approved retry is refused and the approval stays unspent', async () => {
+    const { client } = harness({ exportDir: null });
+    const payload: RequestOf<'export.request'> = { domains: ['LEARNING'], format: 'JSON', include_private: false };
+    const approvalId = await approvalFor(client, await client.invoke('export.request', payload));
+    expect(err(await client.invoke('export.request', payload, { approvalId }))).toMatchObject({ category: 'PRECONDITION_FAILED', code: 'export.dir_not_configured' });
+    expect((await approvalState(client, approvalId))?.state).toBe('APPROVED');
   });
 });

@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { isG9Error, type InvokeResult } from '../../ipc/client';
-import type { SessionView, TimeCorrection, TimeInterval } from '../../ipc/operations';
+import type { PlannedSessionMode, RequestOf, SessionView, TimeCorrection, TimeInterval } from '../../ipc/operations';
 import type { G9Error, SessionEvent } from '../../ipc/types';
+import { civilToUtc, parseLocalDateTime } from '../../lib/civil-time';
 import { formatDateTime, formatDuration, humanizeEnum } from '../../lib/format';
 import { SESSION_MACHINE, can, type SESSION_OPERATION_EVENTS } from '../../lib/state-machines';
 import { mergeWarnings, warningsOf } from '../../lib/warnings';
@@ -68,6 +69,14 @@ function intervalLength(i: TimeInterval): number {
   return i.end_utc === null ? 0 : Math.max(0, i.end_utc - i.start_utc);
 }
 
+const PLAN_MODES: readonly PlannedSessionMode[] = ['STUDY', 'LAB', 'REVIEW'];
+const OBJECTIVE_CODE = /^[A-Za-z0-9._:-]{1,128}$/;
+
+/** `session_view` labels a session that is not linked to a curriculum block `UNLINKED` (one you planned yourself). */
+export function blockLabel(session: SessionView): string {
+  return session.block === 'UNLINKED' ? 'planned by you, no curriculum block' : humanizeEnum(session.block);
+}
+
 export function SessionTracker() {
   const today = useToday();
   const client = useIpc();
@@ -86,6 +95,12 @@ export function SessionTracker() {
   const [actionWarnings, setActionWarnings] = useState<readonly string[]>([]);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const dialogId = useId();
+  // "Plan a session" form (session.create).
+  const [planMinutes, setPlanMinutes] = useState('45');
+  const [planStart, setPlanStart] = useState('');
+  const [planMode, setPlanMode] = useState<PlannedSessionMode>('STUDY');
+  const [planObjective, setPlanObjective] = useState('');
+  const [planned, setPlanned] = useState<SessionView | null>(null);
 
   const listed = sessions.data?.sessions ?? [];
   const list = fresh === null ? listed : listed.map((s) => (s.session_id === fresh.session_id && fresh.revision > s.revision ? fresh : s));
@@ -105,6 +120,14 @@ export function SessionTracker() {
   // Every control stays disabled while a mutation is in flight AND while the list revalidates:
   // a click in that window would carry the pre-mutation revision (STALE_REVISION).
   const locked = busy || sessions.loading;
+  // The plan form checks what the request schema checks; the backend decides the rest.
+  const minutes = /^\d{1,3}$/.test(planMinutes.trim()) ? Number(planMinutes.trim()) : Number.NaN;
+  const minutesValid = minutes >= 1 && minutes <= 600;
+  const startCivil = planStart === '' ? null : parseLocalDateTime(planStart);
+  const startResolved = startCivil === null ? null : civilToUtc(startCivil, today.zone);
+  const objective = planObjective.trim();
+  const objectiveValid = objective === '' || OBJECTIVE_CODE.test(objective);
+  const canPlan = !busy && today.status !== null && minutesValid && (planStart === '' || startCivil !== null) && objectiveValid;
 
   useEffect(() => {
     if (confirming) {
@@ -139,6 +162,28 @@ export function SessionTracker() {
     void send(op, session);
   };
 
+  const plan = async () => {
+    const payload: RequestOf<'session.create'> = {
+      planned_minutes: minutes,
+      mode: planMode,
+      ...(startResolved === null ? {} : { planned_start: startResolved.utc }),
+      ...(objective === '' ? {} : { objective_id: objective }),
+    };
+    setBusy(true);
+    const r = await client.invoke('session.create', payload);
+    setError(isG9Error(r) ? r : null);
+    setActionWarnings(warningsOf(r));
+    if (isG9Error(r)) {
+      setPlanned(null);
+    } else {
+      setPlanned(r.result);
+      setSelectedId(r.result.session_id);
+      setConfirmComplete(null);
+    }
+    setBusy(false);
+    sessions.reload();
+  };
+
   const correct = async (session: SessionView, interval: TimeInterval) => {
     setBusy(true);
     const r = await client.invoke(
@@ -165,47 +210,139 @@ export function SessionTracker() {
       {error !== null ? <ErrorDisplay error={error} /> : null}
       <Warnings warnings={mergeWarnings(sessions.warnings, actionWarnings)} />
       <div className="split">
-        <Panel title="Sessions">
-          {sessions.loading && sessions.data === null ? <Loading what="sessions" /> : null}
-          {list.length === 0 && !sessions.loading ? <NoData reason="no sessions are planned" /> : null}
-          {list.length > 0 ? (
-            <Table
-              caption="Planned and recorded sessions (backend timer ledger)"
-              headers={['Block', 'State', 'Credited', 'Uncertain', '']}
-              numeric={[2, 3]}
-              rows={list.map((s) => ({
-                key: s.session_id,
-                cells: [
-                  <span key="block">
-                    <code>{s.day_id}</code> {humanizeEnum(s.block)}
-                  </span>,
-                  <StateBadge state={s.state} />,
-                  formatDuration(s.credited_ms),
-                  formatDuration(s.uncertain_ms),
-                  <button
-                    type="button"
-                    aria-pressed={selected?.session_id === s.session_id}
-                    onClick={() => {
-                      setSelectedId(s.session_id);
-                      setError(null);
-                      setConfirmComplete(null);
-                      setActionWarnings([]);
-                    }}
-                  >
-                    Select
-                  </button>,
-                ],
-              }))}
-            />
-          ) : null}
-        </Panel>
+        <div>
+          <Panel title="Sessions">
+            {sessions.loading && sessions.data === null ? <Loading what="sessions" /> : null}
+            {list.length === 0 && !sessions.loading ? <NoData reason="no sessions are planned" /> : null}
+            {list.length > 0 ? (
+              <Table
+                caption="Planned and recorded sessions (backend timer ledger)"
+                headers={['Block', 'State', 'Credited', 'Uncertain', '']}
+                numeric={[2, 3]}
+                rows={list.map((s) => ({
+                  key: s.session_id,
+                  cells: [
+                    <span key="block">
+                      <code>{s.day_id}</code> {blockLabel(s)}
+                    </span>,
+                    <StateBadge state={s.state} />,
+                    formatDuration(s.credited_ms),
+                    formatDuration(s.uncertain_ms),
+                    <button
+                      type="button"
+                      aria-pressed={selected?.session_id === s.session_id}
+                      onClick={() => {
+                        setSelectedId(s.session_id);
+                        setError(null);
+                        setConfirmComplete(null);
+                        setActionWarnings([]);
+                      }}
+                    >
+                      Select
+                    </button>,
+                  ],
+                }))}
+              />
+            ) : null}
+          </Panel>
+          <Panel title="Plan a session">
+            <form
+              aria-label="Plan a session"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (canPlan) {
+                  void plan();
+                }
+              }}
+            >
+              <div className="row">
+                <label htmlFor="plan-minutes">Planned minutes</label>
+                <input
+                  id="plan-minutes"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={600}
+                  step={1}
+                  required
+                  value={planMinutes}
+                  aria-invalid={planMinutes !== '' && !minutesValid}
+                  aria-describedby="plan-minutes-hint"
+                  onChange={(e) => {
+                    setPlanMinutes(e.target.value);
+                  }}
+                />
+                <span id="plan-minutes-hint" className="field-hint">
+                  1 to 600
+                </span>
+              </div>
+              <div className="row">
+                <label htmlFor="plan-start">Start (optional)</label>
+                <input
+                  id="plan-start"
+                  type="datetime-local"
+                  value={planStart}
+                  aria-invalid={planStart !== '' && startCivil === null}
+                  aria-describedby="plan-start-hint"
+                  onChange={(e) => {
+                    setPlanStart(e.target.value);
+                  }}
+                />
+                <span id="plan-start-hint" className="field-hint">
+                  Local time in {today.zone}, the backend&apos;s zone; empty means now.
+                  {startResolved?.adjusted === 'GAP' ? ' This time does not exist on that day (clocks go forward); it was moved past the gap.' : ''}
+                  {startResolved?.adjusted === 'OVERLAP' ? ' This time occurs twice on that day (clocks go back); the earlier one is used.' : ''}
+                </span>
+              </div>
+              <div className="row">
+                <label htmlFor="plan-mode">Mode</label>
+                <select
+                  id="plan-mode"
+                  value={planMode}
+                  onChange={(e) => {
+                    setPlanMode(e.target.value as PlannedSessionMode);
+                  }}
+                >
+                  {PLAN_MODES.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="plan-objective">Objective code (optional)</label>
+                <input
+                  id="plan-objective"
+                  type="text"
+                  value={planObjective}
+                  placeholder="D15-O1"
+                  aria-invalid={!objectiveValid}
+                  onChange={(e) => {
+                    setPlanObjective(e.target.value);
+                  }}
+                />
+              </div>
+              <p className="field-hint">
+                The backend checks the objective against the imported curriculum. A session you plan is not tied to a curriculum block, so the list shows it as{' '}
+                <code>UNLINKED</code>; it runs like any other session.
+              </p>
+              <button type="submit" className="primary" disabled={!canPlan}>
+                Plan session
+              </button>
+              {planned !== null ? (
+                <p role="status" data-testid="planned-session">
+                  Planned <code>{planned.session_id}</code> · {formatDuration(planned.planned_ms)} · <StateBadge state={planned.state} />
+                </p>
+              ) : null}
+            </form>
+          </Panel>
+        </div>
         <div className="sticky">
           {selected === undefined ? (
             <Panel title="Session">
               <NoData reason="no session selected; choose one in the list" />
             </Panel>
           ) : (
-            <Panel title={`${selected.day_id}: ${humanizeEnum(selected.block)}`}>
+            <Panel title={`${selected.day_id}: ${blockLabel(selected)}`}>
               <p className="row">
                 <StateBadge state={selected.state} /> <span data-testid="revision">revision {selected.revision}</span>{' '}
                 {sessions.warnings.length === 0 ? <ProvenanceBadge label="VERIFIED" /> : <span className="muted">(read carries backend warnings, see above)</span>}

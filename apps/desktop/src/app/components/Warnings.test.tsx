@@ -7,7 +7,7 @@ import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { Warnings } from './Warnings';
 
-const EXPORT = 'export.execution_not_implemented: the per-domain export writer is PROPOSED; no file was produced';
+const EXPORT = 'export.attachments_missing: 1 attachment file(s) were missing or damaged in the store and are listed in manifest.json';
 const READ_ONLY = 'WARNING storage.migration_blocked: pre-migration backup failed; storage is read-only';
 
 describe('Warnings', () => {
@@ -27,7 +27,7 @@ describe('Warnings', () => {
     rerender(<Warnings warnings={[EXPORT, READ_ONLY, EXPORT]} />);
     // Same element as before the warnings arrived (not re-mounted), now carrying the summary.
     expect(screen.getByRole('status')).toBe(live);
-    expect(live).toHaveTextContent('2 backend warnings: export.execution_not_implemented, storage.migration_blocked');
+    expect(live).toHaveTextContent('2 backend warnings: export.attachments_missing, storage.migration_blocked');
     const region = screen.getByRole('region', { name: 'Backend warnings' });
     expect(region).toHaveAttribute('data-testid', 'outcome-warnings');
     expect(within(region).getByText(EXPORT)).toBeInTheDocument();

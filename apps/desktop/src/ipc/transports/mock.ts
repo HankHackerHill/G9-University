@@ -28,7 +28,8 @@ import {
   startOfDayUtc,
   type CivilDate,
 } from '../../lib/civil-time';
-import { sha256Hex } from '../../lib/sha256';
+import { ATTACHMENT_MEDIA_TYPES, MAX_ATTACHMENT_BYTES } from '../../lib/attachment';
+import { sha256Hex, sha256HexBytes } from '../../lib/sha256';
 import {
   APPROVAL_MACHINE,
   ASSESSMENT_MACHINE,
@@ -38,23 +39,34 @@ import {
   type TransitionTable,
 } from '../../lib/state-machines';
 import type { IpcTransport } from '../client';
-import { OPERATIONS, isOperationName, type OperationName, type ResponseOf } from '../operations';
+import { AUTHORED_CODE_PATTERN, OPERATIONS, isOperationName, type OperationName, type ResponseOf } from '../operations';
 import type {
   ApprovalRequest,
+  AssessmentDefined,
+  AttachmentMediaType,
+  AttachmentView,
   AttemptView,
   AuditEntry,
   BackupView,
   CalendarEvent,
+  CompetencyCreated,
   CompetencyProjection,
   CriterionResult,
   DailyPlan,
+  Difficulty,
+  EvidenceItemView,
+  ExportFormat,
+  ExportResult,
   GradeSource,
   GradeView,
   Intervention,
   LearningDimension,
   ManifestProvenance,
   NoteView,
+  OperatorEventKind,
   ReviewItem,
+  ReviewItemAuthoredKind,
+  ReviewRecord,
   ScheduleProposal,
   SessionView,
   SkillOutputEnvelope,
@@ -64,11 +76,13 @@ import type {
   Violation,
 } from '../operations';
 import type {
+  Action,
   Actor,
   ApprovalEvent,
   AssessmentEvent,
   BackupEvent,
   Capability,
+  Classification,
   ClientCommandMeta,
   CommandMeta,
   CommandOutcome,
@@ -87,6 +101,7 @@ import type {
   UtcMillis,
 } from '../types';
 import { CLASSIFICATIONS, DATA_DOMAINS, INTERACTION_MODES, RESOURCE_KINDS, SCHEMA_V1, schemaAccepts } from '../types';
+import { cleanFilename, consistentWith, decodeContent, refusedSignature, rustTrim } from './mock-attachments';
 
 // ---------------------------------------------------------------------------
 // Fixture shape
@@ -183,6 +198,14 @@ function fail(category: ErrorCategory, code: string, message: string, details?: 
   return new CommandFailure(error);
 }
 
+/**
+ * g9-app pipeline step 1 (`schemas::validate_request`): a payload that does not match its request
+ * schema is INVALID_INPUT `ipc.payload_invalid`, with the violations (JSON pointer and message).
+ */
+function schemaViolation(key: string, message: string): CommandFailure {
+  return fail('INVALID_INPUT', 'ipc.payload_invalid', 'payload does not match its schema', { violations: [{ path: `/${key}`, message }] });
+}
+
 // ---------------------------------------------------------------------------
 // Payload narrowing helpers (the mock validates like the backend's step 1)
 // ---------------------------------------------------------------------------
@@ -199,7 +222,7 @@ function asRecord(payload: unknown, op: string): Rec {
 function str(rec: Rec, key: string, op: string): string {
   const v = rec[key];
   if (typeof v !== 'string' || v.length === 0) {
-    throw fail('INVALID_INPUT', 'ipc.field_invalid', `${op}: '${key}' must be a non-empty string`, { field: key });
+    throw schemaViolation(key, `${op}: '${key}' must be a non-empty string`);
   }
   return v;
 }
@@ -211,7 +234,7 @@ function optStr(rec: Rec, key: string, op: string): string | undefined {
 function int(rec: Rec, key: string, op: string, min = Number.MIN_SAFE_INTEGER): number {
   const v = rec[key];
   if (typeof v !== 'number' || !Number.isInteger(v) || v < min) {
-    throw fail('INVALID_INPUT', 'ipc.field_invalid', `${op}: '${key}' must be an integer >= ${min}`, { field: key });
+    throw schemaViolation(key, `${op}: '${key}' must be an integer >= ${min}`);
   }
   return v;
 }
@@ -223,7 +246,7 @@ function optInt(rec: Rec, key: string, op: string, min = Number.MIN_SAFE_INTEGER
 function oneOf<T extends string>(rec: Rec, key: string, values: readonly T[], op: string): T {
   const v = rec[key];
   if (typeof v !== 'string' || !(values as readonly string[]).includes(v)) {
-    throw fail('INVALID_INPUT', 'ipc.field_invalid', `${op}: '${key}' must be one of ${values.join(', ')}`, { field: key });
+    throw schemaViolation(key, `${op}: '${key}' must be one of ${values.join(', ')}`);
   }
   return v as T;
 }
@@ -238,7 +261,7 @@ function strArray(rec: Rec, key: string, op: string, optional = false): string[]
     return [];
   }
   if (!Array.isArray(v) || !v.every((x) => typeof x === 'string')) {
-    throw fail('INVALID_INPUT', 'ipc.field_invalid', `${op}: '${key}' must be an array of strings`, { field: key });
+    throw schemaViolation(key, `${op}: '${key}' must be an array of strings`);
   }
   return v;
 }
@@ -262,7 +285,7 @@ function isJsonValue(v: unknown): v is JsonValue {
 function json(rec: Rec, key: string, op: string): JsonValue {
   const v = rec[key];
   if (v === undefined || !isJsonValue(v)) {
-    throw fail('INVALID_INPUT', 'ipc.field_invalid', `${op}: '${key}' must be a JSON value`, { field: key });
+    throw schemaViolation(key, `${op}: '${key}' must be a JSON value`);
   }
   return v;
 }
@@ -335,7 +358,24 @@ export interface MockOptions {
    * and leaves the approval pending, as the backend does when the dialog is cancelled.
    */
   confirmApproval?: (approvalId: Id) => boolean;
+  /**
+   * `AppConfig::attachment_dir`. Default: the desktop layout under the app data directory.
+   * `null` reproduces an install without one: `evidence.attach_file` answers
+   * `PRECONDITION_FAILED attachment.store_not_configured`.
+   */
+  attachmentDir?: string | null;
+  /**
+   * `AppConfig::export_dir`, the folder `export.request` writes into. Default: the desktop layout
+   * under the app data directory. `null` reproduces an install without one: the approved retry
+   * answers `PRECONDITION_FAILED export.dir_not_configured` and the approval is not spent.
+   */
+  exportDir?: string | null;
 }
+
+/** Tauri `app_data_dir()` of `com.g9.mentor` on Linux, for a user named `operator` (fixture value). */
+export const MOCK_DATA_DIR = '/home/operator/.local/share/com.g9.mentor';
+export const MOCK_ATTACHMENT_DIR = `${MOCK_DATA_DIR}/attachments`;
+export const MOCK_EXPORT_DIR = `${MOCK_DATA_DIR}/exports`;
 
 export interface MockTransport extends IpcTransport {
   readonly kind: 'mock';
@@ -380,8 +420,29 @@ class MockState {
   private readonly idempotency = new Map<string, IdempotencyRecord>();
   private readonly audit: AuditEntry[] = [];
   private events: CalendarEvent[] = [];
+  /** Stored revision of each calendar event (the event view carries none; absent = 1). */
+  private readonly eventRevisions = new Map<Id, Revision>();
+  /** `review_items` rows: fixture items seeded from the week, plus the ones the operator writes. */
+  private readonly reviewItems = new Map<Id, ReviewItemRecord>();
+  /** Competencies the operator created (`competency.create`); fixture competencies are derived. */
+  private readonly authoredCompetencies: AuthoredCompetency[] = [];
+  /** Competency each operator-defined assessment assesses (`assessment.define`). */
+  private readonly definitionCompetency = new Map<Id, Id>();
+  private readonly attachments = new Map<Id, AttachmentRecord>();
+  private readonly evidence = new Map<Id, EvidenceRecord>();
+  /** Notes erased by an approved `deletion.request` (their domain, for the scope check). */
+  private readonly erasedNotes = new Map<Id, DataDomain>();
+  private evidenceSeq = 0;
+  /**
+   * The approval the running command verified. It is consumed only when the command succeeds;
+   * a failure afterwards leaves it APPROVED (g9-app: the command transaction rolls back and the
+   * approval is not spent).
+   */
+  private pendingConsume: ApprovalRequest | null = null;
   private readonly undeclared: ReadonlySet<Id>;
   private readonly confirmApproval: (approvalId: Id) => boolean;
+  private readonly attachmentDir: string | null;
+  private readonly exportDir: string | null;
 
   constructor(options: MockOptions) {
     this.clock = options.clock ?? createMockClock();
@@ -389,6 +450,8 @@ class MockState {
     this.zone = options.zone ?? this.fixture.zone;
     this.undeclared = new Set(options.assessmentsWithoutDifficulty ?? []);
     this.confirmApproval = options.confirmApproval ?? (() => true);
+    this.attachmentDir = options.attachmentDir === undefined ? MOCK_ATTACHMENT_DIR : options.attachmentDir;
+    this.exportDir = options.exportDir === undefined ? MOCK_EXPORT_DIR : options.exportDir;
     this.seed();
   }
 
@@ -555,6 +618,8 @@ class MockState {
       });
     }
 
+    this.seedReviewItems();
+
     this.appendAudit({
       actor: { id: 'system', kind: { kind: 'SYSTEM' } },
       operation: 'mock.seed',
@@ -565,6 +630,43 @@ class MockState {
       trace_id: 'mock-seed',
       details: { fixture: this.fixture.curriculum_version_id, provenance: this.fixture.provenance },
     });
+  }
+
+  /**
+   * Fixture review queue: for every objective of a non-assessment day of the loaded week, one
+   * baseline-scheduled item per ladder offset (1, 3, 7, 21, 60 days after the lesson, 08:30
+   * local) at the stage of that offset. These are fixture rows, not a measurement; recording a
+   * review moves an item along the g9-retention ladder exactly as the backend does.
+   */
+  private seedReviewItems(): void {
+    for (const day of this.fixture.week.days) {
+      if (day.is_assessment_day) {
+        continue;
+      }
+      const date = this.dateOfDay(day);
+      for (const o of day.objectives) {
+        REVIEW_OFFSETS_DAYS.forEach((offset, stage) => {
+          const id = `mock-review-${o.objective_id}-${offset}`;
+          this.reviewItems.set(id, {
+            view: {
+              review_item_id: id,
+              competency_id: `mock-competency-${day.day_id}`,
+              objective_id: o.objective_id,
+              prompt: `Recall: ${o.text}`,
+              kind: 'DECLARATIVE',
+              due_at: civilToUtc({ ...addDays(date, offset), hour: 8, minute: 30 }, this.zone).utc,
+              last_success_at: null,
+              offset_days: offset,
+              estimated_ms: REVIEW_ITEM_MS,
+            },
+            authoredKind: 'DECLARATIVE',
+            stage,
+            revision: 1,
+            attempts: [],
+          });
+        });
+      }
+    }
   }
 
   // ----- audit chain -------------------------------------------------------
@@ -646,12 +748,14 @@ class MockState {
         if (hit.request_sha256 !== requestHash) {
           return fail('CONFLICT', 'idempotency.key_reused', 'idempotency key was used with a different request').error;
         }
-        return { ...hit.outcome, replayed: true };
+        return this.replay(opName, hit.outcome);
       }
     }
 
+    this.pendingConsume = null;
     try {
       const result = this.dispatch(opName, payload, meta);
+      this.consumePendingApproval();
       const outcome: CommandOutcome<unknown> = { result: result.result, replayed: false };
       if (result.revision !== undefined) {
         outcome.revision = result.revision;
@@ -676,6 +780,8 @@ class MockState {
       }
       return outcome;
     } catch (e: unknown) {
+      // Rolled back: an approval verified by the failed command is not spent.
+      this.pendingConsume = null;
       if (e instanceof CommandFailure) {
         if (spec.mutating) {
           this.appendAudit({
@@ -728,7 +834,7 @@ class MockState {
       case 'session.correct_time':
         return this.sessionCorrectTime(payload, meta);
       case 'notes.create':
-        return this.notesCreate(payload);
+        return this.notesCreate(payload, meta);
       case 'notes.revise':
         return this.notesRevise(payload, meta);
       case 'assessment.list':
@@ -746,7 +852,7 @@ class MockState {
       case 'competency.projection':
         return { result: this.competencyProjection(payload) };
       case 'retention.due':
-        return { result: this.retentionDue(payload) };
+        return this.retentionDue(payload);
       case 'interventions.list':
         return { result: this.interventionsList(payload) };
       case 'approvals.list':
@@ -767,11 +873,44 @@ class MockState {
         return this.exportRequest(payload, meta);
       case 'deletion.request':
         return this.deletionRequest(payload, meta);
+      case 'session.create':
+        return this.sessionCreate(payload);
+      case 'calendar.create_event':
+        return this.calendarCreateEvent(payload);
+      case 'calendar.update_event':
+        return this.calendarUpdateEvent(payload, meta);
+      case 'calendar.delete_event':
+        return this.calendarDeleteEvent(payload, meta);
+      case 'retention.create_item':
+        return this.retentionCreateItem(payload);
+      case 'retention.record_review':
+        return this.retentionRecordReview(payload, meta);
+      case 'competency.create':
+        return this.competencyCreate(payload);
+      case 'assessment.define':
+        return this.assessmentDefine(payload);
+      case 'evidence.attach_file':
+        return this.evidenceAttachFile(payload, meta);
+      case 'evidence.from_note':
+        return this.evidenceFromNote(payload, meta);
+      case 'evidence.list':
+        return { result: this.evidenceList(payload, meta) };
     }
   }
 
   // ----- approvals (steps 3–4) ------------------------------------------------
 
+  /**
+   * Steps 3–4 for an approval-gated command. Without `meta.approval_id` a PENDING request is
+   * stored and APPROVAL_REQUIRED thrown. With one, the approval is verified and remembered; it is
+   * consumed only when the command succeeds (`consumePendingApproval`), so a later failure leaves
+   * it APPROVED, as the backend's rolled-back transaction does.
+   *
+   * `storedRevision` (an existing resource) binds the approval to the stored revision the way
+   * g9-app does (ADR-0003, SEC-02): a request from a stale view gets no approval
+   * (STALE_REVISION), and a resource changed between grant and use refuses the approval
+   * (`approval.revision_mismatch`). Without it the client's `expected_revision` is bound.
+   */
   private requireApproval(
     op: OperationName,
     payload: JsonValue,
@@ -779,9 +918,13 @@ class MockState {
     capability: Capability,
     meta: CommandMeta,
     summary: string,
+    storedRevision?: Revision,
   ): ApprovalRequest {
     const hash = sha256Hex(canonicalJson({ operation: op, payload }));
     if (meta.approval_id === undefined) {
+      if (storedRevision !== undefined) {
+        this.checkRevision(meta, storedRevision);
+      }
       const approval: ApprovalRequest = {
         approval_id: this.nextId('approval'),
         state: 'PENDING',
@@ -790,7 +933,7 @@ class MockState {
         requested_by: meta.actor.id,
         requested_at: this.now(),
         expires_at: this.now() + APPROVAL_TTL_MS,
-        expected_revision: meta.expected_revision ?? null,
+        expected_revision: storedRevision ?? meta.expected_revision ?? null,
         decided_at: null,
         consumed_at: null,
         summary,
@@ -822,12 +965,99 @@ class MockState {
         approval_id: approval.approval_id,
       });
     }
-    if (approval.expected_revision !== null && meta.expected_revision !== undefined && approval.expected_revision !== meta.expected_revision) {
+    if (storedRevision !== undefined) {
+      if (approval.expected_revision !== storedRevision) {
+        throw fail(
+          'STALE_REVISION',
+          'approval.revision_mismatch',
+          `approval is bound to expected revision ${approval.expected_revision ?? 'none'}; the operation carries ${storedRevision}`,
+          { expected: storedRevision, bound: approval.expected_revision },
+        );
+      }
+    } else if (approval.expected_revision !== null && meta.expected_revision !== undefined && approval.expected_revision !== meta.expected_revision) {
       throw fail('UNAUTHORIZED', 'approval.binding_mismatch', 'approval is bound to a different expected revision');
     }
-    this.applyApprovalEvent(approval, 'CONSUME');
-    approval.consumed_at = this.now();
+    this.pendingConsume = approval;
     return approval;
+  }
+
+  /**
+   * Step 2 replay. g9-app keeps no file name or note title in its idempotency records (erasable
+   * content): an `evidence.attach_file` or `evidence.from_note` replay is rebuilt from the rows as
+   * they are now (after an erasure the file name and the summary read `[REDACTED]`) and carries a
+   * warning saying so. Every other outcome is replayed as stored.
+   */
+  private replay(op: OperationName, outcome: CommandOutcome<unknown>): CommandOutcome<unknown> {
+    const replayed: CommandOutcome<unknown> = { ...outcome, replayed: true };
+    const rebuilt = (result: unknown): CommandOutcome<unknown> => ({ ...replayed, result, warnings: [...(outcome.warnings ?? []), REPLAY_REBUILT_WARNING] });
+    if (op === 'evidence.attach_file') {
+      const stored = outcome.result as AttachmentView;
+      const a = this.attachments.get(stored.attachment_id);
+      if (a !== undefined) {
+        return rebuilt({
+          ...stored,
+          note_id: a.note_id,
+          filename: a.erased ? REDACTED : a.filename,
+          media_type: a.media_type,
+          size_bytes: a.size_bytes,
+          sha256: a.sha256,
+        });
+      }
+    }
+    if (op === 'evidence.from_note') {
+      const stored = outcome.result as ResponseOf<'evidence.from_note'>;
+      const e = this.evidence.get(stored.evidence_id);
+      if (e !== undefined && e.note_id !== null) {
+        return rebuilt({ evidence_id: e.evidence_id, kind: 'NOTE', note_id: e.note_id, summary: e.summary });
+      }
+    }
+    return replayed;
+  }
+
+  /** Single use: the approval the command verified moves to CONSUMED once the command succeeded. */
+  private consumePendingApproval(): void {
+    const approval = this.pendingConsume;
+    this.pendingConsume = null;
+    if (approval !== null) {
+      this.applyApprovalEvent(approval, 'CONSUME');
+      approval.consumed_at = this.now();
+    }
+  }
+
+  /**
+   * g9-app `creation_id`: a retry carrying an approval stored for this action on this resource
+   * kind reuses the id the approval was granted for (so the approved resource matches); every
+   * other call mints a fresh id. The binding is still verified in full.
+   */
+  private creationId(meta: CommandMeta, op: OperationName, kind: string): Id {
+    if (meta.approval_id !== undefined) {
+      const approval = this.approvals.get(meta.approval_id);
+      const spec = OPERATIONS[op];
+      if (approval?.operation.action === spec.action && approval.operation.resource.kind === spec.resourceKind) {
+        return approval.operation.resource.id;
+      }
+    }
+    return this.nextId(kind);
+  }
+
+  /** `policy.denied` for UPDATE/DELETE of a finalized (immutable) record: rule `immutable.finalized.deny`. */
+  private finalizedDenied(action: Action, kind: ResourceKind): CommandFailure {
+    return fail('UNAUTHORIZED', 'policy.denied', 'finalized records are immutable; corrections are superseding records', {
+      rule_id: 'immutable.finalized.deny',
+      action,
+      resource_kind: kind,
+    });
+  }
+
+  /**
+   * Policy rule `operator.security_sensitive.write.approval`: an operator CREATE/UPDATE of a
+   * SECURITY_SENSITIVE record needs a PROTECTED_RECORD_WRITE approval (other domains: allowed in
+   * the learning modes the screens use; the mode-by-domain matrix is not modelled).
+   */
+  private requireSensitiveWriteApproval(op: OperationName, domain: DataDomain, payload: JsonValue, resource: ResourceRef, meta: CommandMeta): void {
+    if (domain === 'SECURITY_SENSITIVE') {
+      this.requireApproval(op, payload, resource, 'PROTECTED_RECORD_WRITE', meta, approvalSummary(op, resource, 'PROTECTED_RECORD_WRITE'));
+    }
   }
 
   private expireIfDue(approval: ApprovalRequest): void {
@@ -1067,8 +1297,9 @@ class MockState {
     const changes: ScheduleProposal['changes'] = [];
     const violated: ScheduleProposal['violated_constraints'] = [];
     if (intent === 'ADD_REVIEWS') {
-      const due = this.retentionDue({});
-      const items = [...due.overdue, ...due.due];
+      // g9-app `calendar.propose`: every due item sizes the block (no silent truncation).
+      const due = this.retentionDue({}).result;
+      const items = [...due.overdue, ...due.due, ...due.overflow];
       if (items.length > 0) {
         const tomorrow = addDays(civilDateOf(this.now(), this.zone), 1);
         const start = civilToUtc({ ...tomorrow, hour: 8, minute: 30 }, this.zone);
@@ -1128,15 +1359,17 @@ class MockState {
     const resource: ResourceRef = { kind: 'SCHEDULE_PROPOSAL', id: proposalId };
     this.requireApproval(op, { proposal_id: proposalId }, resource, 'SCHEDULE_APPLY', meta, `Apply schedule proposal (${proposal.changes.length} changes)`);
     const applied: CalendarEvent[] = [];
+    // g9-app `calendar.apply` writes the placements with source SCHEDULER: they are listed as
+    // SYSTEM_DETERMINISTIC and, like every event the operator did not add, cannot be edited.
     for (const change of proposal.changes) {
       if (change.op === 'CREATE') {
-        this.events.push({ ...change.event, provenance: 'OPERATOR' });
+        this.events.push({ ...change.event, provenance: 'SYSTEM_DETERMINISTIC' });
         applied.push(change.event);
       } else if (change.op === 'DELETE') {
         this.events = this.events.filter((e) => e.event_id !== change.event.event_id);
         applied.push(change.event);
       } else {
-        this.events = this.events.map((e) => (e.event_id === change.event.event_id ? { ...change.event, provenance: 'OPERATOR' } : e));
+        this.events = this.events.map((e) => (e.event_id === change.event.event_id ? { ...change.event, provenance: 'SYSTEM_DETERMINISTIC' } : e));
         applied.push(change.event);
       }
     }
@@ -1249,21 +1482,23 @@ class MockState {
     return { result: stripSession(session), revision: session.revision, resource: { kind: 'TIME_INTERVAL', id: intervalId }, warnings };
   }
 
-  private notesCreate(payload: unknown): Handled<NoteView> {
+  private notesCreate(payload: unknown, meta: CommandMeta): Handled<NoteView> {
     const op = 'notes.create';
     const rec = asRecord(payload, op);
     const title = str(rec, 'title', op);
     const body = typeof rec.body_markdown === 'string' ? rec.body_markdown : null;
     if (body === null) {
-      throw fail('INVALID_INPUT', 'ipc.field_invalid', `${op}: 'body_markdown' must be a string`, { field: 'body_markdown' });
+      throw schemaViolation('body_markdown', `${op}: 'body_markdown' must be a string`);
     }
     const classification = oneOf(rec, 'classification', CLASSIFICATIONS, op);
     const domain = oneOf(rec, 'domain', DATA_DOMAINS, op);
     const objective = optStr(rec, 'objective_id', op) ?? null;
     const evidence = strArray(rec, 'evidence_refs', op, true);
+    const noteId = this.creationId(meta, op, 'note');
+    this.requireSensitiveWriteApproval(op, domain, asJson(payload), { kind: 'NOTE', id: noteId }, meta);
     const now = this.now();
     const note: NoteView = {
-      note_id: this.nextId('note'),
+      note_id: noteId,
       title,
       body_markdown: body,
       content_sha256: sha256Hex(body),
@@ -1288,10 +1523,14 @@ class MockState {
     if (note === undefined) {
       throw fail('NOT_FOUND', 'note.not_found', 'note not found', { note_id: id });
     }
+    if (note.domain === 'SECURITY_SENSITIVE') {
+      const resource: ResourceRef = { kind: 'NOTE', id };
+      this.requireApproval(op, asJson(payload), resource, 'PROTECTED_RECORD_WRITE', meta, approvalSummary(op, resource, 'PROTECTED_RECORD_WRITE'), note.revision);
+    }
     this.checkRevision(meta, note.revision);
     const body = typeof rec.body_markdown === 'string' ? rec.body_markdown : null;
     if (body === null) {
-      throw fail('INVALID_INPUT', 'ipc.field_invalid', `${op}: 'body_markdown' must be a string`, { field: 'body_markdown' });
+      throw schemaViolation('body_markdown', `${op}: 'body_markdown' must be a string`);
     }
     const title = optStr(rec, 'title', op);
     note.body_markdown = body;
@@ -1361,9 +1600,15 @@ class MockState {
     const op = 'assessment.submit';
     const rec = asRecord(payload, op);
     const attempt = this.findAttempt(rec, op);
-    strArray(rec, 'evidence_refs', op);
+    const refs = strArray(rec, 'evidence_refs', op);
     this.checkRevision(meta, attempt.revision);
-    attempt.state = applyMachine(ASSESSMENT_MACHINE, attempt.state, 'SUBMIT', 'assessment_attempt');
+    const next = applyMachine(ASSESSMENT_MACHINE, attempt.state, 'SUBMIT', 'assessment_attempt');
+    // g9-app links every item as SUBMISSION evidence (`attempt_evidence` → `evidence_items`
+    // FOREIGN KEY): an id that names no evidence item fails the whole command.
+    if (refs.some((r) => !this.evidence.has(r))) {
+      throw fail('PRECONDITION_FAILED', 'storage.foreign_key', 'foreign key constraint failed: FOREIGN KEY constraint failed');
+    }
+    attempt.state = next;
     attempt.submitted_at = this.now();
     attempt.revision += 1;
     return { result: attempt, revision: attempt.revision, resource: { kind: 'ATTEMPT', id: attempt.attempt_id } };
@@ -1385,11 +1630,11 @@ class MockState {
     this.checkRevision(meta, attempt.revision);
     const rawCriteria: unknown = rec.criteria;
     if (!Array.isArray(rawCriteria)) {
-      throw fail('INVALID_INPUT', 'ipc.field_invalid', `${op}: 'criteria' must be an array`, { field: 'criteria' });
+      throw schemaViolation('criteria', `${op}: 'criteria' must be an array`);
     }
     const raw: Rec[] = rawCriteria.map((r): Rec => {
       if (typeof r !== 'object' || r === null || Array.isArray(r)) {
-        throw fail('INVALID_INPUT', 'ipc.field_invalid', `${op}: 'criteria[]' must be objects`, { field: 'criteria' });
+        throw schemaViolation('criteria', `${op}: 'criteria[]' must be objects`);
       }
       return r as Rec;
     });
@@ -1496,7 +1741,7 @@ class MockState {
       }
       this.observations.push({
         observation_id: this.nextId('observation'),
-        competency_id: assessedCompetencyId(attempt.assessment_id),
+        competency_id: this.competencyOf(attempt.assessment_id),
         dimension,
         attempt_id: attempt.attempt_id,
         difficulty,
@@ -1510,12 +1755,7 @@ class MockState {
   private competencyProjection(payload: unknown): ResponseOf<'competency.projection'> {
     const rec = asRecord(payload, 'competency.projection');
     const only = optStr(rec, 'competency_id', 'competency.projection');
-    const dayCompetencies = this.fixture.week.days
-      .filter((d) => !d.is_assessment_day)
-      .map((d) => ({ id: `mock-competency-${d.day_id}`, name: d.evidence_artifact, objective_ids: d.objectives.map((o) => o.objective_id) }));
-    // One competency per assessment definition (the backend definition links one competency).
-    const assessedCompetencies = this.definitions.map((d) => ({ id: assessedCompetencyId(d.assessment_id), name: d.title, objective_ids: [] as Id[] }));
-    const projections: CompetencyProjection[] = [...dayCompetencies, ...assessedCompetencies].map((c) => ({
+    const projections: CompetencyProjection[] = this.knownCompetencies().map((c) => ({
       competency_id: c.id,
       name: c.name,
       // The fixture seeds no observations: only `assessment.approve_final` appends any, so a
@@ -1531,48 +1771,33 @@ class MockState {
     return { derived_at: this.now(), projections: filtered };
   }
 
-  private retentionDue(payload: unknown): ResponseOf<'retention.due'> {
+  /**
+   * Port of g9-app `retention.due`: every item due at `as_of` (`due_at <= as_of`, no row limit),
+   * planned like g9-retention `plan_reviews` (most overdue first, then the lower stage, then the
+   * id) into the budget; what does not fit is `overflow`, never dropped. Overdue = due before
+   * local midnight of `as_of`.
+   */
+  private retentionDue(payload: unknown): Handled<ResponseOf<'retention.due'>> {
     const rec = asRecord(payload, 'retention.due');
     const asOf = optInt(rec, 'as_of', 'retention.due', 0) ?? this.now();
     const budget = optInt(rec, 'budget_ms', 'retention.due', 0) ?? REVIEW_BUDGET_MS;
-    const today = civilDateOf(asOf, this.zone);
-    const todayStart = startOfDayUtc(today, this.zone);
-    const tomorrowStart = startOfDayUtc(addDays(today, 1), this.zone);
-    const items: ReviewItem[] = [];
-    for (const day of this.fixture.week.days) {
-      const date = this.dateOfDay(day);
-      if (daysBetween(date, today) <= 0 || day.is_assessment_day) {
-        continue;
-      }
-      for (const o of day.objectives) {
-        for (const offset of REVIEW_OFFSETS_DAYS) {
-          const due = civilToUtc({ ...addDays(date, offset), hour: 8, minute: 30 }, this.zone).utc;
-          if (due < tomorrowStart) {
-            items.push({
-              review_item_id: `mock-review-${o.objective_id}-${offset}`,
-              competency_id: `mock-competency-${day.day_id}`,
-              objective_id: o.objective_id,
-              prompt: `Recall: ${o.text}`,
-              kind: 'DECLARATIVE',
-              due_at: due,
-              last_success_at: null,
-              offset_days: offset,
-              estimated_ms: REVIEW_ITEM_MS,
-            });
-          }
-        }
-      }
-    }
-    items.sort((a, b) => a.due_at - b.due_at);
+    const todayStart = startOfDayUtc(civilDateOf(asOf, this.zone), this.zone);
+    const due = [...this.reviewItems.values()]
+      .filter((r) => r.view.due_at <= asOf)
+      .sort((a, b) => a.view.due_at - b.view.due_at || a.stage - b.stage || compareIds(a.view.review_item_id, b.view.review_item_id));
     const capacity = Math.floor(budget / REVIEW_ITEM_MS);
-    const inBudget = items.slice(0, capacity);
-    const overflow = items.slice(capacity);
+    const inBudget = due.slice(0, capacity).map((r) => ({ ...r.view }));
+    const overflow = due.slice(capacity).map((r) => ({ ...r.view }));
+    const procedural = due.filter((r) => r.authoredKind === 'PROCEDURAL').length;
     return {
-      as_of: asOf,
-      budget_ms: budget,
-      overdue: inBudget.filter((i) => i.due_at < todayStart),
-      due: inBudget.filter((i) => i.due_at >= todayStart),
-      overflow,
+      result: {
+        as_of: asOf,
+        budget_ms: budget,
+        overdue: inBudget.filter((i) => i.due_at < todayStart),
+        due: inBudget.filter((i) => i.due_at >= todayStart),
+        overflow,
+      },
+      warnings: procedural > 0 ? [proceduralLabelWarning(procedural)] : [],
     };
   }
 
@@ -1691,27 +1916,136 @@ class MockState {
     });
   }
 
-  private exportRequest(payload: unknown, meta: CommandMeta): Handled<ResponseOf<'export.request'>> {
+  /**
+   * Mock of g9-app `export.request` (privacy.rs): approval-gated (DATA_EXPORT); the export
+   * directory is checked after the approval, so an install without one refuses the approved
+   * retry with `export.dir_not_configured` and the approval is not spent (rolled back). The
+   * approved command "writes" `<exports>/<export_id>/` from the mock's own rows (see
+   * `writeExport`) and answers READY with the folder, counts and manifest hash.
+   */
+  private exportRequest(payload: unknown, meta: CommandMeta): Handled<ExportResult> {
     const op = 'export.request';
     const rec = asRecord(payload, op);
     const domainsRaw = rec.domains;
     if (!Array.isArray(domainsRaw) || domainsRaw.length === 0 || !domainsRaw.every((d) => (DATA_DOMAINS as readonly string[]).includes(String(d)))) {
-      throw fail('INVALID_INPUT', 'ipc.field_invalid', `${op}: 'domains' must be a non-empty array of data domains`, { field: 'domains' });
+      throw schemaViolation('domains', `${op}: 'domains' must be a non-empty array of data domains`);
     }
-    const domains = domainsRaw as DataDomain[];
+    const requested = domainsRaw as DataDomain[];
     const format = oneOf(rec, 'format', ['JSON', 'CSV'] as const, op);
     const includePrivate = rec.include_private;
     if (typeof includePrivate !== 'boolean') {
-      throw fail('INVALID_INPUT', 'ipc.field_invalid', `${op}: 'include_private' must be a boolean`, { field: 'include_private' });
+      throw schemaViolation('include_private', `${op}: 'include_private' must be a boolean`);
     }
-    const resource: ResourceRef = { kind: 'EXPORT', id: `export:${domains.join('+')}` };
-    this.requireApproval(op, { domains, format, include_private: includePrivate }, resource, 'DATA_EXPORT', meta, `Export ${domains.join(', ')} as ${format}`);
+    // privacy.rs: the selection is a set, labelled in `DataDomain` order.
+    const domains = DATA_DOMAINS.filter((d) => requested.includes(d));
+    // The resource names the selection, the privacy ceiling and the format (shown in the native confirmation).
+    const resource: ResourceRef = { kind: 'EXPORT', id: `export:${domains.join('.')}:${includePrivate ? 'PRIVATE' : 'INTERNAL'}:${format}` };
+    this.requireApproval(op, asJson(payload), resource, 'DATA_EXPORT', meta, `Export ${domains.join(', ')} as ${format}`);
+    if (this.exportDir === null) {
+      throw fail('PRECONDITION_FAILED', 'export.dir_not_configured', 'no export directory is configured');
+    }
     const exportId = this.nextId('export');
+    const written = this.writeExport(exportId, domains, format, includePrivate);
     return {
-      result: { export_id: exportId, state: 'REQUESTED', domains, format, requested_at: this.now() },
+      result: {
+        export_id: exportId,
+        state: 'READY',
+        domains,
+        format,
+        requested_at: this.now(),
+        location: `${this.exportDir}/${exportId}`,
+        files: written.files,
+        rows: written.rows,
+        attachments: written.attachments,
+        manifest_sha256: written.manifestSha256,
+      },
       revision: 1,
       resource: { kind: 'EXPORT', id: exportId },
-      warnings: [EXPORT_NOT_IMPLEMENTED_WARNING],
+    };
+  }
+
+  /**
+   * Stand-in for g9-storage `export::collect` + `export::write` over the mock's in-memory rows:
+   * every table of the model is listed (empty or not); a row is exported when its domain is
+   * selected and its classification is PUBLIC or INTERNAL, or PRIVATE with `include_private`
+   * (SECRET never); erased rows are left out. JSON is one `data.json`, CSV one file per table;
+   * every exported attachment's bytes are copied (all present in the in-memory store); the
+   * manifest (selection, row counts, every file with its SHA-256, not signed) is written last.
+   * Nothing touches a disk: the counts and the manifest hash are computed from this model.
+   */
+  private writeExport(
+    exportId: Id,
+    domains: readonly DataDomain[],
+    format: ExportFormat,
+    includePrivate: boolean,
+  ): { files: number; rows: number; attachments: number; manifestSha256: string } {
+    const exported = (domain: DataDomain, classification: Classification): boolean =>
+      domains.includes(domain) && (classification === 'PUBLIC' || classification === 'INTERNAL' || (includePrivate && classification === 'PRIVATE'));
+    const learning = exported('LEARNING', 'INTERNAL');
+    const sessions = learning ? [...this.sessions.values()] : [];
+    const items = learning ? [...this.reviewItems.values()] : [];
+    const attachments = [...this.attachments.values()].filter((a) => !a.erased && exported(a.domain, a.classification));
+    const tables: { name: string; rows: JsonValue[] }[] = [
+      {
+        name: 'notes',
+        rows: [...this.notes.values()]
+          .filter((n) => exported(n.domain, n.classification))
+          .map((n) => ({ id: n.note_id, title: n.title, body_sha256: n.content_sha256, data_domain: n.domain, classification: n.classification })),
+      },
+      {
+        name: 'attachments',
+        rows: attachments.map((a) => ({ id: a.attachment_id, note_id: a.note_id, media_type: a.media_type, size_bytes: a.size_bytes, content_sha256: a.sha256 })),
+      },
+      {
+        name: 'evidence_items',
+        rows: [...this.evidence.values()]
+          .filter((e) => exported(e.domain, e.classification))
+          .map((e) => ({ id: e.evidence_id, kind: e.kind, note_id: e.note_id, attachment_id: e.attachment_id, content_sha256: e.sha256 })),
+      },
+      { name: 'study_sessions', rows: sessions.map((s) => ({ id: s.session_id, state: s.state, planned_ms: s.planned_ms, credited_ms: s.credited_ms })) },
+      { name: 'time_intervals', rows: sessions.flatMap((s) => s.intervals.map((i) => ({ id: i.interval_id, session_id: s.session_id, continuity: i.continuity }))) },
+      { name: 'manual_time_corrections', rows: sessions.flatMap((s) => s.corrections.map((c) => ({ id: c.correction_id, interval_id: c.interval_id, credited_ms: c.credited_ms }))) },
+      { name: 'calendar_events', rows: learning ? this.events.map((e) => ({ id: e.event_id, kind: e.kind, start_utc: e.start, end_utc: e.end })) : [] },
+      { name: 'review_items', rows: items.map((r) => ({ id: r.view.review_item_id, due_at: r.view.due_at, stage: r.stage })) },
+      { name: 'review_attempts', rows: items.flatMap((r) => r.attempts.map((a) => ({ review_item_id: r.view.review_item_id, outcome: a.outcome, attempted_at: a.at }))) },
+      { name: 'competencies', rows: learning ? this.knownCompetencies().map((c) => ({ id: c.id, title: c.name })) : [] },
+      { name: 'assessment_definitions', rows: learning ? this.definitions.map((d) => ({ id: d.assessment_id, title: d.title })) : [] },
+      // Attempts are PRIVATE rows (g9-app `assessment.begin`).
+      { name: 'attempts', rows: exported('LEARNING', 'PRIVATE') ? [...this.attempts.values()].map((a) => ({ id: a.attempt_id, state: a.state })) : [] },
+    ];
+    if (domains.includes('SYSTEM')) {
+      tables.push(
+        { name: 'audit_metadata', rows: this.audit.map((e) => ({ id: e.id, row_hash: e.row_hash })) },
+        { name: 'approval_requests', rows: [...this.approvals.values()].map((a) => ({ id: a.approval_id, state: a.state })) },
+        { name: 'backup_manifests', rows: [...this.backups.values()].map((b) => ({ id: b.backup_id, state: b.state })) },
+      );
+    }
+    const digests = [...new Set(attachments.map((a) => a.sha256))].sort();
+    const files: { path: string; sha256: string }[] =
+      format === 'JSON'
+        ? [{ path: 'data.json', sha256: sha256Hex(canonicalJson({ tables: Object.fromEntries(tables.map((t) => [t.name, t.rows])) })) }]
+        : tables.map((t) => ({ path: `${t.name}.csv`, sha256: sha256Hex(canonicalJson(t.rows)) }));
+    for (const sha of digests) {
+      files.push({ path: `attachments/${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}`, sha256: sha });
+    }
+    const manifest = {
+      format: 'g9-export',
+      version: 1,
+      export_id: exportId,
+      created_at: this.now(),
+      domains: [...domains],
+      include_private: includePrivate,
+      data_format: format,
+      csv_formula_guard: format === 'CSV',
+      tables: tables.map((t) => ({ name: t.name, rows: t.rows.length })),
+      files,
+      attachments: { copied: digests.length, missing: [], damaged: [] },
+    };
+    return {
+      files: files.length + 1,
+      rows: tables.reduce((n, t) => n + t.rows.length, 0),
+      attachments: digests.length,
+      manifestSha256: sha256Hex(canonicalJson(manifest)),
     };
   }
 
@@ -1720,7 +2054,7 @@ class MockState {
     const rec = asRecord(payload, op);
     const resourceRaw = rec.resource;
     if (typeof resourceRaw !== 'object' || resourceRaw === null) {
-      throw fail('INVALID_INPUT', 'ipc.field_invalid', `${op}: 'resource' must be a resource reference`, { field: 'resource' });
+      throw schemaViolation('resource', `${op}: 'resource' must be a resource reference`);
     }
     const r = resourceRaw as Rec;
     const resource: ResourceRef = { kind: oneOf(r, 'kind', RESOURCE_KINDS, op), id: str(r, 'id', op) };
@@ -1735,14 +2069,546 @@ class MockState {
       if (note !== undefined) {
         const tombstone = note.content_sha256;
         this.notes.delete(resource.id);
+        const bytesLeft = this.eraseNote(note);
         return {
           result: { deletion_id: deletionId, state: 'APPLIED', resource, tombstone_sha256: tombstone, requested_at: this.now() },
           revision: 1,
           resource,
+          warnings: bytesLeft ? [ATTACHMENT_BYTES_NOT_PURGED_WARNING] : [],
         };
       }
     }
     return { result: { deletion_id: deletionId, state: 'REQUESTED', resource, tombstone_sha256: null, requested_at: this.now() }, revision: 1, resource };
+  }
+
+  /**
+   * g9-storage deletion `erase_note`, reduced to what the mock keeps: the note is remembered as
+   * erased (attaching to it answers `note.erased`), its attachments are erased (their file name
+   * is no longer listed), and the evidence items of the note and of those attachments are
+   * invalidated. Returns true when bytes are left in the store that no remaining attachment
+   * uses: removing them needs a FilesystemWrite approval (PROPOSED), so they stay.
+   */
+  private eraseNote(note: NoteView): boolean {
+    this.erasedNotes.set(note.note_id, note.domain);
+    let bytesLeft = false;
+    for (const a of this.attachments.values()) {
+      if (a.note_id !== note.note_id || a.erased) {
+        continue;
+      }
+      a.erased = true;
+      const shared = [...this.attachments.values()].some((o) => !o.erased && o.attachment_id !== a.attachment_id && o.sha256 === a.sha256);
+      bytesLeft ||= !shared;
+      this.invalidateEvidence((e) => e.attachment_id === a.attachment_id);
+    }
+    this.invalidateEvidence((e) => e.note_id === note.note_id);
+    return bytesLeft;
+  }
+
+  /** g9-storage deletion `invalidate_evidence`: the summary repeats erased content, so it is redacted with the item. */
+  private invalidateEvidence(match: (e: EvidenceRecord) => boolean): void {
+    for (const e of this.evidence.values()) {
+      if (!e.invalidated && match(e)) {
+        e.invalidated = true;
+        e.summary = REDACTED;
+      }
+    }
+  }
+
+  // ----- wave-2 operations: authoring, scheduling, evidence ---------------------
+
+  /**
+   * Port of g9-app `session.create` (sessions.rs): a PLANNED session the operator schedules,
+   * optionally checked against an objective code. It is not linked to a curriculum block, so
+   * its view is labelled `UNLINKED` (as `session_view` labels it); it then runs like any session.
+   * The mock knows the objectives of the loaded fixture week only.
+   */
+  private sessionCreate(payload: unknown): Handled<SessionView> {
+    const op = 'session.create';
+    const rec = asRecord(payload, op);
+    const minutes = boundedInt(rec, 'planned_minutes', op, 1, 600);
+    const plannedStart = optInt(rec, 'planned_start', op, 0);
+    // The request schema allows STUDY, LAB and REVIEW: EXAM is refused at the boundary.
+    optOneOf(rec, 'mode', ['STUDY', 'LAB', 'REVIEW'] as const, op);
+    const objective = optId(rec, 'objective_id', op);
+    if (objective !== undefined && !this.fixture.week.days.some((d) => d.objectives.some((o) => o.objective_id === objective))) {
+      throw fail('NOT_FOUND', 'objective.not_found', 'objective not found');
+    }
+    const start = plannedStart ?? this.now();
+    const session: SessionRecord = {
+      session_id: this.nextId('session'),
+      state: 'PLANNED',
+      day_id: 'UNLINKED',
+      block: 'UNLINKED',
+      block_seq: 1,
+      planned_ms: minutes * 60_000,
+      credited_ms: 0,
+      uncertain_ms: 0,
+      started_at: null,
+      open_interval_started_at: null,
+      requires_correction: false,
+      intervals: [],
+      corrections: [],
+      revision: 1,
+      date: formatIsoDate(civilDateOf(start, this.zone)),
+    };
+    this.sessions.set(session.session_id, session);
+    return { result: stripSession(session), revision: 1, resource: { kind: 'STUDY_SESSION', id: session.session_id } };
+  }
+
+  private findEvent(id: Id): CalendarEvent {
+    const event = this.events.find((e) => e.event_id === id);
+    if (event === undefined) {
+      throw fail('NOT_FOUND', 'calendar.event_not_found', 'event not found');
+    }
+    return event;
+  }
+
+  /** Port of g9-app `calendar.create_event`: an event the operator adds (source OPERATOR). */
+  private calendarCreateEvent(payload: unknown): Handled<CalendarEvent> {
+    const op = 'calendar.create_event';
+    const rec = asRecord(payload, op);
+    const title = boundedStr(rec, 'title', op, 200);
+    const kind = oneOf(rec, 'kind', OPERATOR_EVENT_KINDS, op);
+    const start = int(rec, 'start', op, 0);
+    const end = int(rec, 'end', op, 0);
+    const allDay = optBool(rec, 'all_day', op) ?? false;
+    checkEventRange(start, end);
+    const event: CalendarEvent = {
+      event_id: this.nextId('event'),
+      title: rustTrim(title),
+      kind,
+      start,
+      end,
+      all_day: allDay,
+      immutable: false,
+      day_id: null,
+      block: null,
+      session_id: null,
+      adjusted: null,
+      provenance: 'OPERATOR',
+    };
+    this.events.push(event);
+    this.eventRevisions.set(event.event_id, 1);
+    return { result: { ...event }, revision: 1, resource: { kind: 'CALENDAR_EVENT', id: event.event_id } };
+  }
+
+  /**
+   * Port of g9-app `calendar.update_event`, in the backend's order: unknown event (NOT_FOUND),
+   * immutable event (policy `immutable.finalized.deny`), `expected_revision`, then only events
+   * the operator added (`calendar.event_not_editable`), then the new range.
+   */
+  private calendarUpdateEvent(payload: unknown, meta: CommandMeta): Handled<CalendarEvent> {
+    const op = 'calendar.update_event';
+    const rec = asRecord(payload, op);
+    const id = idField(rec, 'event_id', op);
+    const title = rec.title === undefined ? undefined : boundedStr(rec, 'title', op, 200);
+    const kind = optOneOf(rec, 'kind', OPERATOR_EVENT_KINDS, op);
+    const start = optInt(rec, 'start', op, 0);
+    const end = optInt(rec, 'end', op, 0);
+    const event = this.findEvent(id);
+    if (event.immutable) {
+      throw this.finalizedDenied('UPDATE', 'CALENDAR_EVENT');
+    }
+    const revision = this.eventRevisions.get(id) ?? 1;
+    this.checkRevision(meta, revision);
+    assertEditable(event);
+    const nextStart = start ?? event.start;
+    const nextEnd = end ?? event.end;
+    checkEventRange(nextStart, nextEnd);
+    const updated: CalendarEvent = {
+      ...event,
+      title: title === undefined ? event.title : rustTrim(title),
+      kind: kind ?? event.kind,
+      start: nextStart,
+      end: nextEnd,
+    };
+    this.events = this.events.map((e) => (e.event_id === id ? updated : e));
+    this.eventRevisions.set(id, revision + 1);
+    return { result: { ...updated }, revision: revision + 1, resource: { kind: 'CALENDAR_EVENT', id } };
+  }
+
+  /**
+   * Port of g9-app `calendar.delete_event`: policy `operator.delete.approval` asks for a
+   * DATA_DELETE approval bound to the event's stored revision (immutable events are denied
+   * first); with the approval, only events the operator added are deleted. A refusal after the
+   * approval rolls back and leaves the approval APPROVED.
+   */
+  private calendarDeleteEvent(payload: unknown, meta: CommandMeta): Handled<ResponseOf<'calendar.delete_event'>> {
+    const op = 'calendar.delete_event';
+    const rec = asRecord(payload, op);
+    const id = idField(rec, 'event_id', op);
+    const event = this.findEvent(id);
+    if (event.immutable) {
+      throw this.finalizedDenied('DELETE', 'CALENDAR_EVENT');
+    }
+    const revision = this.eventRevisions.get(id) ?? 1;
+    const resource: ResourceRef = { kind: 'CALENDAR_EVENT', id };
+    this.requireApproval(op, asJson(payload), resource, 'DATA_DELETE', meta, approvalSummary(op, resource, 'DATA_DELETE'), revision);
+    this.checkRevision(meta, revision);
+    assertEditable(event);
+    this.events = this.events.filter((e) => e.event_id !== id);
+    this.eventRevisions.delete(id);
+    return { result: { event_id: id, deleted: true }, resource };
+  }
+
+  /**
+   * Port of g9-app `retention.create_item`: a baseline-scheduled item due one day later at
+   * stage 0; a non-blank answer is kept as an erasable note ("Review answer"), never on the item.
+   */
+  private retentionCreateItem(payload: unknown): Handled<ReviewItem> {
+    const op = 'retention.create_item';
+    const rec = asRecord(payload, op);
+    const prompt = boundedStr(rec, 'prompt', op, 2000);
+    const answer = optText(rec, 'answer', op, 20_000);
+    const kind = optOneOf(rec, 'kind', ['DECLARATIVE', 'PROCEDURAL'] as const satisfies readonly ReviewItemAuthoredKind[], op) ?? 'DECLARATIVE';
+    const competencyId = optId(rec, 'competency_id', op);
+    if (competencyId !== undefined && !this.knownCompetencies().some((c) => c.id === competencyId)) {
+      throw fail('NOT_FOUND', 'competency.not_found', 'competency not found');
+    }
+    const now = this.now();
+    const answerText = answer === undefined ? '' : rustTrim(answer);
+    if (answerText.length > 0) {
+      const note: NoteView = {
+        note_id: this.nextId('note'),
+        title: 'Review answer',
+        body_markdown: answerText,
+        content_sha256: sha256Hex(answerText),
+        classification: 'INTERNAL',
+        domain: 'LEARNING',
+        objective_id: null,
+        evidence_refs: [],
+        version_count: 1,
+        created_at: now,
+        updated_at: now,
+        revision: 1,
+      };
+      this.notes.set(note.note_id, note);
+    }
+    const view: ReviewItem = {
+      review_item_id: this.nextId('review'),
+      competency_id: competencyId ?? null,
+      objective_id: null,
+      prompt: rustTrim(prompt),
+      // retention.rs `review_item_view`: the v1.0 vocabulary has no PROCEDURAL kind.
+      kind: kind === 'PROCEDURAL' ? 'PRACTICAL_TRANSFER' : 'DECLARATIVE',
+      due_at: now + DAY_MS,
+      last_success_at: null,
+      offset_days: 1,
+      estimated_ms: REVIEW_ITEM_MS,
+    };
+    this.reviewItems.set(view.review_item_id, { view, authoredKind: kind, stage: 0, revision: 1, attempts: [] });
+    return { result: { ...view }, revision: 1, resource: { kind: 'REVIEW_ITEM', id: view.review_item_id } };
+  }
+
+  /**
+   * Port of g9-app `retention.record_review`: the attempt is appended (append-only); SUCCESS and
+   * FAILURE move the item along g9-retention's `BaselineSchedule` (`baselineNext`); SKIPPED is
+   * recorded and leaves due date, stage and revision as they were.
+   */
+  private retentionRecordReview(payload: unknown, meta: CommandMeta): Handled<ReviewRecord> {
+    const op = 'retention.record_review';
+    const rec = asRecord(payload, op);
+    const id = idField(rec, 'review_item_id', op);
+    const outcome = oneOf(rec, 'outcome', ['SUCCESS', 'FAILURE', 'SKIPPED'] as const, op);
+    optInt(rec, 'response_ms', op, 0);
+    if (rec.rating !== undefined) {
+      boundedInt(rec, 'rating', op, 1, 4);
+    }
+    optId(rec, 'session_id', op);
+    const item = this.reviewItems.get(id);
+    if (item === undefined) {
+      throw fail('NOT_FOUND', 'retention.item_not_found', 'review item not found');
+    }
+    this.checkRevision(meta, item.revision);
+    const now = this.now();
+    item.attempts.push({ outcome, at: now });
+    if (outcome !== 'SKIPPED') {
+      const next = baselineNext(item.stage, outcome === 'SUCCESS', now);
+      item.stage = next.stage;
+      item.view = {
+        ...item.view,
+        due_at: next.dueAt,
+        offset_days: next.offsetDays,
+        last_success_at: outcome === 'SUCCESS' ? now : item.view.last_success_at,
+      };
+      item.revision += 1;
+    }
+    return {
+      result: { review_item_id: id, outcome, due_at: item.view.due_at, stage: item.stage, offset_days: item.view.offset_days },
+      revision: item.revision,
+      resource: { kind: 'REVIEW_ITEM', id },
+    };
+  }
+
+  /** Every competency the mock knows: one per fixture study day, one per fixture assessment, and the authored ones. */
+  private knownCompetencies(): { id: Id; name: string; objective_ids: Id[] }[] {
+    const days = this.fixture.week.days
+      .filter((d) => !d.is_assessment_day)
+      .map((d) => ({ id: `mock-competency-${d.day_id}`, name: d.evidence_artifact, objective_ids: d.objectives.map((o) => o.objective_id) }));
+    // One competency per fixture assessment definition (the backend definition links one competency).
+    const assessed = this.definitions
+      .filter((d) => !this.definitionCompetency.has(d.assessment_id))
+      .map((d) => ({ id: assessedCompetencyId(d.assessment_id), name: d.title, objective_ids: [] as Id[] }));
+    const authored = this.authoredCompetencies.map((c) => ({ id: c.competency_id, name: c.name, objective_ids: [] as Id[] }));
+    return [...days, ...assessed, ...authored];
+  }
+
+  /** The competency an assessment definition assesses. */
+  private competencyOf(assessmentId: Id): Id {
+    return this.definitionCompetency.get(assessmentId) ?? assessedCompetencyId(assessmentId);
+  }
+
+  /**
+   * Port of g9-app `competency.create` (authoring.rs): validated like `g9_competency::Competency`
+   * (a blank title is refused; validity default 180 days); the code is unique.
+   */
+  private competencyCreate(payload: unknown): Handled<CompetencyCreated> {
+    const op = 'competency.create';
+    const rec = asRecord(payload, op);
+    const code = patterned(rec, 'code', op, AUTHORED_CODE_PATTERN);
+    const title = boundedStr(rec, 'title', op, 200);
+    const description = optText(rec, 'description', op, 4000) ?? '';
+    const validity = rec.validity_days === undefined ? 180 : boundedInt(rec, 'validity_days', op, 1, 3650);
+    const name = rustTrim(title);
+    if (name.length === 0) {
+      throw fail('INVALID_INPUT', 'competency.invalid', 'invalid competency definition: name must not be empty');
+    }
+    if (this.authoredCompetencies.some((c) => c.code === code)) {
+      throw fail('CONFLICT', 'storage.unique_violation', 'unique constraint failed: UNIQUE constraint failed: competencies.code');
+    }
+    const id = this.nextId('competency');
+    this.authoredCompetencies.push({ competency_id: id, code, name, description, validity_days: validity });
+    return { result: { competency_id: id, code, title: name, validity_days: validity }, revision: 1, resource: { kind: 'COMPETENCY', id } };
+  }
+
+  /**
+   * Port of g9-app `assessment.define`: the competency must exist, the definition (EXAM mode,
+   * listed under its code), version 1 with the declared difficulty and the baseline rubric are
+   * written together; the code is unique.
+   */
+  private assessmentDefine(payload: unknown): Handled<AssessmentDefined> {
+    const op = 'assessment.define';
+    const rec = asRecord(payload, op);
+    const code = patterned(rec, 'code', op, AUTHORED_CODE_PATTERN);
+    const title = boundedStr(rec, 'title', op, 200);
+    const kind = oneOf(rec, 'kind', ['BLIND_PRACTICAL', 'CAPSTONE', 'TRANSFER_CHECK'] as const, op);
+    const competencyId = idField(rec, 'competency_id', op);
+    boundedStr(rec, 'task_statement', op, 20_000);
+    const difficulty = boundedInt(rec, 'difficulty', op, 1, 5) as Difficulty;
+    if (!this.knownCompetencies().some((c) => c.id === competencyId)) {
+      throw fail('NOT_FOUND', 'competency.not_found', 'competency not found');
+    }
+    const trimmed = rustTrim(title);
+    if (trimmed.length === 0) {
+      throw fail('INVALID_INPUT', 'assessment.definition_invalid', 'assessment title is empty');
+    }
+    if ([...this.definitionCompetency.keys()].some((defId) => this.definitions.find((d) => d.assessment_id === defId)?.day_id === code)) {
+      throw fail('CONFLICT', 'storage.unique_violation', 'unique constraint failed: UNIQUE constraint failed: assessment_definitions.code');
+    }
+    const id = this.nextId('assessment');
+    // assessment.rs `list`: a definition without a training day is listed under its code.
+    this.definitions.push({ assessment_id: id, title: trimmed, day_id: code, mode: 'EXAM' });
+    this.declaredDifficulty.set(id, difficulty);
+    this.definitionCompetency.set(id, competencyId);
+    return {
+      result: {
+        assessment_id: id,
+        code,
+        title: trimmed,
+        kind,
+        competency_id: competencyId,
+        version_id: `${id}:v1`,
+        difficulty,
+        criteria: BASELINE_CRITERIA.map((c) => c.code),
+      },
+      revision: 1,
+      resource: { kind: 'ASSESSMENT_DEFINITION', id },
+    };
+  }
+
+  /**
+   * evidence.rs `owner` / the `from_note` load: the note read in the command's scope domain
+   * (another domain is a refused cross-domain read), present, and not erased.
+   */
+  private noteInScope(noteId: Id, meta: CommandMeta, erasedMessage: string): NoteView {
+    const note = this.notes.get(noteId);
+    const domain = note?.domain ?? this.erasedNotes.get(noteId);
+    if (domain === undefined) {
+      throw fail('NOT_FOUND', 'note.not_found', 'note not found');
+    }
+    if (domain !== meta.scope.domain) {
+      throw fail('UNAUTHORIZED', 'storage.cross_domain_read', 'cross-domain read refused; Capability::CrossDomainRead not granted', {
+        table: 'notes',
+        requested_domain: meta.scope.domain,
+        row_domain: domain,
+      });
+    }
+    if (note === undefined) {
+      throw fail('CONFLICT', 'note.erased', erasedMessage);
+    }
+    return note;
+  }
+
+  private addEvidence(record: Omit<EvidenceRecord, 'seq' | 'invalidated'>): void {
+    this.evidenceSeq += 1;
+    this.evidence.set(record.evidence_id, { ...record, seq: this.evidenceSeq, invalidated: false });
+  }
+
+  /**
+   * Port of g9-app `evidence.attach_file`, in the backend's order: the request schema; the file
+   * name and the base64 (before the pipeline); the attachment store and the owning note (facts);
+   * the policy (a SECURITY_SENSITIVE note needs a PROTECTED_RECORD_WRITE approval); then the bytes
+   * (g9-evidence `AttachmentRef::new`: empty, refused signature, declared type mismatch). The
+   * bytes are content-addressed: identical bytes are stored once (`already_stored`).
+   */
+  private evidenceAttachFile(payload: unknown, meta: CommandMeta): Handled<AttachmentView> {
+    const op = 'evidence.attach_file';
+    const rec = asRecord(payload, op);
+    const noteId = optId(rec, 'note_id', op);
+    const rawName = boundedStr(rec, 'filename', op, 255);
+    const mediaType: AttachmentMediaType = oneOf(rec, 'media_type', ATTACHMENT_MEDIA_TYPES, op);
+    const content = str(rec, 'content_base64', op);
+    if (content.length < 4 || content.length > MAX_BASE64_CHARS) {
+      throw schemaViolation('content_base64', `${op}: 'content_base64' must be 4 to ${MAX_BASE64_CHARS} characters`);
+    }
+    const classification = optOneOf(rec, 'classification', CLASSIFICATIONS, op);
+    const filename = cleanFilename(rawName);
+    if (filename === null) {
+      throw fail('INVALID_INPUT', 'attachment.filename_invalid', 'the file name must be 1 to 255 bytes with no path separators or control characters');
+    }
+    const decoded = decodeContent(content);
+    if (!decoded.ok) {
+      throw decoded.code === 'attachment.too_large'
+        ? fail('INVALID_INPUT', 'attachment.too_large', `a file attached through the app is at most ${MAX_UPLOAD_BYTES} bytes`)
+        : fail('INVALID_INPUT', 'attachment.content_invalid', 'content_base64 is not valid base64 (standard alphabet, padded)');
+    }
+    const bytes = decoded.bytes;
+    const attachmentId = this.creationId(meta, op, 'attachment');
+    const resource: ResourceRef = { kind: 'ATTACHMENT', id: attachmentId };
+    if (this.attachmentDir === null) {
+      throw fail('PRECONDITION_FAILED', 'attachment.store_not_configured', 'no attachment directory is configured');
+    }
+    const note = noteId === undefined ? null : this.noteInScope(noteId, meta, 'the note is erased; nothing can be attached to it');
+    const domain: DataDomain = note?.domain ?? 'LEARNING';
+    const ownerClassification: Classification = note?.classification ?? classification ?? 'INTERNAL';
+    this.requireSensitiveWriteApproval(op, domain, asJson(payload), resource, meta);
+    if (bytes.length === 0) {
+      throw fail('INVALID_INPUT', 'attachment.empty', 'the file is empty');
+    }
+    const refused = refusedSignature(bytes);
+    if (refused !== null) {
+      throw fail('INVALID_INPUT', 'attachment.refused', `${refused}: executables, archives and packet captures are not stored; attach a written report instead`);
+    }
+    if (!consistentWith(mediaType, bytes)) {
+      throw fail(
+        'INVALID_INPUT',
+        'attachment.content_mismatch',
+        `the file's bytes do not match ${mediaType}; quarantine is not stored yet (PROPOSED), so it was not attached`,
+      );
+    }
+    const sha256 = sha256HexBytes(bytes);
+    // evidence.rs: true only when a non-erased attachment with these bytes exists in the caller's
+    // scope domain, so the flag never reveals content the caller cannot read.
+    const alreadyStored = [...this.attachments.values()].some((a) => a.sha256 === sha256 && !a.erased && a.domain === meta.scope.domain);
+    const now = this.now();
+    this.attachments.set(attachmentId, {
+      attachment_id: attachmentId,
+      note_id: note?.note_id ?? null,
+      filename,
+      media_type: mediaType,
+      size_bytes: bytes.length,
+      sha256,
+      domain,
+      classification: ownerClassification,
+      erased: false,
+    });
+    const evidenceId = this.nextId('evidence');
+    this.addEvidence({
+      evidence_id: evidenceId,
+      kind: 'ATTACHMENT',
+      note_id: null,
+      attachment_id: attachmentId,
+      summary: filename,
+      sha256,
+      domain,
+      classification: ownerClassification,
+      created_at: now,
+    });
+    return {
+      result: {
+        attachment_id: attachmentId,
+        evidence_id: evidenceId,
+        note_id: note?.note_id ?? null,
+        filename,
+        media_type: mediaType,
+        size_bytes: bytes.length,
+        sha256,
+        already_stored: alreadyStored,
+      },
+      revision: 1,
+      resource,
+    };
+  }
+
+  /** Port of g9-app `evidence.from_note`: a typed note becomes a NOTE evidence item (summary = its title). */
+  private evidenceFromNote(payload: unknown, meta: CommandMeta): Handled<ResponseOf<'evidence.from_note'>> {
+    const op = 'evidence.from_note';
+    const rec = asRecord(payload, op);
+    const noteId = idField(rec, 'note_id', op);
+    const evidenceId = this.creationId(meta, op, 'evidence');
+    const note = this.noteInScope(noteId, meta, 'the note is erased');
+    const resource: ResourceRef = { kind: 'EVIDENCE_ITEM', id: evidenceId };
+    this.requireSensitiveWriteApproval(op, note.domain, asJson(payload), resource, meta);
+    const summary = evidenceSummary(note.title);
+    this.addEvidence({
+      evidence_id: evidenceId,
+      kind: 'NOTE',
+      note_id: note.note_id,
+      attachment_id: null,
+      summary,
+      sha256: sha256Hex(note.body_markdown),
+      domain: note.domain,
+      classification: note.classification,
+      created_at: this.now(),
+    });
+    return { result: { evidence_id: evidenceId, kind: 'NOTE', note_id: note.note_id, summary }, revision: 1, resource };
+  }
+
+  /**
+   * Port of g9-app `evidence.list` (read-only): with `note_id`, the note's NOTE items and its
+   * attachments' ATTACHMENT items, oldest first; without, the newest items. Only items of the
+   * command's scope domain are listed; `limit` defaults to 100.
+   */
+  private evidenceList(payload: unknown, meta: CommandMeta): ResponseOf<'evidence.list'> {
+    const op = 'evidence.list';
+    const rec = asRecord(payload, op);
+    const noteId = optId(rec, 'note_id', op);
+    const limit = rec.limit === undefined ? 100 : boundedInt(rec, 'limit', op, 1, 500);
+    const inScope = [...this.evidence.values()].filter((e) => e.domain === meta.scope.domain);
+    const rows =
+      noteId === undefined
+        ? inScope.sort((a, b) => b.created_at - a.created_at || b.seq - a.seq)
+        : inScope
+            .filter((e) => e.note_id === noteId || (e.attachment_id !== null && this.attachments.get(e.attachment_id)?.note_id === noteId))
+            .sort((a, b) => a.created_at - b.created_at || a.seq - b.seq);
+    return { items: rows.slice(0, limit).map((e) => this.evidenceView(e)) };
+  }
+
+  private evidenceView(e: EvidenceRecord): EvidenceItemView {
+    const attachment = e.attachment_id === null ? undefined : this.attachments.get(e.attachment_id);
+    return {
+      evidence_id: e.evidence_id,
+      kind: e.kind,
+      note_id: e.note_id,
+      attachment_id: e.attachment_id,
+      summary: e.summary,
+      sha256: e.sha256,
+      filename: attachment === undefined || attachment.erased ? null : attachment.filename,
+      media_type: attachment?.media_type ?? null,
+      size_bytes: attachment?.size_bytes ?? null,
+      created_at: e.created_at,
+      invalidated: e.invalidated,
+    };
   }
 }
 
@@ -1758,9 +2624,192 @@ interface Handled<T = unknown> {
   warnings?: readonly string[];
 }
 
-// Warning texts copied from g9-app (commands/curriculum.rs, privacy.rs, assessment.rs, notes.rs).
+/** A `review_items` row with the scheduler columns the view does not show. */
+interface ReviewItemRecord {
+  view: ReviewItem;
+  authoredKind: ReviewItemAuthoredKind;
+  /** Baseline ladder stage reached (g9-retention `ItemState::stage_index`). */
+  stage: number;
+  revision: Revision;
+  /** `review_attempts` rows (append-only). */
+  attempts: { outcome: ReviewRecord['outcome']; at: UtcMillis }[];
+}
+
+interface AuthoredCompetency {
+  competency_id: Id;
+  code: string;
+  name: string;
+  description: string;
+  validity_days: number;
+}
+
+interface AttachmentRecord {
+  attachment_id: Id;
+  note_id: Id | null;
+  filename: string;
+  media_type: AttachmentMediaType;
+  size_bytes: number;
+  sha256: string;
+  /** The owning note's domain and classification (LEARNING and the requested classification without a note). */
+  domain: DataDomain;
+  classification: Classification;
+  erased: boolean;
+}
+
+interface EvidenceRecord {
+  evidence_id: Id;
+  kind: 'NOTE' | 'ATTACHMENT';
+  note_id: Id | null;
+  attachment_id: Id | null;
+  summary: string;
+  sha256: string;
+  domain: DataDomain;
+  classification: Classification;
+  created_at: UtcMillis;
+  /** Insertion order: the backend's UUIDv7 ids order items created in the same millisecond. */
+  seq: number;
+  invalidated: boolean;
+}
+
+const DAY_MS = 86_400_000;
+const OPERATOR_EVENT_KINDS: readonly OperatorEventKind[] = ['STUDY_BLOCK', 'APPOINTMENT', 'REVIEW'];
+const ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
+/** evidence.rs `MAX_UPLOAD_BYTES`. */
+const MAX_UPLOAD_BYTES = MAX_ATTACHMENT_BYTES;
+/** `content_base64` maxLength in the request schema. */
+const MAX_BASE64_CHARS = 22_369_624;
+
+/** The payload as JSON (what an approval's parameter hash covers); anything else hashes as null. */
+function asJson(payload: unknown): JsonValue {
+  return isJsonValue(payload) ? payload : null;
+}
+
+function idField(rec: Rec, key: string, op: string): Id {
+  const v = str(rec, key, op);
+  if (!ID_PATTERN.test(v)) {
+    throw schemaViolation(key, `${op}: '${key}' must be an identifier [A-Za-z0-9._:-]{1,128}`);
+  }
+  return v;
+}
+
+function optId(rec: Rec, key: string, op: string): Id | undefined {
+  return rec[key] === undefined ? undefined : idField(rec, key, op);
+}
+
+/** A string of 1..`max` characters (JSON Schema counts code points). */
+function boundedStr(rec: Rec, key: string, op: string, max: number): string {
+  const v = str(rec, key, op);
+  if (Array.from(v).length > max) {
+    throw schemaViolation(key, `${op}: '${key}' must be at most ${max} characters`);
+  }
+  return v;
+}
+
+/** An optional string of 0..`max` characters. */
+function optText(rec: Rec, key: string, op: string, max: number): string | undefined {
+  const v = rec[key];
+  if (v === undefined) {
+    return undefined;
+  }
+  if (typeof v !== 'string' || Array.from(v).length > max) {
+    throw schemaViolation(key, `${op}: '${key}' must be a string of at most ${max} characters`);
+  }
+  return v;
+}
+
+function boundedInt(rec: Rec, key: string, op: string, min: number, max: number): number {
+  const v = int(rec, key, op, min);
+  if (v > max) {
+    throw schemaViolation(key, `${op}: '${key}' must be an integer from ${min} to ${max}`);
+  }
+  return v;
+}
+
+function optBool(rec: Rec, key: string, op: string): boolean | undefined {
+  const v = rec[key];
+  if (v === undefined) {
+    return undefined;
+  }
+  if (typeof v !== 'boolean') {
+    throw schemaViolation(key, `${op}: '${key}' must be a boolean`);
+  }
+  return v;
+}
+
+function patterned(rec: Rec, key: string, op: string, pattern: RegExp): string {
+  const v = rec[key];
+  if (typeof v !== 'string' || !pattern.test(v)) {
+    throw schemaViolation(key, `${op}: '${key}' must match ${pattern.source}`);
+  }
+  return v;
+}
+
+/** The summary g9-app shows for an approval request (approvals.rs `view`). */
+function approvalSummary(op: OperationName, resource: ResourceRef, capability: Capability): string {
+  return `${op}: ${resource.kind} ${resource.id} (requires ${capability})`;
+}
+
+/** calendar.rs `placed`: an event ends after it starts and lasts at most seven days. */
+function checkEventRange(start: UtcMillis, end: UtcMillis): void {
+  if (end <= start) {
+    throw fail('INVALID_INPUT', 'calendar.event_range_invalid', 'an event ends after it starts');
+  }
+  if (end - start > 7 * DAY_MS) {
+    throw fail('INVALID_INPUT', 'calendar.event_too_long', 'an event lasts at most seven days');
+  }
+}
+
+/** calendar.rs `editable`: only events the operator added (curriculum, scheduler and imported events cannot change). */
+function assertEditable(event: CalendarEvent): void {
+  if (event.provenance !== 'OPERATOR' || event.immutable) {
+    throw fail('PRECONDITION_FAILED', 'calendar.event_not_editable', 'only events you added can be changed or deleted');
+  }
+}
+
+/**
+ * g9-retention `BaselineSchedule::next_after` with the default ladder (offsets 1, 3, 7, 21, 60
+ * days; failure resets to stage 0). Success: the interval is the offset of the stage just
+ * completed and the stage advances (capped at the last); failure: stage 0 and its offset.
+ */
+export function baselineNext(stage: number, success: boolean, now: UtcMillis): { stage: number; offsetDays: number; dueAt: UtcMillis } {
+  const last = REVIEW_OFFSETS_DAYS.length - 1;
+  const current = success ? Math.min(stage, last) : 0;
+  const offsetDays = REVIEW_OFFSETS_DAYS[current] ?? 1;
+  return { stage: success ? Math.min(current + 1, last) : 0, offsetDays, dueAt: now + offsetDays * DAY_MS };
+}
+
+/** Byte-wise id order (Rust `String` ordering) for ASCII ids. */
+function compareIds(a: Id, b: Id): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// Warning texts copied from g9-app (commands/curriculum.rs, privacy.rs, assessment.rs, notes.rs, retention.rs).
 const NON_CANONICAL_PLAN_WARNING = 'curriculum.non_canonical: plan derived from a version that is not APPROVED_CANONICAL';
-const EXPORT_NOT_IMPLEMENTED_WARNING = 'export.execution_not_implemented: the per-domain export writer is PROPOSED; no file was produced';
+/** privacy.rs `deletion.request`: erased attachments whose bytes no remaining attachment uses. */
+const ATTACHMENT_BYTES_NOT_PURGED_WARNING = 'deletion.attachment_bytes_not_purged: removing attachment files needs a FilesystemWrite approval; PROPOSED';
+/** evidence.rs: an `evidence.attach_file` / `evidence.from_note` replay rebuilt from current rows. */
+const REPLAY_REBUILT_WARNING =
+  'idempotency.replay_rebuilt: names and titles are not retained in idempotency records; the result shows the evidence as currently stored';
+/** g9-storage deletion `REDACTED`: what an erased attachment's file name reads. */
+const REDACTED = '[REDACTED]';
+
+/** evidence.rs `summary_of`: one line (control characters become spaces), at most 500 characters, never empty. */
+function evidenceSummary(title: string): string {
+  const line = rustTrim(
+    Array.from(title, (c) => {
+      const code = c.codePointAt(0) ?? 0;
+      return code <= 0x1f || (code >= 0x7f && code <= 0x9f) ? ' ' : c;
+    })
+      .slice(0, 500)
+      .join(''),
+  );
+  return line.length === 0 ? 'Note' : line;
+}
+
+/** retention.rs `retention.due`: PROCEDURAL items are listed with the PRACTICAL_TRANSFER label. */
+function proceduralLabelWarning(count: number): string {
+  return `retention.due.procedural_label: ${count} PROCEDURAL review item(s) are memory-scheduled recall items labelled PRACTICAL_TRANSFER because the v1.0 response has no PROCEDURAL kind; they are not practical transfer checks`;
+}
 /** g9-app commands/assessment.rs: names why nothing was derived; the difficulty is never guessed. */
 function observationsNotDerivedWarning(reason: string): string {
   return `competency.observations_not_derived: ${reason}; no competency observation was recorded from this decision and the difficulty is never guessed`;

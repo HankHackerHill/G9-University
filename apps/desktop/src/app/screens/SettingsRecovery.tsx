@@ -5,7 +5,7 @@ import type { G9Error } from '../../ipc/types';
 import { formatDateTime } from '../../lib/format';
 import { BACKUP_MACHINE, can } from '../../lib/state-machines';
 import { warningsOf } from '../../lib/warnings';
-import { ApprovalCard } from '../components/ApprovalCard';
+import { ApprovalCard, ConfirmationCancelled } from '../components/ApprovalCard';
 import { Badge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Loading, NoData, Panel } from '../components/Panel';
@@ -72,6 +72,8 @@ export function SettingsRecovery() {
     setBusy(false);
     today.reload();
   };
+
+  const exported = exportFlow.result !== null && !isG9Error(exportFlow.result) ? exportFlow.result.result : null;
 
   const requestExport = async () => {
     await exportFlow.run((approvalId) =>
@@ -194,7 +196,12 @@ export function SettingsRecovery() {
         )}
       </Panel>
       <Panel title="Export">
-        <p className="muted">Exports need a DATA_EXPORT approval bound to the exact domains and format; private content is excluded unless approved.</p>
+        <p className="muted measure">
+          An export needs a DATA_EXPORT approval bound to the exact domains, format and private-row choice. Once approved, the backend writes it to a new folder on
+          this machine: <code>data.json</code> (or one CSV file per table), copies of the attached files, and <code>manifest.json</code>, written last, which lists
+          every file with its SHA-256. The manifest is not signed. PRIVATE rows are included only when the request asks for them (this button does not); SECRET
+          rows are never exported. Erased content is left out.
+        </p>
         <button
           type="button"
           disabled={exportFlow.pending}
@@ -205,6 +212,7 @@ export function SettingsRecovery() {
           Request LEARNING export (JSON)
         </button>
         {exportFlow.error !== null ? <ErrorDisplay error={exportFlow.error} /> : null}
+        {exportFlow.cancelled ? <ConfirmationCancelled /> : null}
         {exportFlow.approval !== null ? (
           <ApprovalCard
             approval={exportFlow.approval}
@@ -219,10 +227,35 @@ export function SettingsRecovery() {
             }}
           />
         ) : null}
-        {exportFlow.result !== null && !isG9Error(exportFlow.result) ? (
-          <p role="status">
-            Export <code>{exportFlow.result.result.export_id}</code> <StateBadge state={exportFlow.result.result.state} />
-          </p>
+        {exported !== null ? (
+          <div role="status" data-testid="export-result">
+            <p>
+              Export <code>{exported.export_id}</code> <StateBadge state={exported.state} /> · {exported.domains.join(', ')} · {exported.format} · written{' '}
+              {formatDateTime(exported.requested_at, today.zone)}
+            </p>
+            <dl className="pairs">
+              <dt>Folder</dt>
+              <dd>
+                <code data-testid="export-location">{exported.location}</code>
+              </dd>
+              <dt>Rows</dt>
+              <dd className="num">{exported.rows}</dd>
+              <dt>Files</dt>
+              <dd className="num">{exported.files} (manifest.json included)</dd>
+              <dt>Attachment files copied</dt>
+              <dd className="num">{exported.attachments}</dd>
+              <dt>manifest.json SHA-256</dt>
+              <dd>
+                <span className="hash" data-testid="export-manifest-sha256">
+                  {exported.manifest_sha256}
+                </span>
+              </dd>
+            </dl>
+            <p className="muted">
+              The folder is outside this window: open it in your file manager. To check the export later, compare the SHA-256 of manifest.json with the value above,
+              then each file with the SHA-256 the manifest lists.
+            </p>
+          </div>
         ) : null}
         <Warnings warnings={exportFlow.warnings} />
       </Panel>

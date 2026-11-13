@@ -347,3 +347,39 @@ fn the_export_approval_names_the_privacy_ceiling_and_the_format() {
         "{summary}"
     );
 }
+
+#[test]
+fn an_export_over_several_domains_can_be_approved_and_written() {
+    // The approval's resource id joined the domains with `+`, which the
+    // resource-id pattern of the approvals schemas refuses: the request could
+    // be created but never listed or approved (found by the UI work).
+    let (mut h, _root) = harness();
+    note(&mut h, "Shared lab", "INTERNAL");
+    let payload =
+        json!({ "domains": ["SYSTEM", "LEARNING"], "format": "JSON", "include_private": false });
+    let pending = h.call("export.request", payload.clone()).unwrap_err();
+    assert_eq!(pending.category, ErrorCategory::ApprovalRequired);
+    let listed = h
+        .call_with(
+            "approvals.list",
+            json!({}),
+            &Opts {
+                scope: Some(("SYSTEM", "STUDY")),
+                ..Opts::default()
+            },
+        )
+        .unwrap();
+    let resource_id = listed["result"]["approvals"][0]["operation"]["resource"]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    assert_eq!(resource_id, "export:LEARNING.SYSTEM:INTERNAL:JSON");
+    let out = h.approved("export.request", payload, &Opts::default());
+    assert_eq!(out["result"]["state"], "READY", "{out}");
+    let dir = PathBuf::from(out["result"]["location"].as_str().unwrap());
+    assert!(
+        !rows_of(&dir, "audit_metadata").is_empty(),
+        "SYSTEM tables are in"
+    );
+    assert!(!rows_of(&dir, "notes").is_empty(), "LEARNING tables are in");
+}

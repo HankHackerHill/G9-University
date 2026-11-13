@@ -158,3 +158,29 @@ export function civilDateOf(utc: UtcMillis, zone: IanaZone): CivilDate {
   const z = toZoned(utc, zone);
   return { year: z.year, month: z.month, day: z.day };
 }
+
+/**
+ * The value of an `<input type="datetime-local">` (`YYYY-MM-DDTHH:mm`, optional seconds) as a
+ * civil date-time; null when it is empty or not a real calendar date and time. The input has no
+ * zone: forms resolve it with `civilToUtc` in the operator's zone from `system.status`, never in
+ * the webview's.
+ */
+export function parseLocalDateTime(value: string): CivilDateTime | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::\d{2}(?:\.\d{1,3})?)?$/.exec(value);
+  if (m === null) {
+    return null;
+  }
+  const [year, month, day, hour, minute] = [m[1], m[2], m[3], m[4], m[5]].map(Number) as [number, number, number, number, number];
+  const probe = new Date(Date.UTC(year, month - 1, day));
+  if (probe.getUTCFullYear() !== year || probe.getUTCMonth() !== month - 1 || probe.getUTCDate() !== day || hour > 23 || minute > 59) {
+    return null;
+  }
+  return { year, month, day, hour, minute };
+}
+
+/** An instant as a `datetime-local` value in `zone` (to prefill a form). */
+export function formatLocalDateTime(utc: UtcMillis, zone: IanaZone): string {
+  const z = toZoned(utc, zone);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${formatIsoDate(z)}T${pad(z.hour)}:${pad(z.minute)}`;
+}

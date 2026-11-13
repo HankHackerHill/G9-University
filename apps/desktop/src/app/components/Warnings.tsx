@@ -2,8 +2,9 @@ import { mergeWarnings, warningCode } from '../../lib/warnings';
 
 /**
  * Renders `CommandOutcome.warnings` verbatim. A warning is how the backend discloses that a
- * successful response is partial or PROPOSED (e.g. `export.execution_not_implemented`, no file
- * produced) or that a host fact degrades the install (key-file fallback, read-only storage).
+ * successful response is partial or PROPOSED (e.g. `export.attachments_missing`: an export was
+ * written but some attachment files were missing from the store) or that a host fact degrades
+ * the install (key-file fallback, read-only storage).
  * Dropping one would present unimplemented behaviour as done, so every screen renders the
  * warnings of the outcomes it shows.
  *

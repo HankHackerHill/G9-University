@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ERROR_CATEGORIES } from '../ipc/types';
 import { canonicalJson } from './canonical-json';
-import { civilToUtc, offsetAt, toZoned } from './civil-time';
+import { civilToUtc, formatLocalDateTime, offsetAt, parseLocalDateTime, toZoned } from './civil-time';
 import { ERROR_PRESENTATION, allCategoriesPresented } from './error-text';
 import { formatDuration } from './format';
 import { sha256Hex } from './sha256';
@@ -48,6 +48,16 @@ describe('civil time', () => {
     expect(civilToUtc({ year: 2026, month: 11, day: 18, hour: 9, minute: 0 }, 'UTC')).toEqual({ utc: Date.UTC(2026, 10, 18, 9, 0), adjusted: null });
     expect(offsetAt(Date.UTC(2026, 6, 1), 'Europe/Berlin')).toBe(2 * 3_600_000);
     expect(toZoned(Date.UTC(2026, 10, 18, 8, 30), 'Europe/Berlin')).toMatchObject({ hour: 9, minute: 30, weekday: 3 });
+  });
+
+  it('reads and writes datetime-local values without a zone of their own', () => {
+    expect(parseLocalDateTime('2026-11-19T10:00')).toEqual({ year: 2026, month: 11, day: 19, hour: 10, minute: 0 });
+    expect(parseLocalDateTime('2026-11-19T10:00:30')).toEqual({ year: 2026, month: 11, day: 19, hour: 10, minute: 0 });
+    for (const bad of ['', '2026-11-19', '2026-02-30T10:00', '2026-11-19T24:00', '2026-11-19 10:00', '19.11.2026 10:00']) {
+      expect(parseLocalDateTime(bad), bad).toBeNull();
+    }
+    expect(formatLocalDateTime(Date.UTC(2026, 10, 19, 9, 0), 'Europe/Berlin')).toBe('2026-11-19T10:00');
+    expect(formatLocalDateTime(Date.UTC(2026, 10, 19, 9, 5), 'UTC')).toBe('2026-11-19T09:05');
   });
 
   it('flags the fall-back overlap and resolves to the earlier (pre-transition) instant; flags the spring gap', () => {

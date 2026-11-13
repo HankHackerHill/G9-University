@@ -1,7 +1,8 @@
 /**
- * Synchronous SHA-256 (FIPS 180-4) over UTF-8 text. Used only to display and compare
- * operation hashes in the UI and in the mock transport; the backend computes the
- * authoritative `parameters_sha256`. Pure, dependency-free, deterministic.
+ * Synchronous SHA-256 (FIPS 180-4) over UTF-8 text or raw bytes. Used only to display and
+ * compare operation hashes in the UI and in the mock transport (which also content-addresses
+ * attachment bytes with it); the backend computes the authoritative hashes. Pure,
+ * dependency-free, deterministic.
  */
 
 const K = new Uint32Array([
@@ -19,8 +20,13 @@ function rotr(x: number, n: number): number {
   return (x >>> n) | (x << (32 - n));
 }
 
+/** Hex SHA-256 of the UTF-8 encoding of `text`. */
 export function sha256Hex(text: string): string {
-  const bytes = new TextEncoder().encode(text);
+  return sha256HexBytes(new TextEncoder().encode(text));
+}
+
+/** Hex SHA-256 of `bytes`. */
+export function sha256HexBytes(bytes: Uint8Array): string {
   const bitLength = bytes.length * 8;
   const paddedLength = Math.ceil((bytes.length + 9) / 64) * 64;
   const padded = new Uint8Array(paddedLength);

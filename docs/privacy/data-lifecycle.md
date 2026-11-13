@@ -28,7 +28,7 @@ Retention is enforced by a deterministic maintenance command (`system.retention_
 2. Policy requires `Capability::DataDelete` approval bound to the request hash.
 3. Execution (single transaction): content columns are redacted to NULL/empty, a tombstone keeps `content_sha256`, `byte_len`, timestamps and provenance; derived rows that referenced the content get `invalidated_by = deletion_request_id`; evidentiary rows that *must* survive (grades, audit) are retained but their content references resolve to tombstones.
 4. Backups: deletion is recorded in `deletion_requests`; backups created before the deletion remain until their retention expires; on restore, the deletion ledger is replayed before the database is accepted (`backup_manifests.deletion_ledger_checkpoint`). This is the explicit reconciliation of "user deletion vs backup retention" (handoff §7).
-5. Exports produced after deletion exclude tombstoned content; exports produced before are the operator's responsibility and listed in `export_records`.
+5. Exports produced after deletion exclude tombstoned content (erased rows, and the summaries of evidence that pointed at them); exports produced before are the operator's responsibility and are named by the `export.written` events.
 
 ## Encryption and key management (decision: layered, operator-chosen)
 
@@ -44,4 +44,4 @@ No key material is ever logged, serialized into IPC, or included in exports.
 
 ## Exports (A10)
 
-`export.request` produces a signed manifest (sha256 of every file, app/schema version, domain filter, classification ceiling) and a directory of JSON/CSV files; `PRIVATE` requires approval, `SECRET` is never exported. The export is a derived artifact; the database remains authoritative.
+`export.request` (approval-gated, IMPLEMENTED 2026-11-13, ADR-0016) writes `<data>/exports/<export_id>/`: `data.json` or one CSV per table, the attachment bytes, and `manifest.json` (SHA-256 and size of every file, app version, domain filter, `include_private`, withheld columns). `PRIVATE` rows leave only with `include_private`; `SECRET` is never exported; erased rows never leave; assessment task statements are withheld. The manifest is not signed (signing with the local key is PROPOSED), and there is no `export_records` table: each export is recorded by the domain events `export.requested` and `export.written`. The export is a derived artifact; the database remains authoritative.

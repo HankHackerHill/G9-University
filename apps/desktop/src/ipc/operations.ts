@@ -349,6 +349,114 @@ export type ExportFormat = 'JSON' | 'CSV';
 export type ExportState = 'REQUESTED' | 'READY' | 'FAILED';
 export type DeletionState = 'REQUESTED' | 'APPLIED' | 'REFUSED';
 
+/**
+ * Result of an approved `export.request`: the folder the backend wrote (`<exports>/<export_id>`,
+ * an absolute path on this machine), how many files and rows it holds, how many attachment files
+ * were copied, and the SHA-256 of `manifest.json` (which lists every file with its SHA-256; it is
+ * not signed). `SECRET` rows are never exported; `include_private` adds `PRIVATE` rows only.
+ */
+export interface ExportResult {
+  export_id: Id;
+  state: ExportState;
+  domains: DataDomain[];
+  format: ExportFormat;
+  requested_at: UtcMillis;
+  location: string;
+  /** Files written, `manifest.json` and attachment copies included (>= 1). */
+  files: number;
+  rows: number;
+  /** Attachment files copied into the export. */
+  attachments: number;
+  manifest_sha256: string;
+}
+
+/** Study-session modes the operator may plan (`session.create`; EXAM is refused at the boundary). */
+export type PlannedSessionMode = 'STUDY' | 'LAB' | 'REVIEW';
+
+/** Calendar event kinds the operator adds by hand (rest and assessment slots come from the curriculum). */
+export type OperatorEventKind = 'STUDY_BLOCK' | 'APPOINTMENT' | 'REVIEW';
+
+/** `review_items.kind` as written by `retention.create_item` (PROCEDURAL is listed as PRACTICAL_TRANSFER). */
+export type ReviewItemAuthoredKind = 'DECLARATIVE' | 'PROCEDURAL';
+
+export type ReviewOutcome = 'SUCCESS' | 'FAILURE' | 'SKIPPED';
+
+/** One recorded review and where the baseline ladder put the item (stage reached, next due). */
+export interface ReviewRecord {
+  review_item_id: Id;
+  outcome: ReviewOutcome;
+  due_at: UtcMillis;
+  stage: number;
+  offset_days: number;
+}
+
+/** `code` of `competency.create` and `assessment.define` (request schemas): upper case, at most 32 characters. */
+export const AUTHORED_CODE_PATTERN = /^[A-Z0-9][A-Z0-9-]{0,31}$/;
+
+/** Assessment kinds the operator may define (the kinds storage can persist). */
+export type AuthoredAssessmentKind = 'BLIND_PRACTICAL' | 'CAPSTONE' | 'TRANSFER_CHECK';
+
+/** Declared difficulty band of an assessment version. */
+export type Difficulty = 1 | 2 | 3 | 4 | 5;
+
+export interface CompetencyCreated {
+  competency_id: Id;
+  code: string;
+  title: string;
+  validity_days: number;
+}
+
+export interface AssessmentDefined {
+  assessment_id: Id;
+  code: string;
+  title: string;
+  kind: AuthoredAssessmentKind;
+  competency_id: Id;
+  version_id: Id;
+  difficulty: Difficulty;
+  /** Criterion codes of the version's rubric (the baseline rubric). */
+  criteria: string[];
+}
+
+/** The IPC attachment allow-list (g9-evidence `MediaType::ALLOWED`). */
+export type AttachmentMediaType =
+  | 'text/markdown'
+  | 'text/plain'
+  | 'application/pdf'
+  | 'image/png'
+  | 'image/jpeg'
+  | 'application/json'
+  | 'text/csv';
+
+export interface AttachmentView {
+  attachment_id: Id;
+  evidence_id: Id;
+  note_id: Id | null;
+  filename: string;
+  media_type: string;
+  size_bytes: number;
+  sha256: string;
+  /** True when identical bytes were already in the content-addressed store (stored once). */
+  already_stored: boolean;
+}
+
+export type EvidenceKind = 'NOTE' | 'ATTACHMENT' | 'SESSION' | 'ATTEMPT_SUBMISSION' | 'CHECKER_OUTPUT' | 'REVIEWER_COMMENT' | 'EXTERNAL';
+
+export interface EvidenceItemView {
+  evidence_id: Id;
+  kind: EvidenceKind;
+  note_id: Id | null;
+  attachment_id: Id | null;
+  summary: string;
+  sha256: string;
+  /** Original file name of an attachment; null for other kinds and for an erased attachment. */
+  filename: string | null;
+  media_type: string | null;
+  size_bytes: number | null;
+  created_at: UtcMillis;
+  invalidated: boolean;
+}
+
 export interface ResearchSource {
   source_id: Id;
   title: string;
@@ -465,12 +573,55 @@ export interface Operations {
 
   'export.request': {
     request: { domains: DataDomain[]; format: ExportFormat; include_private: boolean };
-    response: { export_id: Id; state: ExportState; domains: DataDomain[]; format: ExportFormat; requested_at: UtcMillis };
+    response: ExportResult;
   };
   'deletion.request': {
     request: { resource: ResourceRef; reason: string };
     response: { deletion_id: Id; state: DeletionState; resource: ResourceRef; tombstone_sha256: string | null; requested_at: UtcMillis };
   };
+
+  'session.create': {
+    /** `planned_minutes` 1..600; `planned_start` defaults to now; `objective_id` is an objective code of the imported curriculum. */
+    request: { planned_minutes: number; planned_start?: UtcMillis; mode?: PlannedSessionMode; objective_id?: Id };
+    response: SessionView;
+  };
+
+  'calendar.create_event': {
+    request: { title: string; kind: OperatorEventKind; start: UtcMillis; end: UtcMillis; all_day?: boolean };
+    response: CalendarEvent;
+  };
+  'calendar.update_event': {
+    request: { event_id: Id; title?: string; kind?: OperatorEventKind; start?: UtcMillis; end?: UtcMillis };
+    response: CalendarEvent;
+  };
+  'calendar.delete_event': { request: { event_id: Id }; response: { event_id: Id; deleted: boolean } };
+
+  'retention.create_item': {
+    request: { prompt: string; answer?: string; kind?: ReviewItemAuthoredKind; competency_id?: Id };
+    response: ReviewItem;
+  };
+  'retention.record_review': {
+    request: { review_item_id: Id; outcome: ReviewOutcome; response_ms?: DurationMs; rating?: 1 | 2 | 3 | 4; session_id?: Id };
+    response: ReviewRecord;
+  };
+
+  'competency.create': {
+    /** `code` matches `^[A-Z0-9][A-Z0-9-]{0,31}$`; `validity_days` 1..3650 (default 180). */
+    request: { code: string; title: string; description?: string; validity_days?: number };
+    response: CompetencyCreated;
+  };
+  'assessment.define': {
+    request: { code: string; title: string; kind: AuthoredAssessmentKind; competency_id: Id; task_statement: string; difficulty: Difficulty };
+    response: AssessmentDefined;
+  };
+
+  'evidence.attach_file': {
+    /** `content_base64`: standard padded base64 of at most 16 MiB of bytes. Without `note_id` the file is LEARNING data with `classification` (default INTERNAL). */
+    request: { note_id?: Id; filename: string; media_type: AttachmentMediaType; content_base64: string; classification?: Classification };
+    response: AttachmentView;
+  };
+  'evidence.from_note': { request: { note_id: Id }; response: { evidence_id: Id; kind: 'NOTE'; note_id: Id; summary: string } };
+  'evidence.list': { request: { note_id?: Id; limit?: number }; response: { items: EvidenceItemView[] } };
 }
 
 export type OperationName = keyof Operations;
@@ -562,6 +713,24 @@ export const OPERATIONS: Readonly<Record<OperationName, OperationSpec>> = {
 
   'export.request': spec('export.request', 'EXPORT', 'EXPORT', { defaultDomain: 'SYSTEM', approvalExpected: true }),
   'deletion.request': spec('deletion.request', 'DELETE', 'NOTE', { approvalExpected: true }),
+
+  'session.create': spec('session.create', 'CREATE', 'STUDY_SESSION'),
+
+  'calendar.create_event': spec('calendar.create_event', 'CREATE', 'CALENDAR_EVENT'),
+  'calendar.update_event': spec('calendar.update_event', 'UPDATE', 'CALENDAR_EVENT'),
+  // Policy rule `operator.delete.approval`: ApprovalRequired(DATA_DELETE), confirmed natively.
+  'calendar.delete_event': spec('calendar.delete_event', 'DELETE', 'CALENDAR_EVENT', { approvalExpected: true }),
+
+  'retention.create_item': spec('retention.create_item', 'CREATE', 'REVIEW_ITEM'),
+  'retention.record_review': spec('retention.record_review', 'UPDATE', 'REVIEW_ITEM'),
+
+  'competency.create': spec('competency.create', 'CREATE', 'COMPETENCY'),
+  'assessment.define': spec('assessment.define', 'CREATE', 'ASSESSMENT_DEFINITION'),
+
+  // Approval only when the owning note is SECURITY_SENSITIVE (`operator.security_sensitive.write.approval`).
+  'evidence.attach_file': spec('evidence.attach_file', 'CREATE', 'ATTACHMENT'),
+  'evidence.from_note': spec('evidence.from_note', 'CREATE', 'EVIDENCE_ITEM'),
+  'evidence.list': spec('evidence.list', 'READ', 'EVIDENCE_ITEM', { mutating: false }),
 };
 
 export const OPERATION_NAMES = Object.keys(OPERATIONS) as OperationName[];

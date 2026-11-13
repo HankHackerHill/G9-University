@@ -3,19 +3,54 @@ import { isG9Error } from '../../ipc/client';
 import type { NoteView } from '../../ipc/operations';
 import type { Classification, G9Error } from '../../ipc/types';
 import { CLASSIFICATIONS } from '../../ipc/types';
-import { formatDateTime } from '../../lib/format';
-import { warningsOf } from '../../lib/warnings';
+import { ATTACHMENT_MEDIA_TYPES, MAX_ATTACHMENT_BYTES, attachmentMediaType, base64FromDataUrl, formatBytes } from '../../lib/attachment';
+import { formatDateTime, sentenceCase, shortHash } from '../../lib/format';
+import { mergeWarnings, warningsOf } from '../../lib/warnings';
+import { ApprovalCard, ConfirmationCancelled } from '../components/ApprovalCard';
 import { ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { MarkdownPreview } from '../components/MarkdownPreview';
-import { NoData, Panel } from '../components/Panel';
+import { Loading, NoData, Panel } from '../components/Panel';
 import { Table } from '../components/Table';
 import { Warnings } from '../components/Warnings';
+import { useApprovalFlow } from '../hooks/useApprovalFlow';
+import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
 import { PageHead } from '../components/PageHead';
 
 const STARTER = '# Session notes\n\nWhat I verified today:\n\n- \n\n```text\nevidence: \n```\n';
+
+/** What the file chooser offers; anything else is refused before reading (the backend re-checks the bytes). */
+const ACCEPT = ['.md', '.txt', '.csv', '.json', '.pdf', '.png', '.jpg', '.jpeg', ...ATTACHMENT_MEDIA_TYPES].join(',');
+
+/** The picked file as standard base64 (no `data:` prefix), read with FileReader; null when it cannot be read. */
+function readAsBase64(file: File): Promise<string | null> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(typeof reader.result === 'string' ? base64FromDataUrl(reader.result) : null);
+    };
+    reader.onerror = () => {
+      resolve(null);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/** Why the window refuses a picked file before anything is sent, or null when it may be sent. */
+export function attachmentProblem(file: File): string | null {
+  if (file.size === 0) {
+    return `${file.name} is empty; there is nothing to attach.`;
+  }
+  if (file.size > MAX_ATTACHMENT_BYTES) {
+    return `${file.name} is ${formatBytes(file.size)} (${file.size} bytes); a file attached in the app is at most 16 MiB (${MAX_ATTACHMENT_BYTES} bytes).`;
+  }
+  if (attachmentMediaType(file.name, file.type) === null) {
+    return `${file.name} was not attached: only Markdown, plain text, CSV, JSON, PDF, PNG and JPEG files can be attached.`;
+  }
+  return null;
+}
 
 export function LearningJournal() {
   const today = useToday();
@@ -28,6 +63,59 @@ export function LearningJournal() {
   const [error, setError] = useState<G9Error | null>(null);
   const [busy, setBusy] = useState(false);
   const [saveWarnings, setSaveWarnings] = useState<readonly string[]>([]);
+  // Evidence of the open note: its attachments and NOTE items, read in the note's own domain.
+  const evidence = useCommand('evidence.list', current === null ? null : { note_id: current.note_id }, current === null ? undefined : { domain: current.domain });
+  const attachFlow = useApprovalFlow<'evidence.attach_file'>();
+  const noteEvidenceFlow = useApprovalFlow<'evidence.from_note'>();
+  const [attachProblem, setAttachProblem] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+  const attached = attachFlow.result !== null && !isG9Error(attachFlow.result) ? attachFlow.result.result : null;
+  const madeEvidence = noteEvidenceFlow.result !== null && !isG9Error(noteEvidenceFlow.result) ? noteEvidenceFlow.result.result : null;
+  const evidenceBusy = reading || attachFlow.pending || noteEvidenceFlow.pending;
+
+  const attach = async (note: NoteView, file: File) => {
+    const problem = attachmentProblem(file);
+    setAttachProblem(problem);
+    const mediaType = attachmentMediaType(file.name, file.type);
+    if (problem !== null || mediaType === null) {
+      return;
+    }
+    setReading(true);
+    const content = await readAsBase64(file);
+    setReading(false);
+    if (content === null || content.length === 0) {
+      setAttachProblem(`${file.name} could not be read.`);
+      return;
+    }
+    noteEvidenceFlow.reset();
+    await attachFlow.run((approvalId) =>
+      client.invoke(
+        'evidence.attach_file',
+        { note_id: note.note_id, filename: file.name, media_type: mediaType, content_base64: content },
+        { domain: note.domain, ...(approvalId === undefined ? {} : { approvalId }) },
+      ),
+    );
+    evidence.reload();
+  };
+
+  const makeEvidence = async (note: NoteView) => {
+    setAttachProblem(null);
+    attachFlow.reset();
+    await noteEvidenceFlow.run((approvalId) =>
+      client.invoke('evidence.from_note', { note_id: note.note_id }, { domain: note.domain, ...(approvalId === undefined ? {} : { approvalId }) }),
+    );
+    evidence.reload();
+  };
+
+  const openNote = (n: NoteView) => {
+    setCurrent(n);
+    setTitle(n.title);
+    setBody(n.body_markdown);
+    setClassification(n.classification);
+    setAttachProblem(null);
+    attachFlow.reset();
+    noteEvidenceFlow.reset();
+  };
 
   const save = async () => {
     setBusy(true);
@@ -52,6 +140,9 @@ export function LearningJournal() {
     setBody(STARTER);
     setError(null);
     setSaveWarnings([]);
+    setAttachProblem(null);
+    attachFlow.reset();
+    noteEvidenceFlow.reset();
   };
 
   return (
@@ -62,7 +153,7 @@ export function LearningJournal() {
         imported or pasted HTML is data, never instructions.
       </p>
       {error !== null ? <ErrorDisplay error={error} /> : null}
-      <Warnings warnings={saveWarnings} />
+      <Warnings warnings={mergeWarnings(saveWarnings, evidence.warnings, attachFlow.warnings, noteEvidenceFlow.warnings)} />
       <div className="grid-2">
         <Panel title={current === null ? 'New note' : `Revise ${current.note_id} (revision ${current.revision})`}>
           <form
@@ -128,6 +219,113 @@ export function LearningJournal() {
           ) : null}
         </Panel>
       </div>
+      <Panel title="Evidence of this note">
+        {current === null ? (
+          <NoData reason="save the note first; files and evidence attach to a saved note" />
+        ) : (
+          <div className="stack">
+            <p className="muted">
+              A file you attach is stored by its SHA-256 (identical bytes are kept once) and becomes an evidence item you can pick when you submit an assessment.
+              Attached files are imported documents: stored and hashed, never opened or followed by the app. Markdown, plain text, CSV, JSON, PDF, PNG and JPEG
+              only, at most 16 MiB; executables, archives and packet captures are refused.
+            </p>
+            <div className="row">
+              <label htmlFor="attach-file">Attach a file to this note</label>
+              <input
+                id="attach-file"
+                type="file"
+                accept={ACCEPT}
+                disabled={evidenceBusy}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  // Clear the chooser so the same file can be picked again after a refusal.
+                  e.target.value = '';
+                  if (file !== undefined) {
+                    void attach(current, file);
+                  }
+                }}
+              />
+              <button
+                type="button"
+                disabled={evidenceBusy}
+                onClick={() => {
+                  void makeEvidence(current);
+                }}
+              >
+                Use as evidence
+              </button>
+            </div>
+            <p className="field-hint">Use as evidence records the note as last saved (revision {current.revision}); save your changes first.</p>
+            {reading ? <Loading what="the file" /> : null}
+            {attachProblem !== null ? (
+              <p className="muted" role="status" data-testid="attach-refused">
+                {attachProblem}
+              </p>
+            ) : null}
+            {attachFlow.error !== null && attachFlow.error.category !== 'APPROVAL_REQUIRED' ? <ErrorDisplay error={attachFlow.error} /> : null}
+            {noteEvidenceFlow.error !== null && noteEvidenceFlow.error.category !== 'APPROVAL_REQUIRED' ? <ErrorDisplay error={noteEvidenceFlow.error} /> : null}
+            {attachFlow.cancelled || noteEvidenceFlow.cancelled ? <ConfirmationCancelled /> : null}
+            {[attachFlow, noteEvidenceFlow].map((flow, i) =>
+              flow.approval !== null && flow.approval.state !== 'CONSUMED' ? (
+                <ApprovalCard
+                  key={i === 0 ? 'attach' : 'from-note'}
+                  approval={flow.approval}
+                  zone={today.zone}
+                  now={today.now ?? undefined}
+                  disabled={flow.pending}
+                  onDecide={(d) => {
+                    void flow.decide(d);
+                  }}
+                  onApply={() => {
+                    void flow.applyWithApproval().then(() => {
+                      evidence.reload();
+                    });
+                  }}
+                />
+              ) : null,
+            )}
+            {attached !== null ? (
+              <p role="status" data-testid="attached">
+                Attached {attached.filename} ({formatBytes(attached.size_bytes)}, SHA-256 <span className="hash">{shortHash(attached.sha256, 16)}</span>)
+                {attached.already_stored ? '; identical bytes were already in the store and are kept once' : ''}.
+              </p>
+            ) : null}
+            {madeEvidence !== null ? (
+              <p role="status" data-testid="note-evidence">
+                The note is evidence item <code>{madeEvidence.evidence_id}</code> (“{madeEvidence.summary}”).
+              </p>
+            ) : null}
+            {evidence.error !== null ? <ErrorDisplay error={evidence.error} onRetry={evidence.reload} /> : null}
+            {evidence.data === null ? (
+              evidence.loading ? (
+                <Loading what="evidence" />
+              ) : null
+            ) : evidence.data.items.length === 0 ? (
+              <NoData reason="no evidence for this note yet" />
+            ) : (
+              <Table
+                caption="Evidence of this note"
+                headers={['Evidence', 'Kind', 'File or summary', 'Type', 'Size', 'SHA-256', 'Added', 'Standing']}
+                rows={evidence.data.items.map((item) => ({
+                  key: item.evidence_id,
+                  cells: [
+                    <code>{item.evidence_id}</code>,
+                    sentenceCase(item.kind),
+                    item.filename ?? item.summary,
+                    item.media_type ?? '—',
+                    item.size_bytes === null ? '—' : formatBytes(item.size_bytes),
+                    <span className="hash" title={item.sha256}>
+                      {shortHash(item.sha256)}
+                    </span>,
+                    formatDateTime(item.created_at, today.zone),
+                    item.invalidated ? <StateBadge state="INVALIDATED" /> : <ProvenanceBadge label="VERIFIED" />,
+                  ],
+                }))}
+              />
+            )}
+          </div>
+        )}
+      </Panel>
       <Panel title="Notes saved in this session">
         {notes.length === 0 ? (
           <NoData reason="no notes saved yet (a notes.list read model is PROPOSED)" />
@@ -147,10 +345,7 @@ export function LearningJournal() {
                 <button
                   type="button"
                   onClick={() => {
-                    setCurrent(n);
-                    setTitle(n.title);
-                    setBody(n.body_markdown);
-                    setClassification(n.classification);
+                    openNote(n);
                   }}
                 >
                   Open

@@ -70,17 +70,22 @@ describe('CommandOutcome.warnings are rendered', () => {
     expect(within(settings).getByText(MIGRATION_BLOCKED)).toBeInTheDocument();
   });
 
-  it('shows export.execution_not_implemented after an approved export (no file was produced)', async () => {
+  it('shows export.attachments_missing when an approved export reports attachment files missing from the store', async () => {
+    const MISSING = 'export.attachments_missing: 1 attachment file(s) were missing or damaged in the store and are listed in manifest.json';
+    const harness = createInterceptHarness(async (op, _payload, next) => {
+      const r = await next();
+      return op === 'export.request' ? addWarnings(r, [MISSING]) : r;
+    });
     const user = userEvent.setup();
-    renderWithIpc(<SettingsRecovery />);
+    renderWithIpc(<SettingsRecovery />, harness);
     expect(await screen.findByTestId('status-warnings-none')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Request LEARNING export (JSON)' }));
     const card = await screen.findByTestId('approval-card');
     await user.click(within(card).getByRole('button', { name: 'Approve' }));
     await user.click(await within(card).findByRole('button', { name: 'Apply with approval' }));
-    expect(await screen.findByText(/^Export /)).toBeInTheDocument();
+    expect(await screen.findByTestId('export-result')).toHaveTextContent('READY');
     const warnings = await screen.findByTestId('outcome-warnings');
-    expect(within(warnings).getByText(/^export\.execution_not_implemented: .*no file was produced$/)).toBeInTheDocument();
+    expect(within(warnings).getByText(MISSING)).toBeInTheDocument();
   });
 
   it.each(SCREENS.map((s) => [s.title, s] as const))('%s renders the warnings of every successful read it issues', async (_title, screenDef) => {
