@@ -45,10 +45,16 @@
 //! metadata-only `policy_decisions` row (ARCHITECTURE.md §11, ADR-0003).
 //!
 //! Approval binding (ADR-0003, SEC-02): an approval request is bound to the
-//! client's `expected_revision`, or — when the client sent none and the
-//! resource exists — to the stored revision read in step 3. Consumption
-//! compares against the same rule, so a resource changed between grant and
-//! use (e.g. a regrade after the approval) refuses the stale approval.
+//! revision the resource has when it is requested — the stored revision read in
+//! step 3, never a value the client chooses — and a request whose
+//! `expected_revision` differs from it is refused STALE_REVISION before any
+//! approval exists. Consumption binds by the same rule, so a resource changed
+//! between grant and use (e.g. a regrade after the approval) refuses the stale
+//! approval whatever revision the retry claims. (Binding the client's value let
+//! an approval be requested "for revision r+2" of a failing attempt and consumed
+//! after a regrade the operator never saw: security audit 2026-11-12.) For a
+//! resource that does not exist yet, the client's `expected_revision` (if any)
+//! is bound.
 
 use crate::context::{AppContext, Services};
 use crate::ops::OpSpec;
@@ -658,11 +664,12 @@ where
 
     // Step 3 (facts read inside the transaction).
     let found = facts(&tx, svc).map_err(Refusal::not_evaluated)?;
-    // The revision an approval binds to (ADR-0003, SEC-02): the client's, or
-    // the stored revision when the client sent none. Used identically when the
-    // approval is requested and when it is consumed, so a change to the
-    // resource in between refuses the approval (`approval.revision_mismatch`).
-    let bound_revision = meta.expected_revision.or(found.current_revision);
+    // The revision an approval binds to (ADR-0003, SEC-02): the stored one
+    // whenever the resource exists, so the operator approves the state they can
+    // see. Used identically when the approval is requested and when it is
+    // consumed, so a change to the resource in between refuses the approval
+    // (`approval.revision_mismatch`), whatever the client sends.
+    let bound_revision = found.current_revision.or(meta.expected_revision);
 
     // Steps 3–4: policy and approval consumption.
     let (record, consumed) = match &meta.approval_id {
@@ -688,6 +695,23 @@ where
                     required_capability,
                     ..
                 } => {
+                    // A request made from a stale (or invented) view of the
+                    // resource gets no approval at all: STALE_REVISION, recorded
+                    // with the decision that asked for an approval.
+                    if let (Some(expected), Some(actual)) =
+                        (meta.expected_revision, found.current_revision)
+                    {
+                        if expected != actual {
+                            return Err(Refusal {
+                                error: G9Error::stale_revision(Some(expected), actual),
+                                decision: AuditDecision::ApprovalRequired,
+                                record: Some(evaluation.record),
+                                new_approval: None,
+                                touched_approval: None,
+                                expire_approvals: false,
+                            });
+                        }
+                    }
                     let id = ApprovalId::new_v7();
                     let request = evaluation
                         .approval_request(id.clone(), &meta.actor, op, bound_revision)

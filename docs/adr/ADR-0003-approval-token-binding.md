@@ -21,3 +21,17 @@ Approvals cannot be replayed or re-targeted; every evaluation is logged (gate A0
 ## Verification
 
 `g9-policy` approval tests: AlreadyConsumed, OperationMismatch, ResourceMismatch, RevisionMismatch, Expired, MacInvalid.
+
+## Addendum (2026-11-13): the bound revision is the stored one
+
+Security audit 2026-11-12 (MEDIUM, CONFIRMED by an executable probe): the pipeline bound an approval to the client's `expected_revision` and compared it with the stored revision only after the approval step, so a client could request an approval of a failing attempt "for revision r+2", regrade it after the grant and consume the approval: a final, immutable grade the operator never saw.
+
+Corrected in `crates/g9-app/src/pipeline.rs`:
+
+| Rule | Behaviour |
+|---|---|
+| Binding | An approval binds to the stored revision of the resource whenever the resource exists; the client's `expected_revision` is bound only for a resource that does not exist yet. |
+| Request | A request whose `expected_revision` differs from the stored revision is refused `STALE_REVISION` before any approval is created (the decision row records the approval requirement; no `approval_requests` row). |
+| Consumption | The same rule computes the revision compared with the approval's binding, so any change between grant and use refuses the approval (`approval.revision_mismatch`) whatever revision the retry claims. |
+
+Verification: `crates/g9-app/tests/approval_binding.rs` (4 tests; the two exploit cases, `assessment.approve_final` and `deletion.request`, failed before the change and pass after; two guards keep a current-revision request and a revision-less request working).

@@ -1064,13 +1064,17 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
         },
         attempt_probe,
     );
+    // The approval binds to the stored revision (ADR-0003 addendum 2026-11-13),
+    // so it is refused at verification, whatever revision the retry claims; it
+    // used to verify against the claimed r (ALLOW) and fail later as
+    // `revision.stale`. Same refusal, earlier and more specific.
     check_step(
         &mut r,
-        "approval for revision r after the attempt moved to r+2",
+        "approval for revision r after the attempt moved to r+2 (retry claims r)",
         &out,
-        "ALLOW",
+        "DENY",
         "STALE_REVISION",
-        Some("revision.stale"),
+        Some("approval.revision_mismatch"),
     );
     let out = h.record(
         &mut r,

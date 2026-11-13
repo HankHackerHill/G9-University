@@ -244,7 +244,10 @@ fn st09_replayed_stale_and_forged_approvals_are_denied_with_reasons() {
             Some("approval.resource_mismatch"),
             Some("approval.expired"),
             Some("approval.not_found"),
-            Some("revision.stale"),
+            // The approval binds to the stored revision (ADR-0003 addendum
+            // 2026-11-13): refused at verification whatever revision the retry
+            // claims, so both stale retries now give the same code.
+            Some("approval.revision_mismatch"),
             Some("approval.revision_mismatch"),
             Some("approval.mac_invalid"),
         ]
