@@ -11,6 +11,9 @@ All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 - `src-tauri/build.rs` refuses a release build in Tauri development mode (which would load its UI from `http://localhost:5173`); the README builds with `npm run tauri:build` (LOW).
 - Report: `docs/audit/security-audit-2026-11-12.md`.
 
+### Changed
+- CI runs only when started by hand (`workflow_dispatch`), by the owner's decision: the push and pull_request triggers are removed, so no push starts a run. All five jobs are unchanged. The same checks run locally with `scripts/ci_preflight.sh`. GitHub shows the "Run workflow" button only for workflows on the default branch, which does not contain `.github/workflows/ci.yml` yet.
+
 ## [0.1.0] — unreleased (2026-11-12 update)
 
 ### Added

@@ -155,7 +155,7 @@ Open: the webview can still call `approvals.decide` (SEC-03; the UI now says so)
 | Risk | Owner stage | Mitigation in place |
 |---|---|---|
 | Offline restore verified only with simulated kill points (no real SIGKILL), on Linux, on a local filesystem; the swap needs hard-link support and the quarantine on the same filesystem; the desktop app has no restore button (in-app restore PROPOSED) | 14 | refuses before changing anything when unsupported; the host procedure in section 13 should include a restore drill |
-| Shell compiled and its bridge unit tests passed on the CI runner only (runs 27 and 28); not built on the G9 host and no window flow exercised; the per-test counts were not read | 01 | CI job `desktop-shell` runs `cargo test --locked -p g9-mentor-desktop --lib` on every push; the host procedure in section 13 remains the open item |
+| Shell compiled and its bridge unit tests passed on the CI runner only (runs 27 and 28); not built on the G9 host and no window flow exercised; the per-test counts were not read | 01 | CI job `desktop-shell` runs `cargo test --locked -p g9-mentor-desktop --lib` when CI is started by hand (manual only since 2026-11-13; no push starts a run); the host procedure in section 13 remains the open item |
 | Original curriculum never supplied; canonical import blocked | 02 | seed stays PROPOSED_SEED; importer blocks promotion |
 | No local model benchmarked; no model-in-the-loop evidence | 06 | `NullRuntime`; protocol defined (`docs/evaluations/model-benchmark-protocol.md`) |
 | Self-adjudicated qualitative grading; machine-checkable weight 45% against a 60% target | 04 | reliability class; reported, not enforced |
