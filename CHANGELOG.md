@@ -2,6 +2,15 @@
 
 All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 
+## [0.1.0] — unreleased (2026-11-13 update)
+
+### Security
+- Backup verification, restore and open-time recovery now verify the schema itself: every table, index, trigger and view must equal what the embedded migrations produce at the recorded version. A tampered snapshot or live file with a dropped or planted trigger is refused at verify and restore, and blocks every mutation at open (`schema_drift`). Before, a copy of a genuine database with planted triggers passed every check (security audit 2026-11-12, MEDIUM).
+- Approvals bind to the stored revision of the resource, and a request whose `expected_revision` differs from it is refused `STALE_REVISION`. Before, an approval could be bound to a future revision and consumed after a regrade the operator never saw (MEDIUM).
+- The restore plan no longer prints a mismatching snapshot hash next to the confirmation command; table names read from a foreign file are quoted.
+- `src-tauri/build.rs` refuses a release build in Tauri development mode (which would load its UI from `http://localhost:5173`); the README builds with `npm run tauri:build` (LOW).
+- Report: `docs/audit/security-audit-2026-11-12.md`.
+
 ## [0.1.0] — unreleased (2026-11-12 update)
 
 ### Added
