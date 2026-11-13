@@ -1,0 +1,45 @@
+/*
+ * Curriculum Navigator: the week as a tree of days. Everything else on the screen is drawn by
+ * the documented classes (.tree, .day-group, .rows, .facts, dl.pairs).
+ */
+@layer screens {
+  /* The day's name is the title of its line; the rest of the line stays secondary. */
+  .tree-day > summary > strong {
+    color: var(--ink);
+  }
+
+  /* Its code, its facts and its marks are separate items on the line. */
+  .tree-day > summary > :is(code, .row-sub, .tree-today, .badge) {
+    margin-inline-start: var(--s-2);
+  }
+
+  .tree-day > summary > .row-sub:not([data-standing]) {
+    font-weight: var(--body-weight);
+  }
+
+  /* A day's content hangs from its line as one branch: one indent, one rule. */
+  .tree-day > .stack-sm {
+    margin: 0 0 var(--s-4) var(--s-1);
+    padding-left: var(--s-4);
+    border-left: 1px solid var(--rule);
+  }
+
+  /* The objectives already sit inside the branch: no second indent from `.tree ol`. */
+  .tree-day .rows {
+    margin-top: 0;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  /* Today: the pen is on this day. The word "Today" says so too. */
+  .tree-day[data-today='true'] > summary {
+    padding-inline: var(--s-3);
+    background: var(--accent-fill);
+    box-shadow: inset 3px 0 0 0 var(--accent);
+  }
+
+  .tree-today {
+    color: var(--accent);
+    font-weight: 700;
+  }
+}

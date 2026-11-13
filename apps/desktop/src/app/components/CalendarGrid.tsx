@@ -11,6 +11,11 @@
  * span 07:00–21:00 and grow to cover the earliest and latest event start of the week. When a
  * caller fixes the range with `startHour`/`endHour`, events starting outside it are listed in a
  * note under the grid instead of being dropped.
+ *
+ * `today` marks that day's column header (accent, and "today" for assistive technology) and is
+ * where the roving cell starts when the week holds it; without it the cell starts on Monday.
+ * The zone is not printed in the grid (the corner cell is too narrow for it): the screen says it
+ * beside the week's dates.
  */
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import type { CalendarEvent } from '../../ipc/operations';
@@ -26,6 +31,8 @@ export interface CalendarGridProps {
   startHour?: number;
   /** Fixes the end of the last hour row (exclusive). Omitted: 21:00, extended up to cover the latest event start. */
   endHour?: number;
+  /** The backend's civil date of today, when known: its column is marked and holds the roving cell at first. */
+  today?: CivilDate | null;
   onActivate?: (cell: { date: CivilDate; hour: number | null; events: CalendarEvent[] }) => void;
 }
 
@@ -43,8 +50,10 @@ interface Cell {
   events: CalendarEvent[];
 }
 
-export function CalendarGrid({ weekStart, zone, events, startHour, endHour, onActivate }: CalendarGridProps) {
+export function CalendarGrid({ weekStart, zone, events, startHour, endHour, today, onActivate }: CalendarGridProps) {
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
+  const todayIso = today === undefined || today === null ? null : formatIsoDate(today);
+  const todayCol = todayIso === null ? -1 : days.findIndex((d) => formatIsoDate(d) === todayIso);
   const weekFrom = useMemo(() => civilToUtc({ ...weekStart, hour: 0, minute: 0 }, zone).utc, [weekStart, zone]);
   const weekTo = useMemo(() => civilToUtc({ ...addDays(weekStart, 7), hour: 0, minute: 0 }, zone).utc, [weekStart, zone]);
   // Timed events of this week, each anchored at the instant it is listed: its start, or the
@@ -109,7 +118,7 @@ export function CalendarGrid({ weekStart, zone, events, startHour, endHour, onAc
     return timed.filter((t) => !listed.has(t.event.event_id)).map((t) => t.event);
   }, [rows, timed]);
 
-  const [active, setActive] = useState<{ row: number; col: number }>({ row: 1, col: 0 });
+  const [active, setActive] = useState<{ row: number; col: number }>(() => ({ row: 1, col: Math.max(0, todayCol) }));
   const pendingFocus = useRef(false);
   const cellRefs = useRef(new Map<string, HTMLDivElement>());
 
@@ -187,19 +196,20 @@ export function CalendarGrid({ weekStart, zone, events, startHour, endHour, onAc
         data-testid="calendar-grid"
       >
         <div role="row" aria-rowindex={1}>
-          <div role="columnheader" aria-colindex={1} className="muted">
-            {zone}
+          <div role="columnheader" aria-colindex={1}>
+            <span className="visually-hidden">Hour, in {zone}</span>
           </div>
           {days.map((d, i) => (
-            <div role="columnheader" aria-colindex={i + 2} key={formatIsoDate(d)}>
+            <div role="columnheader" aria-colindex={i + 2} key={formatIsoDate(d)} data-today={i === todayCol ? 'true' : undefined}>
               <abbr title={formatIsoDate(d)}>{DAY_NAMES[i]}</abbr> {d.day}
+              {i === todayCol ? <span className="visually-hidden">, today</span> : null}
             </div>
           ))}
         </div>
         {rows.map((cells, rowIndex) => (
           <div role="row" aria-rowindex={rowIndex + 2} key={rowIndex === 0 ? 'allday' : `h${hours[rowIndex - 1] ?? rowIndex}`}>
             <div role="rowheader" aria-colindex={1}>
-              {rowIndex === 0 ? 'all day' : `${String(hours[rowIndex - 1] ?? 0).padStart(2, '0')}:00`}
+              {rowIndex === 0 ? 'All day' : `${String(hours[rowIndex - 1] ?? 0).padStart(2, '0')}:00`}
             </div>
             {cells.map((cell, colIndex) => {
               const isActive = active.row === rowIndex && active.col === colIndex;
@@ -236,7 +246,8 @@ export function CalendarGrid({ weekStart, zone, events, startHour, endHour, onAc
                     // Chip and tooltip use the same date-qualified times as the cell label: an event carried
                     // over from another day shows that day's date, never a bare time inside this day's row.
                     <span className="cal-event" data-kind={e.kind} key={e.event_id} title={e.all_day ? e.title : `${e.title} ${timeRange(e, cell.date, zone)}`}>
-                      {e.all_day ? e.title : `${timeOnDay(e.start, cell.date, zone)} ${e.title}`}
+                      {e.all_day ? null : <span className="num">{timeOnDay(e.start, cell.date, zone)}</span>}
+                      {e.all_day ? e.title : ` ${e.title}`}
                     </span>
                   ))}
                 </div>
@@ -247,7 +258,7 @@ export function CalendarGrid({ weekStart, zone, events, startHour, endHour, onAc
       </div>
       {outside.length > 0 ? (
         <p className="banner" role="note" data-testid="calendar-outside-hours">
-          {outside.length} event{outside.length === 1 ? '' : 's'} outside the shown hours ({String(firstHour).padStart(2, '0')}:00–{String(lastHour).padStart(2, '0')}:00):{' '}
+          {outside.length} event{outside.length === 1 ? '' : 's'} outside the shown hours ({String(firstHour).padStart(2, '0')}:00 to {String(lastHour).padStart(2, '0')}:00):{' '}
           {outside.map((e) => `${e.title} ${formatDateTime(e.start, zone)} to ${formatDateTime(e.end, zone)}`).join('; ')}
         </p>
       ) : null}
@@ -271,7 +282,7 @@ function timeOnDay(utc: number, date: CivilDate, zone: IanaZone): string {
   return formatIsoDate(civilDateOf(utc, zone)) === formatIsoDate(date) ? formatTime(utc, zone) : formatDateTime(utc, zone);
 }
 
-/** `HH:MM to HH:MM`; a start or end on another civil day than the cell carries its date. */
-function timeRange(e: CalendarEvent, date: CivilDate, zone: IanaZone): string {
+/** `HH:MM to HH:MM`; a start or end on another civil day than `date` carries its own date. */
+export function timeRange(e: CalendarEvent, date: CivilDate, zone: IanaZone): string {
   return `${timeOnDay(e.start, date, zone)} to ${timeOnDay(e.end, date, zone)}`;
 }

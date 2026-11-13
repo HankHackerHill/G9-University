@@ -1,0 +1,64 @@
+/*
+ * The two overlays of the shell: the ledger key and the command palette. Their base rules are in
+ * shell.css; these are the rules the rebuilt key adds, and one correction to the palette.
+ */
+@layer screens {
+  /* The key holds two columns: what a mark means on the left; where you are, who speaks and the keys on the right. */
+  .key-dialog {
+    width: min(50rem, calc(100vw - 2rem));
+  }
+
+  .key-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: var(--s-4) var(--s-6);
+    align-items: start;
+    margin-top: var(--s-4);
+  }
+
+  .key-cols > div > h3:first-child {
+    margin-top: 0;
+  }
+
+  /* A mark sits on the first line of its meaning, not beside the middle of it. */
+  .key-list {
+    align-items: baseline;
+    margin-block: var(--s-2) 0;
+  }
+
+  /* The mark of a standing: its swatch as charts draw it, then its stamp as records carry it. */
+  .key-list dt {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+  }
+
+  .key-list dt .meter {
+    margin-left: 0;
+  }
+
+  /* Advice has no chart swatch: the space keeps its stamp in line with the others. */
+  .key-no-swatch {
+    width: 0.8rem;
+    flex: none;
+  }
+
+  .key-body .nodata {
+    margin-top: var(--s-4);
+  }
+
+  .key-body .rows + p {
+    margin-top: var(--s-2);
+  }
+
+  /* One button of its own width, under the key. */
+  .key-body > form {
+    justify-items: start;
+    margin-top: var(--s-5);
+  }
+
+  /* The search field keeps a focus mark of two pixels in the colour of the pen in hand. */
+  .palette input:focus-visible {
+    box-shadow: inset 0 -1px 0 0 var(--accent);
+  }
+}

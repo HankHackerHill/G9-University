@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import '../theme/screens/overlays.css';
 
 export interface PaletteCommand {
   id: string;
@@ -126,7 +127,7 @@ export function CommandPalette({ commands, onClose }: { commands: readonly Palet
         aria-activedescendant={active === undefined ? undefined : `${listId}-${active.id}`}
         autoComplete="off"
         spellCheck={false}
-        placeholder="Go to a screen or run a command"
+        placeholder="Search screens and commands…"
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
@@ -170,7 +171,7 @@ export function CommandPalette({ commands, onClose }: { commands: readonly Palet
           <kbd>↑</kbd> <kbd>↓</kbd> move
         </span>
         <span>
-          <kbd>Enter</kbd> open
+          <kbd>Enter</kbd> choose
         </span>
         <span>
           <kbd>Esc</kbd> close

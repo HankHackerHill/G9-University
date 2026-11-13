@@ -1,0 +1,13 @@
+/* Assessments: screen-only rules. Everything else is the documented classes of components.css. */
+@layer screens {
+  /* Five steps on one line in the detail column of the default window: shorter connectors than the system's. */
+  .attempt-steps > li + li::after {
+    width: var(--s-3);
+    margin-inline: var(--s-1);
+  }
+
+  /* A criterion line carries three lines of text: its level picker sits on the first, beside the title. */
+  .grade-rows > li {
+    align-items: start;
+  }
+}

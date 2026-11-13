@@ -1,0 +1,16 @@
+/*
+ * Calendar: the week grid is the record of this screen. Everything else is drawn by the
+ * documented classes (.toolbar, .seg, .cal, .cal-event, .rows, .slip, dl.pairs).
+ */
+@layer screens {
+  /* Nothing in the grid is cut short: a title wraps inside its cell and the hour row grows with it. */
+  .cal-event {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* The week's dates sit beside the navigation; what proposes sits apart, at the end of the bar. */
+  .cal-toolbar > .cal-toolbar-end {
+    margin-inline-start: auto;
+  }
+}

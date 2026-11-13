@@ -67,9 +67,11 @@ describe('Assessments mutations and the list revalidation', () => {
     await waitFor(() => {
       expect(screen.getByTestId('attempt-revision')).toHaveTextContent('revision 3');
     });
-    expect(screen.getAllByText('SUBMITTED').length).toBeGreaterThan(0);
+    // The stamp says Submitted (exact name SUBMITTED in its title) on the list line and on the instrument, and the next step is the review.
+    expect(screen.getAllByTitle('SUBMITTED').map((stamp) => stamp.textContent)).toEqual(['Submitted', 'Submitted']);
+    expect(within(screen.getByRole('list', { name: 'Steps of this attempt' })).getByRole('listitem', { current: 'step' })).toHaveTextContent(/^Review evidence$/);
     // ...and nothing can be clicked with the stale revision meanwhile.
-    for (const name of ['Submit', 'Review evidence', 'Grade (provisional)', 'Approve final']) {
+    for (const name of ['Submit', 'Review evidence', 'Grade', 'Approve final']) {
       expect(within(group()).getByRole('button', { name })).toBeDisabled();
     }
     gate.resolve(outcome({ definitions: [], attempts: [submitted] }));

@@ -1,0 +1,12 @@
+/* Learning Journal: screen-only rules. Everything else is the documented classes of components.css. */
+@layer screens {
+  /* The preview keeps the height of the editor it stands in for, so the Save button does not move when the tab changes. */
+  .journal-preview {
+    display: grid;
+    gap: var(--s-1);
+  }
+
+  .journal-preview > .md {
+    min-height: 16rem;
+  }
+}

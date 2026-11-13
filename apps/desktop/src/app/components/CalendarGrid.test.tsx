@@ -142,7 +142,7 @@ describe('CalendarGrid never hides timed events', () => {
     render(<CalendarGrid weekStart={{ year: 2026, month: 11, day: 16 }} zone={zone} events={events} startHour={7} endHour={21} />);
     expect(screen.queryByTestId('cell-2026-11-17:6')).toBeNull();
     const note = screen.getByTestId('calendar-outside-hours');
-    expect(note).toHaveTextContent('4 events outside the shown hours (07:00–21:00)');
+    expect(note).toHaveTextContent('4 events outside the shown hours (07:00 to 21:00)');
     for (const title of ['Early dentist', 'Late call', 'Night shift', 'Carried over']) {
       expect(note).toHaveTextContent(title);
     }
