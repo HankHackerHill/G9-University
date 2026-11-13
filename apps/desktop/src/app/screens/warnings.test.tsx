@@ -143,7 +143,7 @@ describe('plans from a curriculum version that is not APPROVED_CANONICAL', () =>
   it('Mission Control labels the non-canonical objectives PROPOSED', async () => {
     renderWithIpc(<MissionControl />);
     await screen.findByText('Distinguish authentication/authorization');
-    const objectives = panelOf(/Today's objectives/);
+    const objectives = panelOf(/Today’s objectives/);
     expect(within(objectives).getByLabelText('Provenance: proposed')).toBeInTheDocument();
     expect(within(objectives).queryByLabelText('Provenance: verified')).toBeNull();
     expect(screen.getByText(/^curriculum\.non_canonical: /)).toBeInTheDocument();

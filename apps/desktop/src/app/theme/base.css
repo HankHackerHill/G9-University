@@ -82,7 +82,7 @@
       'CRSV' var(--crsv);
   }
 
-  /* Machine voice: identifiers, hashes, measured values, state names. */
+  /* Machine voice: only measured values and identifiers (durations, counts, hashes, the timer). */
   code,
   kbd,
   samp,
@@ -93,8 +93,7 @@
   .hash,
   .kpi,
   .kpi-xl,
-  .num,
-  .badge {
+  .num {
     --mono: 1;
     --casl: 0;
     --slnt: 0;
@@ -110,7 +109,7 @@
     font-family: var(--font-mentor);
   }
 
-  .note :where(.badge, code, time, kbd) {
+  .note :where(.badge, code, time, kbd, button, input, select) {
     --casl: 0;
     --slnt: 0;
   }
@@ -119,6 +118,7 @@
     height: 100%;
     background: var(--paper);
     scrollbar-color: var(--rule-2) transparent;
+    scrollbar-width: thin;
   }
 
   body {
@@ -136,11 +136,14 @@
   }
 
   ::selection {
-    background: var(--ink);
-    color: var(--on-ink);
+    background: var(--accent);
+    color: var(--paper);
   }
 
-  /* Headings. The page title is the only large type on a screen; a theme may give headings their own voice. */
+  /*
+   * Headings. The page title is the only large type on a screen (the session timer excepted);
+   * a theme may give headings their own voice.
+   */
   h1,
   h2 {
     --mono: var(--h-mono);
@@ -150,27 +153,25 @@
   }
 
   h1 {
-    color: var(--accent);
-    font-size: var(--text-3xl);
+    font-size: clamp(var(--text-3xl), 1.2rem + 1.4vw, var(--text-4xl));
     font-weight: var(--h-weight);
-    line-height: 1.1;
-    letter-spacing: -0.022em;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
     text-wrap: balance;
-    margin-block: 0 var(--s-4);
   }
 
   h2 {
     font-size: var(--text-lg);
-    font-weight: 720;
+    font-weight: 740;
     line-height: 1.25;
-    letter-spacing: -0.008em;
+    letter-spacing: -0.011em;
     text-wrap: balance;
   }
 
   /* A third-level heading names a field or a small group: a label, not a headline. */
   h3 {
     font-size: var(--text-sm);
-    font-weight: 620;
+    font-weight: 640;
     line-height: 1.3;
     color: var(--ink-2);
     margin-block: var(--s-3) var(--s-1);
@@ -178,7 +179,7 @@
 
   h4 {
     font-size: var(--text-sm);
-    font-weight: 620;
+    font-weight: 640;
   }
 
   p {
@@ -203,11 +204,11 @@
   }
 
   a {
-    color: inherit;
+    color: var(--accent);
     text-decoration-line: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 0.2em;
-    text-decoration-color: var(--rule-2);
+    text-decoration-color: color-mix(in oklch, var(--accent) 45%, transparent);
     border-radius: 2px;
     transition: text-decoration-color var(--t-1) var(--ease-out);
   }
@@ -258,6 +259,7 @@
     padding: var(--s-3);
     background: var(--sheet);
     border-left: 2px solid var(--rule-2);
+    border-radius: 0 var(--r-2) var(--r-2) 0;
     overflow: auto;
     font-size: var(--text-sm);
     line-height: 1.55;
@@ -275,7 +277,7 @@
     margin-block: var(--s-4);
   }
 
-  /* Focus: one visible ring everywhere, in ink. */
+  /* Focus: one visible ring everywhere, in the colour of the pen in hand. */
   :focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 2px;
@@ -285,7 +287,11 @@
     outline: none;
   }
 
-  /* Controls. A button that commits to the record (`.primary`) is solid ink; the rest are outlines. */
+  /*
+   * Controls. One button on a screen commits to the record (`.primary`): solid ink. The rest are
+   * outlines on the raised surface; `.quiet` has no outline until it is pointed at. Pressing a
+   * button moves it one pixel and thickens its lettering (the weight axis), so the press is felt.
+   */
   button {
     display: inline-flex;
     align-items: center;
@@ -295,7 +301,7 @@
     padding: 0 var(--s-3);
     border: 1px solid var(--rule-2);
     border-radius: var(--r-2);
-    background: transparent;
+    background: var(--raised);
     color: var(--ink);
     font-size: var(--text-sm);
     font-weight: 620;
@@ -305,31 +311,47 @@
     transition:
       background-color var(--t-1) var(--ease-out),
       border-color var(--t-1) var(--ease-out),
+      color var(--t-1) var(--ease-out),
+      font-weight var(--t-1) var(--ease-out),
       translate var(--t-1) var(--ease-press);
   }
 
   button:hover:not(:disabled) {
-    background: var(--sheet-2);
+    background: var(--sheet);
     border-color: var(--ink-3);
   }
 
   button:active:not(:disabled) {
     translate: 0 1px;
+    font-weight: 720;
   }
 
   button.primary {
     background: var(--ink);
     border-color: var(--ink);
     color: var(--on-ink);
+    font-weight: 660;
   }
 
   button.primary:hover:not(:disabled) {
-    background: color-mix(in oklch, var(--ink) 88%, var(--paper));
+    background: color-mix(in oklch, var(--ink) 86%, var(--accent));
     border-color: transparent;
   }
 
+  button.quiet {
+    border-color: transparent;
+    background: transparent;
+    color: var(--ink-2);
+  }
+
+  button.quiet:hover:not(:disabled) {
+    background: var(--sheet);
+    border-color: transparent;
+    color: var(--ink);
+  }
+
   button.danger {
-    border-color: var(--owed);
+    border-color: color-mix(in oklch, var(--owed) 55%, var(--rule-2));
     color: var(--owed);
   }
 
@@ -338,22 +360,29 @@
     border-color: var(--owed);
   }
 
-  /* Unavailable is drawn like an entry that cannot be made: dashed, faded. */
+  button.sm {
+    min-height: var(--control-h-sm);
+    padding: 0 var(--s-2);
+    font-size: var(--text-xs);
+  }
+
+  /* Unavailable: still an outline, but faint, so it does not read as a different kind of button. */
   button:disabled {
-    border-style: dashed;
-    border-color: var(--rule-2);
+    border-color: var(--rule);
     background: transparent;
     color: var(--ink-3);
     cursor: not-allowed;
   }
 
   button.primary:disabled {
-    background: transparent;
+    background: var(--sheet-2);
+    border-color: transparent;
+    color: var(--ink-3);
   }
 
   label {
     font-size: var(--text-sm);
-    font-weight: 560;
+    font-weight: 600;
     color: var(--ink-2);
   }
 
@@ -361,13 +390,15 @@
   select,
   textarea {
     min-height: var(--control-h);
-    padding: 0 var(--s-2);
+    padding: 0 var(--s-3);
     border: 1px solid var(--rule-2);
     border-radius: var(--r-2);
     background: var(--field);
     color: var(--ink);
     font-size: var(--text-md);
-    transition: border-color var(--t-1) var(--ease-out);
+    transition:
+      border-color var(--t-1) var(--ease-out),
+      box-shadow var(--t-1) var(--ease-out);
   }
 
   input[type='checkbox'],
@@ -376,8 +407,26 @@
     width: 1rem;
     height: 1rem;
     padding: 0;
-    accent-color: var(--ink);
+    accent-color: var(--accent);
     vertical-align: -0.15em;
+  }
+
+  input[type='file'] {
+    padding: var(--s-1);
+    font-size: var(--text-sm);
+  }
+
+  input[type='file']::file-selector-button {
+    margin-right: var(--s-3);
+    min-height: var(--control-h-sm);
+    padding: 0 var(--s-3);
+    border: 1px solid var(--rule-2);
+    border-radius: var(--r-1);
+    background: var(--paper);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 620;
+    cursor: pointer;
   }
 
   input[type='number'],
@@ -389,7 +438,7 @@
   }
 
   textarea {
-    padding: var(--s-2);
+    padding: var(--s-2) var(--s-3);
     line-height: 1.5;
     resize: vertical;
   }
@@ -398,10 +447,17 @@
     padding-right: var(--s-5);
   }
 
-  input:hover,
-  select:hover,
-  textarea:hover {
+  input:hover:not(:disabled),
+  select:hover:not(:disabled),
+  textarea:hover:not(:disabled) {
     border-color: var(--ink-3);
+  }
+
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline-offset: 0;
+    border-color: var(--focus);
   }
 
   input::placeholder,
@@ -412,7 +468,8 @@
   input:disabled,
   select:disabled,
   textarea:disabled {
-    border-style: dashed;
+    border-color: var(--rule);
+    background: transparent;
     color: var(--ink-3);
     cursor: not-allowed;
   }
@@ -423,15 +480,16 @@
 
   legend {
     font-size: var(--text-sm);
-    font-weight: 620;
+    font-weight: 640;
     color: var(--ink-2);
     margin-bottom: var(--s-2);
   }
 
   /*
-   * Ledger tables. Numbers are measured values, so they are set in the machine voice and
-   * aligned right. Rows are banded three at a time, the way green-bar paper lets the eye hold a
-   * line across a wide sheet. A footer row is a total: double rule above, as in a ledger.
+   * Ledger tables: records, so they sit on the paper under rules. Numbers are measured values,
+   * set in the machine voice and aligned right. A long ledger may be banded three rows at a time
+   * (`.barred`), the way green-bar paper lets the eye hold a line across a wide sheet. A footer
+   * row is a total: double rule above, as in a ledger.
    */
   table {
     width: 100%;
@@ -451,7 +509,7 @@
 
   th,
   td {
-    padding: 0.4rem var(--s-3);
+    padding: 0.5rem var(--s-3);
     text-align: left;
     vertical-align: baseline;
   }
@@ -472,20 +530,32 @@
     color: var(--ink-2);
     white-space: nowrap;
     border-bottom: 1.5px solid var(--ink);
-    padding-block: 0.3rem;
+    padding-block: 0.35rem;
   }
 
   tbody th {
     font-weight: 620;
   }
 
-  tbody tr:nth-child(6n + 4),
-  tbody tr:nth-child(6n + 5),
-  tbody tr:nth-child(6n) {
+  tbody tr > * {
+    border-bottom: 1px solid var(--rule);
+  }
+
+  tbody tr:hover > * {
+    background: color-mix(in oklch, var(--sheet) 55%, transparent);
+  }
+
+  table.barred tbody tr > * {
+    border-bottom: 0;
+  }
+
+  table.barred tbody tr:nth-child(6n + 4),
+  table.barred tbody tr:nth-child(6n + 5),
+  table.barred tbody tr:nth-child(6n) {
     background: var(--sheet);
   }
 
-  tbody tr:last-child > * {
+  table.barred tbody tr:last-child > * {
     border-bottom: 1px solid var(--rule);
   }
 
@@ -518,13 +588,13 @@
 
   dialog {
     padding: 0;
-    border: 1px solid var(--rule-2);
+    border: 0;
     border-radius: var(--r-4);
     background: var(--overlay);
     color: var(--ink);
     box-shadow: var(--shadow-overlay);
-    -webkit-backdrop-filter: blur(18px) saturate(1.3);
-    backdrop-filter: blur(18px) saturate(1.3);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    backdrop-filter: blur(14px) saturate(1.2);
   }
 
   dialog::backdrop {

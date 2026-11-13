@@ -1,5 +1,5 @@
 /*
- * Design tokens for "The Ledger".
+ * Design tokens for "The Ledger" (second edition, docs/ui/design-direction.md).
  *
  * G9 Mentor keeps books on learning: time credited or in doubt, grades approved or provisional,
  * plans verified or proposed, advice or record. Colour and fill say which of those a thing is:
@@ -12,43 +12,47 @@
  *
  * Every state also has a text label, so nothing depends on colour or pattern alone.
  *
+ * The house palette is ledger stationery: eye-ease green paper, blue-black ink, a ballpoint blue
+ * for the pen in hand (selection, focus, today), red rule, highlighter, the violet copying pencil.
+ *
  * Colours are OKLCH. `light-dark()` picks by the used colour scheme: the OS preference by default,
  * or the operator's choice through `data-theme` on <html>. These are the values of the default
  * theme (Ledger) and apply before any script runs; the other themes (skins.ts) are applied as
  * inline custom properties on <html> by `applySkin`, which the content security policy allows
- * (CSSOM, not markup). Contrast of every text colour on
- * paper, sheet and sheet-2 was computed at 4.5:1 or better in both schemes (design notes in
- * docs/ui/design-system.md).
+ * (CSSOM, not markup). Contrast of every text colour on paper, sheet and sheet-2 is checked at
+ * 4.5:1 or better in both schemes by skins.test.ts on every run.
  */
 @layer tokens {
   :root {
     color-scheme: dark light;
 
-    /* Surfaces: enamel green in the dark, green-bar ledger paper in the light. */
-    --paper: light-dark(oklch(0.978 0.01 150), oklch(0.25 0.032 168));
-    --sheet: light-dark(oklch(0.945 0.028 155), oklch(0.285 0.034 168));
-    --sheet-2: light-dark(oklch(0.915 0.04 155), oklch(0.325 0.036 168));
-    --rule: light-dark(oklch(0.83 0.04 158), oklch(0.385 0.032 168));
-    --rule-2: light-dark(oklch(0.6 0.05 160), oklch(0.57 0.036 165));
+    /* Surfaces: eye-ease ledger paper in the light, a night ledger in the dark. */
+    --paper: light-dark(oklch(0.966 0.012 150), oklch(0.215 0.022 258));
+    --sheet: light-dark(oklch(0.94 0.02 152), oklch(0.255 0.026 258));
+    --sheet-2: light-dark(oklch(0.908 0.03 152), oklch(0.295 0.03 258));
+    --rule: light-dark(oklch(0.85 0.028 155), oklch(0.36 0.028 258));
+    --rule-2: light-dark(oklch(0.6 0.035 190), oklch(0.56 0.03 250));
 
-    /* Ink. */
-    --ink: light-dark(oklch(0.235 0.035 168), oklch(0.945 0.022 95));
-    --ink-2: light-dark(oklch(0.4 0.035 165), oklch(0.83 0.028 130));
-    --ink-3: light-dark(oklch(0.49 0.03 160), oklch(0.73 0.03 150));
+    /* Ink: blue-black. */
+    --ink: light-dark(oklch(0.235 0.04 258), oklch(0.945 0.02 150));
+    --ink-2: light-dark(oklch(0.39 0.04 255), oklch(0.83 0.025 170));
+    --ink-3: light-dark(oklch(0.48 0.035 250), oklch(0.73 0.03 200));
+
+    /* The pen in hand: selection, focus, links, today, now. */
+    --accent: light-dark(oklch(0.44 0.17 262), oklch(0.8 0.1 258));
 
     /* Standing. */
     --owed: light-dark(oklch(0.5 0.19 28), oklch(0.76 0.143 28));
-    --doubt: light-dark(oklch(0.51 0.112 68), oklch(0.84 0.13 82));
-    --advice: light-dark(oklch(0.45 0.15 280), oklch(0.82 0.094 285));
-    --live: light-dark(oklch(0.47 0.107 160), oklch(0.88 0.15 158));
+    --doubt: light-dark(oklch(0.5 0.112 68), oklch(0.84 0.13 82));
+    --advice: light-dark(oklch(0.45 0.17 302), oklch(0.8 0.11 302));
+    --live: light-dark(oklch(0.47 0.105 160), oklch(0.86 0.15 158));
 
     /*
      * Opaque in the light scheme: a 15 % mix of the dark amber reads as beige on near-white paper,
      * so the light fill is a highlighter yellow chosen directly.
      */
     --doubt-fill: light-dark(oklch(0.935 0.07 95), color-mix(in oklch, var(--doubt) 15%, transparent));
-    --scrim: light-dark(oklch(0.235 0.035 168 / 0.28), oklch(0.12 0.02 168 / 0.6));
-    --shadow-overlay: 0 1px 0 0 color-mix(in oklch, var(--ink) 10%, transparent) inset, 0 24px 60px -12px light-dark(oklch(0.3 0.05 168 / 0.3), oklch(0 0 0 / 0.6));
+    --scrim: light-dark(oklch(0.235 0.04 258 / 0.3), oklch(0.1 0.02 258 / 0.62));
 
     /*
      * Type. Recursive carries the three voices as axis settings (base.css). A theme may set the
@@ -62,19 +66,22 @@
     --font-machine: 'Recursive Variable', ui-monospace, 'DejaVu Sans Mono', monospace;
     --font-mentor: var(--font-sans);
     --body-weight: 420;
-    --h-weight: 780;
+    --h-weight: 860;
     --h-mono: 0;
     --h-casl: 0;
     --h-slnt: 0;
+
+    /* Scale: 12, 13, 14, 16, 18, 22, 28, 36, 48, 72 px at a 16 px root. */
     --text-xs: 0.75rem;
     --text-sm: 0.8125rem;
     --text-md: 0.875rem;
     --text-lg: 1rem;
     --text-xl: 1.125rem;
-    --text-2xl: 1.3125rem;
+    --text-2xl: 1.375rem;
     --text-3xl: 1.75rem;
-    --text-4xl: 2.75rem;
-    --text-5xl: 4rem;
+    --text-4xl: 2.25rem;
+    --text-5xl: 3rem;
+    --text-6xl: 4.5rem;
     --measure: 68ch;
 
     /* Space: a 4 px step. */
@@ -87,14 +94,18 @@
     --s-7: 3rem;
     --s-8: 4rem;
 
-    /* Radius follows hierarchy: stamps are nearly square, controls soft, overlays softest; ledger regions have none. */
+    /* Radius follows hierarchy: stamps are nearly square, controls soft, instruments softer, overlays softest; ruled records have none. */
     --r-1: 3px;
-    --r-2: 6px;
-    --r-3: 10px;
-    --r-4: 14px;
+    --r-2: 7px;
+    --r-3: 12px;
+    --r-4: 18px;
 
-    --control-h: 1.875rem;
-    --side-w: 14.25rem;
+    --control-h: 2.125rem;
+    --control-h-sm: 1.75rem;
+    --side-w: 15rem;
+    --margin-w: 19rem;
+    --page-max: 100rem;
+    --page-pad: clamp(1rem, 2.4vw, 2.25rem);
 
     /* Motion. */
     --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -112,18 +123,40 @@
    */
   :root,
   .skin-scope {
-    --accent: var(--ink);
-    --field: var(--paper);
+    --field: var(--raised);
     --bar: var(--ink);
     --on-bar: var(--paper);
     --on-ink: var(--paper);
-    --focus: var(--ink);
+    --focus: var(--accent);
+
+    /*
+     * Raised: the surface of an instrument (something you operate). Lighter than the page in a
+     * light scheme, one step up in a dark one, so depth is drawn by lightness and needs no shadow.
+     * In the dark it is exactly --sheet, a surface whose text contrast is tested.
+     */
+    --raised: light-dark(color-mix(in oklch, var(--paper) 38%, white), var(--sheet));
     --owed-fill: color-mix(in oklch, var(--owed) 13%, transparent);
     --advice-fill: color-mix(in oklch, var(--advice) 11%, transparent);
     --live-fill: color-mix(in oklch, var(--live) 14%, transparent);
+    --accent-fill: color-mix(in oklch, var(--accent) 11%, transparent);
     --hatch-doubt: repeating-linear-gradient(135deg, color-mix(in oklch, var(--doubt) 62%, transparent) 0 1.5px, transparent 1.5px 6px);
     --hatch-quiet: repeating-linear-gradient(135deg, color-mix(in oklch, var(--ink-3) 45%, transparent) 0 1px, transparent 1px 6px);
-    --overlay: color-mix(in oklch, var(--sheet) 86%, transparent);
+    --hatch-on-ink: repeating-linear-gradient(135deg, color-mix(in oklch, var(--on-ink) 70%, transparent) 0 1.5px, transparent 1.5px 6px);
+    /*
+     * The ordinal ramp for ordered parts (a distribution over ordered states): one hue, the
+     * ink's own, light to dark in a light scheme and dark to light in a dark one. Mixing with
+     * white or black keeps the hue (an achromatic colour has none to contribute); mixing with the
+     * paper would swing it. Checked by the dataviz validator: monotone lightness, steps of at
+     * least 0.06, light end at 2:1 or better on the raised surface.
+     */
+    --ramp-1: light-dark(color-mix(in oklch, var(--ink) 40%, white), color-mix(in oklch, var(--ink) 50%, black));
+    --ramp-2: light-dark(color-mix(in oklch, var(--ink) 60%, white), color-mix(in oklch, var(--ink) 66%, black));
+    --ramp-3: light-dark(color-mix(in oklch, var(--ink) 80%, white), color-mix(in oklch, var(--ink) 83%, black));
+    --ramp-4: var(--ink);
+    --overlay: color-mix(in oklch, var(--raised) 92%, transparent);
+    --edge: color-mix(in oklch, var(--ink) 9%, transparent);
+    --shadow-raised: 0 1px 0 0 var(--edge);
+    --shadow-overlay: 0 0 0 1px var(--edge), 0 12px 28px -8px light-dark(oklch(0.3 0.05 258 / 0.22), oklch(0 0 0 / 0.55)), 0 32px 72px -24px light-dark(oklch(0.3 0.05 258 / 0.25), oklch(0 0 0 / 0.6));
   }
 
   :root[data-theme='light'] {
@@ -140,16 +173,17 @@
    */
   :root[data-contrast='high'] {
     --paper: light-dark(oklch(1 0 0), oklch(0 0 0));
-    --sheet: light-dark(oklch(0.955 0.012 155), oklch(0.17 0.012 168));
-    --sheet-2: light-dark(oklch(0.91 0.02 155), oklch(0.24 0.016 168));
-    --rule: light-dark(oklch(0.55 0.02 160), oklch(0.62 0.02 165));
-    --rule-2: light-dark(oklch(0.3 0.02 165), oklch(0.82 0.02 150));
+    --sheet: light-dark(oklch(0.955 0.012 155), oklch(0.17 0.012 258));
+    --sheet-2: light-dark(oklch(0.91 0.02 155), oklch(0.24 0.016 258));
+    --rule: light-dark(oklch(0.55 0.02 200), oklch(0.62 0.02 250));
+    --rule-2: light-dark(oklch(0.3 0.02 250), oklch(0.82 0.02 200));
     --ink: light-dark(oklch(0 0 0), oklch(1 0 0));
-    --ink-2: light-dark(oklch(0.22 0.02 165), oklch(0.93 0.012 130));
-    --ink-3: light-dark(oklch(0.32 0.02 165), oklch(0.86 0.015 150));
+    --ink-2: light-dark(oklch(0.22 0.02 255), oklch(0.93 0.012 170));
+    --ink-3: light-dark(oklch(0.32 0.02 250), oklch(0.86 0.015 200));
+    --accent: light-dark(oklch(0.34 0.17 262), oklch(0.88 0.08 258));
     --owed: light-dark(oklch(0.42 0.2 28), oklch(0.82 0.14 28));
     --doubt: light-dark(oklch(0.42 0.11 68), oklch(0.9 0.13 88));
-    --advice: light-dark(oklch(0.36 0.17 280), oklch(0.88 0.08 285));
+    --advice: light-dark(oklch(0.36 0.17 302), oklch(0.88 0.08 302));
     --live: light-dark(oklch(0.38 0.12 160), oklch(0.93 0.14 158));
   }
 }

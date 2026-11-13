@@ -26,6 +26,7 @@ const TOKEN_NAMES: Record<string, keyof Palette> = {
   doubt: 'doubt',
   advice: 'advice',
   live: 'live',
+  accent: 'accent',
 };
 
 function block(selector: string): string {

@@ -14,82 +14,87 @@ export interface ErrorPresentation {
   severity: 'info' | 'warning' | 'error';
 }
 
+/**
+ * Each entry says what happened and what to do about it, in the operator's words
+ * (docs/ui/ux-copy.md §5). The backend's own message and code are shown under it by
+ * `ErrorDisplay`, so nothing the backend said is replaced.
+ */
 export const ERROR_PRESENTATION: Readonly<Record<ErrorCategory, ErrorPresentation>> = {
   INVALID_INPUT: {
-    title: 'Input rejected',
-    guidance: 'The request did not pass validation. Correct the highlighted fields and try again.',
+    title: 'Check what you entered',
+    guidance: 'The backend refused a value, so nothing was saved. Correct it and send it again.',
     retryable: false,
     severity: 'warning',
   },
   UNAUTHORIZED: {
     title: 'Not permitted',
-    guidance: 'Policy denies this operation for the current actor, mode or domain. Nothing was changed.',
+    guidance: 'Policy does not allow this action here. Nothing was changed.',
     retryable: false,
     severity: 'error',
   },
   APPROVAL_REQUIRED: {
-    title: 'Approval required',
-    guidance: 'This operation needs an explicit operator approval bound to its exact parameters before it can run.',
+    title: 'Needs your approval',
+    guidance: 'This action changes a protected record, so it waits for you. Approve the request, then apply it. The approval covers exactly these values and nothing else.',
     retryable: false,
     severity: 'info',
   },
   STALE_REVISION: {
-    title: 'Record changed',
-    guidance: 'The record was modified since it was loaded. Reload to see the current version, then retry.',
+    title: 'This record changed',
+    guidance: 'It was changed after this window loaded it, so your change was not applied. Reload to see the current version, then make your change again.',
     retryable: false,
     severity: 'warning',
   },
   PRECONDITION_FAILED: {
-    title: 'Not allowed in the current state',
-    guidance: 'The operation is not legal from the current state or the feature is not implemented in this build.',
+    title: 'Not possible right now',
+    guidance: 'The record is not in a state that allows this, or this part is not built yet. Nothing was changed.',
     retryable: false,
     severity: 'warning',
   },
   NOT_FOUND: {
     title: 'Not found',
-    guidance: 'The referenced record does not exist or is outside the loaded data.',
+    guidance: 'That record does not exist or is not in the loaded data. Check the name or the code.',
     retryable: false,
     severity: 'warning',
   },
   CONFLICT: {
-    title: 'Conflict',
-    guidance: 'A different request already used this idempotency key, or two changes collided. Review and resubmit.',
+    title: 'Two changes collided',
+    guidance: 'Another request used the same key, or the record was changed at the same moment. Look at the current record, then send your change again.',
     retryable: false,
     severity: 'warning',
   },
   RESOURCE_UNAVAILABLE: {
-    title: 'Resource unavailable',
-    guidance: 'A required resource (model runtime, storage, transport) is not available. Core planning keeps working.',
+    title: 'Not available',
+    guidance: 'Something this needs is not available: storage, the model, or the link to the backend. Planning, notes and timers do not need a model.',
     retryable: true,
     severity: 'warning',
   },
   TIMEOUT: {
-    title: 'Timed out',
-    guidance: 'The operation exceeded its time budget and was stopped. You may retry.',
+    title: 'Took too long',
+    guidance: 'The action was stopped at its time limit and nothing partial was kept.',
     retryable: true,
     severity: 'warning',
   },
   CANCELLED: {
     title: 'Cancelled',
-    guidance: 'The operation was cancelled before completion. No partial state was kept.',
+    guidance: 'The action was cancelled before it finished. Nothing partial was kept.',
     retryable: false,
     severity: 'info',
   },
   RETRYABLE_STORAGE: {
-    title: 'Storage busy',
-    guidance: 'The local database was busy or locked. Retry in a moment.',
+    title: 'Database busy',
+    guidance: 'The local database was busy for a moment. Nothing was lost.',
     retryable: true,
     severity: 'warning',
   },
   DATA_CORRUPTION: {
     title: 'Integrity check failed',
-    guidance: 'Stored data failed an integrity check. Stop and use Settings/Recovery to verify a backup before continuing.',
+    guidance: 'Stored data did not pass an integrity check. Stop here and verify a backup in Settings/Recovery before you continue.',
     retryable: false,
     severity: 'error',
   },
   INTERNAL: {
-    title: 'Internal error',
-    guidance: 'An internal error occurred. The cause is in the local operation log; nothing sensitive is shown here.',
+    title: 'Something failed inside the application',
+    guidance: 'The cause is written to the local log. Nothing sensitive is shown here.',
     retryable: false,
     severity: 'error',
   },

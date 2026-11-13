@@ -52,9 +52,10 @@ function harness(attempts: AttemptView[], due?: { overdue: ReviewItem[]; due: Re
   });
 }
 
-/** The Value and Evidence cells of the KPI row with the given name. */
+/** The Value and Records cells of the row of the measures table with the given name. */
 async function kpiRow(name: string): Promise<{ value: HTMLElement; evidence: HTMLElement }> {
-  const label = await screen.findByText(name);
+  const table = await screen.findByRole('table', { name: /Learning measures/ });
+  const label = await within(table).findByText(name);
   const row = label.closest('tr');
   if (row === null) {
     throw new Error(`row for ${name} not found`);
@@ -68,9 +69,9 @@ async function kpiRow(name: string): Promise<{ value: HTMLElement; evidence: HTM
   return { value, evidence };
 }
 
-const FIRST = 'First-attempt pass rate (first_attempt_pass_rate)';
-const EVENTUAL = 'Eventual pass rate (eventual_pass_rate)';
-const BACKLOG = 'Review backlog (review_backlog)';
+const FIRST = 'First-attempt pass rate';
+const EVENTUAL = 'Eventual pass rate';
+const BACKLOG = 'Review backlog';
 
 /** Four EXAM first attempts finalized within the rolling 4 weeks, one of them SELF_ADJUDICATED. */
 const fourFirstAttempts = [
@@ -81,13 +82,17 @@ const fourFirstAttempts = [
 ];
 
 describe('Performance Dashboard KPIs (kpi-definitions.md)', () => {
-  it('(a) fewer than 4 EXAM first attempts in the window renders INSUFFICIENT DATA with n and the minimum, never a rate', async () => {
+  it('(a) fewer than 4 EXAM first attempts in the window says "Not enough data" with n and the minimum, never a rate', async () => {
     renderWithIpc(<PerformanceDashboard />, harness(fourFirstAttempts.slice(0, 3)));
     const { value } = await kpiRow(FIRST);
     await waitFor(() => {
-      expect(value).toHaveTextContent('INSUFFICIENT DATA — n = 3, minimum 4');
+      expect(value).toHaveTextContent('Not enough data: n = 3, minimum 4');
     });
-    expect(value).not.toHaveTextContent('/');
+    expect(value).not.toHaveTextContent(/\d+ of \d+/);
+    // The headline tile says the same and shows no figure.
+    const tile = screen.getAllByText(FIRST).map((el) => el.closest('.stat')).find((el) => el !== null);
+    expect(tile).toHaveAttribute('data-standing', 'missing');
+    expect(tile).toHaveTextContent('n = 3, minimum 4');
   });
 
   it('(b) STUDY-mode attempts, retakes and attempts finalized more than 28 days before today.now are excluded from first_attempt_pass_rate', async () => {
@@ -102,9 +107,10 @@ describe('Performance Dashboard KPIs (kpi-definitions.md)', () => {
     renderWithIpc(<PerformanceDashboard />, harness(attempts));
     const { value, evidence } = await kpiRow(FIRST);
     await waitFor(() => {
-      expect(value).toHaveTextContent(/^3 \/ 4/);
+      expect(value).toHaveTextContent(/^3 of 4/);
     });
-    expect(evidence).toHaveTextContent('assessment.list → att-1, att-2 [SELF_ADJUDICATED], att-3, att-4');
+    expect(evidence).toHaveTextContent('assessment.list: 4');
+    expect(evidence).toHaveTextContent('att-1, att-2 [self-graded], att-3, att-4');
     for (const excluded of ['att-study', 'att-retake', 'att-old', 'att-edge', 'att-provisional']) {
       expect(evidence).not.toHaveTextContent(excluded);
     }
@@ -123,20 +129,20 @@ describe('Performance Dashboard KPIs (kpi-definitions.md)', () => {
     renderWithIpc(<PerformanceDashboard />, harness(attempts));
     const { value, evidence } = await kpiRow(EVENTUAL);
     await waitFor(() => {
-      // Per attempt it would read 2 / 7; the denominator is the 4 definitions attempted.
-      expect(value).toHaveTextContent('2 / 4');
+      // Per attempt it would read 2 of 7; the denominator is the 4 definitions attempted.
+      expect(value).toHaveTextContent('2 of 4');
     });
-    expect(evidence).toHaveTextContent('assessment.list → definitions def-A, def-B, def-C, def-D');
+    expect(evidence).toHaveTextContent('def-A, def-B, def-C, def-D');
   });
 
-  it('(d) SELF_ADJUDICATED first attempts are flagged in the value and in the evidence', async () => {
+  it('(d) SELF_ADJUDICATED first attempts are flagged as self-graded in the value and in the records', async () => {
     renderWithIpc(<PerformanceDashboard />, harness(fourFirstAttempts));
     const { value, evidence } = await kpiRow(FIRST);
     await waitFor(() => {
-      expect(value).toHaveTextContent('3 / 4 (1 SELF_ADJUDICATED)');
+      expect(value).toHaveTextContent('3 of 4 (1 self-graded)');
     });
-    expect(evidence).toHaveTextContent('att-2 [SELF_ADJUDICATED]');
-    expect(evidence).not.toHaveTextContent('att-1 [SELF_ADJUDICATED]');
+    expect(evidence).toHaveTextContent('att-2 [self-graded]');
+    expect(evidence).not.toHaveTextContent('att-1 [self-graded]');
   });
 
   it('(e) review_backlog headline equals overdue + due + overflow and shows the breakdown', async () => {
@@ -148,29 +154,30 @@ describe('Performance Dashboard KPIs (kpi-definitions.md)', () => {
     renderWithIpc(<PerformanceDashboard />, harness(fourFirstAttempts, due));
     const { value, evidence } = await kpiRow(BACKLOG);
     await waitFor(() => {
-      expect(value).toHaveTextContent('6 (2 overdue · 3 due today · 1 beyond budget)');
+      expect(value).toHaveTextContent('6 (2 overdue, 3 due today, 1 beyond budget)');
     });
-    expect(evidence).toHaveTextContent('retention.due → r-1, r-2, r-3, r-4, r-5, r-6');
+    expect(evidence).toHaveTextContent('retention.due: 6');
+    expect(evidence).toHaveTextContent('r-1, r-2, r-3, r-4, r-5, r-6');
   });
 
-  it('states the calibration definition from kpi-definitions.md (rolling 4 weeks; min n 20) with NO DATA', async () => {
+  it('states the calibration definition from kpi-definitions.md (rolling 4 weeks; min n 20) with no data', async () => {
     renderWithIpc(<PerformanceDashboard />, harness(fourFirstAttempts));
-    const label = await screen.findByText('Confidence calibration (Brier)');
+    const label = await screen.findByText('Confidence calibration');
     const row = label.closest('tr');
     expect(row).not.toBeNull();
-    expect(row).toHaveTextContent('NO DATA — no confidence reports recorded');
-    expect(row).toHaveTextContent('rolling 4 weeks; min n 20');
+    expect(row).toHaveTextContent('No data: no confidence reports recorded');
+    expect(row).toHaveTextContent('Rolling 4 weeks; min n 20');
     expect(row).toHaveTextContent('calibration_brier');
   });
 
-  it('does not claim VERIFIED when a read behind the table failed; the affected cells read NO DATA with the reason', async () => {
+  it('does not claim Verified when a read behind the table failed; the affected cells say "No data" with the reason', async () => {
     const failing = createInterceptHarness(async (op, _payload, next) => (op === 'assessment.list' ? STORAGE_BUSY : next()));
     renderWithIpc(<PerformanceDashboard />, failing);
     await waitFor(() => {
       expect(screen.queryAllByRole('alert').filter((a) => a.getAttribute('data-category') === 'RETRYABLE_STORAGE')).toHaveLength(1);
     });
     const { value } = await kpiRow(FIRST);
-    expect(value).toHaveTextContent('NO DATA — attempts not loaded');
+    expect(value).toHaveTextContent('No data: attempts not loaded');
     await waitFor(() => {
       expect(screen.getByTestId('dashboard-provenance-partial')).toBeInTheDocument();
     });

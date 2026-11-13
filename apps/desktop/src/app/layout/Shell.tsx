@@ -1,6 +1,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { formatDate, formatTime } from '../../lib/format';
+import { stateLabel } from '../../lib/copy';
+import { formatDate, formatTime, sentenceCase } from '../../lib/format';
 import { useIpc, useMutationEpoch } from '../ipc-context';
 import { useCommand } from '../hooks/useCommand';
 import { SCREENS } from '../router';
@@ -130,7 +131,7 @@ export function Shell() {
       </a>
       {client.transportKind === 'mock' ? (
         <div className="mock-banner" role="status" data-testid="mock-banner">
-          <strong>SYNTHETIC DATA.</strong> This window is running the built-in mock backend (the Tauri runtime is not present).
+          <strong>Synthetic data.</strong> This window is running the built-in mock backend (the Tauri runtime is not present).
           Nothing shown here is read from, or saved to, the G9 database.
         </div>
       ) : null}
@@ -153,7 +154,7 @@ export function Shell() {
             }}
           >
             <span>
-              Search<span className="visually-hidden"> and commands</span>
+              Go to or do<span className="visually-hidden">: search screens and commands</span>…
             </span>
             <kbd aria-hidden="true">Ctrl K</kbd>
           </button>
@@ -187,6 +188,26 @@ export function Shell() {
             </div>
           ))}
         </nav>
+        <div className="status-strip" role="group" aria-live="polite" aria-label="System status">
+          {s === null ? (
+            <span className="muted">{status.error === null ? 'Reading status…' : `Status unavailable (${status.error.category})`}</span>
+          ) : (
+            <span className="lamps">
+              <span className="lamp" data-lamp={s.storage.state === 'READY' ? 'on' : s.storage.state === 'UNAVAILABLE' ? 'owed' : 'doubt'} title={`Storage: ${s.storage.state}`}>
+                <span className="lamp-name">Storage</span>
+                <span className="lamp-value">{stateLabel(s.storage.state).toLowerCase()}</span>
+              </span>
+              <span className="lamp" data-lamp={s.model.available ? 'on' : 'off'} title={s.model.available ? 'Model: AVAILABLE' : `Model: UNAVAILABLE (${sentenceCase(s.model.reason ?? 'UNKNOWN').toLowerCase()}; ${s.model.reason ?? 'UNKNOWN'})`}>
+                <span className="lamp-name">Model</span>
+                <span className="lamp-value">{s.model.available ? 'available' : 'none'}</span>
+              </span>
+              <span className="lamp" data-lamp={s.network.egress_allowed ? 'doubt' : 'off'} title={s.network.egress_allowed ? 'Network: EGRESS ALLOWED' : 'Network: OFF'}>
+                <span className="lamp-name">Network</span>
+                <span className="lamp-value">{s.network.egress_allowed ? 'egress allowed' : 'off'}</span>
+              </span>
+            </span>
+          )}
+        </div>
         <div className="shell-tools" role="group" aria-label="Appearance and help">
           <label className="theme-pick">
             <span>Theme</span>
@@ -242,34 +263,11 @@ export function Shell() {
       </div>
 
       <header className="shell-header">
-        <DayRail status={s} epoch={epoch} />
-        <div className="status-strip" role="group" aria-live="polite" aria-label="System status">
-          {s === null ? (
-            <span className="muted">{status.error === null ? 'Loading status…' : `Status unavailable (${status.error.category})`}</span>
-          ) : (
-            <>
-              <span className="lamps">
-              <span className="lamp" data-lamp={s.model.available ? 'on' : 'off'}>
-                <span className="lamp-name">Model</span>
-                <span className="lamp-value">{s.model.available ? 'AVAILABLE' : <>UNAVAILABLE · {s.model.reason ?? 'UNKNOWN'}</>}</span>
-              </span>
-              <span className="lamp" data-lamp={s.network.egress_allowed ? 'doubt' : 'off'}>
-                <span className="lamp-name">Network</span>
-                <span className="lamp-value">{s.network.egress_allowed ? 'EGRESS ALLOWED' : 'OFF'}</span>
-              </span>
-              <span className="lamp" data-lamp={s.storage.state === 'READY' ? 'on' : s.storage.state === 'UNAVAILABLE' ? 'owed' : 'doubt'}>
-                <span className="lamp-name">Storage</span>
-                <span className="lamp-value">{s.storage.state}</span>
-              </span>
-              <span className="lamp" data-lamp={s.transport === 'mock' ? 'doubt' : 'on'}>
-                <span className="lamp-name">Transport</span>
-                <span className="lamp-value">{s.transport.toUpperCase()}</span>
-              </span>
-              <span className="lamp" data-lamp={s.pending_approvals > 0 ? 'doubt' : 'off'}>
-                <span className="lamp-name">Approvals pending</span>
-                <span className="lamp-value">{s.pending_approvals}</span>
-              </span>
-              </span>
+        <DayRail
+          status={s}
+          epoch={epoch}
+          clock={
+            s === null ? null : (
               <span className="lamp-clock">
                 <span className="visually-hidden">Backend clock: </span>
                 <time dateTime={new Date(s.clock.now).toISOString()}>{formatTime(s.clock.now, s.clock.zone)}</time>
@@ -277,9 +275,9 @@ export function Shell() {
                   {formatDate(s.clock.now, s.clock.zone)} {s.clock.zone}
                 </span>
               </span>
-            </>
-          )}
-        </div>
+            )
+          }
+        />
         <Warnings warnings={status.warnings} label="System status warnings (host facts reported by system.status)" testId="status-warnings" />
       </header>
 

@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { SessionView, SystemStatus } from '../../ipc/operations';
 import { civilDateOf, formatIsoDate } from '../../lib/civil-time';
@@ -32,7 +32,7 @@ function describe(name: string, minutes: number, session: SessionView | undefine
  *
  * `epoch` is the provider's mutation count; the rail re-reads when a command is issued anywhere.
  */
-export function DayRail({ status, epoch }: { status: SystemStatus | null; epoch: number }) {
+export function DayRail({ status, epoch, clock }: { status: SystemStatus | null; epoch: number; clock?: ReactNode }) {
   const zone = status?.clock.zone ?? 'UTC';
   const isoDate = status === null ? null : formatIsoDate(civilDateOf(status.clock.now, zone));
   const plan = useCommand('curriculum.daily_plan', isoDate === null ? null : { date: isoDate }, undefined, epoch);
@@ -53,7 +53,7 @@ export function DayRail({ status, epoch }: { status: SystemStatus | null; epoch:
     note = `${day.date}: no study blocks`;
   } else {
     code = day.day_id;
-    note = day.week_number === null ? day.date : `Week ${day.week_number}: ${day.week_title ?? ''}`;
+    note = day.week_number === null ? day.date : `Week ${day.week_number} of 12, ${day.week_title ?? ''}`;
   }
 
   const blocks = day !== null && !day.unscheduled ? day.blocks : [];
@@ -100,13 +100,22 @@ export function DayRail({ status, epoch }: { status: SystemStatus | null; epoch:
           {status === null
             ? ''
             : plan.error !== null
-              ? `NO DATA: the day plan could not be read (${plan.error.code}), so today's blocks cannot be drawn.`
+              ? `Today's plan could not be read (${plan.error.code}), so its blocks cannot be drawn.`
               : day === null
-                ? 'Loading today’s blocks…'
-                : 'No study blocks today. This date is unscheduled (protected rest).'}
+                ? 'Reading today’s blocks…'
+                : 'No study blocks today: a rest day.'}
         </p>
       )}
 
+      <div className="day-end">
+        {day !== null && !day.unscheduled && credited !== null ? (
+          <span className="day-total">
+            <span className="num">{formatDuration(credited)}</span> of {formatMinutes(day.planned_minutes)} credited
+            {doubted !== null && doubted > 0 ? <>, {formatDuration(doubted)} in doubt</> : null}
+          </span>
+        ) : null}
+        {clock}
+      </div>
     </div>
   );
 }

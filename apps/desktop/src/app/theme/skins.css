@@ -25,9 +25,9 @@
   }
 
   /* Inside a card the table bands step one surface up, or they would vanish into the card. */
-  :root[data-regions='boxed'] .panel tbody tr:nth-child(6n + 4),
-  :root[data-regions='boxed'] .panel tbody tr:nth-child(6n + 5),
-  :root[data-regions='boxed'] .panel tbody tr:nth-child(6n) {
+  :root[data-regions='boxed'] .panel table.barred tbody tr:nth-child(6n + 4),
+  :root[data-regions='boxed'] .panel table.barred tbody tr:nth-child(6n + 5),
+  :root[data-regions='boxed'] .panel table.barred tbody tr:nth-child(6n) {
     background: var(--sheet-2);
   }
 

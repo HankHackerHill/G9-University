@@ -68,16 +68,17 @@ describe('Session Tracker corrections after a second interruption', () => {
     const harness = harnessWith(twiceInterrupted());
     renderWithIpc(<SessionTracker />, harness);
     const form = await screen.findByRole('form', { name: 'Time correction' });
-    expect(within(form).getByRole('heading', { level: 3 })).toHaveTextContent('Correction required');
-    const select = within(form).getByLabelText('Uncertain interval to correct');
+    expect(screen.getByRole('heading', { level: 2, name: 'Correct the time' })).toBeInTheDocument();
+    const select = within(form).getByLabelText('Interval in doubt');
     const options = within(select)
       .getAllByRole('option')
       .map((o) => (o as HTMLOptionElement).value)
       .filter((v) => v !== '');
     // NEW-5: the already-corrected ti_1 is offered too (the backend credits the latest correction), labelled as such.
     expect(options).toEqual(['ti_1', 'ti_2']);
-    expect(within(select).getByRole('option', { name: /ti_1 .* 0:40:00 · corrected 0:30:00 by tc_1 \(a new correction supersedes it\)/ })).toBeInTheDocument();
-    expect(within(select).getByRole('option', { name: /ti_2 .* 0:20:00 · uncorrected/ })).toBeInTheDocument();
+    // An interval reads as its time span; the interval id is the option's value (T0 is 09:00 in Europe/Berlin).
+    expect(within(select).getByRole('option', { name: /09:00 to 09:40 \(0:40:00\), corrected to 0:30:00/ })).toHaveValue('ti_1');
+    expect(within(select).getByRole('option', { name: /10:00 to 10:20 \(0:20:00\), not corrected/ })).toHaveValue('ti_2');
     const submit = within(form).getByRole('button', { name: 'Record correction' });
     await user.clear(within(form).getByLabelText('Minutes to credit'));
     await user.type(within(form).getByLabelText('Minutes to credit'), '15');
@@ -97,9 +98,9 @@ describe('Session Tracker corrections after a second interruption', () => {
     const harness = harnessWith(twiceInterrupted());
     renderWithIpc(<SessionTracker />, harness);
     const form = await screen.findByRole('form', { name: 'Time correction' });
-    await user.selectOptions(within(form).getByLabelText('Uncertain interval to correct'), 'ti_1');
+    await user.selectOptions(within(form).getByLabelText('Interval in doubt'), 'ti_1');
     const note = screen.getByTestId('supersedes-note');
-    expect(note).toHaveTextContent('Supersedes tc_1 (currently credited 0:30:00)');
+    expect(note).toHaveTextContent('This replaces correction tc_1 (0:30:00 credited). Both are kept; the latest one counts.');
     await user.clear(within(form).getByLabelText('Minutes to credit'));
     await user.type(within(form).getByLabelText('Minutes to credit'), '35');
     await user.type(within(form).getByLabelText('Reason'), 'typed 30 instead of 35');
@@ -111,7 +112,7 @@ describe('Session Tracker corrections after a second interruption', () => {
   it('keeps the correction form available while the backend reports requires_correction outside INTERRUPTED', async () => {
     renderWithIpc(<SessionTracker />, harnessWith(twiceInterrupted({ state: 'PAUSED' })));
     const form = await screen.findByRole('form', { name: 'Time correction' });
-    expect(within(form).getByRole('option', { name: /ti_2/ })).toBeInTheDocument();
+    expect(within(form).getByRole('option', { name: /10:00 to 10:20/ })).toHaveValue('ti_2');
   });
 
   it('a COMPLETED session with an uncorrected interval still offers the form, and the dialog copy agrees (NEW-2)', async () => {
@@ -122,16 +123,16 @@ describe('Session Tracker corrections after a second interruption', () => {
     const dialog = await screen.findByTestId('complete-warning');
     // The backend accepts corrections after COMPLETED (session_view keeps requires_correction = true), so the copy must not say the time is lost.
     expect(dialog).not.toHaveTextContent(/never credited/);
-    expect(dialog).toHaveTextContent('stays uncertain and uncredited until a correction is recorded');
-    expect(dialog).toHaveTextContent('keeps accepting corrections after completion');
+    expect(dialog).toHaveTextContent('that time stays in doubt and uncredited until you record a correction');
+    expect(dialog).toHaveTextContent('You can still record one after completing');
     expect(dialog).toHaveTextContent('Credit is never assumed');
   });
 
   it('offers the correction form for a COMPLETED session the backend still flags', async () => {
     renderWithIpc(<SessionTracker />, harnessWith(twiceInterrupted({ state: 'COMPLETED' })));
     const form = await screen.findByRole('form', { name: 'Time correction' });
-    expect(within(form).getByRole('heading', { level: 3 })).toHaveTextContent('Correction required');
-    expect(within(form).getByRole('option', { name: /ti_2 .* uncorrected/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Correct the time' })).toBeInTheDocument();
+    expect(within(form).getByRole('option', { name: /10:00 to 10:20 .* not corrected/ })).toHaveValue('ti_2');
     expect(screen.queryByTestId('interrupted-banner')).toBeNull();
   });
 });
@@ -144,9 +145,10 @@ describe('Session Tracker Complete confirmation', () => {
     const group = await screen.findByRole('group', { name: 'Session transitions' });
     await user.click(within(group).getByRole('button', { name: 'Complete' }));
     const warning = await screen.findByTestId('complete-warning');
-    expect(warning).toHaveTextContent('ti_2 0:20:00');
+    expect(warning).toHaveTextContent('10:00 to 10:20 (0:20:00)');
+    expect(warning).not.toHaveTextContent('09:00 to 09:40');
     expect(harness.calls.some((c) => c.op === 'session.complete')).toBe(false);
-    await user.click(within(warning).getByRole('button', { name: 'Cancel' }));
+    await user.click(within(warning).getByRole('button', { name: 'Keep it open' }));
     expect(screen.queryByTestId('complete-warning')).toBeNull();
     expect(within(group).getByRole('button', { name: 'Complete' })).toBeEnabled();
     await user.click(within(group).getByRole('button', { name: 'Complete' }));
@@ -170,14 +172,14 @@ describe('Session Tracker Complete confirmation', () => {
     expect(screen.getByTestId('complete-warning')).toBeInTheDocument();
   });
 
-  it('is an alertdialog with an accessible name and moves focus to Cancel (NEW-6)', async () => {
+  it('is an alertdialog with an accessible name and moves focus to the button that keeps the session open (NEW-6)', async () => {
     const user = userEvent.setup();
     renderWithIpc(<SessionTracker />, harnessWith(twiceInterrupted()));
     const group = await screen.findByRole('group', { name: 'Session transitions' });
     await user.click(within(group).getByRole('button', { name: 'Complete' }));
-    const dialog = await screen.findByRole('alertdialog', { name: 'Uncorrected UNCERTAIN time' });
-    expect(dialog).toHaveAccessibleDescription(/ti_2 0:20:00/);
-    const cancel = within(dialog).getByRole('button', { name: 'Cancel' });
+    const dialog = await screen.findByRole('alertdialog', { name: 'Complete with time still in doubt?' });
+    expect(dialog).toHaveAccessibleDescription(/10:00 to 10:20 \(0:20:00\)/);
+    const cancel = within(dialog).getByRole('button', { name: 'Keep it open' });
     expect(document.activeElement).toBe(cancel);
     // Enter on the focused element cancels instead of completing.
     await user.keyboard('{Enter}');
@@ -224,7 +226,7 @@ describe('Session Tracker mutations and the list revalidation (NEW-3)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('revision')).toHaveTextContent('revision 6');
     });
-    expect(screen.getAllByText('PAUSED').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Paused').length).toBeGreaterThan(0);
     // ...and no control can fire with the stale revision in the meantime.
     for (const name of ['Pause', 'Resume', 'Complete']) {
       expect(within(transitions()).getByRole('button', { name })).toBeDisabled();
@@ -247,7 +249,7 @@ describe('Session Tracker against the mock timer ledger (NEW-1)', () => {
     expect(await screen.findByTestId('interrupted-banner')).toBeInTheDocument();
     expect(screen.getByTestId('uncertain')).toHaveTextContent('0:40:00');
     const form = screen.getByRole('form', { name: 'Time correction' });
-    const select = within(form).getByLabelText('Uncertain interval to correct');
+    const select = within(form).getByLabelText('Interval in doubt');
     const intervalId = (within(select).getAllByRole('option')[1] as HTMLOptionElement).value;
     await user.selectOptions(select, intervalId);
     await user.clear(within(form).getByLabelText('Minutes to credit'));
@@ -263,7 +265,8 @@ describe('Session Tracker against the mock timer ledger (NEW-1)', () => {
     await waitFor(() => {
       expect(within(transitions()).getByRole('button', { name: 'Resume' })).toBeEnabled();
     });
-    expect(within(screen.getByRole('form', { name: 'Time correction' })).getByRole('heading', { level: 3 })).toHaveTextContent('Time corrections (superseding)');
+    expect(screen.getByRole('form', { name: 'Time correction' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Change a correction' })).toBeInTheDocument();
     await user.click(within(transitions()).getByRole('button', { name: 'Resume' }));
     await waitFor(() => {
       expect(within(transitions()).getByRole('button', { name: 'Pause' })).toBeEnabled();
@@ -277,13 +280,13 @@ describe('Session Tracker against the mock timer ledger (NEW-1)', () => {
     expect(screen.getByTestId('credited')).toHaveTextContent('0:30:00');
     expect(screen.getByTestId('uncertain')).toHaveTextContent('0:20:00');
     const again = screen.getByRole('form', { name: 'Time correction' });
-    expect(within(again).getByRole('heading', { level: 3 })).toHaveTextContent('Correction required');
-    const names = within(within(again).getByLabelText('Uncertain interval to correct'))
+    expect(screen.getByRole('heading', { level: 2, name: 'Correct the time' })).toBeInTheDocument();
+    const names = within(within(again).getByLabelText('Interval in doubt'))
       .getAllByRole('option')
       .map((o) => o.textContent)
       .filter((t) => !t.startsWith('Choose'));
     expect(names).toHaveLength(2);
-    expect(names[0]).toMatch(/corrected 0:30:00 by mock-correction-\d+ \(a new correction supersedes it\)/);
-    expect(names[1]).toMatch(/0:20:00 · uncorrected$/);
+    expect(names[0]).toMatch(/, corrected to 0:30:00$/);
+    expect(names[1]).toMatch(/\(0:20:00\), not corrected$/);
   });
 });

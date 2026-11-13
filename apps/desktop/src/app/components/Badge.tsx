@@ -1,16 +1,18 @@
 import type { ReactNode } from 'react';
 import type { ProvenanceLabel } from '../../ipc/types';
+import { stateLabel } from '../../lib/copy';
 
 export type BadgeTone = 'verified' | 'recommendation' | 'proposed' | 'state' | 'off';
 
 /**
- * A stamp. The tone is the standing of what it marks (components.css): `verified` is inked,
- * `proposed` is hatched, `recommendation` is dashed, `off` is dotted. `state` is a backend
- * state name; when the name is passed as `state` the stylesheet gives it its own standing.
+ * A stamp: the standing of a thing, as a mark and a word. The tone is the standing
+ * (components.css): `verified` is inked, `proposed` is hatched, `recommendation` is dashed,
+ * `off` is dotted. `state` is a backend state; when its name is passed as `state` the
+ * stylesheet gives it its own standing. `title` carries the backend's exact name.
  */
-export function Badge({ tone, children, label, state }: { tone: BadgeTone; children: ReactNode; label?: string; state?: string }) {
+export function Badge({ tone, children, label, state, title }: { tone: BadgeTone; children: ReactNode; label?: string; state?: string; title?: string }) {
   return (
-    <span className={`badge badge-${tone}`} aria-label={label} data-state={state}>
+    <span className={`badge badge-${tone}`} aria-label={label} data-state={state} title={title}>
       {children}
     </span>
   );
@@ -24,16 +26,17 @@ export function Badge({ tone, children, label, state }: { tone: BadgeTone; child
 export function ProvenanceBadge({ label }: { label: ProvenanceLabel }) {
   const tone: BadgeTone = label === 'VERIFIED' ? 'verified' : label === 'RECOMMENDATION' ? 'recommendation' : 'proposed';
   return (
-    <Badge tone={tone} label={`Provenance: ${label.toLowerCase()}`}>
-      {label}
+    <Badge tone={tone} label={`Provenance: ${stateLabel(label).toLowerCase()}`} title={label}>
+      {stateLabel(label)}
     </Badge>
   );
 }
 
+/** A backend state in the operator's words; the exact name is the `title` and `data-state`. */
 export function StateBadge({ state }: { state: string }) {
   return (
-    <Badge tone="state" label={`State: ${state}`} state={state}>
-      {state}
+    <Badge tone="state" label={`State: ${stateLabel(state)}`} state={state} title={state}>
+      {stateLabel(state)}
     </Badge>
   );
 }

@@ -9,17 +9,21 @@ function detailsHash(error: G9Error): string | null {
   return null;
 }
 
-/** Maps every one of the 13 `ErrorCategory` values to operator text. Shows code, never internals. */
+/**
+ * Maps every one of the 13 `ErrorCategory` values to operator text: what happened, what to do,
+ * and (smaller) the backend's own message and code. Shows the code, never internals.
+ */
 export function ErrorDisplay({ error, onRetry }: { error: G9Error; onRetry?: () => void }) {
   const p = presentError(error);
   const hash = detailsHash(error);
   return (
     <div className="error" role="alert" data-severity={p.severity} data-category={error.category}>
-      <strong>{p.title}</strong> <span className="badge badge-state">{error.category}</span>
-      <div>
-        <code>{error.code}</code> — {error.message}
+      <strong>{p.title}</strong>
+      <div>{p.guidance}</div>
+      <div className="muted">
+        {error.message} <code title={`Category: ${error.category}`}>{error.code}</code>{' '}
+        <span className="visually-hidden">{error.category}</span>
       </div>
-      <div className="muted">{p.guidance}</div>
       {error.approval_id !== undefined ? (
         <div>
           Approval request: <code>{error.approval_id}</code>
@@ -33,7 +37,7 @@ export function ErrorDisplay({ error, onRetry }: { error: G9Error; onRetry?: () 
       ) : null}
       {p.retryable && onRetry !== undefined ? (
         <button type="button" onClick={onRetry}>
-          Retry
+          Try again
         </button>
       ) : null}
     </div>

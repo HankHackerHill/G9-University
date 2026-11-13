@@ -1,12 +1,14 @@
+import { warningMeaning } from '../../lib/copy';
 import { mergeWarnings, warningCode } from '../../lib/warnings';
 
 /**
- * Renders `CommandOutcome.warnings` verbatim. A warning is how the backend discloses that a
+ * Renders `CommandOutcome.warnings`. A warning is how the backend discloses that a
  * successful response is partial or PROPOSED (e.g. `export.attachments_missing`: an export was
  * written but some attachment files were missing from the store) or that a host fact degrades
  * the install (key-file fallback, read-only storage).
  * Dropping one would present unimplemented behaviour as done, so every screen renders the
- * warnings of the outcomes it shows.
+ * warnings of the outcomes it shows. The backend's own sentence is always shown verbatim; when
+ * the window knows what a code means it says so in plain words first.
  *
  * Accessibility: the disclosures themselves live in a labelled `<section>` (a `region`
  * landmark a screen-reader user can navigate to and re-read). A live region only announces
@@ -24,11 +26,17 @@ export function Warnings({ warnings, label = 'Backend warnings', testId = 'outco
       </div>
       {list.length > 0 ? (
         <section className="warnings" aria-label={label} data-testid={testId}>
-          <strong>WARNING</strong> <span className="muted">{label}</span>
+          <strong>{list.length === 1 ? 'Warning' : `${list.length} warnings`}</strong>
           <ul>
-            {list.map((w) => (
-              <li key={w}>{w}</li>
-            ))}
+            {list.map((w) => {
+              const meaning = warningMeaning(warningCode(w));
+              return (
+                <li key={w}>
+                  {meaning === null ? null : <div>{meaning}</div>}
+                  <div className={meaning === null ? undefined : 'faint'}>{w}</div>
+                </li>
+              );
+            })}
           </ul>
         </section>
       ) : null}

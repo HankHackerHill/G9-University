@@ -38,8 +38,8 @@ describe('all 16 screens render against the mock transport', () => {
     const { Component } = await screenDef.load();
     const { unmount } = renderWithIpc(<Component />);
     expect(await screen.findByRole('heading', { level: 1, name: screenDef.title.replace('/', ' / ') })).toBeInTheDocument();
-    // Every screen labels what it shows: VERIFIED fixture data, PROPOSED items, or an explicit NO DATA / model-unavailable state. Never a blank.
-    expect(await screen.findAllByText(/NO DATA|model unavailable|UNAVAILABLE|NONE CONFIGURED|OFF|VERIFIED|PROPOSED|PROVISIONAL/)).not.toHaveLength(0);
+    // Every screen labels what it shows: a provenance stamp (Verified, Proposed, Advice, Provisional) or an explicit "No data" / "no model" state. Never a blank.
+    expect(await screen.findAllByText(/No data|no model|Not enough data|None configured|Verified|Proposed|Provisional|Advice/)).not.toHaveLength(0);
     // No error alerts (ErrorDisplay carries data-category); the INTERRUPTED banner is a legitimate alert.
     expect(screen.queryAllByRole('alert').filter((a) => a.hasAttribute('data-category'))).toHaveLength(0);
     unmount();
@@ -50,16 +50,16 @@ describe('all 16 screens render against the mock transport', () => {
     invoke: () => Promise.resolve({ category: 'RESOURCE_UNAVAILABLE', code: 'storage.down', message: 'backend not reachable' }),
   };
 
-  it.each(SCREENS.map((s) => [s.title, s] as const))('%s degrades to NO DATA / error states when the backend is unavailable', async (_title, screenDef) => {
+  it.each(SCREENS.map((s) => [s.title, s] as const))('%s degrades to "No data" / error states when the backend is unavailable', async (_title, screenDef) => {
     const { Component } = await screenDef.load();
     const client = createClient(downTransport, { now: () => 0, uuid: () => 'u' });
     const { unmount } = renderWithIpc(<Component />, { client, transport: createHarness().transport });
     expect(await screen.findByRole('heading', { level: 1, name: screenDef.title.replace('/', ' / ') })).toBeInTheDocument();
-    expect(await screen.findAllByText(/NO DATA|Resource unavailable|PROPOSED/)).not.toHaveLength(0);
+    expect(await screen.findAllByText(/No data|Not available|Proposed/)).not.toHaveLength(0);
     unmount();
   });
 
-  it('the shell routes to every screen lazily and shows model UNAVAILABLE in the status strip', async () => {
+  it('the shell routes to every screen lazily and shows the host facts (no model, network off) in the status group', async () => {
     const { client } = createHarness();
     const router = createMemoryRouter(routes, { initialEntries: ['/'] });
     render(
@@ -69,34 +69,54 @@ describe('all 16 screens render against the mock transport', () => {
     );
     const nav = await screen.findByRole('navigation', { name: 'Screens' });
     expect(within(nav).getAllByRole('link')).toHaveLength(16);
-    const banner = screen.getByRole('banner');
-    expect(await within(banner).findByText(/UNAVAILABLE · NO_RUNTIME_CONFIGURED/)).toBeInTheDocument();
-    expect(within(banner).getByText('MOCK')).toBeInTheDocument();
+    // Host facts are the operator's settings, not faults: they sit in the sidebar in plain words, with the exact state in the title.
+    const status = screen.getByRole('group', { name: 'System status' });
+    expect(await within(status).findByTitle(/^Model: UNAVAILABLE \(.*NO_RUNTIME_CONFIGURED\)$/)).toHaveTextContent('Modelnone');
+    expect(within(status).getByTitle('Network: OFF')).toHaveTextContent('Networkoff');
+    expect(within(status).getByTitle('Storage: READY')).toHaveTextContent('Storageready');
+    expect(screen.getByTestId('mock-banner')).toBeInTheDocument();
+    // The header is the day: its code and the blocks drawn to scale.
+    expect(await within(screen.getByRole('banner')).findByText('D15')).toBeInTheDocument();
     expect(await screen.findByRole('heading', { level: 1, name: 'Mission Control' })).toBeInTheDocument();
     await userEvent.setup().click(within(nav).getByRole('link', { name: 'Research Center' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Research Center' })).toBeInTheDocument();
-    expect(await screen.findByTestId('network-indicator')).toHaveTextContent('OFF');
+    expect(await screen.findByTestId('network-indicator')).toHaveTextContent(/off/i);
   });
 });
 
 describe('Mission Control', () => {
-  it('renders the model-unavailable teaching panel, today\'s fixture objectives and NO DATA for hypotheses', async () => {
+  it('renders the next thing to do, the figures, today\'s blocks and objectives, the program map and what waits in the margin', async () => {
     renderWithIpc(<MissionControl />);
-    expect(await screen.findByText('Recommendation (model unavailable)')).toBeInTheDocument();
+    const now = await screen.findByTestId('now-block');
+    await waitFor(() => {
+      expect(now).toHaveTextContent('NextRecall15 min planned, block 1 of 6');
+    });
+    expect(within(now).getByRole('link', { name: 'Go to recall' })).toHaveAttribute('href', '/session');
     expect(await screen.findByText('Distinguish authentication/authorization')).toBeInTheDocument();
-    expect(screen.getByText(/UNAVAILABLE · NO_RUNTIME_CONFIGURED/)).toBeInTheDocument();
-    expect(screen.getByText('OFFLINE')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Lab' })).toBeInTheDocument();
-    expect(await screen.findByText('Hypotheses (model unavailable)')).toBeInTheDocument();
-    expect(await screen.findByText(/Recall: Explain HTTP request semantics/)).toBeInTheDocument();
-    expect(screen.getByText(/executive operations are PROPOSED/)).toBeInTheDocument();
+    // The fixture curriculum is not canonical yet, so the objectives are stamped Proposed.
+    expect(await screen.findByLabelText('Provenance: proposed')).toBeInTheDocument();
+    // Time drawn to scale, each with its table view.
+    expect(await screen.findByRole('list', { name: /Today’s blocks/ })).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: /Blocks for D15/ })).toBeInTheDocument();
+    expect(await screen.findByRole('img', { name: /The program, day by day: \d+ of 72 days have recorded sessions/ })).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: 'Recorded days of the program' })).toBeInTheDocument();
+    // The margin: reviews (overdue in red ink), approvals, calendar, and the mentor with no model.
+    const margin = screen.getByRole('complementary', { name: 'What waits for you' });
+    expect(await within(margin).findByText(/Recall: Explain HTTP request semantics/)).toBeInTheDocument();
+    expect(within(margin).getAllByText(/^Overdue since /).length).toBeGreaterThan(0);
+    expect(await within(margin).findByText('Nothing waits for your approval.')).toBeInTheDocument();
+    expect(await within(margin).findByText('Advice: no model')).toBeInTheDocument();
+    expect(within(margin).getByTitle('NO_RUNTIME_CONFIGURED')).toBeInTheDocument();
   });
 });
 
 describe('Session Tracker', () => {
-  it('shows the INTERRUPTED banner, disables illegal transitions and requires a correction', async () => {
+  it('shows the interrupted banner, disables illegal transitions and requires a correction', async () => {
     renderWithIpc(<SessionTracker />);
-    expect(await screen.findByTestId('interrupted-banner')).toHaveTextContent('INTERRUPTED');
+    expect(await screen.findByTestId('interrupted-banner')).toHaveTextContent('One session was interrupted.');
+    // The interrupted session is selected and listed first, under what needs the operator.
+    const needs = screen.getByRole('region', { name: 'Sessions that need a correction' });
+    expect(within(needs).getByRole('button', { pressed: true })).toHaveTextContent('Evidence reporting');
     const group = await screen.findByRole('group', { name: 'Session transitions' });
     expect(within(group).getByRole('button', { name: 'Start' })).toBeDisabled();
     expect(within(group).getByRole('button', { name: 'Resume' })).toBeDisabled();
@@ -110,13 +130,9 @@ describe('Session Tracker', () => {
   it('enables only legal buttons as the backend state advances', async () => {
     const user = userEvent.setup();
     renderWithIpc(<SessionTracker />);
-    const rows = await screen.findAllByRole('button', { name: 'Select' });
-    // Pick a PLANNED session (row 0 is D13 recall in the fixture, which is PLANNED).
-    const first = rows[0];
-    if (first === undefined) {
-      throw new Error('no session rows');
-    }
-    await user.click(first);
+    // Today's blocks are listed as lines to pick; Recall is PLANNED in the fixture.
+    const todays = await screen.findByRole('region', { name: 'Today’s sessions' });
+    await user.click(within(todays).getByRole('button', { name: /Recall/ }));
     const group = screen.getByRole('group', { name: 'Session transitions' });
     expect(within(group).getByRole('button', { name: 'Prepare' })).toBeEnabled();
     expect(within(group).getByRole('button', { name: 'Start' })).toBeDisabled();
@@ -125,7 +141,7 @@ describe('Session Tracker', () => {
       expect(within(screen.getByRole('group', { name: 'Session transitions' })).getByRole('button', { name: 'Start' })).toBeEnabled();
     });
     expect(within(screen.getByRole('group', { name: 'Session transitions' })).getByRole('button', { name: 'Prepare' })).toBeDisabled();
-    expect(screen.getAllByText('READY')).not.toHaveLength(0);
+    expect(screen.getAllByText('Ready')).not.toHaveLength(0);
   });
 });
 

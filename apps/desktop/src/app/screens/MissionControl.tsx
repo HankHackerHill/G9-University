@@ -1,25 +1,103 @@
 import { Link } from 'react-router-dom';
-import type { SessionView } from '../../ipc/operations';
+import type { DailyPlan, SessionView } from '../../ipc/operations';
 import { addDays, startOfDayUtc } from '../../lib/civil-time';
-import { formatDateTime, formatDuration, formatMinutes, formatTime, humanizeEnum } from '../../lib/format';
+import { formatDateTime, formatDuration, formatMinutes, formatTime, sentenceCase } from '../../lib/format';
+import { DAYS_PER_WEEK, PROGRAM_DAYS, dayNumber, programMap } from '../../lib/program';
 import { NON_CANONICAL_WARNING, hasWarning, mergeWarnings } from '../../lib/warnings';
-import { Badge, ProvenanceBadge, StateBadge } from '../components/Badge';
+import { ProvenanceBadge, StateBadge } from '../components/Badge';
+import { Bars, ChartFigure, Legend, ProgramMap, type MapDay } from '../components/charts';
 import { ErrorDisplay } from '../components/ErrorDisplay';
-import { Meter } from '../components/Meter';
+import { Margin } from '../components/Margin';
 import { Loading, ModelUnavailable, NoData, Panel } from '../components/Panel';
+import { PageHead } from '../components/PageHead';
+import { Stat } from '../components/Stat';
 import { Table } from '../components/Table';
-import { Tabs } from '../components/Tabs';
 import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
-import { PageHead } from '../components/PageHead';
 
 const WORK_DONE: readonly SessionView['state'][] = ['COMPLETED', 'REVIEWED', 'CLOSED'];
+
+function describeDay(d: MapDay): string {
+  if (d.planned_ms === null) {
+    return `${d.id}: nothing recorded`;
+  }
+  const doubt = d.uncertain_ms > 0 ? `, ${formatDuration(d.uncertain_ms)} in doubt` : '';
+  return `${d.id}: ${formatDuration(d.credited_ms)} of ${formatDuration(d.planned_ms)} credited${doubt}`;
+}
+
+/**
+ * The one thing to do next, in solid ink. Every value is the backend's; when today's sessions
+ * could not be read the block says so and offers nothing to press.
+ */
+function NowBlock({ plan, sessions, sessionsFailed }: { plan: DailyPlan | null; sessions: readonly SessionView[] | null; sessionsFailed: boolean }) {
+  const running = sessions?.find((x) => x.state === 'RUNNING');
+  const paused = sessions?.find((x) => x.state === 'PAUSED');
+  const interrupted = sessions?.find((x) => x.state === 'INTERRUPTED' || x.requires_correction);
+  const next = sessions?.find((x) => x.state === 'READY' || x.state === 'PLANNED');
+  const active = running ?? paused;
+  const blockCount = plan === null || plan.unscheduled ? null : plan.blocks.length;
+
+  let kicker: string;
+  let title: string;
+  let meta: string;
+  let action: { to: string; label: string } | null = null;
+
+  if (sessions === null) {
+    kicker = 'Today';
+    title = sessionsFailed ? 'Today’s sessions could not be read' : 'Reading today’s sessions…';
+    meta = sessionsFailed ? 'The reason is shown above. Nothing is assumed about your time.' : '';
+  } else if (active !== undefined) {
+    kicker = active.state === 'RUNNING' ? 'Running now' : 'Paused';
+    title = sentenceCase(active.block);
+    meta = `${formatDuration(active.credited_ms)} credited of ${formatDuration(active.planned_ms)} planned`;
+    action = { to: '/session', label: active.state === 'RUNNING' ? 'Open the timer' : 'Resume in the session tracker' };
+  } else if (interrupted !== undefined) {
+    kicker = 'Needs you';
+    title = `${sentenceCase(interrupted.block)} was interrupted`;
+    meta = `${formatDuration(interrupted.uncertain_ms)} could not be vouched for and is not credited until you correct it.`;
+    action = { to: '/session', label: 'Correct the time' };
+  } else if (next !== undefined) {
+    kicker = 'Next';
+    title = sentenceCase(next.block);
+    meta = `${formatMinutes(Math.round(next.planned_ms / 60_000))} planned${blockCount === null ? '' : `, block ${next.block_seq} of ${blockCount}`}`;
+    action = { to: '/session', label: `Go to ${sentenceCase(next.block).toLowerCase()}` };
+  } else if (plan?.unscheduled === true) {
+    kicker = 'Today';
+    title = 'Rest day';
+    meta = 'No study blocks are scheduled for this date.';
+  } else if (sessions.length === 0) {
+    kicker = 'Today';
+    title = 'Nothing is planned yet';
+    meta = 'No session exists for today. Plan one to start the clock.';
+    action = { to: '/session', label: 'Plan a session' };
+  } else {
+    kicker = 'Today';
+    title = 'Every block is done';
+    meta = `${formatDuration(sessions.reduce((sum, x) => sum + x.credited_ms, 0))} credited today.`;
+  }
+
+  return (
+    <section className="now" aria-label="What to do next" data-testid="now-block">
+      <div>
+        <p className="now-kicker">{kicker}</p>
+        <p className="now-title">{title}</p>
+        {meta === '' ? null : <p className="now-meta">{meta}</p>}
+      </div>
+      {action === null ? null : (
+        <Link className="button-link" to={action.to} viewTransition>
+          {action.label}
+        </Link>
+      )}
+    </section>
+  );
+}
 
 export function MissionControl() {
   const today = useToday();
   const plan = useCommand('curriculum.daily_plan', today.isoDate === null ? null : { date: today.isoDate });
   const sessions = useCommand('session.list', today.isoDate === null ? null : { date: today.isoDate });
+  const allSessions = useCommand('session.list', {});
   const due = useCommand('retention.due', today.now === null ? null : { as_of: today.now });
   const interventions = useCommand('interventions.list', {});
   const approvals = useCommand('approvals.list', { state: 'PENDING' });
@@ -30,18 +108,13 @@ export function MissionControl() {
 
   const s = today.status;
   // Derived values exist only when their records loaded. A failed or pending read is shown as an
-  // error / loading state, never as a computed zero (Panel.tsx NoData rule, rtm R-014).
+  // error or a "no data" stat, never as a computed zero (Panel.tsx NoData rule, rtm R-014).
   const todaySessions = sessions.data?.sessions ?? null;
-  const running = todaySessions?.find((x) => x.state === 'RUNNING' || x.state === 'PAUSED');
-  const nextSession = todaySessions?.find((x) => x.state === 'READY' || x.state === 'PLANNED');
+  const day = plan.data;
   const nextCommitment = today.now === null ? undefined : calendar.data?.events.find((e) => e.start > (today.now ?? 0));
   const credited = todaySessions === null ? null : todaySessions.reduce((acc, x) => acc + x.credited_ms, 0);
-  const verifiedDone = todaySessions === null ? null : todaySessions.filter((x) => WORK_DONE.includes(x.state));
-  const plannedMs = plan.data === null ? null : plan.data.planned_minutes * 60_000;
-  const blockSessions =
-    plan.data === null || todaySessions === null
-      ? null
-      : plan.data.blocks.flatMap((b) => todaySessions.filter((x) => x.session_id === b.session_id));
+  const doneCount = todaySessions === null ? null : todaySessions.filter((x) => WORK_DONE.includes(x.state)).length;
+  const blockSessions = day === null || todaySessions === null ? null : day.blocks.flatMap((b) => todaySessions.filter((x) => x.session_id === b.session_id));
   const blockTotals =
     blockSessions === null
       ? null
@@ -51,228 +124,240 @@ export function MissionControl() {
         };
   const hypotheses = (interventions.data?.interventions ?? []).filter((i) => i.state === 'HYPOTHESIS' || i.state === 'PROPOSED');
   const planLabel = hasWarning(plan.warnings, NON_CANONICAL_WARNING) ? 'PROPOSED' : 'VERIFIED';
+  const map = allSessions.data === null ? null : programMap(allSessions.data.sessions, day?.day_id ?? null);
+  const todayNumber = day?.day_id === null || day?.day_id === undefined ? null : dayNumber(day.day_id);
+  const sessionReason = sessions.error === null ? 'Today’s sessions are still being read.' : `Today’s sessions could not be read (${sessions.error.code}).`;
 
   return (
-    <div>
-      <PageHead title="Mission Control" lede="Today at a glance: what is planned, what the backend has credited, and what is waiting for your decision." />
+    <div className="stack">
+      <PageHead title="Mission Control" lede="What is planned today, what has been credited, and what waits for you." />
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
       {sessions.error !== null ? <ErrorDisplay error={sessions.error} onRetry={sessions.reload} /> : null}
       {calendar.error !== null ? <ErrorDisplay error={calendar.error} onRetry={calendar.reload} /> : null}
       <Warnings
-        warnings={mergeWarnings(plan.warnings, sessions.warnings, due.warnings, interventions.warnings, approvals.warnings, calendar.warnings)}
+        warnings={mergeWarnings(plan.warnings, sessions.warnings, allSessions.warnings, due.warnings, interventions.warnings, approvals.warnings, calendar.warnings)}
       />
-      <section className="panel" aria-label="Today header">
-        {s === null ? (
-          <Loading what="system status" />
-        ) : (
-          <div className="facts">
-            <div>
-              <h3>Date / zone</h3>
-              <div>
-                {today.isoDate} <span className="muted">{s.clock.zone}</span>
-              </div>
-            </div>
-            <div>
-              <h3>Model</h3>
-              {s.model.available ? <Badge tone="verified">AVAILABLE</Badge> : <Badge tone="off">UNAVAILABLE · {s.model.reason ?? 'UNKNOWN'}</Badge>}
-            </div>
-            <div>
-              <h3>Network</h3>
-              {s.network.egress_allowed ? <Badge tone="proposed">EGRESS ALLOWED</Badge> : <Badge tone="off">OFFLINE</Badge>}
-            </div>
-            <div>
-              <h3>Session</h3>
-              {todaySessions === null ? (
-                <span className="muted">{sessions.error === null ? 'Loading sessions…' : `NO DATA — sessions unavailable (${sessions.error.code})`}</span>
-              ) : running !== undefined ? (
-                <span>
-                  <StateBadge state={running.state} /> {running.day_id} {humanizeEnum(running.block)}
-                </span>
-              ) : nextSession !== undefined ? (
-                <Link to="/session">Start next: {humanizeEnum(nextSession.block)}</Link>
-              ) : (
-                <span className="muted">No session planned today</span>
-              )}
-            </div>
-            <div>
-              <h3>Next commitment</h3>
-              {calendar.data === null ? (
-                <span className="muted">{calendar.error === null ? 'Loading calendar…' : `NO DATA — calendar unavailable (${calendar.error.code})`}</span>
-              ) : nextCommitment === undefined ? (
-                <span className="muted">None in the next 48 h</span>
-              ) : (
-                <span>
-                  {formatDateTime(nextCommitment.start, s.clock.zone)} {nextCommitment.title}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+
+      <NowBlock plan={day} sessions={todaySessions} sessionsFailed={sessions.error !== null} />
+
+      <section className="bento" aria-label="Today in numbers">
+        <div data-span="3">
+          {credited === null ? (
+            <Stat label="Credited today" value="No data" standing="missing" foot={sessionReason} />
+          ) : (
+            <Stat
+              label="Credited today"
+              value={formatDuration(credited)}
+              foot={day === null || day.unscheduled ? 'Time the backend has vouched for.' : `of ${formatMinutes(day.planned_minutes)} planned`}
+            />
+          )}
+        </div>
+        <div data-span="3">
+          {doneCount === null ? (
+            <Stat label="Blocks completed" value="No data" standing="missing" foot={sessionReason} />
+          ) : (
+            <Stat label="Blocks completed" value={doneCount} unit={day === null || day.unscheduled ? undefined : `of ${day.blocks.length}`} foot="Completed, reviewed or closed today." />
+          )}
+        </div>
+        <div data-span="3">
+          {due.data === null ? (
+            <Stat label="Reviews due" value="No data" standing="missing" foot={due.error === null ? 'The review queue is still being read.' : `The review queue could not be read (${due.error.code}).`} />
+          ) : (
+            <Stat
+              label="Reviews due"
+              value={due.data.due.length + due.data.overdue.length + due.data.overflow.length}
+              standing={due.data.overdue.length > 0 ? 'owed' : 'posted'}
+              foot={`${due.data.overdue.length} overdue, ${due.data.overflow.length} beyond today’s ${formatMinutes(Math.round(due.data.budget_ms / 60_000))} budget`}
+            />
+          )}
+        </div>
+        <div data-span="3">
+          {approvals.data === null ? (
+            <Stat label="Waiting for you" value="No data" standing="missing" foot={approvals.error === null ? 'Approvals are still being read.' : `Approvals could not be read (${approvals.error.code}).`} />
+          ) : (
+            <Stat
+              label="Waiting for you"
+              value={approvals.data.approvals.length}
+              standing={approvals.data.approvals.length > 0 ? 'doubt' : 'posted'}
+              foot={approvals.data.approvals.length === 1 ? 'approval to decide' : 'approvals to decide'}
+            />
+          )}
+        </div>
       </section>
 
-      <div className="grid-3">
-        <div>
-          <Panel title="Today's objectives">
+      <div className="with-margin">
+        <div className="stack">
+          <Panel title="Today’s blocks">
+            {plan.error !== null ? (
+              <NoData reason={`Today’s plan could not be read (${plan.error.code}), so its blocks cannot be shown.`} />
+            ) : day === null ? (
+              <Loading what="today’s blocks" />
+            ) : day.unscheduled ? (
+              <NoData title="Rest day" reason="No study blocks are scheduled for this date." />
+            ) : (
+              <ChartFigure
+                caption={`${day.day_id}, ${formatMinutes(day.planned_minutes)} planned. Each bar is as long as its block; the solid part is credited.`}
+                table={
+                  <Table
+                    caption={`Blocks for ${day.day_id}: planned ${formatMinutes(day.planned_minutes)}`}
+                    headers={['#', 'Block', 'Planned', 'Credited', 'In doubt', 'State']}
+                    numeric={[0, 2, 3, 4]}
+                    footer={
+                      blockTotals === null ? undefined : ['', 'Total', formatMinutes(day.planned_minutes), formatDuration(blockTotals.credited), formatDuration(blockTotals.uncertain), '']
+                    }
+                    rows={day.blocks.map((b) => {
+                      const session = todaySessions?.find((x) => x.session_id === b.session_id);
+                      return {
+                        key: `${b.seq}`,
+                        cells: [
+                          b.seq,
+                          sentenceCase(b.block),
+                          formatMinutes(b.minutes),
+                          session === undefined ? '—' : formatDuration(session.credited_ms),
+                          session === undefined ? '—' : formatDuration(session.uncertain_ms),
+                          todaySessions === null ? <span className="muted">No data</span> : session === undefined ? <span className="muted">No session</span> : <StateBadge state={session.state} />,
+                        ],
+                      };
+                    })}
+                  />
+                }
+              >
+                <Bars
+                  label="Today’s blocks: credited and in-doubt time against the plan"
+                  rows={day.blocks.map((b) => {
+                    const session = todaySessions?.find((x) => x.session_id === b.session_id);
+                    return {
+                      key: `${b.seq}`,
+                      name: sentenceCase(b.block),
+                      of: b.minutes * 60_000,
+                      posted: session?.credited_ms ?? 0,
+                      doubted: session?.uncertain_ms ?? 0,
+                      value: session === undefined ? `${formatMinutes(b.minutes)} planned` : `${formatDuration(session.credited_ms)} of ${formatMinutes(b.minutes)}`,
+                    };
+                  })}
+                />
+                <Legend
+                  items={[
+                    { mark: 'posted', label: 'Credited' },
+                    { mark: 'doubt', label: 'In doubt' },
+                    { mark: 'pencil', label: 'Planned' },
+                  ]}
+                />
+              </ChartFigure>
+            )}
+          </Panel>
+
+          <Panel title="Today’s objectives" actions={day === null || day.unscheduled ? undefined : <ProvenanceBadge label={planLabel} />}>
             {plan.error !== null ? <ErrorDisplay error={plan.error} /> : null}
-            {plan.loading ? <Loading what="daily plan" /> : null}
-            {plan.data !== null ? (
-              plan.data.unscheduled ? (
-                <NoData reason="unscheduled day (protected rest)" />
+            {plan.loading ? <Loading what="today’s plan" /> : null}
+            {day !== null ? (
+              day.unscheduled ? (
+                <NoData title="Rest day" reason="No objectives are scheduled for this date." />
               ) : (
                 <>
-                  <p className="muted">
-                    {plan.data.day_id} · week {plan.data.week_number} · {plan.data.week_title} · evidence: {plan.data.evidence_artifact} <ProvenanceBadge label={planLabel} />
-                  </p>
-                  <ol>
-                    {plan.data.objectives.map((o) => (
+                  <ol className="rows">
+                    {day.objectives.map((o) => (
                       <li key={o.objective_id}>
-                        <code>{o.objective_id}</code> {o.text} <StateBadge state={o.status} />
+                        <div className="row-main">
+                          <span className="row-title">{o.text}</span>
+                          <span className="row-sub">
+                            <code>{o.objective_id}</code>
+                          </span>
+                        </div>
+                        <div className="row-end">
+                          <StateBadge state={o.status} />
+                        </div>
                       </li>
                     ))}
                   </ol>
+                  <p className="panel-note">
+                    Evidence expected today: <strong>{day.evidence_artifact}</strong>. Write it up in the <Link to="/journal">Learning Journal</Link>.
+                  </p>
                 </>
               )
             ) : null}
           </Panel>
 
-          <Panel title="Time budget">
-            {plan.error !== null ? (
-              <NoData reason={`daily plan unavailable (${plan.error.code}); the blocks of this date cannot be shown`} />
-            ) : plan.data === null ? (
-              <Loading what="time budget" />
-            ) : plan.data.unscheduled ? (
-              <NoData reason="no study blocks for this date (unscheduled day)" />
-            ) : (
-              <Table
-                caption={`Blocks for ${plan.data.day_id}: planned ${formatMinutes(plan.data.planned_minutes)}`}
-                headers={['#', 'Block', 'Planned', 'Credited', 'Uncertain', 'Progress', 'State']}
-                numeric={[0, 2, 3, 4]}
-                footer={
-                  blockTotals === null
-                    ? undefined
-                    : ['', 'Total', formatMinutes(plan.data.planned_minutes), formatDuration(blockTotals.credited), formatDuration(blockTotals.uncertain), '', '']
+          <Panel title="The program">
+            {allSessions.error !== null ? (
+              // The failed read is already reported once at the top of the page when it is today's; here it is the reason there is no map.
+              <NoData
+                reason={`Sessions could not be read (${allSessions.error.code}), so the program map cannot be drawn.`}
+                action={
+                  <button type="button" className="sm" onClick={allSessions.reload}>
+                    Try again
+                  </button>
                 }
-                rows={plan.data.blocks.map((b) => {
-                  const session = todaySessions?.find((x) => x.session_id === b.session_id);
-                  return {
-                    key: `${b.seq}`,
-                    cells: [
-                      b.seq,
-                      humanizeEnum(b.block),
-                      formatMinutes(b.minutes),
-                      session === undefined ? '—' : formatDuration(session.credited_ms),
-                      session === undefined ? '—' : formatDuration(session.uncertain_ms),
-                      session === undefined ? (
-                        <span className="muted">—</span>
-                      ) : (
-                        <Meter
-                          posted={session.credited_ms}
-                          doubted={session.uncertain_ms}
-                          of={b.minutes * 60_000}
-                          label={`${humanizeEnum(b.block)}: ${formatDuration(session.credited_ms)} credited and ${formatDuration(session.uncertain_ms)} uncertain of ${formatMinutes(b.minutes)} planned`}
-                        />
-                      ),
-                      todaySessions === null ? (
-                        <span className="muted">NO DATA</span>
-                      ) : session === undefined ? (
-                        <span className="muted">no session</span>
-                      ) : (
-                        <StateBadge state={session.state} />
-                      ),
-                    ],
-                  };
-                })}
               />
-            )}
-          </Panel>
-
-          <Panel title="Teaching panel">
-            {s === null ? (
-              <Loading what="model status" />
-            ) : s.model.available ? (
-              <NoData reason="no recommendation has been produced for today's objectives" />
+            ) : map === null ? (
+              <Loading what="the program map" />
             ) : (
-              <ModelUnavailable reason={s.model.reason} />
+              <ChartFigure
+                caption={`${todayNumber === null ? '' : `Day ${todayNumber} of ${PROGRAM_DAYS}. `}One cell is one day, one row is one week. A cell fills as its planned time is credited.`}
+                table={
+                  <Table
+                    caption="Recorded days of the program"
+                    headers={['Day', 'Planned', 'Credited', 'In doubt']}
+                    numeric={[1, 2, 3]}
+                    emptyText="No day has a recorded session yet."
+                    rows={map
+                      .filter((d) => d.planned_ms !== null)
+                      .map((d) => ({ key: d.id, cells: [d.id, formatDuration(d.planned_ms ?? 0), formatDuration(d.credited_ms), formatDuration(d.uncertain_ms)] }))}
+                  />
+                }
+              >
+                <ProgramMap
+                  days={map}
+                  daysPerWeek={DAYS_PER_WEEK}
+                  describe={describeDay}
+                  label={`The program, day by day: ${map.filter((d) => d.planned_ms !== null).length} of ${PROGRAM_DAYS} days have recorded sessions`}
+                />
+                <Legend
+                  items={[
+                    { mark: 'posted', label: 'Credited' },
+                    { mark: 'doubt', label: 'In doubt' },
+                    { mark: 'pencil', label: 'Planned' },
+                    { mark: 'rest', label: 'Nothing recorded' },
+                    { mark: 'today', label: 'Today' },
+                  ]}
+                />
+              </ChartFigure>
             )}
-          </Panel>
-
-          <Panel title="Lab / evidence">
-            <Tabs
-              label="Lab and evidence"
-              tabs={[
-                {
-                  id: 'lab',
-                  label: 'Lab',
-                  content: <NoData reason="lab orchestration is not an enabled capability in this build (separately approved adapter, ARCHITECTURE §13)" />,
-                },
-                {
-                  id: 'evidence',
-                  label: 'Evidence',
-                  content:
-                    plan.error !== null ? (
-                      <NoData reason={`daily plan unavailable (${plan.error.code}); the expected evidence artifact is unknown`} />
-                    ) : plan.data === null ? (
-                      <Loading what="evidence expectation" />
-                    ) : plan.data.unscheduled ? (
-                      <NoData reason="no evidence artifact expected today (unscheduled day)" />
-                    ) : (
-                      <p>
-                        Expected artifact: <strong>{plan.data.evidence_artifact}</strong>. Capture it in the <Link to="/journal">Learning Journal</Link>; evidence
-                        references attach to the attempt in <Link to="/assessments">Assessments</Link>.
-                      </p>
-                    ),
-                },
-              ]}
-            />
           </Panel>
         </div>
 
-        <div>
-          <Panel title="Overdue reviews" as="aside">
+        <Margin label="What waits for you">
+          <Panel title="Reviews" as="aside">
             {due.error !== null ? <ErrorDisplay error={due.error} /> : null}
             {due.data === null ? (
-              due.loading ? <Loading what="review queue" /> : null
-            ) : due.data.overdue.length === 0 ? (
-              <NoData reason="no overdue reviews" />
+              due.loading ? <Loading what="the review queue" /> : null
+            ) : due.data.overdue.length + due.data.due.length + due.data.overflow.length === 0 ? (
+              <p className="muted">Nothing is due.</p>
             ) : (
-              <ul>
-                {due.data.overdue.map((r) => (
-                  <li key={r.review_item_id}>
-                    {r.prompt} <span className="muted">(due {formatDateTime(r.due_at, today.zone)})</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {due.data !== null && due.data.due.length > 0 ? (
-              <p className="muted">
-                {due.data.due.length} due today · {due.data.overflow.length} beyond the {formatMinutes(Math.round(due.data.budget_ms / 60_000))} budget
-              </p>
-            ) : null}
-          </Panel>
-
-          <Panel title="Weak-skill hypotheses" as="aside">
-            {interventions.error !== null ? (
-              <ErrorDisplay error={interventions.error} onRetry={interventions.reload} />
-            ) : interventions.data === null ? (
-              <Loading what="hypotheses" />
-            ) : hypotheses.length === 0 ? (
-              s !== null && !s.model.available ? (
-                <ModelUnavailable reason={s.model.reason} what="Hypotheses" />
-              ) : (
-                <NoData reason="no supported hypotheses" />
-              )
-            ) : (
-              <ul>
-                {hypotheses.map((h) => (
-                  <li key={h.intervention_id}>
-                    <ProvenanceBadge label="PROPOSED" /> {h.statement}
-                  </li>
-                ))}
-              </ul>
+              <>
+                {due.data.overdue.length > 0 ? (
+                  <ul className="rows">
+                    {due.data.overdue.slice(0, 3).map((r) => (
+                      <li key={r.review_item_id}>
+                        <div className="row-main">
+                          <span className="row-title">{r.prompt}</span>
+                          <span className="row-sub" data-standing="owed">
+                            Overdue since {formatDateTime(r.due_at, today.zone)}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <p className="panel-note">
+                  {due.data.overdue.length} overdue, {due.data.due.length} due today, {due.data.overflow.length} beyond today’s{' '}
+                  {formatMinutes(Math.round(due.data.budget_ms / 60_000))} budget. <Link to="/retention">Open the review queue</Link>
+                </p>
+              </>
             )}
           </Panel>
 
-          <Panel title="Pending approvals" as="aside">
+          <Panel title="Waiting for your approval" as="aside">
             {approvals.data === null ? (
               approvals.error !== null ? (
                 <ErrorDisplay error={approvals.error} onRetry={approvals.reload} />
@@ -280,68 +365,69 @@ export function MissionControl() {
                 <Loading what="approvals" />
               )
             ) : approvals.data.approvals.length === 0 ? (
-              <NoData reason="nothing awaits approval" />
+              <p className="muted">Nothing waits for your approval.</p>
             ) : (
-              <ul>
+              <ul className="rows">
                 {approvals.data.approvals.map((a) => (
                   <li key={a.approval_id}>
-                    <Link to="/approvals">{a.summary}</Link> <span className="muted">expires {formatTime(a.expires_at, today.zone)}</span>
+                    <div className="row-main">
+                      <Link className="row-title" to="/approvals">
+                        {a.summary}
+                      </Link>
+                      <span className="row-sub">Expires {formatTime(a.expires_at, today.zone)}</span>
+                    </div>
                   </li>
                 ))}
               </ul>
             )}
           </Panel>
-        </div>
-      </div>
 
-      <footer className="panel" aria-label="Day summary">
-        <div className="facts">
-          <div>
-            <h3>Verified work</h3>
-            {verifiedDone === null ? (
-              <NoData reason={sessions.error === null ? 'sessions loading' : 'sessions could not be read'} />
+          <Panel title="Next on the calendar" as="aside">
+            {calendar.data === null || s === null ? (
+              calendar.error === null ? (
+                <Loading what="the calendar" />
+              ) : (
+                <p className="muted">The calendar could not be read ({calendar.error.code}).</p>
+              )
+            ) : nextCommitment === undefined ? (
+              <p className="muted">Nothing in the next 48 hours.</p>
             ) : (
-              <>
-                <span className="kpi">{verifiedDone.length}</span> <span className="muted">blocks completed</span> <ProvenanceBadge label="VERIFIED" />
-              </>
+              <p>
+                <strong>{nextCommitment.title}</strong>
+                <br />
+                <span className="muted">{formatDateTime(nextCommitment.start, s.clock.zone)}</span>
+              </p>
             )}
-          </div>
-          <div>
-            <h3>Estimated vs actual</h3>
-            {plannedMs === null ? (
-              <span className="muted">{plan.error === null ? 'NO DATA — plan not loaded' : `NO DATA — plan unavailable (${plan.error.code})`}</span>
+          </Panel>
+
+          <Panel title="From the mentor" as="aside">
+            {interventions.error !== null ? (
+              <ErrorDisplay error={interventions.error} onRetry={interventions.reload} />
+            ) : interventions.data === null ? (
+              <Loading what="hypotheses" />
+            ) : hypotheses.length === 0 ? (
+              s !== null && !s.model.available ? (
+                <ModelUnavailable reason={s.model.reason} what="Advice" />
+              ) : (
+                <p className="muted">No hypothesis is supported by the evidence yet.</p>
+              )
             ) : (
-              <>
-                <span className="kpi">{formatDuration(plannedMs)}</span> <span className="muted">planned</span>
-              </>
-            )}{' '}
-            ·{' '}
-            {credited === null ? (
-              <span className="muted">NO DATA — sessions not loaded</span>
-            ) : (
-              <>
-                <span className="kpi">{formatDuration(credited)}</span> <span className="muted">credited</span>
-              </>
+              <ul className="rows">
+                {hypotheses.map((h) => (
+                  <li key={h.intervention_id}>
+                    <div className="row-main">
+                      <span className="row-title">{h.statement}</span>
+                    </div>
+                    <div className="row-end">
+                      <ProvenanceBadge label="PROPOSED" />
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
-          </div>
-          <div>
-            <h3>Business milestones</h3>
-            <NoData reason="executive operations are PROPOSED (M14)" />
-          </div>
-          <div>
-            <h3>Next step</h3>
-            {todaySessions === null ? (
-              <span className="muted">NO DATA — sessions not loaded</span>
-            ) : nextSession !== undefined ? (
-              <span>
-                Prepare <strong>{humanizeEnum(nextSession.block)}</strong> ({formatMinutes(Math.round(nextSession.planned_ms / 60_000))})
-              </span>
-            ) : (
-              <span className="muted">No planned block remaining</span>
-            )}
-          </div>
-        </div>
-      </footer>
+          </Panel>
+        </Margin>
+      </div>
     </div>
   );
 }

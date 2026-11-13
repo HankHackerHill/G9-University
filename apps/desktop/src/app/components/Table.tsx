@@ -9,14 +9,28 @@ export interface TableProps {
   numeric?: readonly number[];
   /** A totals row, drawn under a double rule. */
   footer?: readonly ReactNode[] | undefined;
+  /** Band the rows three at a time (a long ledger read across a wide sheet). */
+  barred?: boolean;
+  /** Show the caption above the table. It always names the table for assistive technology. */
+  captionVisible?: boolean;
+  /** Column widths (any CSS length), by column; omit a column to let it take what is left. */
+  widths?: readonly (string | undefined)[];
 }
 
-/** Dense data table with a caption; the tabular alternative required for every chart. */
-export function Table({ caption, headers, rows, emptyText, numeric = [], footer }: TableProps) {
+/** A ruled table with a caption; the tabular alternative required for every chart. */
+export function Table({ caption, headers, rows, emptyText, numeric = [], footer, barred = false, captionVisible = false, widths }: TableProps) {
   const cls = (i: number) => (numeric.includes(i) ? 'num' : undefined);
   return (
-    <table>
-      <caption>{caption}</caption>
+    <div className="table-wrap">
+      <table className={barred ? 'barred' : undefined}>
+        <caption className={captionVisible ? undefined : 'visually-hidden'}>{caption}</caption>
+        {widths === undefined ? null : (
+          <colgroup>
+            {headers.map((h, i) => (
+              <col key={h} style={widths[i] === undefined ? undefined : { width: widths[i] }} />
+            ))}
+          </colgroup>
+        )}
       <thead>
         <tr>
           {headers.map((h, i) => (
@@ -57,5 +71,6 @@ export function Table({ caption, headers, rows, emptyText, numeric = [], footer 
         </tfoot>
       )}
     </table>
+    </div>
   );
 }
