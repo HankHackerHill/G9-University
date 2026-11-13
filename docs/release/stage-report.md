@@ -204,5 +204,7 @@ Request (operator, verbatim): "Now finish the build doing each of the following:
 | 6 | Export to a file | `export.request` writes `<data>/exports/<id>/` | `feature_export.rs` (4), `g9-storage` `export` (4, one caught the unassigned `schema_migrations` table) | TESTED |
 | — | Attachments in backups | `backup.create`, `g9 copy-backup`, `g9 restore --attachments` | `apps/cli/tests/restore.rs::attachment_files_travel_with_a_copied_backup_and_come_back_on_restore` | TESTED |
 
+Independent review of the new file-writing code (2026-11-13, read-only reviewer, proof tests outside the repository): no CRITICAL or HIGH; 2 MEDIUM, 8 LOW, 3 INFO. Fixed with a regression test that failed first: both MEDIUM (erased titles and file names surviving in evidence summaries and in idempotency records), LOW 3, 4, 5, 6, 7, 8, 9 and INFO 11, 13, plus one more found while fixing (a PRIVATE attempt's pass/fail in an INTERNAL event). Open by decision: LOW 10 (no attachment quota; bytes not reclaimed until the purge decision) and INFO 12 (an export folder can outlive a failed commit); ADR-0016 lists them.
+
 IPC operations: 46 (was 35). New dependency: `base64 =0.23.1` in `g9-app` (already in `Cargo.lock` through the shell's tree; default features off). Frontend: section 6 counts are updated when the final verification of this change runs.
 

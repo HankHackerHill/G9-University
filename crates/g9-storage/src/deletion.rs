@@ -323,10 +323,13 @@ impl Eraser<'_> {
         };
         let reason = format!("deletion_request:{}", self.request_id);
         for eid in ids {
+            // The summary repeats erased content (a note title, a file name):
+            // it is redacted with the item, never left readable.
             self.tx.execute(
-                "UPDATE evidence_items SET invalidated_at = ?2, invalidation_reason = ?3, revision = revision + 1, updated_at = ?2
+                "UPDATE evidence_items SET invalidated_at = ?2, invalidation_reason = ?3, summary = ?4,
+                     revision = revision + 1, updated_at = ?2
                  WHERE id = ?1",
-                params![eid, self.now.as_millis(), reason],
+                params![eid, self.now.as_millis(), reason, REDACTED],
             )?;
             self.report.invalidated_derived.push(RowRef {
                 table_name: "evidence_items".to_string(),

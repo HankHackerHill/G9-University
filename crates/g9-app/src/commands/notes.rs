@@ -169,6 +169,9 @@ pub fn create(
             let mut m = Mutation::new(view(env.conn, &stored, code)?, Some(revision))
                 .with_event(EventSpec {
                     domain: req.domain,
+                    // The body hash is classified like the body: a short PRIVATE
+                    // or SECRET note could otherwise be guessed from an export.
+                    classification: req.classification,
                     content_sha256: Some(sha256_hex(req.body_markdown.as_bytes())),
                     ..EventSpec::learning("note.created", json!({ "note_id": note_id }))
                 })
@@ -240,6 +243,7 @@ pub fn revise(
                 Mutation::new(view(env.conn, &stored, code)?, Some(revision))
                     .with_event(EventSpec {
                         domain: row.data_domain,
+                        classification: row.classification,
                         content_sha256: Some(sha256_hex(req.body_markdown.as_bytes())),
                         ..EventSpec::learning(
                             "note.revised",

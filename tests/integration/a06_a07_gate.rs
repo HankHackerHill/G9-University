@@ -65,9 +65,11 @@ fn a06_ui_actor_is_refused_and_approvals_bind_to_parameters() {
     }
     let exports = r.steps_for("export.request");
     assert_eq!(exports[0].decision, "DENY");
+    // The ceiling is part of the export resource id, so an approval for the
+    // INTERNAL selection presented for PRIVATE is another resource.
     assert_eq!(
         exports[0].error_code.as_deref(),
-        Some("approval.operation_mismatch")
+        Some("approval.resource_mismatch")
     );
     assert_eq!(exports[0].state_after["state"], json!("APPROVED"));
     assert_eq!(exports[1].decision, "ALLOW");

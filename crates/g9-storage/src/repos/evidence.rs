@@ -535,6 +535,22 @@ pub fn get_attachment(
     Ok(row)
 }
 
+/// Whether a non-erased attachment with these bytes exists within `scope`
+/// (domain-filtered in SQL; rows outside the scope are never consulted).
+pub fn attachment_digest_in_scope(
+    conn: &Connection,
+    scope: &ReadScope,
+    content_sha256: &str,
+) -> RepoResult<bool> {
+    let found: i64 = conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM attachments
+             WHERE content_sha256 = ?1 AND erased = 0 AND (?2 = 1 OR data_domain = ?3))",
+        rusqlite::params![content_sha256, scope.sql_flag(), scope.sql_domain()?],
+        |r| r.get(0),
+    )?;
+    Ok(found == 1)
+}
+
 /// Attachments of a note, domain-filtered in SQL.
 pub fn list_attachments_for_note(
     conn: &Connection,

@@ -19,7 +19,10 @@
 //! row (a session's intervals, a note's versions, an attempt's grades); a
 //! table without row-level domain belongs to one fixed domain (the governance
 //! tables to `SYSTEM`); `idempotency_records` (stored command responses kept
-//! for replay) is never exported. Erased rows are left out.
+//! for replay) is never exported. Erased rows are left out. A row that also
+//! references an attempt, episode, intervention or chunk ([`LINKS`]) leaves
+//! only when that row does, and assessment task statements are withheld
+//! ([`WITHHELD`], listed in the manifest).
 //!
 //! # Writing
 //!
@@ -277,6 +280,37 @@ const TABLES: &[(&str, Scope)] = &[
     ),
 ];
 
+/// Nullable references that must point at an exported row or be NULL, on top
+/// of the table's scope: a row tied to a PRIVATE attempt, an excluded
+/// intervention or document chunk leaves only together with that row
+/// (`(table, column, parent)`, the parent keyed by `id`).
+const LINKS: &[(&str, &str, &str)] = &[
+    ("competency_observations", "attempt_id", "attempts"),
+    ("competency_observations", "episode_id", "learning_episodes"),
+    (
+        "competency_observation_evidence",
+        "decision_id",
+        "grade_decisions",
+    ),
+    ("practical_transfer_checks", "attempt_id", "attempts"),
+    ("exposure_log", "attempt_id", "attempts"),
+    ("method_experiments", "intervention_id", "interventions"),
+    ("calibration_observations", "attempt_id", "attempts"),
+    (
+        "calibration_observations",
+        "review_attempt_id",
+        "review_attempts",
+    ),
+    ("claim_versions", "chunk_id", "knowledge_chunks"),
+];
+
+/// Columns never exported (`(table, column, reason)`; listed in the manifest).
+const WITHHELD: &[(&str, &str, &str)] = &[(
+    "assessment_versions",
+    "task_statement",
+    "blind assessment integrity: an exported task is an exposure the exposure log never records",
+)];
+
 const fn domain_sql(d: DataDomain) -> &'static str {
     match d {
         DataDomain::Learning => "'LEARNING'",
@@ -302,7 +336,7 @@ fn filter(table: &str, sel: &ExportSelection, depth: usize) -> StorageResult<Opt
         return Err(StorageError::Internal("export.parent_chain_too_deep"));
     }
     let erased_clause = |erased: bool| if erased { " AND erased = 0" } else { "" };
-    Ok(match scope_of(table)? {
+    let base = match scope_of(table)? {
         Scope::Excluded(_) => None,
         Scope::Fixed(domain) => sel.domains.contains(&domain).then(|| "1 = 1".to_string()),
         Scope::Own { erased } => {
@@ -334,7 +368,19 @@ fn filter(table: &str, sel: &ExportSelection, depth: usize) -> StorageResult<Opt
                 erased_clause(erased)
             )
         }),
-    })
+    };
+    let Some(mut clause) = base else {
+        return Ok(None);
+    };
+    for (_, column, parent) in LINKS.iter().filter(|(t, _, _)| *t == table) {
+        match filter(parent, sel, depth + 1)? {
+            Some(parent_filter) => clause.push_str(&format!(
+                " AND ({column} IS NULL OR {column} IN (SELECT id FROM {parent} WHERE {parent_filter}))"
+            )),
+            None => clause.push_str(&format!(" AND {column} IS NULL")),
+        }
+    }
+    Ok(Some(clause))
 }
 
 /// One exported table.
@@ -406,12 +452,22 @@ pub fn collect(conn: &Connection, sel: &ExportSelection) -> StorageResult<Export
         ))?;
         let columns: Vec<String> = stmt.column_names().map(str::to_string).collect();
         let width = columns.len();
+        let withheld: Vec<usize> = columns
+            .iter()
+            .enumerate()
+            .filter(|(_, c)| WITHHELD.iter().any(|(t, wc, _)| t == name && wc == *c))
+            .map(|(i, _)| i)
+            .collect();
         let mut rows = Vec::new();
         let mut cursor = stmt.query([])?;
         while let Some(row) = cursor.next()? {
             let mut values = Vec::with_capacity(width);
             for i in 0..width {
-                values.push(to_json(row.get_ref(i)?)?);
+                values.push(if withheld.contains(&i) {
+                    Value::Null
+                } else {
+                    to_json(row.get_ref(i)?)?
+                });
             }
             rows.push(values);
         }
@@ -657,6 +713,11 @@ fn assemble(
         "include_private": header.selection.include_private,
         "data_format": header.format,
         "csv_formula_guard": header.format == ExportFormat::Csv,
+        "withheld": WITHHELD
+            .iter()
+            .filter(|(t, _, _)| data.tables.iter().any(|x| x.name == *t))
+            .map(|(t, c, why)| json!({ "table": t, "column": c, "reason": why }))
+            .collect::<Vec<_>>(),
         "tables": data.tables.iter().map(|t| json!({ "name": t.name, "rows": t.rows.len() })).collect::<Vec<_>>(),
         "files": files,
         "attachments": {
@@ -715,12 +776,24 @@ mod tests {
         let unique: BTreeSet<String> = assigned.iter().map(|s| s.to_string()).collect();
         assert_eq!(unique.len(), assigned.len(), "a table is assigned twice");
         assert_eq!(unique, schema, "every table must be assigned");
-        // Each child names a parent that comes earlier.
+        // Each child names a parent that comes earlier; so does every link.
+        let position = |table: &str| TABLES.iter().position(|(n, _)| *n == table).unwrap();
         for (i, (name, scope)) in TABLES.iter().enumerate() {
             if let Scope::Child { parent, .. } = scope {
-                let p = TABLES.iter().position(|(n, _)| n == parent).unwrap();
-                assert!(p < i, "{name}: parent {parent} must come first");
+                assert!(
+                    position(parent) < i,
+                    "{name}: parent {parent} must come first"
+                );
             }
+        }
+        for (table, column, parent) in LINKS {
+            assert!(
+                position(parent) < position(table),
+                "{table}.{column}: {parent} first"
+            );
+        }
+        for (table, _, _) in WITHHELD {
+            position(table);
         }
     }
 

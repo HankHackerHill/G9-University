@@ -219,13 +219,15 @@ fn existing_file(root: &Path, sha256: &str) -> StorageResult<PathBuf> {
 /// hashing while copying: a source whose bytes do not match is
 /// [`StorageError::Corrupt`] and nothing is placed at the destination.
 pub fn copy_between(from: &Path, to: &Path, sha256: &str) -> StorageResult<Stored> {
-    let source = existing_file(from, sha256)?;
+    relpath(sha256)?;
+    // The destination first: an intact file there needs no source.
     let to_root = canonical_root(to)?;
     let dir = shard_dir(&to_root, sha256)?;
     let target = dir.join(sha256);
     if present_and_intact(&target, sha256)? {
         return Ok(Stored::AlreadyPresent);
     }
+    let source = existing_file(from, sha256)?;
     let mut input =
         fs::File::open(&source).map_err(|e| StorageError::io("open an attachment", &e))?;
     let (partial, mut output) = open_partial(&dir, sha256)?;
@@ -430,6 +432,22 @@ mod tests {
             Stored::Written
         );
         assert!(holds_intact(backup.path(), &sha).unwrap());
+    }
+
+    #[test]
+    fn a_file_already_intact_at_the_destination_needs_no_source() {
+        // Review finding 8: the source was required before the destination
+        // was looked at, so a file already in place was reported missing.
+        let from = tempfile::tempdir().unwrap();
+        let to = tempfile::tempdir().unwrap();
+        let bytes = b"already there";
+        let sha = digest(bytes);
+        put(to.path(), &sha, bytes).unwrap();
+        assert_eq!(
+            copy_between(from.path(), to.path(), &sha).unwrap(),
+            Stored::AlreadyPresent
+        );
+        assert!(copy_all(from.path(), to.path(), &[sha]).unwrap().complete());
     }
 
     #[cfg(unix)]

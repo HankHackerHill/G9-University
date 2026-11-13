@@ -242,3 +242,160 @@ fn a_backup_carries_the_attachment_bytes() {
     let verified = h.call("backup.verify", json!({ "backup_id": id })).unwrap();
     assert_eq!(verified["result"]["state"], "CHECKED");
 }
+
+// ---------------------------------------------------------------------------
+// Review findings (2026-11-13), each reproduced before its fix.
+// ---------------------------------------------------------------------------
+
+/// Every stored idempotency outcome, as text.
+fn idempotency_text(h: &Harness) -> String {
+    let mut stmt = h
+        .conn()
+        .prepare("SELECT outcome_json FROM idempotency_records")
+        .unwrap();
+    let rows = stmt.query_map([], |r| r.get::<_, String>(0)).unwrap();
+    rows.map(Result::unwrap).collect::<Vec<_>>().join("\n")
+}
+
+#[test]
+fn an_erasure_leaves_no_title_or_file_name_in_evidence_listings_or_replays() {
+    let (mut h, _root) = harness();
+    let n = note(&mut h, "Therapy notes November");
+    let from_note = json!({ "note_id": n });
+    h.call_with(
+        "evidence.from_note",
+        from_note.clone(),
+        &Opts::key("ev-note-1"),
+    )
+    .unwrap();
+    let attach = json!({ "note_id": n, "filename": "custody-letter-draft.txt", "media_type": "text/plain", "content_base64": b64(b"draft") });
+    h.call_with(
+        "evidence.attach_file",
+        attach.clone(),
+        &Opts::key("ev-file-1"),
+    )
+    .unwrap();
+    let erased = h.approved(
+        "deletion.request",
+        json!({ "resource": { "kind": "NOTE", "id": n }, "reason": "owner request" }),
+        &Opts::default(),
+    );
+    assert_eq!(erased["result"]["state"], "APPLIED", "{erased}");
+
+    let mut stmt = h
+        .conn()
+        .prepare("SELECT summary FROM evidence_items")
+        .unwrap();
+    let summaries: Vec<String> = stmt
+        .query_map([], |r| r.get(0))
+        .unwrap()
+        .map(Result::unwrap)
+        .collect();
+    drop(stmt);
+    assert!(
+        summaries
+            .iter()
+            .all(|s| !s.contains("Therapy") && !s.contains("custody")),
+        "{summaries:?}"
+    );
+    let listed = h.call("evidence.list", json!({})).unwrap().to_string();
+    assert!(
+        !listed.contains("Therapy notes") && !listed.contains("custody-letter"),
+        "{listed}"
+    );
+    let stored = idempotency_text(&h);
+    assert!(
+        !stored.contains("Therapy notes") && !stored.contains("custody-letter"),
+        "{stored}"
+    );
+    let again = h
+        .call_with("evidence.from_note", from_note, &Opts::key("ev-note-1"))
+        .unwrap();
+    assert_eq!(again["replayed"], true);
+    assert!(!again.to_string().contains("Therapy notes"), "{again}");
+    let again = h
+        .call_with("evidence.attach_file", attach, &Opts::key("ev-file-1"))
+        .unwrap();
+    assert_eq!(again["replayed"], true);
+    assert!(!again.to_string().contains("custody-letter"), "{again}");
+}
+
+#[test]
+fn a_note_title_with_control_characters_still_becomes_evidence() {
+    let (mut h, _root) = harness();
+    let n = note(&mut h, "Lab\r\nnotes");
+    let made = h
+        .call("evidence.from_note", json!({ "note_id": n }))
+        .unwrap();
+    let summary = made["result"]["summary"].as_str().unwrap();
+    assert!(!summary.chars().any(char::is_control), "{summary:?}");
+    assert!(summary.starts_with("Lab") && summary.ends_with("notes"));
+}
+
+#[test]
+fn already_stored_only_reports_bytes_attached_within_the_callers_scope() {
+    let (mut h, _root) = harness();
+    let sensitive = Opts {
+        scope: Some(("SECURITY_SENSITIVE", "STUDY")),
+        ..Opts::default()
+    };
+    let n = h.approved(
+        "notes.create",
+        json!({ "title": "Scope", "body_markdown": "x", "classification": "SECRET", "domain": "SECURITY_SENSITIVE" }),
+        &sensitive,
+    )["result"]["note_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let bytes = b"the same bytes";
+    h.approved(
+        "evidence.attach_file",
+        json!({ "note_id": n, "filename": "s.txt", "media_type": "text/plain", "content_base64": b64(bytes) }),
+        &sensitive,
+    );
+    let first = attach(&mut h, None, "a.txt", "text/plain", bytes).unwrap();
+    assert_eq!(
+        first["result"]["already_stored"], false,
+        "bytes held only outside the caller's scope are not disclosed"
+    );
+    let second = attach(&mut h, None, "b.txt", "text/plain", bytes).unwrap();
+    assert_eq!(second["result"]["already_stored"], true);
+}
+
+#[test]
+fn events_about_secret_content_are_private_and_carry_no_content_hash() {
+    // `domain_events` reach exports and backups: an event is classified at
+    // least like the record it is about; SECRET is stored as PRIVATE without
+    // the content hash (the hash of a short secret is the secret).
+    let (mut h, _root) = harness();
+    let n = h
+        .call(
+            "notes.create",
+            json!({ "title": "PSK", "body_markdown": "hunter2", "classification": "SECRET", "domain": "LEARNING" }),
+        )
+        .unwrap()["result"]["note_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    attach(&mut h, Some(&n), "psk.txt", "text/plain", b"hunter2").unwrap();
+    h.call("evidence.from_note", json!({ "note_id": n }))
+        .unwrap();
+    let mut stmt = h
+        .conn()
+        .prepare(
+            "SELECT kind, classification, content_sha256 FROM domain_events
+             WHERE kind IN ('note.created', 'attachment.added', 'evidence.added') ORDER BY seq",
+        )
+        .unwrap();
+    let rows: Vec<(String, String, Option<String>)> = stmt
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+        .unwrap()
+        .map(Result::unwrap)
+        .collect();
+    assert_eq!(rows.len(), 3, "{rows:?}");
+    assert!(
+        rows.iter()
+            .all(|(_, c, sha)| c == "PRIVATE" && sha.is_none()),
+        "{rows:?}"
+    );
+}

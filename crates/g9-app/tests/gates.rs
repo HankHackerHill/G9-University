@@ -219,7 +219,10 @@ fn pipeline_consumes_approval_once_and_rejects_replay() {
         )
         .unwrap_err();
     assert_eq!(mismatch.category, ErrorCategory::Unauthorized);
-    assert_eq!(mismatch.code, "approval.operation_mismatch");
+    // The privacy ceiling is part of the export resource
+    // (`export:LEARNING:INTERNAL:JSON` vs `...:PRIVATE:JSON`), so the wider
+    // request is refused as another resource.
+    assert_eq!(mismatch.code, "approval.resource_mismatch");
     assert_eq!(
         approvals_store::get_request(h.conn(), &id)
             .unwrap()

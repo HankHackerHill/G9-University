@@ -18,6 +18,10 @@ Before this change the operator could not create sessions, calendar events, revi
 | Authority of attachments | Trust class `IMPORTED_DOCUMENT`; never parsed (PDF included); domain and classification inherited from the note, so a file on a security-sensitive note needs an approval | Imported content is data, never instructions |
 | Export writer | An approved `export.request` writes `<data>/exports/<export_id>/` inside the command transaction: `data.json` or one CSV per table, the attachment bytes (hash-checked), `manifest.json` last; assembled in a hidden partial directory and renamed; never overwrites | One consistent read; a failure rolls the command back and the approval stays unspent |
 | Export selection | Every schema table assigned exactly once (`g9_storage::export::TABLES`; a test fails on an unassigned table): own domain and classification, child of an exported row, or one fixed domain (governance tables → SYSTEM); `idempotency_records` never; erased rows never; SECRET rows never (docs/privacy/data-lifecycle.md); PRIVATE only with `include_private` | A new table cannot leak through an export unnoticed |
+| Linked rows and withheld columns | A row that also references an attempt, episode, intervention or chunk leaves only with it (`LINKS`); `assessment_versions.task_statement` is withheld and listed in the manifest (`WITHHELD`) | A PRIVATE attempt's scores must not leave through competency observations; an exported blind task is an exposure the exposure log never records |
+| Event classification | The pipeline raises every event to at least the classification of the resource the command acts on; SECRET becomes PRIVATE without the content hash (storage refuses SECRET events) | Events reach exports and backups; a pass/fail or a short secret's hash is content |
+| Export approval | The resource id names domains, ceiling and format (`export:LEARNING:PRIVATE:CSV`) | The native confirmation shows only the stored request; the payload hash alone is not readable |
+| Replays | Operations whose results repeat erasable content (`notes.*`, `evidence.attach_file`, `evidence.from_note`) store ids only in `idempotency_records` and rebuild a replay from current rows | An erasure leaves no copy |
 | CSV | RFC 4180 quoting; a text cell starting with `=`, `+`, `-`, `@`, tab or CR is prefixed with `'` | Imported text must not run as a spreadsheet formula |
 | Backups | `backup.create` copies referenced attachment bytes to `<data>/backups/attachments`; `g9 copy-backup` carries them; `g9 restore` puts them back (`--attachments`) and lists any missing | A database restore without its files is a silent loss |
 
@@ -28,6 +32,8 @@ Before this change the operator could not create sessions, calendar events, revi
 - Signing the export manifest with the local key; an `export_records` table (the domain events `export.requested` and `export.written` record each export today).
 - Purging an erased attachment's bytes from the live store: the erasure redacts the row and reports `deletion.attachment_bytes_not_purged`; the files stay until the owner decides whether the approved erasure may also remove them (and whether backup copies follow).
 - Custom rubric criteria and the QUIZ and REPORT assessment kinds (no storage).
+- A storage quota for attachments: each call is capped at 16 MiB, there is no total cap, and the bytes are not reclaimed until the purge decision above (LOW; a compromised webview could already grow the database through notes and backups).
+- An export folder written by a command whose commit then fails (disk full, crash) stays on disk without an `export.*` event, and the approval stays usable until it expires (INFO; the webview cannot cause it).
 
 ## Consequences
 

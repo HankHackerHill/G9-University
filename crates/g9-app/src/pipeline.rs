@@ -603,6 +603,8 @@ enum Step {
 struct PostBase {
     record: PolicyDecisionRecord,
     audit_resource: ResourceRef,
+    /// Classification of the resource (the floor of every event's).
+    floor: Classification,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -849,7 +851,13 @@ where
         .unwrap_or_else(|| cmd.resource.clone());
     if let Some(error) = mutation.commit_error.take() {
         let committed = (|| -> Result<(), G9Error> {
-            append_events(&tx, meta, now, &mutation.events)?;
+            append_events(
+                &tx,
+                meta,
+                now,
+                &mutation.events,
+                found.context.classification,
+            )?;
             insert_decision(&tx, &record, meta, touched.as_ref())?;
             let audit = AuditChain::append(
                 &tx,
@@ -886,7 +894,13 @@ where
 
     // Step 7: events, decision, audit.
     let finish = (|| -> Result<CommandOutcome<Value>, G9Error> {
-        append_events(&tx, meta, now, &mutation.events)?;
+        append_events(
+            &tx,
+            meta,
+            now,
+            &mutation.events,
+            found.context.classification,
+        )?;
         insert_decision(&tx, &record, meta, touched.as_ref())?;
         let audit = AuditChain::append(
             &tx,
@@ -945,6 +959,7 @@ where
                 PostBase {
                     record,
                     audit_resource,
+                    floor: found.context.classification,
                 },
             ))
         }),
@@ -973,7 +988,7 @@ fn run_post_commit(
     let tx = db.begin_immediate()?;
     match produced {
         Ok(mutation) => {
-            append_events(&tx, meta, now, &mutation.events)?;
+            append_events(&tx, meta, now, &mutation.events, base.floor)?;
             let audit = AuditChain::append(
                 &tx,
                 &audit_entry(
@@ -1122,13 +1137,26 @@ fn storage_err(e: rusqlite::Error) -> G9Error {
     G9Error::from(g9_storage::StorageError::from(e))
 }
 
+/// Append the command's events. An event is never classified below the
+/// resource it is about (`floor`, the policy facts' classification): events
+/// reach exports and backups, so an event about a PRIVATE attempt or note is
+/// PRIVATE. `domain_events` never stores SECRET (storage refuses it), so an
+/// event about SECRET content is PRIVATE and carries no content hash (the hash
+/// of a short secret is the secret).
 fn append_events(
     conn: &Connection,
     meta: &CommandMeta,
     now: UtcMillis,
     specs: &[EventSpec],
+    floor: Classification,
 ) -> Result<(), G9Error> {
     for spec in specs {
+        let raised = spec.classification.max(floor);
+        let (classification, content_sha256) = if raised == Classification::Secret {
+            (Classification::Private, None)
+        } else {
+            (raised, spec.content_sha256.clone())
+        };
         events::append_event(
             conn,
             &DomainEvent {
@@ -1140,11 +1168,11 @@ fn append_events(
                     trust: meta.actor.trust(),
                     schema_version: SchemaVersion::V1,
                     correlation_id: meta.trace_id.clone(),
-                    content_sha256: spec.content_sha256.clone(),
+                    content_sha256,
                 },
                 payload: spec.payload.clone(),
                 data_domain: spec.domain,
-                classification: spec.classification,
+                classification,
             },
         )?;
     }

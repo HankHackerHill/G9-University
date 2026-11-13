@@ -107,6 +107,8 @@ pub(crate) fn rebuild_replay(
     match op {
         "notes.create" | "notes.revise" => notes::replay_view(conn, svc, record),
         "skills.invoke" => Ok(skills::replay_view(record)),
+        "evidence.from_note" => evidence::replay_from_note(conn, record),
+        "evidence.attach_file" => evidence::replay_attach(conn, record),
         _ => Err(G9Error::internal_redacted("idempotency.replay_unsupported")),
     }
 }

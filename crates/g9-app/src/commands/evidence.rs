@@ -245,7 +245,12 @@ pub fn attach_file(
                     ),
                 ));
             }
-            let stored = attachment_store::put(&root, &reference.sha256, &bytes)?;
+            // Whether identical bytes are already attached within the caller's
+            // scope (never across domains or to erased rows: the flag must not
+            // reveal content the caller cannot read).
+            let already_stored =
+                repo::attachment_digest_in_scope(env.conn, &scope, &reference.sha256)?;
+            attachment_store::put(&root, &reference.sha256, &bytes)?;
             let row = AttachmentRow::from_ref(
                 &reference,
                 &filename,
@@ -277,16 +282,23 @@ pub fn attach_file(
                 "media_type": reference.media_type.as_str(),
                 "size_bytes": reference.byte_len,
                 "sha256": reference.sha256,
-                "already_stored": stored == attachment_store::Stored::AlreadyPresent,
+                "already_stored": already_stored,
             });
-            Ok(Mutation::new(result, Some(revision)).with_event(EventSpec {
-                domain: o.domain,
-                content_sha256: Some(reference.sha256.clone()),
-                ..EventSpec::learning(
-                    "attachment.added",
-                    json!({ "attachment_id": attachment_id, "evidence_id": item.id, "note_id": o.note_id }),
-                )
-            }))
+            Ok(Mutation::new(result, Some(revision))
+                .with_event(EventSpec {
+                    domain: o.domain,
+                    classification: o.classification,
+                    content_sha256: Some(reference.sha256.clone()),
+                    ..EventSpec::learning(
+                        "attachment.added",
+                        json!({ "attachment_id": attachment_id, "evidence_id": item.id, "note_id": o.note_id }),
+                    )
+                })
+                .replay_with(json!({
+                    "attachment_id": attachment_id,
+                    "evidence_id": item.id,
+                    "already_stored": already_stored,
+                })))
         },
     )
 }
@@ -349,11 +361,7 @@ pub fn from_note(
                 recorded_by: env.meta.actor.id.clone(),
                 version: None,
             };
-            let summary: String = if note.title.trim().is_empty() {
-                "Note".to_string()
-            } else {
-                note.title.chars().take(500).collect()
-            };
+            let summary = summary_of(&note.title);
             let item = EvidenceItem::new(
                 evidence_id.clone(),
                 EvidenceKind::Note,
@@ -378,13 +386,86 @@ pub fn from_note(
             )
             .with_event(EventSpec {
                 domain: note.data_domain,
+                classification: note.classification,
                 ..EventSpec::learning(
                     "evidence.added",
                     json!({ "evidence_id": evidence_id, "note_id": note.id }),
                 )
-            }))
+            })
+            .replay_with(json!({ "evidence_id": evidence_id })))
         },
     )
+}
+
+/// The evidence summary of a note title: one line (control characters become
+/// spaces), at most 500 characters, never empty.
+fn summary_of(title: &str) -> String {
+    let line: String = title
+        .chars()
+        .map(|c| if c.is_control() { ' ' } else { c })
+        .take(500)
+        .collect();
+    let line = line.trim();
+    if line.is_empty() {
+        "Note".to_string()
+    } else {
+        line.to_string()
+    }
+}
+
+fn record_id<T: std::str::FromStr>(record: &Value, key: &str) -> Result<T, G9Error> {
+    record
+        .get(key)
+        .and_then(Value::as_str)
+        .ok_or_else(|| G9Error::internal_redacted("idempotency.replay_record"))
+        .and_then(|s| parse_id(s, key))
+}
+
+const REPLAY_REBUILT: &str = "idempotency.replay_rebuilt: names and titles are not retained in idempotency records; the result shows the evidence as currently stored";
+
+/// Rebuild an `evidence.from_note` result on an idempotent replay from the
+/// stored ids (the summary repeats the note title, which is erasable content).
+pub(crate) fn replay_from_note(
+    conn: &rusqlite::Connection,
+    record: &Value,
+) -> Result<(Value, Vec<String>), G9Error> {
+    let id: EvidenceId = record_id(record, "evidence_id")?;
+    let row = repo::get_evidence_item(conn, &ReadScope::cross_domain(DataDomain::Learning), &id)?
+        .ok_or_else(|| G9Error::not_found("evidence.not_found", "evidence item not found"))?;
+    Ok((
+        json!({
+            "evidence_id": row.id,
+            "kind": "NOTE",
+            "note_id": row.note_id,
+            "summary": row.summary,
+        }),
+        vec![REPLAY_REBUILT.to_string()],
+    ))
+}
+
+/// Rebuild an `evidence.attach_file` result on an idempotent replay from the
+/// stored ids (the file name is erasable content).
+pub(crate) fn replay_attach(
+    conn: &rusqlite::Connection,
+    record: &Value,
+) -> Result<(Value, Vec<String>), G9Error> {
+    let id: AttachmentId = record_id(record, "attachment_id")?;
+    let evidence: EvidenceId = record_id(record, "evidence_id")?;
+    let row = repo::get_attachment(conn, &ReadScope::cross_domain(DataDomain::Learning), &id)?
+        .ok_or_else(|| G9Error::not_found("attachment.not_found", "attachment not found"))?;
+    Ok((
+        json!({
+            "attachment_id": row.id,
+            "evidence_id": evidence,
+            "note_id": row.note_id,
+            "filename": row.original_filename,
+            "media_type": row.media_type,
+            "size_bytes": row.size_bytes,
+            "sha256": row.content_sha256,
+            "already_stored": record.get("already_stored").and_then(Value::as_bool).unwrap_or(false),
+        }),
+        vec![REPLAY_REBUILT.to_string()],
+    ))
 }
 
 #[derive(Debug, Deserialize)]

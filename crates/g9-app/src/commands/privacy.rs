@@ -76,7 +76,22 @@ pub fn export_request(
         .filter_map(|d| serde_json::to_value(d).ok())
         .filter_map(|v| v.as_str().map(str::to_string))
         .collect();
-    let resource = ResourceRef::new(ResourceKind::Export, format!("export:{}", label.join("+")));
+    // The resource names the selection, the privacy ceiling and the format,
+    // so the native confirmation shows what leaves (the approval also binds
+    // the exact payload).
+    let ceiling = if req.include_private {
+        "PRIVATE"
+    } else {
+        "INTERNAL"
+    };
+    let format_label = match req.format {
+        ExportFormat::Json => "JSON",
+        ExportFormat::Csv => "CSV",
+    };
+    let resource = ResourceRef::new(
+        ResourceKind::Export,
+        format!("export:{}:{ceiling}:{format_label}", label.join("+")),
+    );
     pipeline::execute(
         ctx,
         meta,

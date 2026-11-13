@@ -642,3 +642,55 @@ fn attachment_files_travel_with_a_copied_backup_and_come_back_on_restore() {
         .iter()
         .any(|w| w.as_str().unwrap().contains("restore.attachments_missing")));
 }
+
+#[test]
+fn copy_backup_repairs_from_the_live_store_and_never_leaves_a_snapshot_without_its_manifest() {
+    // Review findings 6 and 7: an attachment copy error used to leave the
+    // copied snapshot without its manifest (a rerun was then refused), and a
+    // damaged file in the backup store was not taken from the live store.
+    let env = Env::new();
+    let (code, init, _) = env.run(&["init"]);
+    assert_eq!(code, 0, "{init}");
+    let (code, attached, _) = env.call(
+        "evidence.attach_file",
+        json!({ "filename": "notes.txt", "media_type": "text/plain", "content_base64": "bGFiIGV2aWRlbmNlCg==" }),
+    );
+    assert_eq!(code, 0, "{attached}");
+    let sha = attached["result"]["sha256"].as_str().unwrap().to_string();
+    let rel = format!("{}/{}/{}", &sha[0..2], &sha[2..4], sha);
+    let (code, created, _) = env.call("backup.create", json!({}));
+    assert_eq!(code, 0, "{created}");
+    let id = created["result"]["backup_id"].as_str().unwrap().to_string();
+    for op in ["backup.verify", "backup.restore_test"] {
+        let (code, out, _) = env.call(op, json!({ "backup_id": id }));
+        assert_eq!(code, 0, "{out}");
+    }
+    // The backup store's copy is damaged; the live store's is intact.
+    std::fs::write(env.data.join("backups/attachments").join(&rel), b"tampered").unwrap();
+
+    // Something that is not a file occupies the attachment's place on the drive.
+    let usb = tempfile::tempdir().unwrap();
+    let obstacle = usb.path().join("attachments").join(&rel);
+    std::fs::create_dir_all(&obstacle).unwrap();
+    let to = usb.path().to_str().unwrap();
+    let (code, failed, _) = env.run(&["copy-backup", "--backup-id", &id, "--to", to]);
+    assert_ne!(code, 0, "{failed}");
+    let placed: Vec<String> = std::fs::read_dir(usb.path())
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+        .filter(|n| n != "attachments")
+        .collect();
+    assert!(
+        placed.is_empty(),
+        "nothing but attachments placed: {placed:?}"
+    );
+
+    std::fs::remove_dir(&obstacle).unwrap();
+    let (code, copied, _) = env.run(&["copy-backup", "--backup-id", &id, "--to", to]);
+    assert_eq!(code, 0, "the retry is not refused: {copied}");
+    assert_eq!(copied["attachments"]["copied"], 1, "{copied}");
+    assert_eq!(
+        std::fs::read(usb.path().join("attachments").join(&rel)).unwrap(),
+        b"lab evidence\n"
+    );
+}

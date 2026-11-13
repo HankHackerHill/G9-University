@@ -13,9 +13,11 @@
 //!   restored with `g9 restore --snapshot <copy> --expect-sha256 <sha256>` even
 //!   when this disk is gone.
 //! * The attachment files the snapshot references are copied into
-//!   `<dest>/attachments/ab/cd/<sha256>`, hash-checked while copying, from the
-//!   backup's attachment store (`<data dir>/backups/attachments`) or, for a file
-//!   not there (a backup made before attachments were copied), the live store.
+//!   `<dest>/attachments/ab/cd/<sha256>` before the snapshot is placed,
+//!   hash-checked while copying, from the backup's attachment store
+//!   (`<data dir>/backups/attachments`) or, for a file missing or damaged there,
+//!   the live store. A failure to write them places no snapshot, so the
+//!   command can be run again.
 //!   Files already at the destination are kept. `g9 restore --snapshot` reads
 //!   this folder by default. A file found in neither store is listed and
 //!   reported as a warning.
@@ -66,6 +68,10 @@ pub fn run(boot: &BootOptions, args: &CopyBackupArgs) -> Result<Value, CliError>
         }
     }
 
+    // Attachments first (read from the source snapshot): a failure to write
+    // them leaves no snapshot behind, so the command can simply be run again
+    // (attachment files are content-addressed and never overwritten).
+    let attachments = copy_attachments(&root, &snapshot, &dest_dir)?;
     durable_copy(&snapshot, &dest)?;
     let copied = sha256_of_file(&dest).map_err(G9Error::from)?;
     if copied != sha256 {
@@ -76,7 +82,6 @@ pub fn run(boot: &BootOptions, args: &CopyBackupArgs) -> Result<Value, CliError>
         )
         .into());
     }
-    let attachments = copy_attachments(&root, &dest, &dest_dir)?;
     let record = json!({
         "backup_id": args.backup_id,
         "snapshot_file": file_name.to_string_lossy(),
@@ -108,8 +113,8 @@ pub fn run(boot: &BootOptions, args: &CopyBackupArgs) -> Result<Value, CliError>
     }))
 }
 
-/// Copy the files the snapshot copy references: from the backup store first,
-/// then the live store for anything not there.
+/// Copy the files the snapshot references: from the backup store first, then
+/// the live store for anything missing or damaged there.
 fn copy_attachments(root: &Path, snapshot: &Path, dest_dir: &Path) -> Result<CopyReport, CliError> {
     let digests = attachment_store::referenced_digests_in(snapshot).map_err(G9Error::from)?;
     if digests.is_empty() {
@@ -119,14 +124,15 @@ fn copy_attachments(root: &Path, snapshot: &Path, dest_dir: &Path) -> Result<Cop
     let backup_store = root.join(BACKUPS_DIR).join(ATTACHMENTS_DIR);
     let mut report =
         attachment_store::copy_all(&backup_store, &to, &digests).map_err(G9Error::from)?;
-    if !report.missing.is_empty() {
-        let retry = std::mem::take(&mut report.missing);
+    if !report.complete() {
+        let mut retry = std::mem::take(&mut report.missing);
+        retry.append(&mut report.corrupt);
         let second = attachment_store::copy_all(&root.join(ATTACHMENTS_DIR), &to, &retry)
             .map_err(G9Error::from)?;
         report.written += second.written;
         report.already_present += second.already_present;
         report.missing = second.missing;
-        report.corrupt.extend(second.corrupt);
+        report.corrupt = second.corrupt;
     }
     Ok(report)
 }

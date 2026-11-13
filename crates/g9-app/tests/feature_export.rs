@@ -198,3 +198,152 @@ fn secret_rows_are_never_exported_even_with_include_private() {
     );
     assert!(!text.contains("never leaves"));
 }
+
+// ---------------------------------------------------------------------------
+// Review findings (2026-11-13), each reproduced before its fix.
+// ---------------------------------------------------------------------------
+
+fn levels(attempt: &str, level: u8) -> Value {
+    let criteria: Vec<Value> = g9_assessment::Rubric::baseline()
+        .criteria()
+        .iter()
+        .map(|c| json!({ "criterion_code": c.code, "score": level, "source": "HUMAN_REVIEWER", "evidence_refs": [] }))
+        .collect();
+    json!({ "attempt_id": attempt, "criteria": criteria })
+}
+
+const TASK: &str = "Find the unkeyed header that changes the cached response.";
+
+/// An authored assessment taken, graded and finalized: its attempt is
+/// PRIVATE and it derives competency observations.
+fn graded_attempt(h: &mut Harness) -> String {
+    let cid = h
+        .call(
+            "competency.create",
+            json!({ "code": "WCP", "title": "Web cache poisoning" }),
+        )
+        .unwrap()["result"]["competency_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let aid = h
+        .call(
+            "assessment.define",
+            json!({ "code": "WCP-01", "title": "Poison a cache key", "kind": "BLIND_PRACTICAL",
+                    "competency_id": cid, "task_statement": TASK, "difficulty": 3 }),
+        )
+        .unwrap()["result"]["assessment_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let attempt = h
+        .call("assessment.begin", json!({ "assessment_id": aid }))
+        .unwrap()["result"]["attempt_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    h.call(
+        "assessment.submit",
+        json!({ "attempt_id": attempt, "evidence_refs": [] }),
+    )
+    .unwrap();
+    h.call(
+        "assessment.review_evidence",
+        json!({ "attempt_id": attempt }),
+    )
+    .unwrap();
+    h.call("assessment.grade_provisional", levels(&attempt, 4))
+        .unwrap();
+    h.approved(
+        "assessment.approve_final",
+        json!({ "attempt_id": attempt }),
+        &Opts {
+            scope: Some(("LEARNING", "REVIEW")),
+            ..Opts::default()
+        },
+    );
+    attempt
+}
+
+fn rows_of(dir: &Path, table: &str) -> Vec<Value> {
+    read_json(&dir.join("data.json"))["tables"][table]["rows"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default()
+}
+
+#[test]
+fn private_attempt_results_stay_out_of_an_export_without_private_rows() {
+    let (mut h, _root) = harness();
+    let attempt = graded_attempt(&mut h);
+    let observed: i64 = h
+        .conn()
+        .query_row(
+            "SELECT COUNT(*) FROM competency_observations WHERE attempt_id = ?1",
+            [&attempt],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert!(observed > 0, "the finalized grade derived observations");
+
+    let narrow = export(&mut h, "JSON", false);
+    let dir = PathBuf::from(narrow["result"]["location"].as_str().unwrap());
+    for table in [
+        "attempts",
+        "grade_decisions",
+        "competency_observations",
+        "competency_observation_evidence",
+    ] {
+        assert!(
+            rows_of(&dir, table).is_empty(),
+            "{table} left without include_private"
+        );
+    }
+    assert!(!std::fs::read_to_string(dir.join("data.json"))
+        .unwrap()
+        .contains(&attempt));
+
+    let wide = export(&mut h, "JSON", true);
+    let dir = PathBuf::from(wide["result"]["location"].as_str().unwrap());
+    assert!(!rows_of(&dir, "competency_observations").is_empty());
+}
+
+#[test]
+fn assessment_task_statements_are_withheld_from_exports() {
+    let (mut h, _root) = harness();
+    graded_attempt(&mut h);
+    let out = export(&mut h, "JSON", true);
+    let dir = PathBuf::from(out["result"]["location"].as_str().unwrap());
+    let text = std::fs::read_to_string(dir.join("data.json")).unwrap();
+    assert!(
+        !text.contains(TASK),
+        "an export would expose blind task text"
+    );
+    assert!(!rows_of(&dir, "assessment_versions").is_empty());
+    let manifest = read_json(&dir.join("manifest.json"));
+    assert!(
+        manifest["withheld"].to_string().contains("task_statement"),
+        "{manifest}"
+    );
+}
+
+#[test]
+fn the_export_approval_names_the_privacy_ceiling_and_the_format() {
+    let (mut h, _root) = harness();
+    let pending = h
+        .call(
+            "export.request",
+            json!({ "domains": ["LEARNING"], "format": "CSV", "include_private": true }),
+        )
+        .unwrap_err();
+    let id = pending.approval_id.clone().unwrap();
+    let request = g9_storage::approvals_store::get_request(h.conn(), &id)
+        .unwrap()
+        .unwrap();
+    assert_eq!(request.operation.resource.id, "export:LEARNING:PRIVATE:CSV");
+    let summary = g9_app::approval_summary(h.ctx(), &id).unwrap().text();
+    assert!(
+        summary.contains("PRIVATE") && summary.contains("CSV"),
+        "{summary}"
+    );
+}

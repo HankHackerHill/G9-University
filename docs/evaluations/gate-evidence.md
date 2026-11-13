@@ -261,7 +261,7 @@ Gate: A06 · Test: `tests/integration/a06_a07_gate.rs`
 | 1 | `notes.create` | NO_AUDIT_ROW | INVALID_INPUT | `meta.actor_not_accepted` |
 | 2 | `notes.create` | NO_AUDIT_ROW | INVALID_INPUT | `meta.actor_not_accepted` |
 | 3 | `notes.create` | NO_AUDIT_ROW | INVALID_INPUT | `meta.actor_not_accepted` |
-| 4 | `export.request` | DENY | UNAUTHORIZED | `approval.operation_mismatch` |
+| 4 | `export.request` | DENY | UNAUTHORIZED | `approval.resource_mismatch` |
 | 5 | `export.request` | ALLOW | OK | — |
 | 6 | `deletion.request` | DENY | UNAUTHORIZED | `policy.denied` |
 

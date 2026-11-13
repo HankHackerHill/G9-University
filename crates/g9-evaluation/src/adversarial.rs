@@ -637,7 +637,7 @@ pub fn st05_private_export_requires_approval() -> Result<ScenarioReport, G9Error
     );
     let reason = deny_reason(
         &h,
-        &ResourceRef::new(ResourceKind::Export, "export:LEARNING"),
+        &ResourceRef::new(ResourceKind::Export, "export:LEARNING:PRIVATE:JSON"),
     )?;
     r.check_that(
         "rejected approval: DENY logged with reason",
@@ -934,7 +934,7 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
     );
     let reason = deny_reason(
         &h,
-        &ResourceRef::new(ResourceKind::Export, "export:LEARNING"),
+        &ResourceRef::new(ResourceKind::Export, "export:LEARNING:INTERNAL:CSV"),
     )?;
     r.check_that(
         "replay: DENY logged with reason",
