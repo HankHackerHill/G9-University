@@ -207,7 +207,7 @@ Route and title of each screen are fixed by `src/app/router.tsx`. "Primary" is t
 | Mentor Memory Explorer | `.with-margin` | none | hypotheses (`.rows`) with provenance | what a hypothesis is and who decides |
 | Research Center | stack, `.bento` | none | stats: network, sources; sources table | none |
 | Approvals/Audit | stack, `.bento` | none | stats: waiting for you, chain status; vouchers waiting; decided requests folded; audit table | none |
-| Settings/Recovery | `.with-margin` | none | sections: model, backups, export, erase, appearance, about | "On this page" links; what a backup holds and where to keep a copy |
+| Settings/Recovery | `.with-margin` | none | sections: backups, export, model, appearance, about | "On this page" links; where to keep a copy; what an approval is for |
 
 ## 12. Rules for a change
 
