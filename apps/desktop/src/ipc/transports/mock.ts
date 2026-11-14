@@ -2281,7 +2281,7 @@ class MockState {
     const op = 'session.create';
     const rec = asRecord(payload, op);
     const minutes = boundedInt(rec, 'planned_minutes', op, 1, 600);
-    const plannedStart = rec['planned_start'] === undefined ? undefined : boundedInt(rec, 'planned_start', op, 0, MAX_PLANNED_START_MS);
+    const plannedStart = rec.planned_start === undefined ? undefined : boundedInt(rec, 'planned_start', op, 0, MAX_PLANNED_START_MS);
     // The request schema allows STUDY, LAB and REVIEW: EXAM is refused at the boundary.
     optOneOf(rec, 'mode', ['STUDY', 'LAB', 'REVIEW'] as const, op);
     const objective = optId(rec, 'objective_id', op);
