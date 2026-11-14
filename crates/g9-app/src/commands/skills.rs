@@ -39,7 +39,7 @@ use g9_domain::{
     InteractionMode, OperationDescriptor, ResourceKind, ResourceRef, Revision, SkillCode, SkillId,
     SkillInvocationState,
 };
-use g9_policy::{Engine, ResourceContext};
+use g9_policy::{DigestDomain, Engine, ResourceContext};
 use g9_skills::{
     build_invocation, BackendError, BackendFinish, BackendRequest, BackendResponse, BackendUsage,
     CancelToken, InferenceBackend, InvocationRequest, Orchestrator, PolicyPreflight, SegmentRole,
@@ -350,6 +350,22 @@ pub fn invoke(
                 ),
                 _ => None,
             };
+            // The ledger keeps keyed digests of a skill's input and output (ADR-0021): both can be
+            // operator content, and `skill_invocations` cannot be erased.
+            let input_digest = env
+                .svc
+                .binding_key
+                .digest_json(DigestDomain::SkillInput, &req.input)
+                .map_err(|_| G9Error::internal_redacted("digest.key_rejected"))?;
+            let output_digest = output_json
+                .as_ref()
+                .map(|out| {
+                    env.svc
+                        .binding_key
+                        .digest_json(DigestDomain::SkillOutput, out)
+                })
+                .transpose()
+                .map_err(|_| G9Error::internal_redacted("digest.key_rejected"))?;
             let validation = if trace.validation.is_empty() {
                 ValidationOutcome::NotRun
             } else if trace.validation.iter().all(|c| c.passed) {
@@ -372,7 +388,7 @@ pub fn invoke(
                     model_id: None,
                     model_id_label: None,
                     template_version: Some(trace.template_version.clone()),
-                    input_sha256: sha256_json(&req.input),
+                    input_sha256: input_digest,
                     output_sha256: None,
                     output_status: None,
                     validation_outcome: ValidationOutcome::NotRun,
@@ -399,7 +415,7 @@ pub fn invoke(
                         .model
                         .map(|m| m.model_id.as_str().to_string()),
                     template_version: Some(trace.template_version.clone()),
-                    output_sha256: output_json.as_ref().map(sha256_json),
+                    output_sha256: output_digest,
                     output_status: if completed {
                         outcome.output.as_ref().map(|o| o.status)
                     } else {

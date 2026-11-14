@@ -40,7 +40,8 @@ async function withApproval(h, op, payload, extra = {}) {
   const h = await startHarness({ outDir: out, programStart: arg('--program-start', undefined) });
   try {
     if (process.argv.includes('--import')) {
-      const manifest = JSON.parse(fs.readFileSync(path.join(REPO, 'data/curriculum/g9-ct9-480.seed.v0.json'), 'utf8'));
+      // The curriculum that ships with the window (ADR-0022): the built draft, not the Appendix A seed.
+      const manifest = JSON.parse(fs.readFileSync(path.join(REPO, 'data/curriculum/g9-ct9-480.draft.v1.json'), 'utf8'));
       const r = await withApproval(h, 'curriculum.import', { manifest, provenance: 'PROPOSED_SEED' });
       console.log('import:', r.ok ? JSON.stringify(r.ok.result) : JSON.stringify(r.err));
     }

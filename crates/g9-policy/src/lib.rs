@@ -54,7 +54,9 @@ pub use approvals::{
     ApprovalError, ApprovalLedger, ApprovalRecord, ApprovalRequest, ConsumeIntent,
     ConsumedApproval, RuntimeEpoch, DEFAULT_APPROVAL_TTL,
 };
-pub use binding::{sign, verify, BindingError, BindingKey, BINDING_KEY_LEN, MAC_HEX_LEN};
+pub use binding::{
+    sign, verify, BindingError, BindingKey, DigestDomain, BINDING_KEY_LEN, MAC_HEX_LEN,
+};
 pub use engine::{
     ApprovalGate, Authorized, Clock, Engine, Evaluation, FixedClock, SteppingClock, WallClock,
 };

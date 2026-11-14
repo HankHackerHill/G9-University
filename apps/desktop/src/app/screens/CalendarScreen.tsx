@@ -483,7 +483,7 @@ export function CalendarScreen() {
                 </div>
               )}
               <dl className="pairs">
-                <dt title="SHA-256 of the exact changes of this proposal. The approval covers this proposal and no other.">Fingerprint</dt>
+                <dt title="Keyed fingerprint (HMAC-SHA-256 under this installation’s key) of the exact changes of this proposal. The approval covers this proposal and no other.">Fingerprint</dt>
                 <dd>
                   <span className="hash" data-testid="proposal-hash">
                     {proposal.parameters_sha256}

@@ -40,7 +40,7 @@ One word per thing. The backend's exact name stays one step away: in a `title`, 
 | attachment | file, attached file | |
 | `DataDomain` | area | Learning, Business, Personal, Security-sensitive, System |
 | `Classification` | classification | Public, Internal, Private, Secret |
-| `parameters_sha256` | fingerprint | "SHA-256 of the exact values this approval covers" in the `title` |
+| `parameters_sha256` | fingerprint | "Keyed fingerprint (HMAC-SHA-256 under this installation's key) of the exact values this approval covers" in the `title`; the value cannot be recomputed outside the installation (ADR-0021) |
 | `expected_revision` | record revision | |
 | operation names (`calendar.delete_event`) | a verb phrase ("Delete a calendar event") | `operationLabel` |
 | capabilities (`DATA_DELETE`) | a verb phrase ("delete data") | `capabilityLabel` |

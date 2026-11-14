@@ -836,11 +836,11 @@ pub fn a06_gated_operations_require_approval() -> Result<ScenarioReport, G9Error
         );
         // Payloads carry generated ids, so the hash itself is not rendered
         // (the evidence document stays identical across runs).
-        let bound =
-            stored["parameters_sha256"] == json!(g9_app::pipeline::parameters_sha256(op, &payload));
+        let bound = g9_app::pipeline::parameters_digest(&h.binding_key(), op, &payload)
+            .is_ok_and(|digest| stored["parameters_sha256"] == json!(digest));
         r.check_that(
             format!("{op}: request bound to the exact parameters"),
-            "stored parameters_sha256 == sha256(operation, payload)",
+            "stored parameters_sha256 == HMAC digest(operation, payload) under the binding key",
             if bound { "EQUAL" } else { "DIFFERENT" },
             bound,
         );

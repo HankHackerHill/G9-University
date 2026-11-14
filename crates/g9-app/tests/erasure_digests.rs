@@ -472,7 +472,10 @@ fn an_export_holds_no_hash_of_a_request_that_carried_a_secret_and_no_value_that_
     let (note_id, _) = note_with_everything(&mut h, "INTERNAL");
     erase(&mut h, &note_id);
 
-    let request_hash = g9_app::pipeline::parameters_sha256("notes.create", &secret);
+    // Since ADR-0021 the ledgers hold the keyed digest, not a plain SHA-256 (`ledger_digests.rs`
+    // proves the plain one is absent); this test scans the exports for what they do hold.
+    let request_hash =
+        g9_app::pipeline::parameters_digest(&key(), "notes.create", &secret).unwrap();
     let mut oracle_values = vec![request_hash.clone()];
     for (table, column) in [
         ("policy_decisions", "parameters_sha256"),
@@ -491,7 +494,7 @@ fn an_export_holds_no_hash_of_a_request_that_carried_a_secret_and_no_value_that_
     }
     assert!(
         stored_values(h.conn(), "policy_decisions", "parameters_sha256").contains(&request_hash),
-        "the guess-confirmation oracle is not what this test assumes"
+        "the ledger does not hold the value this test scans the exports for"
     );
     let descriptor: String = h
         .conn()

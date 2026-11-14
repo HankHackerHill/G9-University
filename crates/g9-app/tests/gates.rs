@@ -162,7 +162,8 @@ fn pipeline_approval_required_creates_request_and_returns_id() {
     assert_eq!(row.operation.action, Action::Export);
     assert_eq!(
         row.operation.parameters_sha256,
-        g9_app::pipeline::parameters_sha256("export.request", &export_payload(false))
+        g9_app::pipeline::parameters_digest(&key(), "export.request", &export_payload(false))
+            .unwrap()
     );
     // 10-minute window (owner decision 2026-11-13, ADR-0015).
     assert_eq!(row.expires_at.as_millis(), T0 + 10 * 60_000);

@@ -37,7 +37,7 @@ use g9_domain::{
     G9Error, IdempotencyKey, InteractionMode, OperationDescriptor, RequestId, ResourceKind,
     ResourceRef, Revision, SchemaVersion, Scope, SessionId, TraceId, UtcMillis,
 };
-use g9_policy::ResourceContext;
+use g9_policy::{DigestDomain, ResourceContext};
 use g9_storage::approvals_store;
 use g9_storage::audit::{AuditChain, AuditDecision, AuditOutcome};
 use g9_storage::backup::{self, SnapshotRequest};
@@ -312,11 +312,18 @@ fn recover_intervals_and_approvals(
                 domain: session.data_domain,
                 mode: InteractionMode::Maintenance,
             },
-            parameters_sha256: g9_domain::hashing::sha256_json(&json!({
-                "operation": "recovery.interrupt_session",
-                "session_id": session_id,
-                "interval_id": interval.id,
-            })),
+            // Keyed like every other parameters digest in the ledgers (ADR-0021).
+            parameters_sha256: svc
+                .binding_key
+                .digest_json(
+                    DigestDomain::Parameters,
+                    &json!({
+                        "operation": "recovery.interrupt_session",
+                        "session_id": session_id,
+                        "interval_id": interval.id,
+                    }),
+                )
+                .map_err(|_| G9Error::internal_redacted("digest.key_rejected"))?,
         };
         let ctx = ResourceContext::new(session.data_domain, session.classification, false);
         let evaluation = svc.policy.evaluate(&svc.system, &op, &ctx);

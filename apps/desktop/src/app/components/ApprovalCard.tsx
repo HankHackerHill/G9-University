@@ -59,7 +59,7 @@ export function ApprovalCard({ approval, zone, now, onDecide, onApply, disabled 
         <dd>
           {domainLabel(operation.scope.domain)}, {operation.scope.mode.toLowerCase()} mode
         </dd>
-        <dt title="SHA-256 of the exact values this approval covers. A different value needs a new approval.">Fingerprint</dt>
+        <dt title="Keyed fingerprint (HMAC-SHA-256 under this installation’s key) of the exact values this approval covers. A different value needs a new approval.">Fingerprint</dt>
         <dd>
           <span className="hash" data-testid="approval-hash">
             {operation.parameters_sha256}

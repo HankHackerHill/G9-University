@@ -35,3 +35,7 @@ Corrected in `crates/g9-app/src/pipeline.rs`:
 | Consumption | The same rule computes the revision compared with the approval's binding, so any change between grant and use refuses the approval (`approval.revision_mismatch`) whatever revision the retry claims. |
 
 Verification: `crates/g9-app/tests/approval_binding.rs` (4 tests; the two exploit cases, `assessment.approve_final` and `deletion.request`, failed before the change and pass after; two guards keep a current-revision request and a revision-less request working).
+
+## Addendum 2026-11-14: the parameters hash is keyed
+
+Since ADR-0021 `parameters_sha256` is not a plain SHA-256 of the canonical `{operation, payload}` but an HMAC-SHA-256 of it under a subkey of the binding key (`BindingKey::digest_json`, domain `parameters`): a plain hash in an immutable ledger confirmed a guess at the payload for anyone holding the database file. The binding is otherwise as above; the approval MAC covers the keyed value. An approval stored before the upgrade does not match and expires unused.

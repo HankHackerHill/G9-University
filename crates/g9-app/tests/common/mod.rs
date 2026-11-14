@@ -93,6 +93,8 @@ pub struct Setup {
     pub config: AppConfig,
     pub runtime: Option<Arc<dyn InferenceRuntime>>,
     pub skills: Option<Registry>,
+    /// The install secret; `key()` unless a test needs another one.
+    pub key: BindingKey,
 }
 
 pub struct Harness {
@@ -103,6 +105,7 @@ pub struct Harness {
     config: AppConfig,
     runtime: Option<Arc<dyn InferenceRuntime>>,
     skills: Option<Registry>,
+    key: BindingKey,
     n: u64,
 }
 
@@ -140,6 +143,7 @@ impl Harness {
             config: AppConfig::new("0.1.0-test").unwrap(),
             runtime: None,
             skills: None,
+            key: key(),
         };
         f(&mut setup);
         let clock = Arc::new(AtomicI64::new(T0));
@@ -152,6 +156,7 @@ impl Harness {
             config: setup.config,
             runtime: setup.runtime,
             skills: setup.skills,
+            key: setup.key,
             n: 0,
         };
         h.try_open(db)?;
@@ -165,7 +170,7 @@ impl Harness {
     fn try_open(&mut self, db: Database) -> Result<(), G9Error> {
         let c = self.clock.clone();
         let m = self.mono.clone();
-        let mut b = AppContext::builder(db, self.config.clone(), key(), operator_id())
+        let mut b = AppContext::builder(db, self.config.clone(), self.key.clone(), operator_id())
             .clock(Box::new(move || {
                 UtcMillis::from_millis(c.load(Ordering::SeqCst))
             }))

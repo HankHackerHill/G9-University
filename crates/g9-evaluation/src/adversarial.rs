@@ -19,14 +19,16 @@ use g9_ai_adapter::{
 use g9_app::commands::skills::{PolicyAdapter, RuntimeBackend};
 use g9_domain::hashing::sha256_hex;
 use g9_domain::skill::PolicyContext;
+use g9_domain::state::ApprovalEvent;
 use g9_domain::{
-    Actor, ActorId, ApprovalState, AttemptId, Capability, Classification, CompetencyId, Confidence,
-    DataDomain, G9Error, IdempotencyKey, InteractionMode, ModelId, ObservationId, Provenance,
-    ResourceKind, ResourceRef, Scope, SkillCode, SkillInvocationState, SourceKind, TraceId,
-    TrustClass, UtcMillis,
+    Actor, ActorId, ApprovalId, ApprovalState, AttemptId, Capability, Classification, CompetencyId,
+    Confidence, DataDomain, G9Error, IdempotencyKey, InteractionMode, ModelId, ObservationId,
+    Provenance, ResourceKind, ResourceRef, Scope, SkillCode, SkillInvocationState, SourceKind,
+    TraceId, TrustClass, UtcMillis,
 };
 use g9_policy::Engine;
 use g9_skills::{build_invocation, CancelToken, InvocationRequest, Orchestrator, Registry};
+use g9_storage::approvals_store::{self, ApprovalUpdate};
 use g9_storage::repos::competency as competency_repo;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
@@ -887,6 +889,34 @@ fn deny_reason(h: &Harness, resource: &ResourceRef) -> Result<String, G9Error> {
         .unwrap_or_default())
 }
 
+/// An approval row that says APPROVED with a well-formed MAC that the approval flow did not make
+/// (a row written any other way cannot carry a valid one: the MAC is computed over the stored
+/// descriptor under the install secret).
+fn forge_approved(h: &Harness, approval: &str) -> Result<(), G9Error> {
+    fn failed<E>(_: E) -> G9Error {
+        G9Error::internal_redacted("evaluation.forge_approval")
+    }
+    let conn = h.db()?.conn();
+    let id = ApprovalId::parse(approval).map_err(failed)?;
+    let row = approvals_store::get_request(conn, &id)
+        .map_err(failed)?
+        .ok_or_else(|| G9Error::internal_redacted("evaluation.forge_approval"))?;
+    let operator = ActorId::parse(OPERATOR_ID).map_err(failed)?;
+    approvals_store::transition_request(
+        conn,
+        &id,
+        row.revision,
+        &ApprovalUpdate {
+            event: ApprovalEvent::Approve,
+            actor: Some(operator),
+            at: h.now(),
+            binding_mac: Some("00".repeat(32)),
+        },
+    )
+    .map_err(failed)?;
+    Ok(())
+}
+
 /// ST09: replayed, re-targeted, expired, forged-id, stale-revision and
 /// foreign-key approvals are all denied with a reason; nothing changes.
 pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error> {
@@ -1104,11 +1134,11 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
         ),
     );
 
-    // (6) Forged MAC: approval signed under one key, presented after the key changed.
+    // (6) Forged MAC: a row that says APPROVED, with a MAC the approval flow did not make.
     let first = h.step("deletion.request", del(&note_b), &CallOpts::default());
     let b1 = first.approval_id().unwrap_or_default();
-    h.approve(&b1)?;
-    h.restart_with_key([0x13; 32])?;
+    forge_approved(&h, &b1)?;
+    h.restart()?;
     let out = h.record(
         &mut r,
         "deletion.request",
@@ -1130,6 +1160,35 @@ pub fn st09_replayed_stale_forged_approvals() -> Result<ScenarioReport, G9Error>
         "reason mentions the binding MAC",
         &reason,
         reason.starts_with("DENY") && reason.contains("MAC"),
+    );
+    // (6b) A genuine approval, presented after the install secret changed. Since ADR-0021 the
+    // request digest inside the approval is keyed under the same secret, so the retry no longer
+    // matches the stored operation at all: refused before the MAC is even checked.
+    let second = h.step("deletion.request", del(&note_b), &CallOpts::default());
+    let b2 = second.approval_id().unwrap_or_default();
+    h.approve(&b2)?;
+    h.restart_with_key([0x13; 32])?;
+    let out = h.record(
+        &mut r,
+        "deletion.request",
+        del(&note_b),
+        &CallOpts::approval(b2.clone()),
+        notes,
+    );
+    check_step(
+        &mut r,
+        "approval presented after the install secret changed",
+        &out,
+        "DENY",
+        "UNAUTHORIZED",
+        Some("approval.operation_mismatch"),
+    );
+    let reason = deny_reason(&h, &ResourceRef::new(ResourceKind::Note, note_b.as_str()))?;
+    r.check_that(
+        "changed install secret: DENY logged with reason",
+        "reason says the approval is bound to a different operation",
+        &reason,
+        reason.starts_with("DENY") && reason.contains("different operation"),
     );
     r.check_eq(
         "no note erased by any refused approval",

@@ -249,15 +249,24 @@ fn st09_replayed_stale_and_forged_approvals_are_denied_with_reasons() {
             // claims, so both stale retries now give the same code.
             Some("approval.revision_mismatch"),
             Some("approval.revision_mismatch"),
+            // A row that says APPROVED with a MAC the approval flow did not make.
             Some("approval.mac_invalid"),
+            // A genuine approval presented after the install secret changed: the request
+            // digest inside it is keyed too (ADR-0021), so it no longer matches the stored
+            // operation, and that is refused before the MAC is checked.
+            Some("approval.operation_mismatch"),
         ]
     );
-    let last = step(&r, "deletion.request", 3);
-    assert_eq!(last.decision, "DENY");
-    assert_eq!(
-        last.state_after,
-        json!({ "a_erased": false, "b_erased": false })
-    );
+    // Neither the forged MAC nor the changed secret erased anything.
+    for n in [3, 4] {
+        let refused = step(&r, "deletion.request", n);
+        assert_eq!(refused.decision, "DENY", "deletion.request #{n}");
+        assert_eq!(
+            refused.state_after,
+            json!({ "a_erased": false, "b_erased": false }),
+            "deletion.request #{n}"
+        );
+    }
 }
 
 #[test]

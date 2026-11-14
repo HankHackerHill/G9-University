@@ -375,6 +375,12 @@ impl Harness {
         Ok(h)
     }
 
+    /// The binding key the harness installed (fixed, so a run is reproducible): a check that
+    /// recomputes a keyed digest needs it.
+    pub fn binding_key(&self) -> BindingKey {
+        BindingKey::from_bytes(self.key)
+    }
+
     /// Open options used for every database the harness opens (migration
     /// bookkeeping stamped with the harness clock).
     pub fn open_options(&self) -> OpenOptions {

@@ -214,35 +214,35 @@ Gate: A06 · Test: `tests/integration/a06_a07_gate.rs`
 | export.request: outcome | APPROVAL_REQUIRED | APPROVAL_REQUIRED | PASS |
 | export.request: error code | policy.approval_required | policy.approval_required | PASS |
 | export.request: one new PENDING request | 1 | 1 | PASS |
-| export.request: request bound to the exact parameters | stored parameters_sha256 == sha256(operation, payload) | EQUAL | PASS |
+| export.request: request bound to the exact parameters | stored parameters_sha256 == HMAC digest(operation, payload) under the binding key | EQUAL | PASS |
 | export.request: required capability | DATA_EXPORT | DATA_EXPORT | PASS |
 | export.request: requested by the backend-assigned operator | operator-1 | operator-1 | PASS |
 | deletion.request: recorded decision | APPROVAL_REQUIRED | APPROVAL_REQUIRED | PASS |
 | deletion.request: outcome | APPROVAL_REQUIRED | APPROVAL_REQUIRED | PASS |
 | deletion.request: error code | policy.approval_required | policy.approval_required | PASS |
 | deletion.request: one new PENDING request | 2 | 2 | PASS |
-| deletion.request: request bound to the exact parameters | stored parameters_sha256 == sha256(operation, payload) | EQUAL | PASS |
+| deletion.request: request bound to the exact parameters | stored parameters_sha256 == HMAC digest(operation, payload) under the binding key | EQUAL | PASS |
 | deletion.request: required capability | DATA_DELETE | DATA_DELETE | PASS |
 | deletion.request: requested by the backend-assigned operator | operator-1 | operator-1 | PASS |
 | assessment.approve_final: recorded decision | APPROVAL_REQUIRED | APPROVAL_REQUIRED | PASS |
 | assessment.approve_final: outcome | APPROVAL_REQUIRED | APPROVAL_REQUIRED | PASS |
 | assessment.approve_final: error code | policy.approval_required | policy.approval_required | PASS |
 | assessment.approve_final: one new PENDING request | 3 | 3 | PASS |
-| assessment.approve_final: request bound to the exact parameters | stored parameters_sha256 == sha256(operation, payload) | EQUAL | PASS |
+| assessment.approve_final: request bound to the exact parameters | stored parameters_sha256 == HMAC digest(operation, payload) under the binding key | EQUAL | PASS |
 | assessment.approve_final: required capability | GRADE_FINALIZE | GRADE_FINALIZE | PASS |
 | assessment.approve_final: requested by the backend-assigned operator | operator-1 | operator-1 | PASS |
 | curriculum.import: recorded decision | APPROVAL_REQUIRED | APPROVAL_REQUIRED | PASS |
 | curriculum.import: outcome | APPROVAL_REQUIRED | APPROVAL_REQUIRED | PASS |
 | curriculum.import: error code | policy.approval_required | policy.approval_required | PASS |
 | curriculum.import: one new PENDING request | 4 | 4 | PASS |
-| curriculum.import: request bound to the exact parameters | stored parameters_sha256 == sha256(operation, payload) | EQUAL | PASS |
+| curriculum.import: request bound to the exact parameters | stored parameters_sha256 == HMAC digest(operation, payload) under the binding key | EQUAL | PASS |
 | curriculum.import: required capability | CURRICULUM_IMPORT | CURRICULUM_IMPORT | PASS |
 | curriculum.import: requested by the backend-assigned operator | operator-1 | operator-1 | PASS |
 | calendar.apply: recorded decision | APPROVAL_REQUIRED | APPROVAL_REQUIRED | PASS |
 | calendar.apply: outcome | APPROVAL_REQUIRED | APPROVAL_REQUIRED | PASS |
 | calendar.apply: error code | policy.approval_required | policy.approval_required | PASS |
 | calendar.apply: one new PENDING request | 5 | 5 | PASS |
-| calendar.apply: request bound to the exact parameters | stored parameters_sha256 == sha256(operation, payload) | EQUAL | PASS |
+| calendar.apply: request bound to the exact parameters | stored parameters_sha256 == HMAC digest(operation, payload) under the binding key | EQUAL | PASS |
 | calendar.apply: required capability | SCHEDULE_APPLY | SCHEDULE_APPLY | PASS |
 | calendar.apply: requested by the backend-assigned operator | operator-1 | operator-1 | PASS |
 | note not erased | false | false | PASS |
@@ -468,7 +468,7 @@ Gate: A10 · Test: `tests/integration/a10_export_deletion.rs`
 | deletion with approval: recorded decision | ALLOW | ALLOW | PASS |
 | deletion with approval: outcome | OK | OK | PASS |
 | deletion state APPLIED | APPLIED | APPLIED | PASS |
-| tombstone digest is not the digest of the erased body | a 64-character digest that differs from the body's SHA-256 | d8f8d41a57f855ac09bac866439a5bbd8335807576608c6cfc3b9a0bf7889fe2 | PASS |
+| tombstone digest is not the digest of the erased body | a 64-character digest that differs from the body's SHA-256 | 8dab27c0bbcc1da8e22234e90718268fb325057545e2de755947673bd60e7337 | PASS |
 | note erased | true | true | PASS |
 | stored body redacted | current body hash differs from the original | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 | PASS |
 | every version erased | 1 | 1 | PASS |
@@ -765,6 +765,7 @@ Gate: A06 · Test: `tests/adversarial/st_adversarial_catalogue.rs`
 | 5 | `assessment.approve_final` | DENY | STALE_REVISION | `approval.revision_mismatch` |
 | 6 | `assessment.approve_final` | DENY | STALE_REVISION | `approval.revision_mismatch` |
 | 7 | `deletion.request` | DENY | UNAUTHORIZED | `approval.mac_invalid` |
+| 8 | `deletion.request` | DENY | UNAUTHORIZED | `approval.operation_mismatch` |
 
 | Check | Expected | Actual | Result |
 |---|---|---|---|
@@ -798,6 +799,10 @@ Gate: A06 · Test: `tests/adversarial/st_adversarial_catalogue.rs`
 | approval whose MAC does not verify: outcome | UNAUTHORIZED | UNAUTHORIZED | PASS |
 | approval whose MAC does not verify: error code | approval.mac_invalid | approval.mac_invalid | PASS |
 | forged MAC: DENY logged with reason | reason mentions the binding MAC | DENY: approval binding MAC is invalid | PASS |
+| approval presented after the install secret changed: recorded decision | DENY | DENY | PASS |
+| approval presented after the install secret changed: outcome | UNAUTHORIZED | UNAUTHORIZED | PASS |
+| approval presented after the install secret changed: error code | approval.operation_mismatch | approval.operation_mismatch | PASS |
+| changed install secret: DENY logged with reason | reason says the approval is bound to a different operation | DENY: approval is bound to a different operation | PASS |
 | no note erased by any refused approval | {"a_erased":false,"b_erased":false} | {"a_erased":false,"b_erased":false} | PASS |
 | audit chain verifies | true | true | PASS |
 

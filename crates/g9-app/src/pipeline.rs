@@ -59,15 +59,14 @@
 use crate::context::{AppContext, Services};
 use crate::ops::OpSpec;
 use crate::schemas;
-use g9_domain::hashing::sha256_json;
 use g9_domain::{
     Actor, ApprovalId, Classification, CommandMeta, CommandOutcome, DataDomain, Decision,
     EventHeader, EventId, G9Error, OperationDescriptor, PolicyDecisionId, ResourceRef, Revision,
     SchemaVersion, UtcMillis,
 };
 use g9_policy::{
-    ApprovalError, ApprovalGate, ConsumedApproval, DecisionKind, PolicyDecisionRecord, PolicyError,
-    ResourceContext,
+    ApprovalError, ApprovalGate, BindingKey, ConsumedApproval, DecisionKind, DigestDomain,
+    PolicyDecisionRecord, PolicyError, ResourceContext,
 };
 use g9_storage::approvals_store::{self, ApprovalUpdate, NewApprovalRequest, PolicyDecisionRow};
 use g9_storage::audit::{AuditChain, AuditDecision, AuditEntry, AuditOutcome};
@@ -275,16 +274,20 @@ impl Mutation {
 
 /// The outcome as stored in `idempotency_records`: verbatim, or with the
 /// result replaced by the handler's content-free replay record plus the
-/// SHA-256 of the full result.
+/// keyed digest of the full result (ADR-0021: a plain hash of a result that
+/// carried content would confirm a guess at it).
 fn stored_outcome(
     outcome: &CommandOutcome<Value>,
     replay_record: Option<&Value>,
+    key: &BindingKey,
 ) -> Result<Value, G9Error> {
     let mut stored = outcome.clone();
     if let Some(record) = replay_record {
         stored.result = json!({
             REPLAY_RECORD_KEY: record,
-            "result_sha256": sha256_json(&outcome.result),
+            "result_sha256": key
+                .digest_json(DigestDomain::Result, &outcome.result)
+                .map_err(|_| digest_error())?,
         });
     }
     serde_json::to_value(&stored).map_err(|_| G9Error::internal_redacted("idempotency.serialize"))
@@ -342,25 +345,52 @@ impl std::fmt::Debug for PostEnv<'_> {
     }
 }
 
-/// Hash binding an approval to the exact operation parameters:
-/// SHA-256 of canonical `{"operation": <name>, "payload": <payload>}`.
-pub fn parameters_sha256(operation: &str, payload: &Value) -> String {
-    sha256_json(&json!({ "operation": operation, "payload": payload }))
+/// The error of a digest that could not be made: the key was rejected, which cannot happen for a
+/// 32-byte key. Nothing about the request is in it.
+fn digest_error() -> G9Error {
+    G9Error::internal_redacted("digest.key_rejected")
 }
 
-/// Idempotency request hash: the operation, payload and every meta field that
-/// changes what the command does.
-fn request_sha256(meta: &CommandMeta, cmd: &Command<'_>) -> String {
-    sha256_json(&json!({
-        "operation": cmd.spec.name,
-        "payload": cmd.payload,
-        // The client-supplied resource only: backend-generated ids (new
-        // records) must not make a retry look like a different request.
-        "resource": meta.resource,
-        "scope": meta.scope,
-        "expected_revision": meta.expected_revision,
-        "approval_id": meta.approval_id,
-    }))
+/// Digest binding an approval to the exact operation parameters: the keyed digest
+/// ([`DigestDomain::Parameters`]) of canonical `{"operation": <name>, "payload": <payload>}`.
+///
+/// It is stored in the immutable ledgers as `parameters_sha256` (the column and field names are
+/// kept; since ADR-0021 the value is an HMAC-SHA-256 under the binding key). A plain SHA-256 there
+/// confirmed a guess at the payload for anyone holding the database file or a snapshot; this one
+/// confirms nothing without the key.
+pub fn parameters_digest(
+    key: &BindingKey,
+    operation: &str,
+    payload: &Value,
+) -> Result<String, G9Error> {
+    key.digest_json(
+        DigestDomain::Parameters,
+        &json!({ "operation": operation, "payload": payload }),
+    )
+    .map_err(|_| digest_error())
+}
+
+/// Idempotency request digest (keyed, [`DigestDomain::Request`]): the operation, payload and
+/// every meta field that changes what the command does.
+fn request_digest(
+    key: &BindingKey,
+    meta: &CommandMeta,
+    cmd: &Command<'_>,
+) -> Result<String, G9Error> {
+    key.digest_json(
+        DigestDomain::Request,
+        &json!({
+            "operation": cmd.spec.name,
+            "payload": cmd.payload,
+            // The client-supplied resource only: backend-generated ids (new
+            // records) must not make a retry look like a different request.
+            "resource": meta.resource,
+            "scope": meta.scope,
+            "expected_revision": meta.expected_revision,
+            "approval_id": meta.approval_id,
+        }),
+    )
+    .map_err(|_| digest_error())
 }
 
 /// §5 step 1 checks that do not need storage.
@@ -393,13 +423,17 @@ fn schema_label(v: SchemaVersion) -> String {
     format!("{}.{}", v.major, v.minor)
 }
 
-fn descriptor(meta: &CommandMeta, cmd: &Command<'_>) -> OperationDescriptor {
-    OperationDescriptor {
+fn descriptor(
+    key: &BindingKey,
+    meta: &CommandMeta,
+    cmd: &Command<'_>,
+) -> Result<OperationDescriptor, G9Error> {
+    Ok(OperationDescriptor {
         action: cmd.spec.action,
         resource: cmd.resource.clone(),
         scope: meta.scope,
-        parameters_sha256: parameters_sha256(cmd.spec.name, cmd.payload),
-    }
+        parameters_sha256: parameters_digest(key, cmd.spec.name, cmd.payload)?,
+    })
 }
 
 /// Run one command through the pipeline.
@@ -462,7 +496,7 @@ where
     let AppContext { db, svc } = ctx;
     let now = svc.now();
     let found = facts(db.conn(), svc)?;
-    let op = descriptor(meta, &cmd);
+    let op = descriptor(&svc.binding_key, meta, &cmd)?;
     let evaluation = svc.policy.evaluate(&meta.actor, &op, &found.context);
     match &evaluation.decision {
         Decision::Allow { .. } => {
@@ -570,8 +604,8 @@ where
     H: FnOnce(&mut Env<'_>) -> Result<Mutation, G9Error>,
 {
     let now = ctx.svc.now();
-    let request_hash = request_sha256(meta, &cmd);
-    let op = descriptor(meta, &cmd);
+    let request_hash = request_digest(&ctx.svc.binding_key, meta, &cmd)?;
+    let op = descriptor(&ctx.svc.binding_key, meta, &cmd)?;
     let result = {
         let AppContext { db, svc } = &mut *ctx;
         run_main_transaction(db, svc, meta, &cmd, &op, &request_hash, now, facts, handler)
@@ -929,7 +963,8 @@ where
         if post.is_none() {
             // Step 8: the idempotency outcome commits with the mutation
             // (content-bearing results are stored as their replay record).
-            let stored = stored_outcome(&outcome, mutation.replay_record.as_ref())?;
+            let stored =
+                stored_outcome(&outcome, mutation.replay_record.as_ref(), &svc.binding_key)?;
             idempotency::store(
                 &tx,
                 &meta.actor.id,
@@ -1015,7 +1050,8 @@ fn run_post_commit(
             outcome.revision = mutation.revision;
             outcome.audit_ref = Some(audit.audit_ref);
             outcome.warnings = mutation.warnings;
-            let stored = stored_outcome(&outcome, mutation.replay_record.as_ref())?;
+            let stored =
+                stored_outcome(&outcome, mutation.replay_record.as_ref(), &svc.binding_key)?;
             idempotency::store(
                 &tx,
                 &meta.actor.id,

@@ -28,7 +28,7 @@ use g9_domain::{
     CalendarEventId, Classification, CommandMeta, CommandOutcome, DataDomain, G9Error,
     ResourceKind, ResourceRef, Revision, ScheduleProposalId, SourceKind, TrustClass, UtcMillis,
 };
-use g9_policy::DEFAULT_APPROVAL_TTL;
+use g9_policy::{DigestDomain, DEFAULT_APPROVAL_TTL};
 use g9_storage::repos::calendar::{
     self as repo, CalendarEventKind, CalendarEventRow, DstAdjustment, EventSource, ProposalState,
     ScheduleDecisionKind, ScheduleDecisionRow, ScheduleProposalRow,
@@ -292,9 +292,18 @@ pub fn propose(
                     })
                     .collect();
             let proposal = propose_schedule(&tasks, &[(req.from, req.to)], &fixed, &[])?;
-            let parameters = g9_domain::hashing::sha256_json(&json!({
-                "from": req.from, "to": req.to, "intent": "ADD_REVIEWS", "proposal": proposal,
-            }));
+            // The digest `calendar.apply` is bound to: keyed, like every parameters digest in the
+            // ledgers (ADR-0021).
+            let parameters = env
+                .svc
+                .binding_key
+                .digest_json(
+                    DigestDomain::Parameters,
+                    &json!({
+                        "from": req.from, "to": req.to, "intent": "ADD_REVIEWS", "proposal": proposal,
+                    }),
+                )
+                .map_err(|_| G9Error::internal_redacted("digest.key_rejected"))?;
             let row = ScheduleProposalRow {
                 id: id.clone(),
                 proposed_by: env.meta.actor.id.clone(),
