@@ -209,7 +209,7 @@ Every probe was run again against a `g9` rebuilt from the fixed tree (`target/in
 ## 5. Do this first
 
 1. Run the shell on the host (see section 4): the three fixes marked NOT RUN are the ones a display decides.
-2. Confirm or reverse the decision in ADR-0017 that an approved erasure also removes the files.
+2. ~~Confirm or reverse the decision in ADR-0017 that an approved erasure also removes the files.~~ **Confirmed by the owner 2026-11-14 (ADR-0020).**
 3. Decide whether `core:default` may become an empty list (needs the owners of ARCHITECTURE.md, SECURITY.md, the threat model and the RTM, and one run on a display).
 4. ~~Decide whether a declined confirmation should leave an audit row, and whether the production bundle should refuse to start on the mock transport.~~ **Done 2026-11-14 without the owner, both as the audit proposed (yes, yes).** Each is reversible in one place: `record_declined_confirmation` is one call in `dispatch_confirming`; the refusal is the third argument of `chooseTransport`.
 5. ~~Close the four LOW items still open from 2026-11-12~~ **Done 2026-11-14** (audit tail truncation, backend-derived interaction mode, single read of a skill package, revision 0 at the boundary).

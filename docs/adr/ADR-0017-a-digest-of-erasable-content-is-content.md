@@ -1,6 +1,6 @@
 # ADR-0017: A digest of erasable content is content
 
-**Status:** Accepted (2026-11-13). Supersedes the "pre-erasure hash" part of ADR-0002 and resolves the PROPOSED purge item of ADR-0016.
+**Status:** Accepted (2026-11-13); the decision that an approved erasure also removes the attachment files was taken without the owner and is confirmed by the owner (2026-11-14, ADR-0020). Supersedes the "pre-erasure hash" part of ADR-0002 and resolves the PROPOSED purge item of ADR-0016.
 
 ## Context
 
