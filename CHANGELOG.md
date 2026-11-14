@@ -30,6 +30,9 @@ All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 - INFO items: the orchestrator's check detail is cut on a character boundary (it panicked on one); a declined native confirmation leaves one metadata-only audit row; a production bundle without the Tauri runtime no longer falls back to the mock (`RESOURCE_UNAVAILABLE ipc.tauri_runtime_missing`; `VITE_G9_TRANSPORT=mock npm run build` makes a review build); `session.create` `planned_start` is at most 2100-01-01T00:00:00Z.
 - `scripts/skill_hashes.py` refuses non-regular entries as the loader does; the live packages are checked against `skill-pins.json` by `crates/g9-skills/tests/live_registry.rs` as well as by the script.
 
+### Verified (2026-11-14, security remediation; no CI was started)
+Rust 951 passed, 0 failed (916 before; 35 new tests); fmt, clippy (also the shell crate, type-check only), eslint, tsc, vite build, content gates, `ds_audit` clean; vitest 463 in 38 files (460 before); smoke test passes; layout 32/32 clean; `personal.cjs` 22/22 on the real backend. NOT RUN: the Tauri shell, the native dialog, WebKitGTK and a restore drill (they need the host), `tour.cjs`, `cargo deny` (not installed here), a concurrent writer racing the package loader (the single read is tested by construction). Details: `docs/release/stage-report.md`, "Update 2026-11-14 (later)".
+
 ### Verified (2026-11-14; no CI was started)
 Rust 916 passed, 0 failed; vitest 460 in 38 files; smoke 100 assertions; fmt, clippy (also the shell crate, type-check only), eslint, tsc, vite build, content gates, `ds_audit` clean; layout 32/32 clean twice; `personal.cjs` 22/22 and `tour.cjs` 16 screens without a console, page or CSP problem, on the real backend. NOT RUN: the Tauri window, the native dialog, WebKitGTK, a restore drill on the host.
 

@@ -4,6 +4,29 @@ Format: `GOVERNANCE.md` "Stage PASS report (required content)". Evidence labels:
 
 Repository state: branch `ccr-0cea681c-p9jbru`; the commit that last touches this file is the report's HEAD; baseline `f414481` (initial commit, 2026-11-05). All commits are local and **unpushed** by operator instruction ("Do not connect to GitHub only work here"); the remote branch is at `e987383`.
 
+## Update 2026-11-14 (later): the four LOW and four INFO audit findings closed
+
+Owner request: "fix the last few things". The four LOW findings still open from the audit of 2026-11-12 (audit tail truncation, client-declared interaction mode, skill pin hashed from a second read, revision 0 at the boundary) and four INFO items are fixed, each with a test that failed on the old code (`docs/audit/security-audit-2026-11-12.md`, remediation table; ADR-0004 addendum; ADR-0019). Two decisions were taken without the owner and are each reversible in one place: a declined native confirmation is audited, and a production bundle refuses the mock transport. No CI or workflow was started.
+
+| Check | Command | Result | Label |
+|---|---|---|---|
+| Rust fmt, clippy | `cargo fmt --all -- --check`; `cargo clippy --workspace --exclude g9-mentor-desktop --all-targets --offline -- -D warnings` | clean; exit 0 (clippy found one lint in a new test helper, fixed, re-run clean) | VERIFIED |
+| Rust tests | `cargo test --workspace --exclude g9-mentor-desktop --offline --no-fail-fast` | **951 passed, 0 failed, 0 ignored** (916 before: +35 new, `package_hardening.rs` 9, `audit_tail.rs` 8 in g9-storage and 3 in g9-app, `exam_mode_derivation.rs` 4, `boundary_revision.rs` 3, `native_confirmation.rs` 2, `feature_sessions.rs` 1, `live_registry.rs` 1, 3 unit tests in `package.rs`, 1 in `orchestrator.rs`) | TESTED |
+| Fail-first | each new test run against the old code before the fix | failed on the old code: 6 of 9 in `package_hardening.rs` (one blocked on a FIFO until its deadline), 6 of 8 in the storage `audit_tail.rs`, 1 of 4 in `exam_mode_derivation.rs`, 1 of 2 new in `native_confirmation.rs`, the `planned_start` test, the orchestrator boundary test, the 3 in `boundary_revision.rs`, the vitest tests for the transport choice and for the `planned_start` bound; the rest are regression guards that pass before and after | TESTED |
+| Mutation check | the tail check disabled on purpose | the two app-level detection tests in `crates/g9-app/tests/audit_tail.rs` fail, the regression guard passes | TESTED |
+| Desktop shell, type-check and lint only | `cargo clippy -p g9-mentor-desktop --offline --all-targets -- -D warnings` (stub `pkg-config`) | exit 0 | VERIFIED; the window, the dialog and a build are NOT RUN |
+| Smoke test | `bash scripts/smoke_test.sh` | SMOKE TEST PASS | TESTED |
+| Content gates | `check_curriculum_seed.py`, `check_skill_packages.py`, `skill_hashes.py --check` (now also refuses non-regular entries), `check_source_register.py`, `verify_source_register.py --selftest`, `check_schemas.py` | all exit 0; `live_registry_loads_under_the_shipped_pins` checks the 37 shipped packages against `skill-pins.json` with the production loader | TESTED |
+| UI | `npx tsc --noEmit`, `npx eslint .`, `npx vitest run`, `npx vite build` | clean (eslint found one dot-notation error in the mock, fixed and re-run clean); **463 passed in 38 files** | TESTED |
+| Design system audit, layout | `ds_audit.py --check`; `measure.cjs` (1280 x 800 and 960 x 640) | exit 0; 32 measurements, 32 clean | MEASURED |
+| The first-run flow in the real interface against the real backend | `node scripts/e2e/personal.cjs` | **22 passed, 0 failed** (production bundle with the Tauri runtime injected, native confirmation, backup list, audit chain intact, no console, page or CSP problem) | TESTED |
+| `tour.cjs` (16 screens on the real backend) | n/a | not re-run for this change | NOT RUN |
+| A concurrent writer racing the package loader | n/a | the single read is tested by construction (`parsing_and_hashing_use_the_bytes_that_were_read_not_the_disk`: a file replaced after the read changes neither the parse nor the hash); no race was run | NOT RUN |
+| `cargo deny` | n/a | not installed in this sandbox; the one new direct dependency is `libc =0.2.191` on unix (the version `Cargo.lock` already held; MIT or Apache-2.0; not in the ban list) | NOT RUN |
+| Tauri shell on the host, the native confirmation dialog, WebKitGTK rendering, a restore drill | n/a | needs the host | NOT RUN |
+
+Still open, not touched: keyed request hashes in the idempotency and approval ledgers (owner decision), `core:default` reduction (ARCHITECTURE.md names it), ADR-0017's erasure-deletes-files decision (owner to confirm), the PNG-plus-archive polyglot and the `already_stored` oracle (INFO), the CLI's default data directory (`g9-mentor`, not the application's `com.g9.mentor`), and everything that needs the real 12-week curriculum (Saturday assessments, objective-to-competency mapping, NICE pins, promotion to canonical, `FILL_CURRICULUM`).
+
 ## Update 2026-11-14: the window usable on its own, with the curriculum imported
 
 Owner request: "the gui version fully complete and ready to use for personal use, with the fully cybersecurity learning curriculum imported in". Running the real interface against the real backend showed that the window could not run the curriculum (no import, no program start, no way to start a block, no read-back of notes, no erase, no competencies, no backup list). The decision and the findings are in `docs/adr/ADR-0018-program-setup-and-planned-days.md`; the steps for the first day are in `docs/runbooks/first-run.md`. Schema version 15 (`program_plan`); seven new operations (53 in all): `curriculum.program`, `curriculum.set_program_start`, `session.plan_day`, `notes.list`, `notes.get`, `competency.import_pack`, `backup.list`. The branch is pushed; CI runs only when started by hand (ADR-0015) and no workflow was started. **No Stage PASS is issued.**
