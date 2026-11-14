@@ -26,7 +26,9 @@ pub mod provenance;
 pub mod reconcile;
 pub mod validate;
 
-pub use checksum::{json_checksum, json_text_checksum, manifest_checksum, Checksum};
+pub use checksum::{
+    content_checksum, json_checksum, json_text_checksum, manifest_checksum, Checksum,
+};
 pub use error::CurriculumError;
 pub use manifest::{
     Block, BlockSpec, Day, Manifest, Objective, Reconciliation, Resource, ResourceKind, Structure,

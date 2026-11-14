@@ -13,7 +13,7 @@
 //! the operator-supplied approved plan (TrustClass::Operator provenance), never
 //! a model- or skill-produced document.
 
-use crate::checksum::{json_checksum, manifest_checksum, Checksum};
+use crate::checksum::{content_checksum, json_checksum, manifest_checksum, Checksum};
 use crate::error::CurriculumError;
 use crate::manifest::{Day, Manifest, Week};
 use crate::provenance::provenance_label;
@@ -107,9 +107,15 @@ pub struct ReconciliationReport {
     pub original_checksum: Checksum,
     /// Checksum of the candidate manifest.
     pub candidate_checksum: Checksum,
-    /// Checksum of the content diff (`per_day` + `summary`), independent of the
-    /// candidate's provenance metadata; the value a reconciliation block must
-    /// carry as `diff_checksum`.
+    /// Checksum of the candidate's curriculum content, without its provenance
+    /// fields (`crate::checksum::content_checksum`): it survives relabelling
+    /// (version, provenance, reconciliation block) and changes with any edit.
+    pub candidate_content_checksum: Checksum,
+    /// Checksum of the content diff (`per_day` + `summary`) together with the
+    /// candidate's content checksum, independent of the candidate's provenance
+    /// metadata; the value a reconciliation block must carry as `diff_checksum`.
+    /// It binds the reviewed diff to what the candidate says, not only to which
+    /// fields differ: editing a field after the review changes it.
     pub diff_checksum: Checksum,
     /// Content version of the original, for the header and audit metadata.
     pub original_version: String,
@@ -199,9 +205,11 @@ pub fn reconcile(
     summary.metadata_changes = metadata_changes(original, candidate);
     let curriculum_id_matches = original.curriculum_id == candidate.curriculum_id;
 
+    let candidate_content_checksum = content_checksum(candidate)?;
     let diff_value = serde_json::to_value(serde_json::json!({
         "per_day": &per_day,
         "summary": &summary,
+        "candidate_content": candidate_content_checksum.as_str(),
     }))
     .map_err(|_| CurriculumError::Serialization)?;
     let diff_checksum = json_checksum(&diff_value);
@@ -227,6 +235,7 @@ pub fn reconcile(
     let mut report = ReconciliationReport {
         original_checksum,
         candidate_checksum,
+        candidate_content_checksum,
         diff_checksum,
         original_version: original.version.clone(),
         candidate_version: candidate.version.clone(),
@@ -351,6 +360,10 @@ fn render(original: &Manifest, candidate: &Manifest, r: &ReconciliationReport) -
         candidate.version,
         provenance_label(candidate.provenance),
         r.candidate_checksum
+    ));
+    out.push_str(&format!(
+        "candidate content checksum: {}\n",
+        r.candidate_content_checksum
     ));
     out.push_str(&format!("diff checksum: {}\n", r.diff_checksum));
     if !r.curriculum_id_matches {

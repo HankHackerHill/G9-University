@@ -81,6 +81,35 @@ pub fn manifest_checksum(manifest: &Manifest) -> Result<Checksum, CurriculumErro
     Ok(json_checksum(&value))
 }
 
+/// Top-level manifest fields that say where a manifest comes from, not what it
+/// teaches. They are expected to differ between an original and its candidate, so
+/// they are left out of [`content_checksum`] and of the comparison in `reconcile`.
+const PROVENANCE_FIELDS: [&str; 5] = [
+    "manifest_schema_version",
+    "version",
+    "provenance",
+    "provenance_note",
+    "reconciliation",
+];
+
+/// Checksum of the curriculum content of a manifest: the manifest without its
+/// provenance fields (`manifest_schema_version`, `version`, `provenance`,
+/// `provenance_note`, `reconciliation`), hashed in canonical form.
+///
+/// A candidate keeps this checksum when it is relabelled (a new version, the
+/// `RECONCILED_CANDIDATE` provenance, the reconciliation block) and changes it with
+/// any edit to the content, so a reviewed diff can be bound to exactly what was
+/// reviewed: the field names of a diff alone do not say what the new values are.
+pub fn content_checksum(manifest: &Manifest) -> Result<Checksum, CurriculumError> {
+    let mut value = serde_json::to_value(manifest).map_err(|_| CurriculumError::Serialization)?;
+    if let Some(object) = value.as_object_mut() {
+        for key in PROVENANCE_FIELDS {
+            object.remove(key);
+        }
+    }
+    Ok(json_checksum(&value))
+}
+
 /// Checksum of raw JSON text, computed on its parsed canonical form so that
 /// formatting and key order do not matter. The text is parsed as a generic
 /// value, not as a manifest, so this also works for files that fail validation.

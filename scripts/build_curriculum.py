@@ -279,7 +279,11 @@ def check_week(week: dict, seed: dict, info: dict[str, dict], problems: Problems
             resources.append(res)
         if not any(r["kind"] == "EXTERNAL" for r in resources):
             problems.add(at, "at least one external resource is required")
-        # the day's own sheet is always a resource of the day
+        # the day's own sheet is always a resource of the day; the fragment is a locator
+        # (the day id), so check that the file exists and holds that day's heading
+        sheet = WEEKS_DIR / week["file"]
+        if not sheet.is_file() or not any(l.startswith(f"## {d} — ") for l in sheet.read_text(encoding="utf-8").split("\n")):
+            problems.add(at, f"the day sheet locator {week['file']}#{d.lower()} does not resolve to a '## {d} — ' heading")
         resources.append({"ref": f"docs/curriculum/weeks/{week['file']}#{d.lower()}", "kind": "INTERNAL"})
         # saturday assessment
         if saturday:

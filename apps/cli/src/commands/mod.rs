@@ -8,6 +8,7 @@ pub mod crash_drill;
 pub mod import_seed;
 pub mod init;
 pub mod ops;
+pub mod reconcile;
 pub mod restore;
 pub mod simulate;
 pub mod status;
@@ -100,6 +101,10 @@ pub fn run(cli: &Cli) -> Result<Completion, CliError> {
         Command::ImportSeed { manifest } => Ok(Completion::of(import_seed::run(
             &boot_options(cli)?,
             manifest.as_deref(),
+        )?)),
+        Command::Reconcile(args) => Ok(Completion::of(reconcile::run(
+            args,
+            cli.data_dir.as_deref(),
         )?)),
         Command::SimulateWeek(args) => {
             require_scratch(args.scratch, cli.data_dir.is_some())?;

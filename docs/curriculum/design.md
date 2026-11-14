@@ -25,7 +25,7 @@ Change a lesson: edit its week file, run `python3 -I scripts/build_curriculum.py
 | Each objective links 1 to 3 competencies of the eight packs | the mapping the seed lacked; the application validates the ids |
 | Every competency is built by at least two objectives, and none is first taught before its prerequisites | spiral practice; the pack prerequisite edges are respected in time |
 | Every block section has at least 25 words; weekday sections `Recall`, `Theory`, `Guided lab`, `Independent lab`, `Defence and verification`, `Evidence and report`; Saturday sections `Blind practical`, `Remediation`, `Report`, `Performance review`, `Assessment` | no stubs; the six weekday blocks and four Saturday blocks of the manifest are each used |
-| Each day lists at least one external resource with a version and a licence note; the day's own sheet is added as an internal resource | external references carry a version (manifest rule) |
+| Each day lists at least one external resource with a version and a licence note; the day's own sheet is added as an internal resource `docs/curriculum/weeks/week-NN.md#dNN` | external references carry a version (manifest rule). The fragment is a locator (the day id in lower case, found at the start of the `## DNN —` heading), not a rendered HTML anchor: the builder verifies that the file exists and holds that heading |
 | Each Saturday defines one assessment (code, kind, competency, difficulty within that competency's band, task statement) | importable with `assessment.define` |
 | No hidden or control characters in a source file | the repository scan (`crates/g9-domain/tests/source_text.rs`) |
 
@@ -88,4 +88,5 @@ Whichever is used, record it in the report. Taking the practical when you know t
 | Which blind-practical source (above) each Saturday uses | the operator |
 | Verification of each external resource's terms and version | the operator |
 | NICE Framework pins on competencies (`K-UNPINNED`, `S-UNPINNED`) | the operator, after pinning a framework version |
-| Promotion to `APPROVED_CANONICAL` | the operator, in the application, bound to the checksum of a reviewed diff |
+| Promotion to `APPROVED_CANONICAL` | the operator: `g9 reconcile`, then `curriculum.import` and `curriculum.promote`, each approved (`promotion.md`); the window has no promote action yet |
+| Whether the competency links of the objectives are stored | open: the manifest carries them and the application validates them, but the importer does not persist them, because `objective_competencies` needs a dimension and a weight that the manifest does not carry and that would be invented |

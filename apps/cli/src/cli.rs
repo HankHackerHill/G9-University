@@ -86,6 +86,8 @@ pub enum Command {
         #[arg(long, value_name = "PATH")]
         manifest: Option<PathBuf>,
     },
+    /// Compare a candidate curriculum manifest with the operator's original plan and print the diff with its checksums. With --write-candidate (and an explicit --candidate-version, --approved-by and --approved-at) it also writes the RECONCILED_CANDIDATE manifest and the request payloads of curriculum.import and curriculum.promote. It reads two files, opens no data directory and approves nothing.
+    Reconcile(ReconcileArgs),
     /// Deterministic scripted week (Stage 03 exit criterion): sessions, journal, Saturday assessment, backups, audit. Exit 0 only on PASS (INCOMPLETE/FAIL exit 2). Writes seed rows straight to storage: requires --scratch.
     SimulateWeek(SimulateArgs),
     /// Prepare and start a session, then exit without completing it (simulated crash); run `g9 init` afterwards. Writes seed rows straight to storage: requires --scratch.
@@ -94,6 +96,33 @@ pub enum Command {
     Restore(RestoreArgs),
     /// Copy a RETAINED backup to another directory (a USB drive, a NAS mount): the snapshot plus <id>.manifest.json, synced and re-hashed against the manifest. Reads only; the application may be running.
     CopyBackup(CopyBackupArgs),
+}
+
+/// `g9 reconcile` arguments.
+#[derive(Debug, Args)]
+pub struct ReconcileArgs {
+    /// The operator's original approved plan (a manifest file).
+    #[arg(long, value_name = "PATH")]
+    pub original: PathBuf,
+    /// The candidate manifest to compare, for example data/curriculum/g9-ct9-480.draft.v1.json.
+    #[arg(long, value_name = "PATH")]
+    pub candidate: PathBuf,
+    /// Write the RECONCILED_CANDIDATE manifest to this new file, and beside it <stem>.import.json and <stem>.promote.json (the payloads of curriculum.import and curriculum.promote). An existing file is never overwritten. Needs --candidate-version, --approved-by and --approved-at: the block it writes says that this operator reviewed this diff.
+    #[arg(
+        long,
+        value_name = "PATH",
+        requires_all = ["candidate_version", "approved_by", "approved_at"]
+    )]
+    pub write_candidate: Option<PathBuf>,
+    /// Version label of the written candidate (it must differ from the candidate's own), for example 1.0.0-rc1.
+    #[arg(long, value_name = "LABEL", requires = "write_candidate")]
+    pub candidate_version: Option<String>,
+    /// Actor id of the operator who reviewed the diff. Never defaulted.
+    #[arg(long, value_name = "ID", requires = "write_candidate")]
+    pub approved_by: Option<String>,
+    /// When the diff was reviewed: `now` or UTC epoch milliseconds. Never defaulted.
+    #[arg(long, value_name = "now|EPOCH_MS", requires = "write_candidate")]
+    pub approved_at: Option<String>,
 }
 
 /// `g9 copy-backup` arguments.

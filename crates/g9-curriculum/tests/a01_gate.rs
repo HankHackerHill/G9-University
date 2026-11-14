@@ -460,6 +460,90 @@ fn a01_seed_is_not_promotable_without_reconciliation() {
     assert!(!plan.authoritative);
 }
 
+#[test]
+fn a01_reviewed_diff_is_bound_to_the_candidate_content() {
+    use ManifestProvenance::*;
+    // The operator's original words D27-O2 differently: D27 is CHANGED in objectives[1].text.
+    let mut original = seed();
+    original.weeks[4].days[2].objectives[1].text = "Original wording of D27-O2".into();
+    let candidate = seed();
+    let report = reconcile(&original, &candidate).unwrap();
+    assert_eq!(report.summary.changed, 1);
+
+    let mut reviewed = candidate.clone();
+    reviewed.provenance = ReconciledCandidate;
+    reviewed.version = "0.2.0-reconciled".into();
+    reviewed.reconciliation = Some(reconciliation_block(
+        report.original_checksum.as_str(),
+        report.diff_checksum.as_str(),
+    ));
+    assert_eq!(
+        content_checksum(&reviewed).unwrap(),
+        content_checksum(&candidate).unwrap(),
+        "relabelling (version, provenance, block) keeps the content checksum"
+    );
+    assert_ne!(
+        manifest_checksum(&reviewed).unwrap(),
+        manifest_checksum(&candidate).unwrap(),
+        "the manifest checksum covers the relabelling"
+    );
+    let ok = reconcile(&original, &reviewed).unwrap();
+    assert_eq!(ok.binding, ReconciliationBinding::Matched);
+    assert!(ok.promotion_allowed);
+
+    // The same field is edited again after the review. The same days and fields differ, so the
+    // shape of the diff is unchanged, but the content is not what was reviewed.
+    let mut edited = reviewed.clone();
+    edited.weeks[4].days[2].objectives[1].text = "Wording nobody reviewed".into();
+    let r = reconcile(&original, &edited).unwrap();
+    assert_eq!(
+        r.per_day, report.per_day,
+        "the shape of the diff is the same"
+    );
+    assert_eq!(r.summary, report.summary);
+    assert_ne!(
+        r.candidate_content_checksum,
+        report.candidate_content_checksum
+    );
+    assert_ne!(r.diff_checksum, report.diff_checksum);
+    assert!(matches!(
+        r.binding,
+        ReconciliationBinding::DiffChecksumMismatch { .. }
+    ));
+    assert!(!r.promotion_allowed);
+    assert!(matches!(
+        can_promote(&r),
+        Err(PromotionBlocked::DiffChecksumMismatch { .. })
+    ));
+
+    // A top-level field that already differs is covered as well.
+    let mut renamed_original = original.clone();
+    renamed_original.name = "Another name".into();
+    let report = reconcile(&renamed_original, &candidate).unwrap();
+    assert_eq!(report.summary.metadata_changes, vec!["name".to_string()]);
+    let mut reviewed = candidate.clone();
+    reviewed.provenance = ReconciledCandidate;
+    reviewed.reconciliation = Some(reconciliation_block(
+        report.original_checksum.as_str(),
+        report.diff_checksum.as_str(),
+    ));
+    assert!(
+        reconcile(&renamed_original, &reviewed)
+            .unwrap()
+            .promotion_allowed
+    );
+    reviewed.name = "A third name".into();
+    let r = reconcile(&renamed_original, &reviewed).unwrap();
+    assert_eq!(r.summary.metadata_changes, vec!["name".to_string()]);
+    assert!(!r.promotion_allowed);
+
+    // The report prints the content checksum so a reviewer can record what was read.
+    assert!(ok.human_readable.contains(&format!(
+        "candidate content checksum: {}",
+        ok.candidate_content_checksum
+    )));
+}
+
 // --------------------------------------------------------------- reconcile
 
 #[test]
