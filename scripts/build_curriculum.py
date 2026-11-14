@@ -67,6 +67,8 @@ MIN_WORDS_BLOCK = 25
 MAX_OBJECTIVE_CHARS = 500
 MAX_ARTIFACT_CHARS = 500
 MAX_TASK_STATEMENT_CHARS = 20000
+MAX_RESOURCE_VERSION_CHARS = 128  # schemas/curriculum/manifest.schema.json, resource.version
+MAX_RESOURCE_NOTE_CHARS = 1000  # resource.license_note
 MIN_TARGETS_PER_COMPETENCY = 2
 
 WEEK_RE = re.compile(r"^# Week (\d{1,2}) — (.+?)\s*$")
@@ -260,6 +262,10 @@ def check_week(week: dict, seed: dict, info: dict[str, dict], problems: Problems
             ref, kind = parts[0], parts[1]
             version = parts[2] if len(parts) > 2 and parts[2] else None
             note = parts[3] if len(parts) > 3 and parts[3] else None
+            if version is not None and len(version) > MAX_RESOURCE_VERSION_CHARS:
+                problems.add(at, f"resource version is {len(version)} characters (maximum {MAX_RESOURCE_VERSION_CHARS}); move the explanation to the licence note: {ref[:60]}")
+            if note is not None and len(note) > MAX_RESOURCE_NOTE_CHARS:
+                problems.add(at, f"resource licence note is {len(note)} characters (maximum {MAX_RESOURCE_NOTE_CHARS}): {ref[:60]}")
             if kind == "External":
                 if not ref.startswith("https://") or " " in ref or len(ref) > 2048:
                     problems.add(at, f"external resource must be an https URL without spaces: {ref[:80]}")

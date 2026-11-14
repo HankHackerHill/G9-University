@@ -15,7 +15,7 @@
 ### Objectives
 1. Define lab authorization and boundaries — write a one-page scope statement: owner, permitted systems and actions, forbidden targets, data rules, time window and stop condition [lab.authorization]
 2. Map host/guest and evidence isolation — draw the host, guest, network and evidence-store boundaries and prove with commands that a guest cannot reach the internet, the host's services or the evidence store [lab.authorization]
-3. Establish diagnostic baseline — record the clean state of the lab (snapshot ids, listening ports, running services, hashes of key files) and score yourself on the week's diagnostic [linux.hardening-baseline]
+3. Establish diagnostic baseline — record the clean state of the lab (snapshot ids, listening ports, running services, hashes of key files) and score yourself on the week's diagnostic [lab.authorization, linux.filesystem]
 
 ### Recall (15 min)
 Nothing to recall yet, so take the entry check instead. Without notes, write one line each: What is the difference between authorization and scope? What makes a lab isolated rather than merely separate? Name three facts you would record to prove that a system returned to a known state.
@@ -177,7 +177,7 @@ Parsing with a regular expression that backtracks on a long line. Local time wit
 
 ### Objectives
 1. Apply version-control concepts — keep the lab files, parser and notes in git with meaningful commits, develop a change on a branch and revert a bad change [python.testing-fixtures]
-2. Produce reproducible runbook — write a runbook that a peer can follow to rebuild the day-3 failure and repair on a fresh guest with identical results [python.testing-fixtures, linux.evidence-completeness]
+2. Produce reproducible runbook — write a runbook that a peer can follow to rebuild the day-3 failure and repair on a fresh guest with identical results, ending with checks that verify the guest matches the recorded baseline [python.testing-fixtures, linux.hardening-baseline]
 3. Assess evidence completeness — review your own week's evidence against a checklist of who, what, when, where, how, hash and limits, and list the gaps and what would close them [linux.evidence-completeness]
 
 ### Recall (15 min)
@@ -191,7 +191,7 @@ Without notes: what makes a parser's rejection path testable? Name two inputs th
 ### Guided lab (120 min)
 1. Put `~/g9lab/scripts`, the parser repository and your runbooks under git (the evidence directory is not committed; its hashes are).
 2. Make a change on a branch, commit it in two steps, merge it, then introduce a defect, find the commit with `git bisect` or `git log -S`, and revert it.
-3. Write the runbook for the day-3 failure of your choice, with expected output beside each command.
+3. Write the runbook for the day-3 failure of your choice, with expected output beside each command and a last section that verifies the guest against the day 1 baseline.
 4. Execute your runbook on a fresh clone of `clean-0` exactly as written. Every step that did not work as written is a defect in the runbook: fix it and run again until the run is clean.
 
 ### Independent lab (120 min)
