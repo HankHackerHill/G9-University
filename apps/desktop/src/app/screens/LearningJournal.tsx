@@ -1,22 +1,22 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { isG9Error } from '../../ipc/client';
-import type { EvidenceItemView, NoteView, OperationName } from '../../ipc/operations';
-import type { Classification, G9Error, IanaZone } from '../../ipc/types';
+import type { EvidenceItemView, NoteSummary, NoteView } from '../../ipc/operations';
+import type { Classification, G9Error } from '../../ipc/types';
 import { CLASSIFICATIONS } from '../../ipc/types';
 import { ATTACHMENT_MEDIA_TYPES, MAX_ATTACHMENT_BYTES, attachmentMediaType, base64FromDataUrl, formatBytes } from '../../lib/attachment';
 import { classificationLabel, domainLabel } from '../../lib/copy';
 import { formatDateTime, sentenceCase, shortHash } from '../../lib/format';
 import { mergeWarnings, warningsOf } from '../../lib/warnings';
-import { ApprovalCard, ConfirmationCancelled } from '../components/ApprovalCard';
 import { Badge, ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Field } from '../components/Field';
+import { FlowOutcome } from '../components/FlowOutcome';
 import { MarkdownPreview } from '../components/MarkdownPreview';
 import { PageHead } from '../components/PageHead';
 import { Instrument, Loading, NoData, Panel } from '../components/Panel';
 import { Tabs } from '../components/Tabs';
 import { Warnings } from '../components/Warnings';
-import { useApprovalFlow, type ApprovalFlow } from '../hooks/useApprovalFlow';
+import { useApprovalFlow } from '../hooks/useApprovalFlow';
 import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
@@ -67,34 +67,6 @@ function versions(n: number): string {
   return n === 1 ? '1 version' : `${n} versions`;
 }
 
-/**
- * What a protected evidence action answered, directly under the control that asked: the
- * backend's refusal or its request for approval, the voucher to decide and apply it, and the
- * operator's own cancellation of the native confirmation.
- */
-function FlowOutcome<K extends OperationName>({ flow, zone, now, onApplied }: { flow: ApprovalFlow<K>; zone: IanaZone; now: number | null; onApplied: () => void }) {
-  return (
-    <>
-      {flow.error !== null ? <ErrorDisplay error={flow.error} /> : null}
-      {flow.cancelled ? <ConfirmationCancelled /> : null}
-      {flow.approval !== null && flow.approval.state !== 'CONSUMED' ? (
-        <ApprovalCard
-          approval={flow.approval}
-          zone={zone}
-          now={now ?? undefined}
-          disabled={flow.pending}
-          onDecide={(d) => {
-            void flow.decide(d);
-          }}
-          onApply={() => {
-            void flow.applyWithApproval().then(onApplied);
-          }}
-        />
-      ) : null}
-    </>
-  );
-}
-
 export function LearningJournal() {
   const today = useToday();
   const client = useIpc();
@@ -102,16 +74,24 @@ export function LearningJournal() {
   const [body, setBody] = useState(STARTER);
   const [classification, setClassification] = useState<Classification>('PRIVATE');
   const [current, setCurrent] = useState<NoteView | null>(null);
-  const [notes, setNotes] = useState<NoteView[]>([]);
   const [error, setError] = useState<G9Error | null>(null);
   const [busy, setBusy] = useState(false);
   const [saveWarnings, setSaveWarnings] = useState<readonly string[]>([]);
   // What the last save posted; cleared by the next edit, so the receipt never describes older text.
   const [saved, setSaved] = useState<{ note: NoteView; revised: boolean } | null>(null);
   // The note to open (null: a new one) once the operator has agreed to lose unsaved text.
-  const [leaving, setLeaving] = useState<{ to: NoteView | null } | null>(null);
+  const [leaving, setLeaving] = useState<{ to: NoteSummary | null } | null>(null);
   // Counts the notes put into the editor, so the Write tab is shown again for each of them.
   const [loaded, setLoaded] = useState(0);
+  // Every stored note of the Learning area, newest change first, without bodies; one is opened with `notes.get`.
+  const list = useCommand('notes.list', {});
+  const notes = list.data?.notes ?? [];
+  const [opening, setOpening] = useState(false);
+  // Erasing the open note: the reason, the approval and the receipt of what was erased.
+  const [erasing, setErasing] = useState(false);
+  const [reason, setReason] = useState('');
+  const [erased, setErased] = useState<{ title: string; files: number } | null>(null);
+  const eraseFlow = useApprovalFlow<'deletion.request'>();
   const titleRef = useRef<HTMLInputElement>(null);
   const keepRef = useRef<HTMLButtonElement>(null);
   const askedFrom = useRef<HTMLElement | null>(null);
@@ -168,6 +148,12 @@ export function LearningJournal() {
     evidence.reload();
   };
 
+  const cancelErase = () => {
+    setErasing(false);
+    setReason('');
+    eraseFlow.reset();
+  };
+
   const resetEvidence = () => {
     setAttachProblem(null);
     attachFlow.reset();
@@ -184,6 +170,7 @@ export function LearningJournal() {
     setSaved(null);
     setLoaded((k) => k + 1);
     resetEvidence();
+    cancelErase();
   };
 
   const startNew = () => {
@@ -198,9 +185,22 @@ export function LearningJournal() {
     titleRef.current?.focus();
   };
 
+  // A stored note is read in full (`notes.get`) before it goes into the editor.
+  const openStored = async (summary: NoteSummary) => {
+    setOpening(true);
+    const r = await client.invoke('notes.get', { note_id: summary.note_id }, { domain: summary.domain });
+    if (isG9Error(r)) {
+      setError(r);
+    } else {
+      openNote(r.result);
+      setErased(null);
+    }
+    setOpening(false);
+  };
+
   // Unsaved text is lost when another note is put into the editor: ask first, under the page head.
-  const request = (to: NoteView | null) => {
-    if (busy) {
+  const request = (to: NoteSummary | null) => {
+    if (busy || opening) {
       return;
     }
     if (dirty) {
@@ -209,7 +209,7 @@ export function LearningJournal() {
     } else if (to === null) {
       startNew();
     } else {
-      openNote(to);
+      void openStored(to);
     }
   };
 
@@ -219,9 +219,29 @@ export function LearningJournal() {
     if (to === null) {
       startNew();
     } else {
-      openNote(to);
-      askedFrom.current?.focus();
+      void openStored(to).then(() => {
+        askedFrom.current?.focus();
+      });
     }
+  };
+
+  const eraseNote = async (note: NoteView) => {
+    setErased(null);
+    await eraseFlow.run((approvalId) =>
+      client.invoke('deletion.request', { resource: { kind: 'NOTE', id: note.note_id }, reason: reason.trim() }, { domain: note.domain, ...(approvalId === undefined ? {} : { approvalId }) }),
+    );
+  };
+
+  // The approved erasure was applied: nothing of the note is left to edit.
+  const afterErase = (answer: Awaited<ReturnType<typeof eraseFlow.applyWithApproval>>) => {
+    if (answer === null || isG9Error(answer) || answer.result.state !== 'APPLIED' || current === null) {
+      return;
+    }
+    const title = current.title;
+    const files = evidence.data?.items.filter((i) => i.kind === 'ATTACHMENT').length ?? 0;
+    startNew();
+    setErased({ title, files });
+    list.reload();
   };
 
   const save = async () => {
@@ -239,8 +259,9 @@ export function LearningJournal() {
     } else {
       setError(null);
       setCurrent(r.result);
-      setNotes((prev) => [r.result, ...prev.filter((n) => n.note_id !== r.result.note_id)]);
       setSaved({ note: r.result, revised });
+      setErased(null);
+      list.reload();
     }
     setBusy(false);
   };
@@ -265,7 +286,12 @@ export function LearningJournal() {
       />
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
       {error !== null ? <ErrorDisplay error={error} /> : null}
-      <Warnings warnings={mergeWarnings(saveWarnings, evidence.warnings, attachFlow.warnings, noteEvidenceFlow.warnings)} />
+      <Warnings warnings={mergeWarnings(saveWarnings, list.warnings, evidence.warnings, attachFlow.warnings, noteEvidenceFlow.warnings, eraseFlow.warnings)} />
+      {erased !== null ? (
+        <p className="receipt" role="status" data-testid="note-erased">
+          Erased “{erased.title}”{erased.files === 0 ? '' : ` with ${erased.files === 1 ? '1 attached file' : `${erased.files} attached files`}`}. Nothing of its text is kept; the record shows only that an erasure was approved and when.
+        </p>
+      ) : null}
       {leaving !== null ? (
         <div className="banner" role="alertdialog" aria-labelledby={`${dialogId}-title`} aria-describedby={`${dialogId}-desc`} data-testid="discard-warning">
           <strong id={`${dialogId}-title`}>Discard the text that is not saved?</strong>
@@ -293,23 +319,14 @@ export function LearningJournal() {
       ) : null}
 
       <div className="split" data-lead="end">
-        <Panel
-          title="Notes of this session"
-          note={
-            notes.length === 0 ? undefined : (
-              <>
-                Saved since this window opened. Reading back notes stored earlier is planned (<code>notes.list</code>), not built.
-              </>
-            )
-          }
-        >
-          {notes.length === 0 ? (
-            <NoData
-              title="No notes yet"
-              reason="This list holds the notes you save while this window is open. Reading back notes stored earlier is planned (notes.list), not built. Write a note in the editor and save it."
-            />
+        <Panel title="Notes" note="Every note stored in the Learning area, the newest change first. Open one to read it, revise it or erase it.">
+          {list.error !== null ? <ErrorDisplay error={list.error} onRetry={list.reload} /> : null}
+          {list.data === null ? (
+            list.error === null ? <Loading what="notes" /> : null
+          ) : notes.length === 0 ? (
+            <NoData title="No notes yet" reason="Nothing is stored. Write a note in the editor and save it." />
           ) : (
-            <ul className="rows" aria-label="Notes saved in this session">
+            <ul className="rows" aria-label="Stored notes">
               {notes.map((n) => {
                 const isSelected = current?.note_id === n.note_id;
                 return (
@@ -318,7 +335,8 @@ export function LearningJournal() {
                       type="button"
                       className="row-pick"
                       aria-pressed={isSelected}
-                      title={`${n.note_id}, content SHA-256 ${n.content_sha256}`}
+                      disabled={opening}
+                      title={n.note_id}
                       onClick={() => {
                         request(n);
                       }}
@@ -326,7 +344,7 @@ export function LearningJournal() {
                       <span className="row-main">
                         <span className="row-title">{n.title}</span>
                         <span className="row-sub">
-                          {domainLabel(n.domain)} area, {classificationLabel(n.classification).toLowerCase()}
+                          {domainLabel(n.domain)} area, {classificationLabel(n.classification).toLowerCase()}, changed {formatDateTime(n.updated_at, today.zone)}
                         </span>
                       </span>
                       <span className="row-end">
@@ -472,6 +490,61 @@ export function LearningJournal() {
                   <span data-testid="revision">revision {current.revision}</span>, <code>{current.note_id}</code>
                 </dd>
               </dl>
+            ) : null}
+            {current !== null && !erasing ? (
+              <div className="toolbar">
+                <button
+                  type="button"
+                  className="danger sm"
+                  disabled={busy}
+                  onClick={() => {
+                    setErasing(true);
+                  }}
+                >
+                  Erase this note…
+                </button>
+              </div>
+            ) : null}
+            {current !== null && erasing ? (
+              <form
+                aria-label="Erase this note"
+                className="stack-sm"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (reason.trim().length > 0 && !eraseFlow.pending) {
+                    void eraseNote(current);
+                  }
+                }}
+              >
+                <p>
+                  Erasing removes the text of “{current.title}” and of all {versions(current.version_count)}, and every file attached to it, for good. What stays is the fact that an erasure
+                  was approved, when, and your reason. It needs your approval, and the confirmation window says how many files go.
+                </p>
+                <Field label="Reason (1 to 500 characters)" error={reason.length > 500 ? 'The reason is longer than 500 characters.' : null}>
+                  {({ id, describedBy, invalid }) => (
+                    <input
+                      id={id}
+                      type="text"
+                      required
+                      value={reason}
+                      aria-describedby={describedBy}
+                      aria-invalid={invalid}
+                      onChange={(e) => {
+                        setReason(e.target.value);
+                      }}
+                    />
+                  )}
+                </Field>
+                <div className="toolbar">
+                  <button type="submit" className="danger" disabled={eraseFlow.pending || reason.trim().length === 0 || reason.length > 500 || (eraseFlow.approval !== null && eraseFlow.approval.state !== 'CONSUMED')}>
+                    Request the erasure
+                  </button>
+                  <button type="button" disabled={eraseFlow.pending} onClick={cancelErase}>
+                    Cancel
+                  </button>
+                </div>
+                <FlowOutcome flow={eraseFlow} zone={today.zone} now={today.now} onApplied={afterErase} />
+              </form>
             ) : null}
           </Instrument>
 

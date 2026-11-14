@@ -280,6 +280,33 @@ pub const OPERATIONS: &[OpSpec] = &[
         Action::Read,
         ResourceKind::EvidenceItem,
     ),
+    op(
+        "curriculum.program",
+        false,
+        Action::Read,
+        ResourceKind::Curriculum,
+    ),
+    op(
+        "curriculum.set_program_start",
+        true,
+        Action::Update,
+        ResourceKind::Curriculum,
+    ),
+    op(
+        "session.plan_day",
+        true,
+        Action::Create,
+        ResourceKind::StudySession,
+    ),
+    op("notes.list", false, Action::Read, ResourceKind::Note),
+    op("notes.get", false, Action::Read, ResourceKind::Note),
+    op(
+        "competency.import_pack",
+        true,
+        Action::Create,
+        ResourceKind::Competency,
+    ),
+    op("backup.list", false, Action::Read, ResourceKind::Backup),
 ];
 
 /// Look up an operation by wire name.
@@ -322,7 +349,7 @@ mod tests {
     fn names_are_unique_and_match_schema_files() {
         let names: BTreeSet<&str> = OPERATIONS.iter().map(|s| s.name).collect();
         assert_eq!(names.len(), OPERATIONS.len());
-        assert_eq!(OPERATIONS.len(), 46);
+        assert_eq!(OPERATIONS.len(), 53);
         for s in OPERATIONS {
             assert!(
                 crate::schemas::request_schema_text(s.name).is_some(),

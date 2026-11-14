@@ -36,13 +36,13 @@ describe('Settings/Recovery when system.status fails', () => {
     expect(screen.queryByText('Loading the last backup…')).toBeNull();
     expect(screen.queryByText('Loading the model setting…')).toBeNull();
     expect(screen.queryByText('Loading the facts about this window…')).toBeNull();
-    expect(screen.getByText(/The last backup on record could not be read \(storage\.busy\)/)).toBeInTheDocument();
+    expect(screen.getByText(/The last tested backup could not be read \(storage\.busy\)/)).toBeInTheDocument();
     expect(screen.getByText(/The model setting could not be read \(storage\.busy\)/)).toBeInTheDocument();
     expect(screen.getByText(/The facts about this window could not be read \(storage\.busy\)/)).toBeInTheDocument();
     // No claim about the host is made on the failed read.
     expect(screen.queryByTestId('status-warnings-none')).toBeNull();
     expect(screen.queryByTestId('settings-status-warnings')).toBeNull();
-    expect(screen.queryByText('The backend reports no backup on record.')).toBeNull();
+    expect(screen.queryByText('No backup has been verified and restore-tested yet.')).toBeNull();
     expect(screen.queryByTestId('runtime-none')).toBeNull();
     expect(screen.queryByTestId('storage-alert')).toBeNull();
   });
@@ -104,13 +104,47 @@ describe('Settings/Recovery host facts', () => {
 });
 
 describe('Settings/Recovery backups', () => {
-  it('says the list holds this session only and that listing stored backups is not built', async () => {
+  it('says no backup is recorded when the database holds none', async () => {
     renderWithIpc(<SettingsRecovery />);
     const backups = screen.getByRole('region', { name: 'Backups' });
-    expect(within(backups).getByText('No backups in this session')).toBeInTheDocument();
-    expect(backups).toHaveTextContent('Listing stored backups (backup.list) is not built yet.');
-    expect(await within(backups).findByText('The backend reports no backup on record.')).toBeInTheDocument();
-    expect(screen.queryByRole('table', { name: 'Backups in this session' })).toBeNull();
+    expect(await within(backups).findByText('No backups yet')).toBeInTheDocument();
+    expect(backups).toHaveTextContent('No backup is recorded. Create one before you change anything you cannot redo.');
+    expect(await within(backups).findByText('No backup has been verified and restore-tested yet.')).toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: 'Backups' })).toBeNull();
+  });
+
+  it('lists the backups the database records, made in an earlier session, newest first, and steps them', async () => {
+    const user = userEvent.setup();
+    const harness = createHarness();
+    const first = await harness.client.invoke('backup.create', { label: 'before the import' });
+    harness.transport.clock.advance(3_600_000);
+    const second = await harness.client.invoke('backup.create', {});
+    if ('category' in first || 'category' in second) {
+      throw new Error('could not seed the backups');
+    }
+    renderWithIpc(<SettingsRecovery />, harness);
+    const table = await screen.findByRole('table', { name: 'Backups' });
+    const rows = within(table).getAllByRole('row').slice(1);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent(second.result.backup_id);
+    expect(rows[1]).toHaveTextContent(first.result.backup_id);
+    // A backup of an earlier session is verified from the list like any other.
+    const earlier = rows[1];
+    expect(earlier).toBeDefined();
+    if (earlier === undefined) {
+      return;
+    }
+    await user.click(within(earlier).getByRole('button', { name: 'Verify' }));
+    await waitFor(() => {
+      expect(within(screen.getByRole('table', { name: 'Backups' })).getAllByText('Verified').length).toBe(1);
+    });
+  });
+
+  it('shows the backend refusal when the stored backups cannot be read and keeps the page usable', async () => {
+    const harness = createInterceptHarness((op, _payload, next) => (op === 'backup.list' ? Promise.resolve(STORAGE_BUSY) : next()));
+    renderWithIpc(<SettingsRecovery />, harness);
+    expect(await screen.findByText(/The stored backups could not be read \(storage\.busy\)/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create backup' })).toBeEnabled();
   });
 
   it('drives the backup through its legal steps only, with a receipt for each and the record revision on every step', async () => {
@@ -119,7 +153,7 @@ describe('Settings/Recovery backups', () => {
     renderWithIpc(<SettingsRecovery />, harness);
     await user.click(screen.getByRole('button', { name: 'Create backup' }));
     expect(await screen.findByTestId('backup-receipt')).toHaveTextContent(/^Backup created: mock-backup-\d+, Snapshot taken\.$/);
-    const table = screen.getByRole('table', { name: 'Backups in this session' });
+    const table = screen.getByRole('table', { name: 'Backups' });
     expect(within(table).getByLabelText('State: Snapshot taken')).toBeInTheDocument();
     expect(within(table).getByText('Not checked')).toBeInTheDocument();
     expect(within(table).getByText('Restore not tested')).toBeInTheDocument();
@@ -149,7 +183,7 @@ describe('Settings/Recovery backups', () => {
     expect(harness.calls.find((c) => c.op === 'backup.verify')?.meta.expected_revision).toBe(2);
     expect(harness.calls.find((c) => c.op === 'backup.restore_test')?.meta.expected_revision).toBe(3);
     // The status is read again after each step, so the last backup on record follows.
-    expect(await screen.findByTestId('last-backup')).toHaveTextContent(/Last backup on record: mock-backup-\d+ Restore tested 2026-11-18 09:30/);
+    expect(await screen.findByTestId('last-backup')).toHaveTextContent(/Last verified and restore-tested backup: mock-backup-\d+ Restore tested 2026-11-18 09:30/);
   });
 
   it('a refused step shows the backend error and posts no receipt', async () => {
@@ -157,7 +191,7 @@ describe('Settings/Recovery backups', () => {
     const harness = createInterceptHarness(async (op, _payload, next) => (op === 'backup.verify' ? STORAGE_BUSY : next()));
     renderWithIpc(<SettingsRecovery />, harness);
     await user.click(screen.getByRole('button', { name: 'Create backup' }));
-    const table = await screen.findByRole('table', { name: 'Backups in this session' });
+    const table = await screen.findByRole('table', { name: 'Backups' });
     await user.click(within(table).getByRole('button', { name: 'Verify' }));
     const refusal = await waitFor(() => {
       const found = screen.queryAllByRole('alert').find((a) => a.getAttribute('data-category') === 'RETRYABLE_STORAGE');
@@ -310,7 +344,7 @@ describe('Settings/Recovery page', () => {
     const scroller = screen.getByTestId('scroller');
     const contents = screen.getByRole('navigation', { name: 'On this page' });
     expect(within(contents).queryAllByRole('link')).toHaveLength(0);
-    expect(within(contents).getAllByRole('button').map((b) => b.textContent)).toEqual(['Backups', 'Export your data', 'Model', 'Appearance', 'About this window']);
+    expect(within(contents).getAllByRole('button').map((b) => b.textContent)).toEqual(['Backups', 'Export your data', 'Program', 'Model', 'Appearance', 'About this window']);
     // jsdom has no layout: place the last section 900 px below the top of the scroller.
     const about = screen.getByRole('region', { name: 'About this window' });
     vi.spyOn(about, 'getBoundingClientRect').mockReturnValue({ x: 0, y: 900, top: 900, bottom: 1100, left: 0, right: 600, width: 600, height: 200, toJSON: () => ({}) });

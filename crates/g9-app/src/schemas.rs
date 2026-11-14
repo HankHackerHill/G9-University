@@ -69,6 +69,22 @@ fn texts(op: &str) -> Option<(&'static str, &'static str)> {
             include_str!("../../../schemas/ipc/calendar.create_event.request.schema.json"),
             include_str!("../../../schemas/ipc/calendar.create_event.response.schema.json"),
         ),
+        "notes.list" => (
+            include_str!("../../../schemas/ipc/notes.list.request.schema.json"),
+            include_str!("../../../schemas/ipc/notes.list.response.schema.json"),
+        ),
+        "notes.get" => (
+            include_str!("../../../schemas/ipc/notes.get.request.schema.json"),
+            include_str!("../../../schemas/ipc/notes.get.response.schema.json"),
+        ),
+        "competency.import_pack" => (
+            include_str!("../../../schemas/ipc/competency.import_pack.request.schema.json"),
+            include_str!("../../../schemas/ipc/competency.import_pack.response.schema.json"),
+        ),
+        "backup.list" => (
+            include_str!("../../../schemas/ipc/backup.list.request.schema.json"),
+            include_str!("../../../schemas/ipc/backup.list.response.schema.json"),
+        ),
         "session.create" => (
             include_str!("../../../schemas/ipc/session.create.request.schema.json"),
             include_str!("../../../schemas/ipc/session.create.response.schema.json"),
@@ -136,6 +152,18 @@ fn texts(op: &str) -> Option<(&'static str, &'static str)> {
         "competency.projection" => (
             include_str!("../../../schemas/ipc/competency.projection.request.schema.json"),
             include_str!("../../../schemas/ipc/competency.projection.response.schema.json"),
+        ),
+        "curriculum.program" => (
+            include_str!("../../../schemas/ipc/curriculum.program.request.schema.json"),
+            include_str!("../../../schemas/ipc/curriculum.program.response.schema.json"),
+        ),
+        "curriculum.set_program_start" => (
+            include_str!("../../../schemas/ipc/curriculum.set_program_start.request.schema.json"),
+            include_str!("../../../schemas/ipc/curriculum.set_program_start.response.schema.json"),
+        ),
+        "session.plan_day" => (
+            include_str!("../../../schemas/ipc/session.plan_day.request.schema.json"),
+            include_str!("../../../schemas/ipc/session.plan_day.response.schema.json"),
         ),
         "curriculum.daily_plan" => (
             include_str!("../../../schemas/ipc/curriculum.daily_plan.request.schema.json"),

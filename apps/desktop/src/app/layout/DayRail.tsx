@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { SessionView, SystemStatus } from '../../ipc/operations';
 import { civilDateOf, formatIsoDate } from '../../lib/civil-time';
 import { formatDuration, formatMinutes, humanizeEnum, sentenceCase } from '../../lib/format';
+import { SETUP_CODES } from '../../lib/program';
 import { useCommand } from '../hooks/useCommand';
 
 function share(part: number, whole: number): number {
@@ -40,17 +41,21 @@ export function DayRail({ status, epoch, clock }: { status: SystemStatus | null;
   const day = plan.data;
   const list = sessions.data?.sessions ?? null;
 
+  // The backend says "not imported" or "no start" until the program is set up: setup, not a failure.
+  const notSetUp = plan.error !== null && SETUP_CODES.includes(plan.error.code);
   let code = '';
   let note: string;
   if (status === null) {
     note = '';
+  } else if (notSetUp) {
+    note = 'Program not set up';
   } else if (plan.error !== null) {
     note = `Day plan unavailable (${plan.error.code})`;
   } else if (day === null) {
     note = 'Reading the day plan…';
   } else if (day.unscheduled || day.day_id === null) {
-    code = 'Rest';
-    note = `${day.date}: no study blocks`;
+    code = day.week_number === null ? 'Off' : 'Rest';
+    note = day.week_number === null ? `${day.date}: outside the program weeks` : `${day.date}: no study blocks`;
   } else {
     code = day.day_id;
     note = day.week_number === null ? day.date : `Week ${day.week_number} of 12, ${day.week_title ?? ''}`;
@@ -99,11 +104,15 @@ export function DayRail({ status, epoch, clock }: { status: SystemStatus | null;
         <p className="rail-empty">
           {status === null
             ? ''
-            : plan.error !== null
+            : notSetUp
+              ? 'Set up the program on Mission Control to see the day.'
+              : plan.error !== null
               ? `Today's plan could not be read (${plan.error.code}), so its blocks cannot be drawn.`
               : day === null
                 ? 'Reading today’s blocks…'
-                : 'No study blocks today: a rest day.'}
+                : day.week_number === null
+                  ? 'No study blocks today: it is outside the program weeks.'
+                  : 'No study blocks today: a rest day.'}
         </p>
       )}
 

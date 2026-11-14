@@ -5,17 +5,19 @@ import { DATA_DOMAINS, type DataDomain, type G9Error } from '../../ipc/types';
 import { domainLabel } from '../../lib/copy';
 import { formatDateTime, sentenceCase, shortHash } from '../../lib/format';
 import { BACKUP_MACHINE, can } from '../../lib/state-machines';
-import { warningsOf } from '../../lib/warnings';
+import { mergeWarnings, warningsOf } from '../../lib/warnings';
 import { ApprovalCard, ConfirmationCancelled } from '../components/ApprovalCard';
 import { Badge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Margin, MarginNote } from '../components/Margin';
 import { Loading, NoData, Panel } from '../components/Panel';
 import { PageHead } from '../components/PageHead';
+import { ProgramSetup } from '../components/ProgramSetup';
 import { Table } from '../components/Table';
 import { ThemeGallery } from '../components/ThemeGallery';
 import { Warnings } from '../components/Warnings';
 import { useApprovalFlow } from '../hooks/useApprovalFlow';
+import { useCommand } from '../hooks/useCommand';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
 import { SKINS, fixedScheme, skinById } from '../theme/skins';
@@ -26,7 +28,7 @@ import { THEME_MODES, useTheme, type ThemeMode } from '../theme/useTheme';
 type BackupStep = 'backup.create' | 'backup.verify' | 'backup.restore_test';
 
 /** The sections of the page, in the order they protect the operator's records. */
-const SECTIONS = ['Backups', 'Export your data', 'Model', 'Appearance', 'About this window'] as const;
+const SECTIONS = ['Backups', 'Export your data', 'Program', 'Model', 'Appearance', 'About this window'] as const;
 const EXPORT_FORMATS: readonly ExportFormat[] = ['JSON', 'CSV'];
 const SCHEME_WORDS: Readonly<Record<ThemeMode, string>> = { system: 'System', light: 'Light', dark: 'Dark' };
 const INTEGRITY_WORDS: Readonly<Record<IntegrityResult, string>> = { UNKNOWN: 'Not checked', OK: 'Passed', FAILED: 'Failed' };
@@ -67,7 +69,14 @@ export function SettingsRecovery() {
   const [contrast, toggleContrast] = useContrast();
   const [skin, setSkin] = useSkin();
   const [scheme, setScheme] = useTheme();
-  const [backups, setBackups] = useState<BackupView[]>([]);
+  // The backups recorded in the database (`backup.list`), with the ones this window just made or stepped
+  // overlaid: the answer of a step is newer than the list read before it.
+  const stored = useCommand('backup.list', {});
+  const program = useCommand('curriculum.program', {});
+  const [fresh, setBackups] = useState<BackupView[]>([]);
+  const backups = [...fresh, ...(stored.data?.backups ?? []).filter((b) => !fresh.some((x) => x.backup_id === b.backup_id))].sort(
+    (a, b) => b.created_at - a.created_at || (a.backup_id < b.backup_id ? 1 : -1),
+  );
   const [error, setError] = useState<G9Error | null>(null);
   const [busy, setBusy] = useState(false);
   const [backupWarnings, setBackupWarnings] = useState<readonly string[]>([]);
@@ -99,6 +108,7 @@ export function SettingsRecovery() {
     }
     setBusy(false);
     today.reload();
+    stored.reload();
   };
 
   const step = async (op: 'backup.verify' | 'backup.restore_test', b: BackupView) => {
@@ -115,6 +125,7 @@ export function SettingsRecovery() {
     }
     setBusy(false);
     today.reload();
+    stored.reload();
   };
 
   const exported = exportFlow.result !== null && !isG9Error(exportFlow.result) ? exportFlow.result.result : null;
@@ -172,6 +183,7 @@ export function SettingsRecovery() {
         </div>
       ) : null}
       <Warnings warnings={today.warnings} label="Host and storage warnings" testId="settings-status-warnings" />
+      <Warnings warnings={mergeWarnings(stored.warnings, program.warnings)} label="Read warnings" testId="settings-read-warnings" />
 
       <div className="with-margin">
         <div className="stack" ref={mainRef}>
@@ -195,13 +207,13 @@ export function SettingsRecovery() {
                   today.error === null ? (
                     <Loading what="the last backup" />
                   ) : (
-                    <span className="muted small">The last backup on record could not be read ({today.error.code}).</span>
+                    <span className="muted small">The last tested backup could not be read ({today.error.code}).</span>
                   )
                 ) : s.last_backup === null ? (
-                  <span className="muted small">The backend reports no backup on record.</span>
+                  <span className="muted small">No backup has been verified and restore-tested yet.</span>
                 ) : (
                   <span className="muted small" data-testid="last-backup">
-                    Last backup on record: <code>{s.last_backup.backup_id}</code> <StateBadge state={s.last_backup.state} /> {formatDateTime(s.last_backup.created_at, today.zone)}
+                    Last verified and restore-tested backup: <code>{s.last_backup.backup_id}</code> <StateBadge state={s.last_backup.state} /> {formatDateTime(s.last_backup.created_at, today.zone)}
                   </span>
                 )}
               </div>
@@ -216,15 +228,19 @@ export function SettingsRecovery() {
                 </p>
               )}
               <Warnings warnings={backupWarnings} label="Backup warnings" />
+              {stored.error !== null ? <ErrorDisplay error={stored.error} onRetry={stored.reload} /> : null}
               {backups.length === 0 ? (
-                <NoData
-                  title="No backups in this session"
-                  reason="This list holds the backups made while this window is open. Listing stored backups (backup.list) is not built yet."
-                />
+                stored.data === null && stored.error === null ? (
+                  <Loading what="the backups" />
+                ) : stored.error !== null ? (
+                  <NoData reason={`The stored backups could not be read (${stored.error.code}).`} />
+                ) : (
+                  <NoData title="No backups yet" reason="No backup is recorded. Create one before you change anything you cannot redo." />
+                )
               ) : (
                 <>
                   <Table
-                    caption="Backups in this session"
+                    caption="Backups"
                     headers={['Backup', 'State', 'Integrity', 'Steps']}
                     widths={[undefined, '9.5rem', '7.5rem', '7.5rem']}
                     rows={backups.map((b) => {
@@ -432,6 +448,15 @@ export function SettingsRecovery() {
               <Warnings warnings={exportFlow.warnings} label="Export warnings" />
             </div>
           </Panel>
+
+          <ProgramSetup
+            heading="Program"
+            program={program}
+            zone={today.zone}
+            now={today.now}
+            todayIso={today.isoDate}
+            onChanged={today.reload}
+          />
 
           <Panel title="Model">
             {s === null ? (

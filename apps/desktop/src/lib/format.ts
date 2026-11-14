@@ -3,7 +3,7 @@
  * epoch milliseconds plus an IANA zone. Nothing here derives elapsed time from wall clocks.
  */
 import type { DurationMs, IanaZone, UtcMillis } from '../ipc/types';
-import { toZoned } from './civil-time';
+import { isoWeekday, parseIsoDate, toZoned } from './civil-time';
 
 export function formatDuration(ms: DurationMs): string {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -36,6 +36,14 @@ export function formatDate(utc: UtcMillis, zone: IanaZone): string {
 
 export function formatDateTime(utc: UtcMillis, zone: IanaZone): string {
   return `${formatDate(utc, zone)} ${formatTime(utc, zone)}`;
+}
+
+const WEEKDAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+/** A civil date with its weekday (`2026-11-02` becomes `Monday 2026-11-02`); text that is not a date is returned as it is. */
+export function formatCivilDate(iso: string): string {
+  const d = parseIsoDate(iso);
+  return d === null ? iso : `${WEEKDAY_NAMES[isoWeekday(d) - 1] ?? ''} ${iso}`;
 }
 
 /** Short hash prefix for dense tables; the full hash stays available in `title`. */

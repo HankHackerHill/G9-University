@@ -224,6 +224,10 @@ pub struct BootOptions {
     pub operator_id: String,
     /// Deterministic clock; `None` uses the host clock.
     pub clock: Option<SimClock>,
+    /// Require an approval to be confirmed outside the webview (ADR-0014). `false` for the
+    /// CLI, a terminal surface the operator types into; the desktop bridge and the
+    /// `bridge_stdio` example (a stand-in for it in tests) set `true`.
+    pub native_confirmation: bool,
 }
 
 impl BootOptions {
@@ -236,6 +240,7 @@ impl BootOptions {
             program_start: None,
             operator_id: OPERATOR_ID.to_string(),
             clock: None,
+            native_confirmation: false,
         }
     }
 }
@@ -308,7 +313,7 @@ pub fn open(opts: &BootOptions) -> Result<Booted, CliError> {
     // A terminal surface: the operator types the approval command, so there is
     // no webview to confirm against (ADR-0014). Whether the CLI stays an
     // approval surface is an open operator decision (stage report).
-    config.native_confirmation = false;
+    config.native_confirmation = opts.native_confirmation;
 
     let open_options = match &opts.clock {
         Some(clock) => g9_app::database_options(APP_VERSION).applied_at(clock.now()),

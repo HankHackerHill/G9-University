@@ -50,3 +50,6 @@ export function programMap(sessions: readonly SessionView[], todayId: string | n
     };
   });
 }
+
+/** The codes with which the backend says the program has no curriculum or no start yet: setup, not a failure. */
+export const SETUP_CODES: readonly string[] = ['curriculum.not_imported', 'curriculum.program_start_not_configured'];

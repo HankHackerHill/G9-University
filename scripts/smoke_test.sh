@@ -329,7 +329,7 @@ assert_eq "bad payload JSON is a usage error" 1 "$code"
 code=$(run "$WORK/tuesday.json" simulate-week --scratch --data-dir "$WORK/unused" --no-skills --start-date 2026-11-17)
 assert_eq "simulate-week on a Tuesday is a usage error" 1 "$code"
 code=$(run "$WORK/ops.json" ops --schemas)
-assert_eq "ops lists 46 operations" "0/46" "$code/$(jget "$WORK/ops.json" count)"
+assert_eq "ops lists 53 operations" "0/53" "$code/$(jget "$WORK/ops.json" count)"
 code=$(run "$WORK/status.json" status --data-dir "$DATA" --no-skills)
 assert_eq "status after the week: storage READY" "0/READY" "$code/$(jget "$WORK/status.json" result.storage.state)"
 

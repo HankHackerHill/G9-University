@@ -4,6 +4,26 @@ Format: `GOVERNANCE.md` "Stage PASS report (required content)". Evidence labels:
 
 Repository state: branch `ccr-0cea681c-p9jbru`; the commit that last touches this file is the report's HEAD; baseline `f414481` (initial commit, 2026-11-05). All commits are local and **unpushed** by operator instruction ("Do not connect to GitHub only work here"); the remote branch is at `e987383`.
 
+## Update 2026-11-14: the window usable on its own, with the curriculum imported
+
+Owner request: "the gui version fully complete and ready to use for personal use, with the fully cybersecurity learning curriculum imported in". Running the real interface against the real backend showed that the window could not run the curriculum (no import, no program start, no way to start a block, no read-back of notes, no erase, no competencies, no backup list). The decision and the findings are in `docs/adr/ADR-0018-program-setup-and-planned-days.md`; the steps for the first day are in `docs/runbooks/first-run.md`. Schema version 15 (`program_plan`); seven new operations (53 in all): `curriculum.program`, `curriculum.set_program_start`, `session.plan_day`, `notes.list`, `notes.get`, `competency.import_pack`, `backup.list`. The branch is pushed; CI runs only when started by hand (ADR-0015) and no workflow was started. **No Stage PASS is issued.**
+
+| Check | Command | Result | Label |
+|---|---|---|---|
+| Rust fmt, clippy | `cargo fmt --all -- --check`; `cargo clippy --workspace --exclude g9-mentor-desktop --all-targets --offline -- -D warnings` | clean; exit 0 | VERIFIED |
+| Rust tests | `cargo test --workspace --exclude g9-mentor-desktop --offline --no-fail-fast` | **916 passed, 0 failed, 0 ignored** (new: `program_setup.rs` 16, `notes_read_back.rs` 5, `packs_and_backups.rs` 9, `commands/packs.rs` 4, the v15 pin and the repo tests) | TESTED |
+| Mutation checks of the new behaviour | each rule broken on purpose, the matching test must fail, the file restored | no Monday check, stored plan ignored, already-planned block not skipped, reversed prerequisite edges, no idempotency check: each made its test fail | TESTED |
+| Desktop shell, type-check and lint only (no GTK or WebKit here; a stub `pkg-config` lets the crate compile) | `cargo clippy -p g9-mentor-desktop --offline --all-targets -- -D warnings` | exit 0 | VERIFIED; the window, the dialog and a build are NOT RUN |
+| Smoke test | `bash scripts/smoke_test.sh` | SMOKE TEST PASS, 100 assertions passed, 0 failed (`ops` lists 53 operations) | TESTED |
+| Content gates | `check_curriculum_seed.py`, `check_skill_packages.py`, `skill_hashes.py --check`, `check_source_register.py`, `verify_source_register.py --selftest`, `check_schemas.py schemas .agents/skills` (188 schemas) | all exit 0 | TESTED |
+| UI | `npx tsc --noEmit`, `npx eslint .`, `npx vitest run`, `npx vite build` | clean; **460 passed in 38 files** | TESTED |
+| Design system audit | `ds_audit.py apps/desktop/src --check` | exit 0 | MEASURED |
+| Layout, targets, names, headings in Chromium | `measure.cjs` at 1280 x 800 and 960 x 640, with the default mock and with `--fresh` (the first-run states) | 32 measurements, 32 clean, twice | MEASURED |
+| The whole first-run flow in the real interface against the real Rust backend | `node scripts/e2e/personal.cjs` (bridge example + Chromium, CSP of `tauri.conf.json`) | **22 passed, 0 failed**: import with approval and native confirmation, the Monday, plan today (sessions and calendar events read from the backend), a timed block (credited real seconds, none in doubt), a note listed after a reload, its erasure (no file of the data directory holds the text), 64 competencies, a backup listed after a reload, an intact audit chain, no console error or CSP violation | TESTED |
+| Every screen on the real backend with the curriculum imported | `node scripts/e2e/tour.cjs --import --program-start <Monday>` | 16 screens, no console error, page error or CSP violation | TESTED |
+| Tauri shell on the host, the native confirmation dialog, WebKitGTK rendering, a restore drill | n/a | needs the host | NOT RUN |
+| Assessments for the twelve Saturdays, the objective-to-competency mapping, NICE pins, promotion to APPROVED_CANONICAL, `FILL_CURRICULUM` | n/a | PROPOSED: no owner decision or source holds them (ADR-0018) | PROPOSED |
+
 ## Update 2026-11-13: operator features, native confirmation, redesign, security audit
 
 The sections below are the 2026-11-08 snapshot and are unchanged. Since then: the operator features (sessions, calendar events, review results, authoring, evidence, export), the native approval confirmation (ADR-0014), the Ledger 2 redesign of all 16 screens (`docs/ui/design-critique-2026-11-13.md`), the triple security audit of 2026-11-12 and 2026-11-13 with its fixes (`docs/audit/security-audit-2026-11-13.md`, ADR-0017, schema version 14) and a UI skill (`.claude/skills/g9-ui-design`). The branch is pushed (the operator later allowed it); CI runs only when started by hand (ADR-0015) and no workflow was started. **No Stage PASS is issued.**

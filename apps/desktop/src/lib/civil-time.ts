@@ -114,7 +114,8 @@ export function parseIsoDate(date: string): CivilDate | null {
   const year = Number(m[1]);
   const month = Number(m[2]);
   const day = Number(m[3]);
-  if (month < 1 || month > 12 || day < 1 || day > 31) {
+  // The backend's `CivilDate::new` refuses a day the month does not have (2026-02-30), and so does this.
+  if (month < 1 || month > 12 || day < 1 || day > new Date(Date.UTC(year, month, 0)).getUTCDate()) {
     return null;
   }
   return { year, month, day };

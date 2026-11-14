@@ -32,7 +32,8 @@ export interface ApprovalFlow<K extends OperationName> {
   warnings: readonly string[];
   run: (invoke: ApprovalInvoke<K>) => Promise<void>;
   decide: (decision: 'APPROVE' | 'REJECT') => Promise<void>;
-  applyWithApproval: () => Promise<void>;
+  /** Re-issues the operation with the approval; resolves to the answer (null when there is nothing to apply). */
+  applyWithApproval: () => Promise<InvokeResult<K> | null>;
   reset: () => void;
 }
 
@@ -99,9 +100,9 @@ export function useApprovalFlow<K extends OperationName>(): ApprovalFlow<K> {
     [approval, client],
   );
 
-  const applyWithApproval = useCallback(async (): Promise<void> => {
+  const applyWithApproval = useCallback(async (): Promise<InvokeResult<K> | null> => {
     if (approval === null || invoker === null) {
-      return;
+      return null;
     }
     setPending(true);
     setCancelled(false);
@@ -114,6 +115,7 @@ export function useApprovalFlow<K extends OperationName>(): ApprovalFlow<K> {
     }
     await refreshApproval(approval.approval_id);
     setPending(false);
+    return r;
   }, [approval, invoker, refreshApproval]);
 
   const reset = useCallback(() => {

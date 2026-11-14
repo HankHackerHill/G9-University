@@ -1,0 +1,24 @@
+/* Program setup: screen-only rules. Everything else is the documented classes of components.css. */
+/* The layer order, repeated in every screen stylesheet: whichever stylesheet loads first fixes it. */
+@layer reset, tokens, base, layout, components, screens, skins, utilities;
+
+@layer screens {
+  /* A step is a record row; its form, outcome or voucher spans the row under the title. */
+  .setup-steps > li > .setup-body {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: var(--s-3);
+  }
+
+  /* A step that cannot be done yet reads quieter than one that can. */
+  .setup-steps > li[data-state='waiting'] .row-title,
+  .setup-steps > li[data-state='waiting'] .row-sub {
+    color: var(--ink-3);
+  }
+
+  .setup-done {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+}

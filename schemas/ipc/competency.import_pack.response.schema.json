@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/competency.import_pack.response",
+  "title": "competency.import_pack response (v1.0)",
+  "description": "`result` of CommandOutcome for `competency.import_pack` (payload_schema_version 1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "packs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pack_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "competencies": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "existing": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "prerequisites_added": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "pack_id",
+          "title",
+          "version",
+          "status",
+          "competencies",
+          "created",
+          "existing",
+          "prerequisites_added"
+        ]
+      }
+    },
+    "loaded": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Competencies of the shipped packs that are stored now."
+    },
+    "available": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Competencies the shipped packs define."
+    },
+    "prerequisites_pending": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Prerequisites whose competency is in a pack that is not loaded yet."
+    },
+    "prerequisites_added": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Prerequisite edges stored by this call, over all packs (a pack loaded now completes the edges of packs loaded earlier)."
+    }
+  },
+  "required": [
+    "packs",
+    "loaded",
+    "available",
+    "prerequisites_added",
+    "prerequisites_pending"
+  ]
+}

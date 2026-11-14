@@ -33,7 +33,7 @@ $G9 restore --backup-id <id> --data-dir "$D" --confirm-replace-live-database    
 
 Exit codes: `0` success (JSON on stdout, `--human` for a readable form); `2` the backend refused (the serialized `G9Error`, closed 13-category set) or a scripted scenario did not `PASS` (`INCOMPLETE` or `FAIL`, report on stdout, `g9: scenario <result>` on stderr); `1` usage or host I/O error (stderr), or `g9 restore` without `--confirm-replace-live-database` (the plan on stdout, nothing changed). The binding key is never printed: outputs name `<data>/binding.key` only, and the smoke test and the integration test grep every stdout/stderr capture for the key bytes in hex (both cases), base64 (standard and URL-safe) and Rust byte-list form.
 
-Global flags: `--data-dir`, `--skills-dir` (default `<repo>/.agents/skills` when it exists; 37 packages load in about 65 ms) or `--no-skills`, `--program-start YYYY-MM-DD` (Monday of program week 1, needed by `curriculum.daily_plan` through `g9 call`), `--zone` (default: host zone from `TZ`, `/etc/localtime`, `/etc/timezone`; else UTC with a warning), `--operator-id` (default `local-operator`, the bridge's constant, so one data directory keeps one attributable operator).
+Global flags: `--data-dir`, `--skills-dir` (default `<repo>/.agents/skills` when it exists; 37 packages load in about 65 ms) or `--no-skills`, `--program-start YYYY-MM-DD` (Monday of program week 1; overrides the start stored by `curriculum.set_program_start` for that process only, and without it `curriculum.daily_plan` and `session.plan_day` use the stored start, ADR-0018), `--zone` (default: host zone from `TZ`, `/etc/localtime`, `/etc/timezone`; else UTC with a warning), `--operator-id` (default `local-operator`, the bridge's constant, so one data directory keeps one attributable operator).
 
 ### 1.2 The simulated week (Stage 03 exit criterion)
 
@@ -121,6 +121,21 @@ Replicates every job of `.github/workflows/ci.yml` inside `git archive <rev>`, s
 A step that cannot run here (no WebKit for `desktop-shell`, no `cargo-deny` or `cargo-cyclonedx` installed, no `jsonschema` module) is printed as `SKIPPED` with the reason; SKIPPED is not PASS. Exit status: 0 when no step failed, 1 when any failed (its log path is printed), 2 on a usage error.
 
 Recorded run, 2026-11-12, `433895a`: rust (fmt, clippy, test: 762 passed, doc tests, tree, cargo-deny with the offline database), frontend (npm ci, typecheck, lint, test, build, npm audit), content gates and both SBOMs passed; `desktop-shell` SKIPPED (no WebKit in the sandbox). TESTED.
+
+### 1.8 The real interface against the real backend (no GTK, no WebKit)
+
+The desktop shell cannot be built where there is no GTK or WebKit, but everything the window says to its backend is one function, `g9_command(op, meta, payload)`. `apps/cli/examples/bridge_stdio.rs` opens the backend exactly as the shell does (`bootstrap::open`, native confirmation on) and answers that function over stdin and stdout; `scripts/e2e/harness.cjs` serves `apps/desktop/dist` with the exact Content-Security-Policy of `tauri.conf.json` and wires a page's `window.__TAURI_INTERNALS__.invoke` to the bridge, so the interface selects its Tauri transport (no mock, no "Synthetic data" banner) and the native approval dialog becomes a callback that sees the very text the operator would see. It does not test the shell itself (the GTK dialog, the window, WebKitGTK).
+
+```sh
+cargo build -p g9-cli --example bridge_stdio --offline
+(cd apps/desktop && npm run build)
+node scripts/e2e/tour.cjs --out /tmp/g9-tour [--import] [--program-start 2026-11-16]   # opens every screen, prints what a person sees, one screenshot each
+node scripts/e2e/personal.cjs --out /tmp/g9-e2e                                         # the whole first-run flow, 22 checks
+```
+
+`personal.cjs` (TESTED 2026-11-14: 22 passed, 0 failed) walks: first run says the program is not set up; import with approval and native confirmation (12 weeks, 72 days, 216 objectives); the Monday and the time of day; plan today (one PLANNED session per block, all linked to one day, one scheduler event each); run a block with the timer (the backend credits real seconds, none in doubt); the calendar draws the blocks; a note survives a reload and opens with its text; erasing it (approval, confirmation text, no file of the data directory holds the text, the list is empty); the 64 competencies; a backup listed after a reload; the audit chain intact; no console error, page error or CSP violation. Checks read the backend directly where they can (`session.list`, `calendar.list`, `notes.list`, `audit.recent`) instead of matching page text. It refuses to run on a Sunday (the program has no blocks then).
+
+Layout of the first-run states: `node .claude/skills/g9-ui-design/scripts/measure.cjs http://127.0.0.1:5173 --fresh` against a dev server; the page starts the mock as a new install when its URL carries `?mock=fresh` (a review aid of the browser build; the shell never reads it). TESTED 2026-11-14: 32 measurements, 32 clean, with and without `--fresh`.
 
 ## 2. On the G9 host (Ubuntu 26.04.1 LTS)
 

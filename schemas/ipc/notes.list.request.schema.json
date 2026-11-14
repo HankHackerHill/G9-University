@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/notes.list.request",
+  "title": "notes.list request (v1.0)",
+  "description": "Request payload for `notes.list`: the newest notes of the scope domain, without their bodies.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200,
+      "description": "Default 100."
+    }
+  },
+  "required": []
+}

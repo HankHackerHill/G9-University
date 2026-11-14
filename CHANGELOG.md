@@ -2,6 +2,29 @@
 
 All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 
+## [0.1.0] — unreleased (2026-11-14 update)
+
+### Added (owner request 2026-11-14: the window usable on its own, with the full curriculum imported)
+- **First run in the window** (`docs/runbooks/first-run.md`, ADR-0018). Mission Control, and Settings under "Program", walk through three steps: import the 12-week G9/CT9 curriculum that ships with the application (12 weeks, 72 days, 216 objectives, 480 hours, PROPOSED_SEED; approval and the native confirmation), choose the Monday week 1 starts and the time a day starts, and load the competency packs. Until then "Program not set up" is shown as setup, never as an error, in the header, the Classroom and the Navigator.
+- Schema version 15: `program_plan` (migration 0015, digest pinned). `curriculum.program` reports what is imported, the stored start and how many of the 64 shipped competencies are loaded; `curriculum.set_program_start` stores the Monday (refused when it is not a Monday, `program.start_not_a_monday`), the `HH:MM` start of a day and a revision. A start given to the process (`--program-start`) still wins over the stored one.
+- `session.plan_day`: one PLANNED session per block of a program day, linked to the day, objective and block, in the block's mode (the blind practical in EXAM), laid out from the day start in the operator's zone (DST by the calendar crate), each with its calendar event (source SCHEDULER, not editable by the operator, the blind practical immutable). Repeatable: it plans what is missing. "Plan today's blocks" on Mission Control and the Daily Classroom, "Plan this day's blocks" in the Curriculum Navigator, which now browses every week (Earlier week, Later week, This week, Week 1) and names the curriculum version.
+- `notes.list` and `notes.get`: the Journal lists every stored note (newest change first, no bodies in the list), also after a restart, and opens one; **Erase this note…** goes through `deletion.request` (reason, approval, native confirmation, files removed: ADR-0017).
+- `competency.import_pack`: the eight packs are embedded in `g9-app`; loading creates 64 competencies and 67 prerequisite edges, is idempotent and completes the edges of packs loaded earlier. NICE references (`K-UNPINNED`, ASSUMED) are not stored. Offered on the Competency Graph and in Settings.
+- `backup.list`: Settings lists the backups recorded in the database, also after a restart; a recorded path outside the approved roots is not followed.
+- Real-backend end-to-end tooling: `apps/cli/examples/bridge_stdio.rs` (the shell's backend over JSON lines), `scripts/e2e/harness.cjs`, `tour.cjs`, `personal.cjs` (22 checks); `?mock=fresh` starts the browser mock as a new install and `measure.cjs --fresh` measures those states.
+
+### Changed (2026-11-14)
+- `calendar.update_event` and `calendar.delete_event` refuse an event the operator cannot change (`calendar.event_not_editable`) before policy, so no approval is asked for a deletion that cannot happen.
+- `curriculum.daily_plan` reports `curriculum.not_imported` before `curriculum.program_start_not_configured`.
+- Before week 1 the screens say "Week 1 starts Monday ..." (Mission Control) and "Outside the program weeks" instead of "Rest day"; a Sunday inside the program is still a rest day.
+- A plan from a version that is not canonical yet is a quiet note with the backend's sentence, not an alarm (`QUIET_WARNING_CODES`); the Proposed badges stay.
+- Settings: the last backup is "the last verified and restore-tested backup" (the status reports the newest RETAINED one, so "no backup on record" next to a listed backup was misleading). The Calendar's empty week says where events come from (the old text promised curriculum blocks "by themselves", which `FILL_CURRICULUM` never provided).
+- `parseIsoDate` refuses a day the month does not have (2026-02-30), as the backend does.
+- Operation count 46 to 53 (`g9 ops`, smoke test, CLI tests).
+
+### Verified (2026-11-14; no CI was started)
+Rust 916 passed, 0 failed; vitest 460 in 38 files; smoke 100 assertions; fmt, clippy (also the shell crate, type-check only), eslint, tsc, vite build, content gates, `ds_audit` clean; layout 32/32 clean twice; `personal.cjs` 22/22 and `tour.cjs` 16 screens without a console, page or CSP problem, on the real backend. NOT RUN: the Tauri window, the native dialog, WebKitGTK, a restore drill on the host.
+
 ## [0.1.0] — unreleased (2026-11-13 update)
 
 ### Added (owner requests, 2026-11-13)

@@ -1,0 +1,513 @@
+{
+  "catalog_note": "Catalog of data/competency-packs/*/pack.json for the mock transport: pack, competency id, name and prerequisites only. Parity with the packs is asserted by src/ipc/transports/competency-catalog.test.ts; regenerate it when a pack changes.",
+  "packs": [
+    {
+      "pack_id": "agentic-mcp-supplychain",
+      "title": "Agentic AI, MCP authorization, tool misuse and AI supply chain",
+      "version": "0.1.0",
+      "status": "PROPOSED",
+      "competencies": [
+        {
+          "id": "agent.workflow-authority",
+          "name": "Agent workflow and authority crossings",
+          "prerequisites": [
+            "llm-rag-security:llm.app-mapping"
+          ]
+        },
+        {
+          "id": "agent.identity-scopes",
+          "name": "Identities, scopes and excessive agency",
+          "prerequisites": [
+            "agent.workflow-authority"
+          ]
+        },
+        {
+          "id": "mcp.transport-auth",
+          "name": "MCP transport, actors and token audience",
+          "prerequisites": [
+            "agent.identity-scopes"
+          ]
+        },
+        {
+          "id": "agent.memory-integrity",
+          "name": "Persistent memory trust and poisoning",
+          "prerequisites": [
+            "mcp.transport-auth"
+          ]
+        },
+        {
+          "id": "agent.redblue-experiment",
+          "name": "Bounded red/blue experiment",
+          "prerequisites": [
+            "agent.memory-integrity"
+          ]
+        },
+        {
+          "id": "ai.threat-model-redteam",
+          "name": "AI asset threat modeling and adversarial fixtures",
+          "prerequisites": [
+            "agent.redblue-experiment"
+          ]
+        },
+        {
+          "id": "ai.supply-chain",
+          "name": "Model and dependency provenance",
+          "prerequisites": [
+            "agent.identity-scopes"
+          ]
+        },
+        {
+          "id": "ai.data-governance-eval",
+          "name": "Data poisoning, privacy and evaluation protocol",
+          "prerequisites": [
+            "ai.supply-chain",
+            "llm-rag-security:llm.eval-leakage"
+          ]
+        }
+      ]
+    },
+    {
+      "pack_id": "detection-soc-hunting",
+      "title": "Detection engineering, SOC and threat hunting",
+      "version": "0.1.0",
+      "status": "PROPOSED",
+      "competencies": [
+        {
+          "id": "det.event-sources",
+          "name": "Event source inventory and coverage",
+          "prerequisites": []
+        },
+        {
+          "id": "det.normalization",
+          "name": "Log normalization and enrichment",
+          "prerequisites": [
+            "det.event-sources"
+          ]
+        },
+        {
+          "id": "det.sigma-rules",
+          "name": "Sigma schema and detection hypotheses",
+          "prerequisites": [
+            "det.normalization"
+          ]
+        },
+        {
+          "id": "det.correlation-timeline",
+          "name": "Correlation and investigation timeline",
+          "prerequisites": [
+            "det.sigma-rules"
+          ]
+        },
+        {
+          "id": "det.criteria-fp",
+          "name": "Detection criteria and false-positive estimation",
+          "prerequisites": [
+            "det.sigma-rules"
+          ]
+        },
+        {
+          "id": "hunt.hypothesis",
+          "name": "Hunt hypothesis and approved telemetry",
+          "prerequisites": [
+            "det.correlation-timeline"
+          ]
+        },
+        {
+          "id": "det.blind-telemetry",
+          "name": "Blind telemetry investigation",
+          "prerequisites": [
+            "det.criteria-fp",
+            "hunt.hypothesis"
+          ]
+        },
+        {
+          "id": "det.sigma-backend-fidelity",
+          "name": "Backend conversion fidelity",
+          "prerequisites": [
+            "det.sigma-rules"
+          ]
+        }
+      ]
+    },
+    {
+      "pack_id": "dfir-forensics-malware",
+      "title": "DFIR, forensic evidence and malware triage",
+      "version": "0.1.0",
+      "status": "PROPOSED",
+      "competencies": [
+        {
+          "id": "ir.scoping-triage",
+          "name": "Incident scoping, severity and triage plan",
+          "prerequisites": []
+        },
+        {
+          "id": "dfir.host-artifacts",
+          "name": "Host artifacts and event timeline",
+          "prerequisites": [
+            "ir.scoping-triage"
+          ]
+        },
+        {
+          "id": "dfir.network-evidence",
+          "name": "Network forensic evidence",
+          "prerequisites": [
+            "networking-protocols-recon:net.pcap-analysis"
+          ]
+        },
+        {
+          "id": "malware.static-triage",
+          "name": "Static malware triage",
+          "prerequisites": [
+            "dfir.host-artifacts"
+          ]
+        },
+        {
+          "id": "dfir.chain-of-custody",
+          "name": "Chain of custody and evidence integrity",
+          "prerequisites": [
+            "ir.scoping-triage"
+          ]
+        },
+        {
+          "id": "hunt.approved-telemetry",
+          "name": "Hunt execution on approved telemetry",
+          "prerequisites": [
+            "detection-soc-hunting:hunt.hypothesis"
+          ]
+        },
+        {
+          "id": "ir.recovery-recommendation",
+          "name": "Recovery recommendation",
+          "prerequisites": [
+            "dfir.host-artifacts",
+            "dfir.network-evidence"
+          ]
+        },
+        {
+          "id": "dfir.blind-incident",
+          "name": "Blind incident dataset triage",
+          "prerequisites": [
+            "malware.static-triage",
+            "ir.recovery-recommendation"
+          ]
+        }
+      ]
+    },
+    {
+      "pack_id": "linux-python-systems",
+      "title": "Linux, Python and systems engineering",
+      "version": "0.1.0",
+      "status": "PROPOSED",
+      "competencies": [
+        {
+          "id": "lab.authorization",
+          "name": "Lab authorization and boundaries",
+          "prerequisites": []
+        },
+        {
+          "id": "linux.filesystem",
+          "name": "Filesystem hierarchy, permissions and ownership",
+          "prerequisites": [
+            "lab.authorization"
+          ]
+        },
+        {
+          "id": "linux.processes-services",
+          "name": "Processes, services and logging",
+          "prerequisites": [
+            "linux.filesystem"
+          ]
+        },
+        {
+          "id": "python.secure-parsing",
+          "name": "Secure parsing of structured security records",
+          "prerequisites": [
+            "linux.processes-services"
+          ]
+        },
+        {
+          "id": "python.testing-fixtures",
+          "name": "Testing with fixtures and reproducible runbooks",
+          "prerequisites": [
+            "python.secure-parsing"
+          ]
+        },
+        {
+          "id": "linux.evidence-completeness",
+          "name": "Evidence completeness assessment",
+          "prerequisites": [
+            "linux.processes-services"
+          ]
+        },
+        {
+          "id": "linux.hardening-baseline",
+          "name": "Hardened baseline and configuration verification",
+          "prerequisites": [
+            "linux.evidence-completeness"
+          ]
+        },
+        {
+          "id": "linux.blind-troubleshooting",
+          "name": "Blind Linux troubleshooting",
+          "prerequisites": [
+            "linux.hardening-baseline",
+            "python.testing-fixtures"
+          ]
+        }
+      ]
+    },
+    {
+      "pack_id": "llm-rag-security",
+      "title": "LLM applications, RAG, prompt injection and model evaluation",
+      "version": "0.1.0",
+      "status": "PROPOSED",
+      "competencies": [
+        {
+          "id": "llm.app-mapping",
+          "name": "LLM application mapping and threat model",
+          "prerequisites": []
+        },
+        {
+          "id": "rag.ingestion-provenance",
+          "name": "RAG ingestion, retrieval and source trust",
+          "prerequisites": [
+            "llm.app-mapping"
+          ]
+        },
+        {
+          "id": "llm.prompt-injection",
+          "name": "Prompt-injection entry classification",
+          "prerequisites": [
+            "rag.ingestion-provenance"
+          ]
+        },
+        {
+          "id": "llm.output-schema-tools",
+          "name": "Output schema failures and tool safety",
+          "prerequisites": [
+            "llm.prompt-injection"
+          ]
+        },
+        {
+          "id": "llm.independent-eval",
+          "name": "Independent evaluation design",
+          "prerequisites": [
+            "llm.output-schema-tools"
+          ]
+        },
+        {
+          "id": "llm.trust-failure-diagnosis",
+          "name": "Trust failure diagnosis",
+          "prerequisites": [
+            "llm.independent-eval"
+          ]
+        },
+        {
+          "id": "llm.data-leakage",
+          "name": "Data leakage and privacy exposure",
+          "prerequisites": [
+            "rag.ingestion-provenance"
+          ]
+        },
+        {
+          "id": "llm.eval-leakage",
+          "name": "Benchmark leakage detection",
+          "prerequisites": [
+            "llm.independent-eval"
+          ]
+        }
+      ]
+    },
+    {
+      "pack_id": "networking-protocols-recon",
+      "title": "Networking, protocol analysis and scoped reconnaissance",
+      "version": "0.1.0",
+      "status": "PROPOSED",
+      "competencies": [
+        {
+          "id": "net.layers-addressing",
+          "name": "Layers, addressing and subnetting",
+          "prerequisites": []
+        },
+        {
+          "id": "net.tcp-states",
+          "name": "TCP states and failure interpretation",
+          "prerequisites": [
+            "net.layers-addressing"
+          ]
+        },
+        {
+          "id": "net.dns-resolution",
+          "name": "DNS resolution and caching",
+          "prerequisites": [
+            "net.layers-addressing"
+          ]
+        },
+        {
+          "id": "net.routing-segmentation",
+          "name": "Routing, NAT and segmentation",
+          "prerequisites": [
+            "net.tcp-states"
+          ]
+        },
+        {
+          "id": "recon.scope-definition",
+          "name": "Reconnaissance scope definition",
+          "prerequisites": [
+            "linux-python-systems:lab.authorization"
+          ]
+        },
+        {
+          "id": "recon.discovery-interpretation",
+          "name": "Discovery result interpretation",
+          "prerequisites": [
+            "recon.scope-definition",
+            "net.routing-segmentation"
+          ]
+        },
+        {
+          "id": "net.pcap-analysis",
+          "name": "Unfamiliar PCAP analysis",
+          "prerequisites": [
+            "net.tcp-states",
+            "net.dns-resolution"
+          ]
+        },
+        {
+          "id": "net.failure-diagnosis",
+          "name": "Network failure diagnosis",
+          "prerequisites": [
+            "net.pcap-analysis",
+            "recon.discovery-interpretation"
+          ]
+        }
+      ]
+    },
+    {
+      "pack_id": "web-api-appsec",
+      "title": "Web, API and application security",
+      "version": "0.1.0",
+      "status": "PROPOSED",
+      "competencies": [
+        {
+          "id": "web.http-semantics",
+          "name": "HTTP semantics and browser trust boundaries",
+          "prerequisites": []
+        },
+        {
+          "id": "web.session-auth",
+          "name": "Authentication and session state",
+          "prerequisites": [
+            "web.http-semantics"
+          ]
+        },
+        {
+          "id": "web.authz-idor",
+          "name": "Authorization and object-level access control",
+          "prerequisites": [
+            "web.session-auth"
+          ]
+        },
+        {
+          "id": "web.injection",
+          "name": "Injection root causes and prepared statements",
+          "prerequisites": [
+            "web.http-semantics"
+          ]
+        },
+        {
+          "id": "web.xss-contexts",
+          "name": "XSS execution contexts and output encoding",
+          "prerequisites": [
+            "web.http-semantics"
+          ]
+        },
+        {
+          "id": "api.token-authz",
+          "name": "API identity, tokens and object-level authorization",
+          "prerequisites": [
+            "web.authz-idor"
+          ]
+        },
+        {
+          "id": "web.ssrf-upload-deserialization",
+          "name": "SSRF, uploads and unsafe deserialization",
+          "prerequisites": [
+            "api.token-authz",
+            "web.injection"
+          ]
+        },
+        {
+          "id": "web.threat-model-logic",
+          "name": "Application threat modeling and business-logic invariants",
+          "prerequisites": [
+            "web.ssrf-upload-deserialization"
+          ]
+        }
+      ]
+    },
+    {
+      "pack_id": "windows-identity-ad",
+      "title": "Windows, identity, Active Directory and access controls",
+      "version": "0.1.0",
+      "status": "PROPOSED",
+      "competencies": [
+        {
+          "id": "win.principals-services",
+          "name": "Windows principals, services and event records",
+          "prerequisites": []
+        },
+        {
+          "id": "linux.privilege-boundaries",
+          "name": "Linux privilege boundaries: sudo, capabilities, services",
+          "prerequisites": [
+            "linux-python-systems:linux.hardening-baseline"
+          ]
+        },
+        {
+          "id": "win.token-service-controls",
+          "name": "Windows tokens and service controls",
+          "prerequisites": [
+            "win.principals-services"
+          ]
+        },
+        {
+          "id": "host.persistence-telemetry",
+          "name": "Persistence mechanisms and telemetry",
+          "prerequisites": [
+            "win.token-service-controls"
+          ]
+        },
+        {
+          "id": "ad.forest-trust-model",
+          "name": "Forest, domain and trust model",
+          "prerequisites": [
+            "win.principals-services"
+          ]
+        },
+        {
+          "id": "ad.kerberos",
+          "name": "Kerberos issuance and validation",
+          "prerequisites": [
+            "ad.forest-trust-model"
+          ]
+        },
+        {
+          "id": "ad.delegation-permissions",
+          "name": "Delegation types and excessive permissions",
+          "prerequisites": [
+            "ad.kerberos"
+          ]
+        },
+        {
+          "id": "ad.identity-detection",
+          "name": "Identity telemetry and detection",
+          "prerequisites": [
+            "ad.delegation-permissions",
+            "host.persistence-telemetry"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -289,3 +289,9 @@ Backups: Online Backup API / `VACUUM INTO` → verify on copy → restore test �
 | Migration | Change |
 |---|---|
 | 0014_erasure_digests.sql | no table changes; `trg_note_versions_update_only_erasure` is recreated so that the one update still allowed on a note version (an erasure of a version that was not erased, to an empty body, nothing else changed) must also change `body_sha256`: erasure replaces every stored digest of the erased content (ADR-0017). The column `deletion_tombstones.content_sha256_before` keeps its historical name and now holds the tombstone's identity digest. Pinned schema digest of version 14: `7f6b7505670598abc96287fea675ae2457aa92153248329e0274e04378dbfc9e` (452 objects, `migrations::tests::the_schema_at_version_14_is_pinned_too`). |
+
+## Schema version 15 (2026-11-14)
+
+| Migration | Change |
+|---|---|
+| 0015_program_plan.sql | adds `program_plan` (STRICT; 6 columns, 1 foreign key): one row per curriculum with `start_monday` (`YYYY-MM-DD`, a Monday; the application checks the weekday, the table checks the format), `day_start_minute` (0 to 1439, default 540 = 09:00), `revision`, `created_at`, `updated_at`. `curriculum_id` is the primary key and references `curricula(id)` ON DELETE RESTRICT (sessions planned from the program refer to it). A mutable row under a revision check, so it has no immutability trigger. Exported with `curricula`. Pinned schema digest of version 15: `6efbccf96d8abcc64991bc4358db816afb3ae2ab9d34c4d153cf67409dd037c6` (454 objects, `migrations::tests::the_schema_at_version_15_is_pinned_too`). The decision is in ADR-0018. |

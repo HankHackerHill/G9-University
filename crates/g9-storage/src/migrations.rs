@@ -121,10 +121,15 @@ pub const EMBEDDED_MIGRATIONS: &[Migration] = &[
         name: "0014_erasure_digests",
         sql: include_str!("migrations/0014_erasure_digests.sql"),
     },
+    Migration {
+        version: 15,
+        name: "0015_program_plan",
+        sql: include_str!("migrations/0015_program_plan.sql"),
+    },
 ];
 
 /// Highest embedded migration version.
-pub const CURRENT_SCHEMA_VERSION: u32 = 14;
+pub const CURRENT_SCHEMA_VERSION: u32 = 15;
 
 const BOOTSTRAP_SQL: &str = "CREATE TABLE IF NOT EXISTS schema_migrations (
   version     INTEGER PRIMARY KEY NOT NULL CHECK (version >= 1),
@@ -704,6 +709,29 @@ mod tests {
         assert_eq!(
             sha256_hex(text.as_bytes()),
             SCHEMA_V14_SHA256,
+            "{} objects",
+            schema.len()
+        );
+    }
+
+    /// The same digest at version 15 (0015 adds `program_plan`).
+    const SCHEMA_V15_SHA256: &str =
+        "6efbccf96d8abcc64991bc4358db816afb3ae2ab9d34c4d153cf67409dd037c6";
+
+    #[test]
+    fn the_schema_at_version_15_is_pinned_too() {
+        // Databases created by this build are at version 15 and are verified against this text.
+        let mut text = String::new();
+        let schema = expected_schema(15).unwrap();
+        for ((kind, name), (table, sql)) in &schema {
+            text.push_str(&format!(
+                "{kind}\u{0}{name}\u{0}{table}\u{0}{}\n",
+                sql.as_deref().unwrap_or("NULL")
+            ));
+        }
+        assert_eq!(
+            sha256_hex(text.as_bytes()),
+            SCHEMA_V15_SHA256,
             "{} objects",
             schema.len()
         );

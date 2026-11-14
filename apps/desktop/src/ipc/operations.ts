@@ -192,6 +192,77 @@ export interface NoteView {
   revision: Revision;
 }
 
+/** A note without its body, as `notes.list` shows it; `notes.get` opens one. */
+export interface NoteSummary {
+  note_id: Id;
+  title: string;
+  classification: Classification;
+  domain: DataDomain;
+  objective_id: Id | null;
+  version_count: number;
+  /** Size of the current body in bytes. */
+  size_bytes: number;
+  created_at: UtcMillis;
+  updated_at: UtcMillis;
+  revision: Revision;
+}
+
+/** The imported curriculum version the program runs on (`curriculum.program`). */
+export interface ProgramCurriculum {
+  version_id: Id;
+  name: string | null;
+  version_label: string;
+  provenance: ManifestProvenance;
+  weeks: number;
+  days: number;
+  objectives: number;
+  planned_minutes: number;
+  imported_at: UtcMillis;
+}
+
+/** The Monday of week 1 and the time a planned day starts, as the operator set them. */
+export interface ProgramStart {
+  /** `YYYY-MM-DD`, a Monday. */
+  monday: string;
+  /** `HH:MM` in the operator's zone. */
+  day_start: string;
+  revision: Revision;
+}
+
+/** What is set up: the curriculum, where it sits on the calendar, and the competency packs. */
+export interface ProgramStatus {
+  curriculum: ProgramCurriculum | null;
+  program_start: ProgramStart | null;
+  competencies: { loaded: number; available: number };
+}
+
+export interface PackImported {
+  pack_id: string;
+  title: string;
+  version: string;
+  status: string;
+  competencies: number;
+  created: number;
+  existing: number;
+  prerequisites_added: number;
+}
+
+export interface PackImportResult {
+  packs: PackImported[];
+  loaded: number;
+  available: number;
+  prerequisites_added: number;
+  prerequisites_pending: number;
+}
+
+export interface DayPlanned {
+  date: string;
+  day_id: Id;
+  /** Sessions this call created, one per block that had none. */
+  created: SessionView[];
+  already_planned: { block: string; seq: number; session_id: Id }[];
+}
+
 export type GradeSource = 'DETERMINISTIC_CHECKER' | 'HUMAN_REVIEWER' | 'MODEL_ADVISORY';
 /** Anchored rubric level (ADR-0012); the request schema accepts an integer 0..4 only. */
 export type AnchoredLevel = 0 | 1 | 2 | 3 | 4;
@@ -622,6 +693,18 @@ export interface Operations {
   };
   'evidence.from_note': { request: { note_id: Id }; response: { evidence_id: Id; kind: 'NOTE'; note_id: Id; summary: string } };
   'evidence.list': { request: { note_id?: Id; limit?: number }; response: { items: EvidenceItemView[] } };
+
+  'curriculum.program': { request: EmptyRequest; response: ProgramStatus };
+  'curriculum.set_program_start': {
+    /** `date` must be a Monday; `day_start` is `HH:MM` (default 09:00). */
+    request: { date: string; day_start?: string };
+    response: { curriculum_id: Id; monday: string; day_start: string };
+  };
+  'session.plan_day': { request: { date: string }; response: DayPlanned };
+  'notes.list': { request: { limit?: number }; response: { notes: NoteSummary[] } };
+  'notes.get': { request: { note_id: Id }; response: NoteView };
+  'competency.import_pack': { request: { pack_ids?: string[] }; response: PackImportResult };
+  'backup.list': { request: EmptyRequest; response: { backups: BackupView[]; unlisted: number } };
 }
 
 export type OperationName = keyof Operations;
@@ -731,6 +814,14 @@ export const OPERATIONS: Readonly<Record<OperationName, OperationSpec>> = {
   'evidence.attach_file': spec('evidence.attach_file', 'CREATE', 'ATTACHMENT'),
   'evidence.from_note': spec('evidence.from_note', 'CREATE', 'EVIDENCE_ITEM'),
   'evidence.list': spec('evidence.list', 'READ', 'EVIDENCE_ITEM', { mutating: false }),
+
+  'curriculum.program': spec('curriculum.program', 'READ', 'CURRICULUM', { mutating: false }),
+  'curriculum.set_program_start': spec('curriculum.set_program_start', 'UPDATE', 'CURRICULUM'),
+  'session.plan_day': spec('session.plan_day', 'CREATE', 'STUDY_SESSION'),
+  'notes.list': spec('notes.list', 'READ', 'NOTE', { mutating: false }),
+  'notes.get': spec('notes.get', 'READ', 'NOTE', { mutating: false }),
+  'competency.import_pack': spec('competency.import_pack', 'CREATE', 'COMPETENCY'),
+  'backup.list': spec('backup.list', 'READ', 'BACKUP', { mutating: false, defaultDomain: 'SYSTEM' }),
 };
 
 export const OPERATION_NAMES = Object.keys(OPERATIONS) as OperationName[];

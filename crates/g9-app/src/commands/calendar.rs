@@ -663,6 +663,7 @@ pub fn update_event(
         },
         move |conn, _| {
             let row = load_event(conn, &facts_id)?;
+            editable(&row)?;
             Ok(Facts::existing(
                 rc(row.data_domain, row.classification, row.immutable),
                 row.revision,
@@ -723,6 +724,8 @@ pub fn delete_event(
         },
         move |conn, _| {
             let row = load_event(conn, &facts_id)?;
+            // Before policy: the operator is never asked to approve a deletion that cannot happen.
+            editable(&row)?;
             Ok(Facts::existing(
                 rc(row.data_domain, row.classification, row.immutable),
                 row.revision,

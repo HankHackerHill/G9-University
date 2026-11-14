@@ -1,7 +1,8 @@
+import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import type { DailyPlan, SessionView } from '../../ipc/operations';
 import { addDays, startOfDayUtc } from '../../lib/civil-time';
-import { formatDateTime, formatDuration, formatMinutes, formatTime, sentenceCase } from '../../lib/format';
+import { formatCivilDate, formatDateTime, formatDuration, formatMinutes, formatTime, sentenceCase } from '../../lib/format';
 import { DAYS_PER_WEEK, PROGRAM_DAYS, dayNumber, programMap } from '../../lib/program';
 import { NON_CANONICAL_WARNING, hasWarning, mergeWarnings } from '../../lib/warnings';
 import { ProvenanceBadge, StateBadge } from '../components/Badge';
@@ -10,10 +11,12 @@ import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Margin } from '../components/Margin';
 import { Loading, ModelUnavailable, NoData, Panel } from '../components/Panel';
 import { PageHead } from '../components/PageHead';
+import { ProgramSetup } from '../components/ProgramSetup';
 import { Stat } from '../components/Stat';
 import { Table } from '../components/Table';
 import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
+import { usePlanDay } from '../hooks/usePlanDay';
 import { useToday } from '../hooks/useToday';
 
 const WORK_DONE: readonly SessionView['state'][] = ['COMPLETED', 'REVIEWED', 'CLOSED'];
@@ -30,7 +33,26 @@ function describeDay(d: MapDay): string {
  * The one thing to do next, in solid ink. Every value is the backend's; when today's sessions
  * could not be read the block says so and offers nothing to press.
  */
-function NowBlock({ plan, sessions, sessionsFailed }: { plan: DailyPlan | null; sessions: readonly SessionView[] | null; sessionsFailed: boolean }) {
+function NowBlock({
+  plan,
+  sessions,
+  sessionsFailed,
+  setupIncomplete,
+  startsOn,
+  onPlan,
+  planning,
+}: {
+  plan: DailyPlan | null;
+  sessions: readonly SessionView[] | null;
+  sessionsFailed: boolean;
+  /** The curriculum is not imported or the start is not set: there is no plan to run yet. */
+  setupIncomplete: boolean;
+  /** The Monday of week 1 when today is before it; null otherwise. */
+  startsOn: string | null;
+  /** Plan today's blocks (one session per block); offered when the plan has blocks and no session exists. */
+  onPlan: () => void;
+  planning: boolean;
+}) {
   const running = sessions?.find((x) => x.state === 'RUNNING');
   const paused = sessions?.find((x) => x.state === 'PAUSED');
   const interrupted = sessions?.find((x) => x.state === 'INTERRUPTED' || x.requires_correction);
@@ -41,9 +63,22 @@ function NowBlock({ plan, sessions, sessionsFailed }: { plan: DailyPlan | null; 
   let kicker: string;
   let title: string;
   let meta: string;
-  let action: { to: string; label: string } | null = null;
+  let action: { to: string; label: string } | { onClick: () => void; label: string } | null = null;
 
-  if (sessions === null) {
+  if (setupIncomplete) {
+    kicker = 'Setup';
+    title = 'Set up your program';
+    meta = 'Import the curriculum and choose the Monday week 1 starts. Until then there is no plan to run.';
+  } else if (startsOn !== null) {
+    kicker = 'Today';
+    title = `Week 1 starts ${formatCivilDate(startsOn)}`;
+    meta = 'There is nothing to run before then. The Curriculum Navigator shows every week in advance.';
+    action = { to: '/curriculum', label: 'Browse the weeks' };
+  } else if (plan?.unscheduled === true && plan.week_number === null) {
+    kicker = 'Today';
+    title = 'Outside the program weeks';
+    meta = 'Today is after the last week of the program, so there are no blocks to run.';
+  } else if (sessions === null) {
     kicker = 'Today';
     title = sessionsFailed ? 'Today’s sessions could not be read' : 'Reading today’s sessions…';
     meta = sessionsFailed ? 'The reason is shown above. Nothing is assumed about your time.' : '';
@@ -66,6 +101,11 @@ function NowBlock({ plan, sessions, sessionsFailed }: { plan: DailyPlan | null; 
     kicker = 'Today';
     title = 'Rest day';
     meta = 'No study blocks are scheduled for this date.';
+  } else if (sessions.length === 0 && plan !== null && blockCount !== null && blockCount > 0) {
+    kicker = 'Today';
+    title = 'Today’s blocks are not planned yet';
+    meta = `${blockCount === 1 ? '1 block' : `${blockCount} blocks`}, ${formatMinutes(plan.planned_minutes)} from the curriculum. Planning creates one session per block; no clock runs until you start one.`;
+    action = { onClick: onPlan, label: planning ? 'Planning…' : 'Plan today’s blocks' };
   } else if (sessions.length === 0) {
     kicker = 'Today';
     title = 'Nothing is planned yet';
@@ -84,10 +124,14 @@ function NowBlock({ plan, sessions, sessionsFailed }: { plan: DailyPlan | null; 
         <p className="now-title">{title}</p>
         {meta === '' ? null : <p className="now-meta">{meta}</p>}
       </div>
-      {action === null ? null : (
+      {action === null ? null : 'to' in action ? (
         <Link className="button-link" to={action.to} viewTransition>
           {action.label}
         </Link>
+      ) : (
+        <button type="button" className="primary" disabled={planning} onClick={action.onClick}>
+          {action.label}
+        </button>
       )}
     </section>
   );
@@ -105,6 +149,20 @@ export function MissionControl() {
     'calendar.list',
     today.date === null ? null : { from: startOfDayUtc(today.date, today.zone), to: startOfDayUtc(addDays(today.date, 2), today.zone) },
   );
+  const program = useCommand('curriculum.program', {});
+  const planReload = plan.reload;
+  const sessionsReload = sessions.reload;
+  const allSessionsReload = allSessions.reload;
+  const reloadPlanned = useCallback(() => {
+    planReload();
+    sessionsReload();
+    allSessionsReload();
+  }, [planReload, sessionsReload, allSessionsReload]);
+  const planner = usePlanDay(reloadPlanned);
+  // Until `curriculum.program` answers (or when it cannot be read) nothing is claimed about the setup.
+  const setupIncomplete = program.data !== null && (program.data.curriculum === null || program.data.program_start === null);
+  const mondayOne = program.data?.program_start?.monday ?? null;
+  const startsOn = mondayOne !== null && today.isoDate !== null && today.isoDate < mondayOne ? mondayOne : null;
 
   const s = today.status;
   // Derived values exist only when their records loaded. A failed or pending read is shown as an
@@ -135,10 +193,39 @@ export function MissionControl() {
       {sessions.error !== null ? <ErrorDisplay error={sessions.error} onRetry={sessions.reload} /> : null}
       {calendar.error !== null ? <ErrorDisplay error={calendar.error} onRetry={calendar.reload} /> : null}
       <Warnings
-        warnings={mergeWarnings(plan.warnings, sessions.warnings, allSessions.warnings, due.warnings, interventions.warnings, approvals.warnings, calendar.warnings)}
+        warnings={mergeWarnings(plan.warnings, sessions.warnings, allSessions.warnings, due.warnings, interventions.warnings, approvals.warnings, calendar.warnings, program.warnings)}
       />
 
-      <NowBlock plan={day} sessions={todaySessions} sessionsFailed={sessions.error !== null} />
+      {program.error !== null ? <ErrorDisplay error={program.error} onRetry={program.reload} /> : null}
+      {planner.error !== null ? <ErrorDisplay error={planner.error} /> : null}
+      <Warnings warnings={planner.warnings} label="Planning warnings" testId="plan-warnings" />
+
+      <NowBlock
+        plan={day}
+        sessions={todaySessions}
+        sessionsFailed={sessions.error !== null}
+        setupIncomplete={setupIncomplete}
+        startsOn={startsOn}
+        planning={planner.busy}
+        onPlan={() => {
+          if (today.isoDate !== null) {
+            void planner.plan(today.isoDate);
+          }
+        }}
+      />
+
+      {setupIncomplete ? (
+        <ProgramSetup
+          program={program}
+          zone={today.zone}
+          now={today.now}
+          todayIso={today.isoDate}
+          onChanged={() => {
+            reloadPlanned();
+            today.reload();
+          }}
+        />
+      ) : null}
 
       <section className="bento" aria-label="Today in numbers">
         <div data-span="3">
@@ -188,12 +275,18 @@ export function MissionControl() {
       <div className="with-margin">
         <div className="stack">
           <Panel title="Today’s blocks">
-            {plan.error !== null ? (
+            {setupIncomplete ? (
+              <NoData title="Program not set up" reason="Today’s blocks come from the curriculum. Import it and choose the start above." />
+            ) : plan.error !== null ? (
               <NoData reason={`Today’s plan could not be read (${plan.error.code}), so its blocks cannot be shown.`} />
             ) : day === null ? (
               <Loading what="today’s blocks" />
             ) : day.unscheduled ? (
-              <NoData title="Rest day" reason="No study blocks are scheduled for this date." />
+              day.week_number === null ? (
+                <NoData title="Outside the program weeks" reason={startsOn === null ? 'Today is after the last week of the program.' : `Week 1 starts ${formatCivilDate(startsOn)}.`} />
+              ) : (
+                <NoData title="Rest day" reason="No study blocks are scheduled for this date." />
+              )
             ) : (
               <ChartFigure
                 caption={`${day.day_id}, ${formatMinutes(day.planned_minutes)} planned. Each bar is as long as its block; the solid part is credited.`}
@@ -248,11 +341,16 @@ export function MissionControl() {
           </Panel>
 
           <Panel title="Today’s objectives" actions={day === null || day.unscheduled ? undefined : <ProvenanceBadge label={planLabel} />}>
-            {plan.error !== null ? <ErrorDisplay error={plan.error} /> : null}
-            {plan.loading ? <Loading what="today’s plan" /> : null}
+            {plan.error !== null && !setupIncomplete ? <ErrorDisplay error={plan.error} /> : null}
+            {setupIncomplete ? <NoData title="Program not set up" reason="Today’s objectives come from the curriculum. Import it and choose the start above." /> : null}
+            {plan.loading && !setupIncomplete ? <Loading what="today’s plan" /> : null}
             {day !== null ? (
               day.unscheduled ? (
-                <NoData title="Rest day" reason="No objectives are scheduled for this date." />
+                day.week_number === null ? (
+                  <NoData title="Outside the program weeks" reason={startsOn === null ? 'Today is after the last week of the program.' : `Week 1 starts ${formatCivilDate(startsOn)}.`} />
+                ) : (
+                  <NoData title="Rest day" reason="No objectives are scheduled for this date." />
+                )
               ) : (
                 <>
                   <ol className="rows">

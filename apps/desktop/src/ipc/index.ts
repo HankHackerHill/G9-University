@@ -16,9 +16,18 @@ export function chooseTransport(forced: string | undefined, runtimePresent: bool
   return runtimePresent ? 'tauri' : 'mock';
 }
 
+/**
+ * A review aid of the browser build, never reached in the desktop shell: `?mock=fresh` starts the
+ * mock as a new install (nothing imported, no program start, nothing planned) so the first-run
+ * screens can be looked at and measured.
+ */
+export function mockOptionsFromSearch(search: string): { fresh: boolean } {
+  return { fresh: new URLSearchParams(search).get('mock') === 'fresh' };
+}
+
 export function selectTransport(): IpcTransport {
   const choice = chooseTransport(import.meta.env.VITE_G9_TRANSPORT, hasTauriRuntime());
-  return choice === 'tauri' ? createTauriTransport() : createMockTransport();
+  return choice === 'tauri' ? createTauriTransport() : createMockTransport(mockOptionsFromSearch(typeof window === 'undefined' ? '' : window.location.search));
 }
 
 export function createDefaultClient(): IpcClient {

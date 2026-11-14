@@ -6,7 +6,7 @@
 import { createClient } from '../ipc/client';
 import type { OperationName } from '../ipc/operations';
 import type { ClientCommandMeta, G9Error } from '../ipc/types';
-import { createMockTransport, type MockTransport } from '../ipc/transports/mock';
+import { createMockTransport, type MockOptions, type MockTransport } from '../ipc/transports/mock';
 import type { Harness } from './render';
 
 export interface RecordedCall {
@@ -22,8 +22,8 @@ export interface InterceptHarness extends Harness {
   calls: RecordedCall[];
 }
 
-export function createInterceptHarness(intercept: Interceptor): InterceptHarness {
-  const mock = createMockTransport();
+export function createInterceptHarness(intercept: Interceptor, options: MockOptions = {}): InterceptHarness {
+  const mock = createMockTransport(options);
   const calls: RecordedCall[] = [];
   const transport: MockTransport = {
     kind: 'mock',

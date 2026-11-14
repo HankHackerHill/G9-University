@@ -256,3 +256,107 @@ pub fn revise(
         },
     )
 }
+
+#[derive(Debug, Deserialize)]
+struct ListRequest {
+    limit: Option<u32>,
+}
+
+/// `notes.list`: the newest notes of the scope's domain, without their bodies (a note is opened
+/// with `notes.get`). Erased notes are not listed.
+pub fn list(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    let req: ListRequest = decode(payload)?;
+    let limit = req.limit.unwrap_or(100).clamp(1, 200);
+    let resource = ResourceRef::new(ResourceKind::Note, "list");
+    let scope = scope_of(meta);
+    pipeline::execute(
+        ctx,
+        meta,
+        Command {
+            spec,
+            resource: &resource,
+            payload,
+        },
+        |_, _| {
+            Ok(Facts::new_record(rc(
+                meta.scope.domain,
+                Classification::Internal,
+                false,
+            )))
+        },
+        |env| {
+            let notes = repo::list_note_summaries(env.conn, &scope, limit)?
+                .into_iter()
+                .map(|n| {
+                    json!({
+                        "note_id": n.id,
+                        "title": n.title,
+                        "classification": n.classification,
+                        "domain": n.data_domain,
+                        "objective_id": objective_code(n.objective_id.as_deref()),
+                        "version_count": n.version_count,
+                        "size_bytes": n.size_bytes,
+                        "created_at": n.created_at,
+                        "updated_at": n.updated_at,
+                        "revision": n.revision,
+                    })
+                })
+                .collect::<Vec<_>>();
+            Ok(Mutation::new(to_value(&json!({ "notes": notes }))?, None))
+        },
+    )
+}
+
+#[derive(Debug, Deserialize)]
+struct GetRequest {
+    note_id: String,
+}
+
+/// `notes.get`: one note with its body, as `notes.create` answers it.
+pub fn get(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    let req: GetRequest = decode(payload)?;
+    let id: NoteId = parse_id(&req.note_id, "note_id")?;
+    let resource = ResourceRef::new(ResourceKind::Note, id.as_str());
+    let scope = scope_of(meta);
+    let facts_id = id.clone();
+    let facts_scope = scope;
+    pipeline::execute(
+        ctx,
+        meta,
+        Command {
+            spec,
+            resource: &resource,
+            payload,
+        },
+        move |conn, _| {
+            let row = repo::get_note(conn, &facts_scope, &facts_id)?
+                .ok_or_else(|| G9Error::not_found("note.not_found", "note not found"))?;
+            Ok(Facts::existing(
+                rc(row.data_domain, row.classification, false),
+                row.revision,
+            ))
+        },
+        |env| {
+            let row = repo::get_note(env.conn, &scope, &id)?
+                .ok_or_else(|| G9Error::not_found("note.not_found", "note not found"))?;
+            if row.erased {
+                return Err(G9Error::not_found(
+                    "note.erased",
+                    "the note was erased; nothing of it is kept",
+                ));
+            }
+            let code = objective_code(row.objective_id.as_deref());
+            Ok(Mutation::new(view(env.conn, &row, code)?, None))
+        },
+    )
+}

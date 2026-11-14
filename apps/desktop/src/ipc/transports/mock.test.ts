@@ -762,20 +762,15 @@ describe('mock transport: calendar events the operator adds', () => {
     });
     expect(err(await client.invoke('calendar.create_event', { title: 'x', kind: 'REVIEW', start, end: start + 8 * DAY })).code).toBe('calendar.event_too_long');
     expect(err(await client.invoke('calendar.update_event', { event_id: 'mock-event-missing', title: 'x' })).code).toBe('calendar.event_not_found');
-    // A curriculum study block (SYSTEM_DETERMINISTIC): not editable; its deletion is refused after
-    // the approval, which the rolled-back command does not spend.
+    // A curriculum study block (SYSTEM_DETERMINISTIC) is not editable: g9-app refuses it before policy,
+    // so a deletion is never put to an approval that could not be used.
     const block = 'mock-event-D15-2';
     expect(err(await client.invoke('calendar.update_event', { event_id: block, title: 'mine now' })).code).toBe('calendar.event_not_editable');
-    const approvalId = await approvalFor(client, await client.invoke('calendar.delete_event', { event_id: block }));
-    expect(err(await client.invoke('calendar.delete_event', { event_id: block }, { approvalId })).code).toBe('calendar.event_not_editable');
-    expect((await approvalState(client, approvalId))?.state).toBe('APPROVED');
-    // Immutable slots (protected rest, the assessment block) are denied by policy before any approval.
-    expect(err(await client.invoke('calendar.delete_event', { event_id: 'mock-event-rest-sunday' }))).toMatchObject({
-      category: 'UNAUTHORIZED',
-      code: 'policy.denied',
-      details: { rule_id: 'immutable.finalized.deny', action: 'DELETE', resource_kind: 'CALENDAR_EVENT' },
-    });
-    expect(err(await client.invoke('calendar.update_event', { event_id: 'mock-event-D18-1', title: 'x' })).code).toBe('policy.denied');
+    expect(err(await client.invoke('calendar.delete_event', { event_id: block }))).toMatchObject({ category: 'PRECONDITION_FAILED', code: 'calendar.event_not_editable' });
+    expect(ok(await client.invoke('approvals.list', { state: 'PENDING' })).result.approvals.some((a) => a.operation_name === 'calendar.delete_event')).toBe(false);
+    // Immutable slots (protected rest, the assessment block) are refused the same way.
+    expect(err(await client.invoke('calendar.delete_event', { event_id: 'mock-event-rest-sunday' }))).toMatchObject({ category: 'PRECONDITION_FAILED', code: 'calendar.event_not_editable' });
+    expect(err(await client.invoke('calendar.update_event', { event_id: 'mock-event-D18-1', title: 'x' })).code).toBe('calendar.event_not_editable');
     // Events a schedule proposal created come from the scheduler: listed SYSTEM_DETERMINISTIC.
     const proposal = ok(await client.invoke('calendar.propose', { from: MOCK_DEFAULT_NOW, to: MOCK_DEFAULT_NOW + 7 * DAY, intent: 'ADD_REVIEWS' })).result;
     const applyId = await approvalFor(client, await client.invoke('calendar.apply', { proposal_id: proposal.proposal_id }));

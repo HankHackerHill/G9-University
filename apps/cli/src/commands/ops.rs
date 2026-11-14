@@ -62,7 +62,7 @@ mod tests {
     #[test]
     fn lists_every_routed_operation_with_flags_and_schema_paths() {
         let v = run(true);
-        assert_eq!(v["count"], 46);
+        assert_eq!(v["count"], 53);
         let ops = v["operations"].as_array().unwrap();
         let apply = ops.iter().find(|o| o["name"] == "calendar.apply").unwrap();
         assert_eq!(apply["action"], "APPLY");

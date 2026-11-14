@@ -1,5 +1,7 @@
+import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDuration, formatMinutes, sentenceCase } from '../../lib/format';
+import { SETUP_CODES } from '../../lib/program';
 import { NON_CANONICAL_WARNING, hasWarning, mergeWarnings } from '../../lib/warnings';
 import { ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
@@ -8,6 +10,7 @@ import { PageHead } from '../components/PageHead';
 import { Loading, ModelUnavailable, NoData, Panel } from '../components/Panel';
 import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
+import { usePlanDay } from '../hooks/usePlanDay';
 import { useToday } from '../hooks/useToday';
 
 /**
@@ -19,7 +22,15 @@ export function DailyClassroom() {
   const today = useToday();
   const plan = useCommand('curriculum.daily_plan', today.isoDate === null ? null : { date: today.isoDate });
   const sessions = useCommand('session.list', today.isoDate === null ? null : { date: today.isoDate });
+  const planReload = plan.reload;
+  const sessionsReload = sessions.reload;
+  const reloadPlanned = useCallback(() => {
+    planReload();
+    sessionsReload();
+  }, [planReload, sessionsReload]);
+  const planner = usePlanDay(reloadPlanned);
   const day = plan.data;
+  const notSetUp = plan.error !== null && SETUP_CODES.includes(plan.error.code);
   // Null until today's sessions are read: a block's state is then unknown, not "no session".
   const todaySessions = sessions.data?.sessions ?? null;
   // A plan derived from a curriculum version that is not APPROVED_CANONICAL (the PROPOSED_SEED
@@ -39,9 +50,10 @@ export function DailyClassroom() {
         }
       />
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
-      {plan.error !== null ? <ErrorDisplay error={plan.error} onRetry={plan.reload} /> : null}
+      {plan.error !== null && !notSetUp ? <ErrorDisplay error={plan.error} onRetry={plan.reload} /> : null}
       {sessions.error !== null ? <ErrorDisplay error={sessions.error} onRetry={sessions.reload} /> : null}
-      <Warnings warnings={mergeWarnings(plan.warnings, sessions.warnings)} />
+      {planner.error !== null ? <ErrorDisplay error={planner.error} /> : null}
+      <Warnings warnings={mergeWarnings(plan.warnings, sessions.warnings, planner.warnings)} />
 
       {day !== null && !day.unscheduled ? (
         <dl className="facts" data-testid="day-facts">
@@ -79,7 +91,17 @@ export function DailyClassroom() {
 
       <div className="with-margin">
         <div className="stack">
-          {plan.error !== null ? (
+          {notSetUp ? (
+            <NoData
+              title="Program not set up"
+              reason="Today’s objectives and blocks come from the curriculum. Import it and choose the Monday week 1 starts on Mission Control."
+              action={
+                <Link className="button-link" to="/" viewTransition>
+                  Open Mission Control
+                </Link>
+              }
+            />
+          ) : plan.error !== null ? (
             <NoData reason={`Today’s plan could not be read (${plan.error.code}), so its objectives and blocks cannot be shown.`} />
           ) : day === null ? (
             today.error !== null ? (
@@ -88,7 +110,11 @@ export function DailyClassroom() {
               <Loading what="today’s plan" />
             )
           ) : day.unscheduled ? (
-            <NoData title="Rest day" reason={`No study blocks are scheduled for ${day.date}.`} />
+            day.week_number === null ? (
+              <NoData title="Outside the program weeks" reason={`${day.date} is before week 1 or after the last week of the program, so it has no study blocks. The Curriculum Navigator shows the weeks.`} />
+            ) : (
+              <NoData title="Rest day" reason={`No study blocks are scheduled for ${day.date}.`} />
+            )
           ) : (
             <>
               <Panel title="Today’s objectives" actions={<ProvenanceBadge label={planLabel} />}>
@@ -113,7 +139,27 @@ export function DailyClassroom() {
                 )}
               </Panel>
 
-              <Panel title="Today’s blocks" actions={<ProvenanceBadge label={planLabel} />} note="In the order of the plan. A block is run and timed in the session tracker.">
+              <Panel
+                title="Today’s blocks"
+                actions={
+                  <div className="toolbar">
+                    {todaySessions !== null && day.blocks.some((b) => !todaySessions.some((x) => x.session_id === b.session_id)) ? (
+                      <button
+                        type="button"
+                        className="sm primary"
+                        disabled={planner.busy}
+                        onClick={() => {
+                          void planner.plan(day.date);
+                        }}
+                      >
+                        {todaySessions.length === 0 ? 'Plan today’s blocks' : 'Plan the missing blocks'}
+                      </button>
+                    ) : null}
+                    <ProvenanceBadge label={planLabel} />
+                  </div>
+                }
+                note="In the order of the plan. A block is run and timed in the session tracker."
+              >
                 {day.blocks.length === 0 ? (
                   <p className="muted">The plan names no block for today.</p>
                 ) : (
@@ -159,7 +205,9 @@ export function DailyClassroom() {
 
         <Margin label="Hand-in and lesson">
           <Panel title="What to hand in" as="aside">
-            {plan.error !== null ? (
+            {notSetUp ? (
+              <p className="muted">The program is not set up yet.</p>
+            ) : plan.error !== null ? (
               <p className="muted">Today’s plan could not be read ({plan.error.code}).</p>
             ) : day === null ? (
               today.error === null ? <Loading what="today’s plan" /> : <p className="muted">Today’s date could not be read ({today.error.code}).</p>

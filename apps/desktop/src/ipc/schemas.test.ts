@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildMeta, createClient, isG9Error, type InvokeOptions } from './client';
 import { OPERATION_NAMES, type OperationName } from './operations';
+import type { JsonValue } from './types';
 import { createMockClock, createMockTransport } from './transports/mock';
 import { encodeBase64 } from './transports/mock-attachments';
 
@@ -202,6 +203,33 @@ describe('mock responses validate against the response schemas', () => {
   it('curriculum.validate', async () => {
     await check('curriculum.validate', { manifest: { curriculum_id: 'x' } });
   });
+  it('curriculum.program, curriculum.set_program_start and session.plan_day (a fixture that is already set up)', async () => {
+    const before = await check('curriculum.program', {});
+    expect(before.program_start?.monday).toBe('2026-11-02');
+    await check('curriculum.set_program_start', { date: '2026-11-09', day_start: '08:30' });
+    expect((await check('curriculum.program', {})).program_start).toMatchObject({ monday: '2026-11-09', day_start: '08:30', revision: 2 });
+    await check('curriculum.set_program_start', { date: '2026-11-02' });
+    const planned = await check('session.plan_day', { date: '2026-11-18' });
+    expect(planned.created).toHaveLength(0);
+    expect(planned.already_planned.length).toBeGreaterThan(0);
+  });
+  it('notes.list and notes.get', async () => {
+    const note = await check('notes.create', { title: 'Read back', body_markdown: 'body', classification: 'INTERNAL', domain: 'LEARNING' });
+    const listed = await check('notes.list', { limit: 5 });
+    expect(listed.notes.some((x) => x.note_id === note.note_id)).toBe(true);
+    expect(await check('notes.get', { note_id: note.note_id })).toMatchObject({ note_id: note.note_id, body_markdown: 'body' });
+  });
+  it('competency.import_pack', async () => {
+    const one = await check('competency.import_pack', { pack_ids: ['web-api-appsec'] });
+    expect(one.loaded).toBe(8);
+    const all = await check('competency.import_pack', {});
+    expect(all.loaded).toBe(64);
+    expect(all.available).toBe(64);
+  });
+  it('backup.list', async () => {
+    await check('backup.create', { label: 'listed' });
+    expect((await check('backup.list', {})).backups.some((b) => b.label === 'listed')).toBe(true);
+  });
 
   /** Ask, approve (the mock confirms natively) and return the approval id. */
   async function approved<K extends OperationName>(op: K, payload: Parameters<typeof client.invoke<K>>[1], options: InvokeOptions = {}): Promise<string> {
@@ -255,5 +283,58 @@ describe('mock responses validate against the response schemas', () => {
     const payload = { domains: ['SYSTEM', 'LEARNING'] as ('LEARNING' | 'SYSTEM')[], format: 'CSV' as const, include_private: true };
     const approvalId = await approved('export.request', payload);
     expect((await check('export.request', payload, { approvalId })).state).toBe('READY');
+  });
+});
+
+describe('mock responses of a new install validate against the response schemas', () => {
+  const clock = createMockClock();
+  const transport = createMockTransport({ clock, fresh: true });
+  let n = 0;
+  const client = createClient(transport, {
+    now: () => clock.now(),
+    uuid: () => {
+      n += 1;
+      return `f${n}`;
+    },
+  });
+  const outcomeValidator = validator('command-outcome.schema.json');
+
+  async function check<K extends OperationName>(op: K, payload: Parameters<typeof client.invoke<K>>[1], options?: InvokeOptions) {
+    const r = await client.invoke(op, payload, options);
+    if (isG9Error(r)) {
+      throw new Error(`${op} failed: ${r.category} ${r.code}`);
+    }
+    expect(outcomeValidator(r), `${op} envelope ${JSON.stringify(outcomeValidator.errors)}`).toBe(true);
+    const validate = validator(`${op}.response.schema.json`);
+    expect(validate(r.result), `${op} ${JSON.stringify(validate.errors)}`).toBe(true);
+    return r.result;
+  }
+
+  it('walks the whole setup: nothing imported, import, start, plan a day, load the packs', async () => {
+    const empty = await check('curriculum.program', {});
+    expect(empty).toEqual({ curriculum: null, program_start: null, competencies: { loaded: 0, available: 64 } });
+
+    const manifest = JSON.parse(readFileSync(fileURLToPath(new URL('../../../../data/curriculum/g9-ct9-480.seed.v0.json', import.meta.url)), 'utf8')) as JsonValue;
+    const asked = await client.invoke('curriculum.import', { manifest, provenance: 'PROPOSED_SEED' });
+    if (!isG9Error(asked) || asked.approval_id === undefined) {
+      throw new Error('curriculum.import: expected APPROVAL_REQUIRED');
+    }
+    await check('approvals.decide', { approval_id: asked.approval_id, decision: 'APPROVE' });
+    await check('curriculum.import', { manifest, provenance: 'PROPOSED_SEED' }, { approvalId: asked.approval_id });
+
+    const imported = await check('curriculum.program', {});
+    expect(imported.curriculum).toMatchObject({ weeks: 12, days: 72, objectives: 216, planned_minutes: 28_800, provenance: 'PROPOSED_SEED' });
+    expect(imported.program_start).toBeNull();
+
+    await check('curriculum.set_program_start', { date: '2026-11-02' });
+    const planned = await check('session.plan_day', { date: '2026-11-18' });
+    expect(planned.created.length).toBeGreaterThan(0);
+    expect(planned.already_planned).toEqual([]);
+    expect((await check('session.plan_day', { date: '2026-11-18' })).created).toEqual([]);
+
+    const loaded = await check('competency.import_pack', {});
+    expect(loaded.loaded).toBe(64);
+    expect((await check('backup.list', {})).backups).toEqual([]);
+    expect((await check('notes.list', {})).notes).toEqual([]);
   });
 });

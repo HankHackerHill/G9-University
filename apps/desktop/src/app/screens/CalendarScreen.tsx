@@ -555,7 +555,7 @@ export function CalendarScreen() {
         ) : weekEvents.length === 0 ? (
           <NoData
             title="No events this week"
-            reason={`Nothing is scheduled from ${weekText.from} to ${weekText.to}. Curriculum blocks and applied review slots appear here by themselves; your own events appear when you add them.`}
+            reason={`Nothing is scheduled from ${weekText.from} to ${weekText.to}. A day’s study blocks appear here when you plan that day (Daily Classroom or Mission Control), review slots when you apply a proposal, and your own events when you add them.`}
             action={
               <button type="button" disabled={composing && editing === null} onClick={openAdd}>
                 Add an event

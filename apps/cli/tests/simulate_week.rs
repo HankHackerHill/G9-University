@@ -432,7 +432,7 @@ fn exit_codes_follow_the_contract_through_the_binary() {
     // 0: success; ops needs no data directory.
     let (code, ops, _) = g9(&["ops", "--schemas"]);
     assert_eq!(code, 0);
-    assert_eq!(ops["count"], 46);
+    assert_eq!(ops["count"], 53);
     let (code, _, _) = g9(&["--help"]);
     assert_eq!(code, 0);
 }

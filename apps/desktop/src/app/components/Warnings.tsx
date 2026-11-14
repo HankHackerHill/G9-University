@@ -1,5 +1,5 @@
 import { warningMeaning } from '../../lib/copy';
-import { mergeWarnings, warningCode } from '../../lib/warnings';
+import { isQuietWarning, mergeWarnings, warningCode } from '../../lib/warnings';
 
 /**
  * Renders `CommandOutcome.warnings`. A warning is how the backend discloses that a
@@ -17,7 +17,10 @@ import { mergeWarnings, warningCode } from '../../lib/warnings';
  * first appear or change.
  */
 export function Warnings({ warnings, label = 'Backend warnings', testId = 'outcome-warnings' }: { warnings: readonly string[]; label?: string; testId?: string }) {
-  const list = mergeWarnings(warnings);
+  const all = mergeWarnings(warnings);
+  // A standing fact (`QUIET_WARNING_CODES`) is a note under the alarms: shown, verbatim, never announced.
+  const list = all.filter((w) => !isQuietWarning(w));
+  const quiet = all.filter(isQuietWarning);
   const announcement = list.length === 0 ? '' : `${list.length} backend warning${list.length === 1 ? '' : 's'}: ${list.map(warningCode).join(', ')}`;
   return (
     <>
@@ -39,6 +42,19 @@ export function Warnings({ warnings, label = 'Backend warnings', testId = 'outco
             })}
           </ul>
         </section>
+      ) : null}
+      {quiet.length > 0 ? (
+        <ul className="warnings-quiet" aria-label={`${label}: standing notes`} data-testid={`${testId}-quiet`}>
+          {quiet.map((w) => {
+            const meaning = warningMeaning(warningCode(w));
+            return (
+              <li key={w}>
+                {meaning === null ? null : <span>{meaning} </span>}
+                <span className="faint">{w}</span>
+              </li>
+            );
+          })}
+        </ul>
       ) : null}
     </>
   );

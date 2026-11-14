@@ -43,4 +43,24 @@ describe('Warnings', () => {
     expect(screen.getByRole('region', { name: 'System status warnings' })).toHaveAttribute('data-testid', 'status-warnings');
     expect(screen.getByTestId('status-warnings-live')).toHaveTextContent('1 backend warning: storage.migration_blocked');
   });
+
+  it('shows a standing fact as a quiet note with the backend sentence, and never announces it', () => {
+    const NON_CANONICAL = 'curriculum.non_canonical: plan derived from a version that is not APPROVED_CANONICAL';
+    render(<Warnings warnings={[NON_CANONICAL]} />);
+    expect(screen.queryByTestId('outcome-warnings')).toBeNull();
+    expect(screen.getByTestId('outcome-warnings-live')).toHaveTextContent('');
+    const note = screen.getByTestId('outcome-warnings-quiet');
+    expect(within(note).getByText(NON_CANONICAL)).toBeInTheDocument();
+    expect(note).toHaveTextContent('has not been approved as canonical yet');
+  });
+
+  it('keeps an alarm next to a quiet note: only the alarm is announced and boxed', () => {
+    const NON_CANONICAL = 'curriculum.non_canonical: plan derived from a version that is not APPROVED_CANONICAL';
+    render(<Warnings warnings={[NON_CANONICAL, READ_ONLY]} />);
+    expect(screen.getByTestId('outcome-warnings-live')).toHaveTextContent('1 backend warning: storage.migration_blocked');
+    const region = screen.getByRole('region', { name: 'Backend warnings' });
+    expect(within(region).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(region).queryByText(NON_CANONICAL)).toBeNull();
+    expect(within(screen.getByTestId('outcome-warnings-quiet')).getByText(NON_CANONICAL)).toBeInTheDocument();
+  });
 });

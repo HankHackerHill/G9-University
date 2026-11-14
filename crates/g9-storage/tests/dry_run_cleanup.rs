@@ -67,10 +67,11 @@ fn a_copy_left_by_an_interrupted_rehearsal_is_replaced() {
         .dry_run_on_copy(&db, scratch.path())
         .expect("a stale copy must not block the rehearsal");
     assert!(dry.integrity_ok);
+    // The database is at version 12: every later migration is rehearsed.
     assert_eq!(
         dry.report.applied.len(),
-        2,
-        "migrations 13 and 14 rehearsed"
+        (g9_storage::migrations::CURRENT_SCHEMA_VERSION - 12) as usize,
+        "migrations 13 up to the current one rehearsed"
     );
 }
 

@@ -466,3 +466,54 @@ pub fn restore_test(
 ) -> Result<CommandOutcome<Value>, G9Error> {
     advance(ctx, spec, meta, payload, true)
 }
+
+/// `backup.list` (read-only): every backup recorded in the database, newest first, with the
+/// operator label of those this process created. A recorded path outside the approved roots is
+/// not followed (stored content is data, never a licence to read a file): such an entry is left
+/// out and counted in `unlisted`.
+pub fn list(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    let resource = ResourceRef::new(ResourceKind::Backup, "list");
+    pipeline::execute(
+        ctx,
+        meta,
+        Command {
+            spec,
+            resource: &resource,
+            payload,
+        },
+        |_, _| {
+            Ok(Facts::new_record(rc(
+                DataDomain::System,
+                Classification::Internal,
+                false,
+            )))
+        },
+        |env| {
+            let mut backups = Vec::new();
+            let mut unlisted = 0u32;
+            for stored in backup::list_manifests(env.conn)? {
+                let id = stored.manifest.backup_id.clone();
+                match resolve_known(env.svc, env.conn, &id) {
+                    Ok(Some(known)) => backups.push(view(&id, &known)?),
+                    Ok(None) => {}
+                    Err(e) if e.code == "backup.manifest_path_outside_approved_roots" => {
+                        unlisted += 1;
+                    }
+                    Err(e) => return Err(e),
+                }
+            }
+            let mut m = Mutation::new(json!({ "backups": backups, "unlisted": unlisted }), None);
+            if unlisted > 0 {
+                m = m.with_warning(
+                    "backup.manifest_path_outside_approved_roots: a recorded snapshot lies outside the approved roots and is not listed",
+                );
+            }
+            Ok(m)
+        },
+    )
+}

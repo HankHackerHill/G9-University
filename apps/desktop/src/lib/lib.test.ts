@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { ERROR_CATEGORIES } from '../ipc/types';
 import { canonicalJson } from './canonical-json';
-import { civilToUtc, formatLocalDateTime, offsetAt, parseLocalDateTime, toZoned } from './civil-time';
+import { civilToUtc, formatLocalDateTime, offsetAt, parseIsoDate, parseLocalDateTime, toZoned } from './civil-time';
 import { ERROR_PRESENTATION, allCategoriesPresented } from './error-text';
-import { formatDuration } from './format';
+import { formatCivilDate, formatDuration } from './format';
 import { sha256Hex } from './sha256';
 import { APPROVAL_MACHINE, ASSESSMENT_MACHINE, BACKUP_MACHINE, SESSION_MACHINE, can, legalEvents, transition } from './state-machines';
 
@@ -81,5 +81,27 @@ describe('error text and formatting', () => {
     expect(formatDuration(0)).toBe('0:00:00');
     expect(formatDuration(15 * 60_000)).toBe('0:15:00');
     expect(formatDuration(3_725_000)).toBe('1:02:05');
+  });
+});
+
+describe('parseIsoDate', () => {
+  it('accepts the days a month has and refuses the days it does not (as the backend does)', () => {
+    expect(parseIsoDate('2026-12-31')).toEqual({ year: 2026, month: 12, day: 31 });
+    expect(parseIsoDate('2028-02-29')).toEqual({ year: 2028, month: 2, day: 29 });
+    for (const bad of ['2026-02-29', '2026-02-30', '2026-04-31', '2026-13-01', '2026-00-10', '2026-01-00', '2026-1-01', '26-01-01', '2026-01-01T00:00']) {
+      expect(parseIsoDate(bad), bad).toBeNull();
+    }
+    // 1900 is not a leap year, 2000 is.
+    expect(parseIsoDate('1900-02-29')).toBeNull();
+    expect(parseIsoDate('2000-02-29')).not.toBeNull();
+  });
+});
+
+describe('formatCivilDate', () => {
+  it('names the weekday of a civil date and leaves anything else alone', () => {
+    expect(formatCivilDate('2026-11-02')).toBe('Monday 2026-11-02');
+    expect(formatCivilDate('2026-11-08')).toBe('Sunday 2026-11-08');
+    expect(formatCivilDate('2028-02-29')).toBe('Tuesday 2028-02-29');
+    expect(formatCivilDate('not a date')).toBe('not a date');
   });
 });

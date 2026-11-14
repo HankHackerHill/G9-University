@@ -1,11 +1,12 @@
 import '../theme/screens/curriculum.css';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { isG9Error } from '../../ipc/client';
 import type { DailyPlan } from '../../ipc/operations';
 import type { G9Error } from '../../ipc/types';
 import { addDays, formatIsoDate, isoWeekday, parseIsoDate, startOfIsoWeek } from '../../lib/civil-time';
-import { formatMinutes, sentenceCase } from '../../lib/format';
-import { DAYS_PER_WEEK, PROGRAM_WEEKS } from '../../lib/program';
+import { formatCivilDate, formatMinutes, sentenceCase } from '../../lib/format';
+import { DAYS_PER_WEEK, PROGRAM_WEEKS, SETUP_CODES } from '../../lib/program';
 import { NON_CANONICAL_WARNING, hasWarning, mergeWarnings, warningsOf } from '../../lib/warnings';
 import { Badge, ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
@@ -13,6 +14,8 @@ import { Margin, MarginNote } from '../components/Margin';
 import { Loading, NoData, Panel } from '../components/Panel';
 import { PageHead } from '../components/PageHead';
 import { Warnings } from '../components/Warnings';
+import { useCommand } from '../hooks/useCommand';
+import { usePlanDay } from '../hooks/usePlanDay';
 import { useToday } from '../hooks/useToday';
 import { useIpc } from '../ipc-context';
 
@@ -52,7 +55,21 @@ export function CurriculumNavigator() {
   const [nodes, setNodes] = useState<{ key: string; days: DayNode[] } | null>(null);
   // "Try again" on a failed day reads the week again; the days already shown stay until it answers.
   const [attempt, setAttempt] = useState(0);
-  const weekKey = today.date === null ? null : formatIsoDate(startOfIsoWeek(today.date));
+  // The Monday of the week on show; null follows today's week.
+  const [anchor, setAnchor] = useState<string | null>(null);
+  const program = useCommand('curriculum.program', {});
+  const planner = usePlanDay(() => {
+    setAttempt((n) => n + 1);
+  });
+  const todayWeek = today.date === null ? null : formatIsoDate(startOfIsoWeek(today.date));
+  const weekKey = anchor ?? todayWeek;
+  const programStart = program.data?.program_start?.monday ?? null;
+  const shift = (days: number) => {
+    const from = weekKey === null ? null : parseIsoDate(weekKey);
+    if (from !== null) {
+      setAnchor(formatIsoDate(addDays(from, days)));
+    }
+  };
 
   useEffect(() => {
     // Keyed on the week string only: `today.date` is a new object on every render, and depending
@@ -82,7 +99,9 @@ export function CurriculumNavigator() {
   const plans = days.flatMap((d) => (d.plan === null ? [] : [d.plan]));
   const failed = days.length - plans.length;
   const first = plans[0];
-  const weekWarnings = mergeWarnings(...days.map((d) => d.warnings));
+  const weekWarnings = mergeWarnings(...days.map((d) => d.warnings), program.warnings, planner.warnings);
+  // Every day answered "not set up": one message, not six errors.
+  const notSetUp = days.length > 0 && days.every((d) => d.error !== null && SETUP_CODES.includes(d.error.code));
   // Non-canonical versions (the PROPOSED_SEED today) produce PROPOSED plans, never VERIFIED ones.
   const weekLabel = hasWarning(weekWarnings, NON_CANONICAL_WARNING) ? 'PROPOSED' : 'VERIFIED';
   // Sums of what was read, nothing else: a day that failed adds nothing and is reported as missing.
@@ -99,9 +118,53 @@ export function CurriculumNavigator() {
     <div className="stack">
       <PageHead
         title="Curriculum Navigator"
-        lede="The current week of the program, day by day: what each day teaches, how its time is split and the evidence it expects."
+        lede="The weeks of the program, day by day: what each day teaches, how its time is split and the evidence it expects."
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                shift(-7);
+              }}
+              disabled={weekKey === null}
+            >
+              Earlier week
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                shift(7);
+              }}
+              disabled={weekKey === null}
+            >
+              Later week
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAnchor(null);
+              }}
+              disabled={anchor === null}
+            >
+              This week
+            </button>
+            {programStart === null ? null : (
+              <button
+                type="button"
+                onClick={() => {
+                  setAnchor(programStart);
+                }}
+                disabled={anchor === programStart}
+              >
+                Week 1
+              </button>
+            )}
+          </>
+        }
       />
       {today.error !== null ? <ErrorDisplay error={today.error} onRetry={today.reload} /> : null}
+      {program.error !== null ? <ErrorDisplay error={program.error} onRetry={program.reload} /> : null}
+      {planner.error !== null ? <ErrorDisplay error={planner.error} /> : null}
       <Warnings warnings={weekWarnings} />
 
       <div className="with-margin">
@@ -120,6 +183,16 @@ export function CurriculumNavigator() {
             ) : (
               <Loading what="this week’s plan" />
             )
+          ) : notSetUp ? (
+            <NoData
+              title="Program not set up"
+              reason="The weeks come from the curriculum. Import it and choose the Monday week 1 starts on Mission Control."
+              action={
+                <Link className="button-link" to="/" viewTransition>
+                  Open Mission Control
+                </Link>
+              }
+            />
           ) : (
             <ul className="tree" aria-label="Curriculum tree">
               {days.map((d) => {
@@ -202,6 +275,22 @@ export function CurriculumNavigator() {
                                 </>
                               )}
                             </p>
+                            {plan.blocks.some((b) => b.session_id === null) ? (
+                              <div className="toolbar">
+                                <button
+                                  type="button"
+                                  className="sm"
+                                  disabled={planner.busy}
+                                  onClick={() => {
+                                    void planner.plan(d.date);
+                                  }}
+                                >
+                                  {plan.blocks.every((b) => b.session_id === null) ? 'Plan this day’s blocks' : 'Plan the missing blocks'}
+                                </button>
+                              </div>
+                            ) : (
+                              <p className="small muted">Every block of this day has a session.</p>
+                            )}
                           </>
                         )}
                       </div>
@@ -230,10 +319,28 @@ export function CurriculumNavigator() {
                     ? 'Proposed means this week was read from a curriculum version that has not been approved as canonical yet. Its days, objectives and times can still change.'
                     : 'Verified means this week was read from the curriculum version that is approved as canonical.'}
                 </p>
-                <p className="small muted">
-                  The version is not named here: the plan read (<code>curriculum.daily_plan</code>) says only whether its version is canonical. A manifest’s own provenance is reported
-                  when the manifest is checked (<code>curriculum.validate</code>).
-                </p>
+                {program.data?.curriculum == null ? (
+                  <p className="small muted">The version is not named here: the plan read says only whether its version is canonical.</p>
+                ) : (
+                  <dl className="pairs">
+                    <dt>Curriculum</dt>
+                    <dd>{program.data.curriculum.name ?? program.data.curriculum.version_id}</dd>
+                    <dt>Version</dt>
+                    <dd>
+                      <code>{program.data.curriculum.version_label}</code>
+                    </dd>
+                    <dt>Content</dt>
+                    <dd className="num">
+                      {program.data.curriculum.weeks} weeks, {program.data.curriculum.days} days, {program.data.curriculum.objectives} objectives
+                    </dd>
+                    {programStart === null ? null : (
+                      <>
+                        <dt>Week 1</dt>
+                        <dd>{formatCivilDate(programStart)}</dd>
+                      </>
+                    )}
+                  </dl>
+                )}
               </>
             )}
           </Panel>

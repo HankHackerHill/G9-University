@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chooseTransport } from './index';
+import { chooseTransport, mockOptionsFromSearch } from './index';
 import { createTauriTransport, hasTauriRuntime } from './transports/tauri';
 import { isG9Error } from './client';
 
@@ -10,6 +10,14 @@ describe('transport selection', () => {
     expect(chooseTransport('mock', true)).toBe('mock');
     expect(chooseTransport('tauri', false)).toBe('tauri');
     expect(chooseTransport('garbage', false)).toBe('mock');
+  });
+
+  it('starts the mock as a new install only when the page asks for it (a review aid of the browser build)', () => {
+    expect(mockOptionsFromSearch('?mock=fresh')).toEqual({ fresh: true });
+    expect(mockOptionsFromSearch('?x=1&mock=fresh')).toEqual({ fresh: true });
+    for (const search of ['', '?mock=other', '?mock=', '?fresh=1', '?mock=FRESH']) {
+      expect(mockOptionsFromSearch(search), search).toEqual({ fresh: false });
+    }
   });
 
   it('detects the runtime marker and reports RESOURCE_UNAVAILABLE when it is missing', async () => {

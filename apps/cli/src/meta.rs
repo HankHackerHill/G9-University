@@ -39,7 +39,7 @@ pub const APPROVAL_GATED: &[&str] = &[
 pub fn op_defaults(op: &str) -> OpDefaults {
     let (domain, mode) = match op {
         "system.status" | "approvals.list" | "approvals.decide" | "audit.recent"
-        | "export.request" => ("SYSTEM", "STUDY"),
+        | "export.request" | "backup.list" => ("SYSTEM", "STUDY"),
         "backup.create" | "backup.verify" | "backup.restore_test" => ("SYSTEM", "MAINTENANCE"),
         "curriculum.import" | "curriculum.promote" => ("LEARNING", "MAINTENANCE"),
         "assessment.begin" | "assessment.submit" => ("LEARNING", "EXAM"),

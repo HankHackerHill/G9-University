@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { isG9Error } from '../../ipc/client';
-import { AUTHORED_CODE_PATTERN, type CompetencyCreated, type CompetencyProjection, type LearningDimension } from '../../ipc/operations';
+import { AUTHORED_CODE_PATTERN, type CompetencyCreated, type CompetencyProjection, type LearningDimension, type PackImportResult } from '../../ipc/operations';
 import type { G9Error } from '../../ipc/types';
 import { stateLabel } from '../../lib/copy';
 import { formatDateTime, sentenceCase } from '../../lib/format';
@@ -55,6 +55,12 @@ export function CompetencyGraph() {
   const today = useToday();
   const client = useIpc();
   const projection = useCommand('competency.projection', {});
+  // Which of the competency packs that ship with the application are loaded (`competency.import_pack`).
+  const program = useCommand('curriculum.program', {});
+  const [packBusy, setPackBusy] = useState(false);
+  const [packError, setPackError] = useState<G9Error | null>(null);
+  const [packResult, setPackResult] = useState<PackImportResult | null>(null);
+  const [packWarnings, setPackWarnings] = useState<readonly string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // "Add a competency" (competency.create), opened from the page head.
   const [composing, setComposing] = useState(false);
@@ -88,6 +94,24 @@ export function CompetencyGraph() {
     setError(null);
   };
 
+  const loadPacks = async () => {
+    setPackBusy(true);
+    const r = await client.invoke('competency.import_pack', {});
+    setPackWarnings(warningsOf(r));
+    if (isG9Error(r)) {
+      setPackError(r);
+      setPackResult(null);
+    } else {
+      setPackError(null);
+      setPackResult(r.result);
+    }
+    setPackBusy(false);
+    projection.reload();
+    program.reload();
+  };
+  const packs = program.data?.competencies ?? null;
+  const packsMissing = packs !== null && packs.loaded < packs.available;
+
   const create = async () => {
     setBusy(true);
     const r = await client.invoke('competency.create', {
@@ -119,21 +143,42 @@ export function CompetencyGraph() {
         title="Competency Graph"
         lede="What your graded work shows you can do, dimension by dimension, and how sure each estimate is."
         actions={
-          <button
-            type="button"
-            className="primary"
-            disabled={composing}
-            onClick={() => {
-              setComposing(true);
-            }}
-          >
-            Add a competency
-          </button>
+          <>
+            {packsMissing && projections.length > 0 ? (
+              <button
+                type="button"
+                disabled={packBusy}
+                onClick={() => {
+                  void loadPacks();
+                }}
+              >
+                Load the competency packs
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="primary"
+              disabled={composing}
+              onClick={() => {
+                setComposing(true);
+              }}
+            >
+              Add a competency
+            </button>
+          </>
         }
       />
       {projection.error !== null ? <ErrorDisplay error={projection.error} onRetry={projection.reload} /> : null}
+      {program.error !== null ? <ErrorDisplay error={program.error} onRetry={program.reload} /> : null}
       {error !== null ? <ErrorDisplay error={error} /> : null}
-      <Warnings warnings={mergeWarnings(projection.warnings, createWarnings)} />
+      {packError !== null ? <ErrorDisplay error={packError} /> : null}
+      <Warnings warnings={mergeWarnings(projection.warnings, program.warnings, createWarnings, packWarnings)} />
+      {packResult !== null ? (
+        <p className="receipt" role="status" data-testid="packs-loaded">
+          Loaded {packResult.packs.reduce((n, p) => n + p.created, 0)} competencies and {packResult.prerequisites_added} prerequisite links from {packResult.packs.length} packs;{' '}
+          {packResult.loaded} of {packResult.available} are stored. The packs are proposed content: every competency stays not assessed until a final grade gives evidence for it.
+        </p>
+      ) : null}
       {created !== null && !composing ? (
         <p className="receipt" role="status" data-testid="competency-created">
           Competency added: <code>{created.code}</code> “{created.title}”, valid for {created.validity_days} days. It is selected below and stays not assessed until a final
@@ -242,7 +287,24 @@ export function CompetencyGraph() {
               <NoData reason={`${readFailed}.`} />
             )
           ) : projections.length === 0 ? (
-            <NoData title="No competencies yet" reason="Add one with Add a competency. It stays not assessed until a final grade gives evidence for it." />
+            <NoData
+              title="No competencies yet"
+              reason="Load the competency packs that ship with the application, or write your own with Add a competency. A competency stays not assessed until a final grade gives evidence for it."
+              action={
+                <div className="toolbar">
+                  <button
+                    type="button"
+                    className="primary"
+                    disabled={packBusy}
+                    onClick={() => {
+                      void loadPacks();
+                    }}
+                  >
+                    Load the competency packs
+                  </button>
+                </div>
+              }
+            />
           ) : (
             <div className="stack">
               {oneState !== null ? (

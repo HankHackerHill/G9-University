@@ -48,7 +48,7 @@ pub fn skills_fixture_root() -> PathBuf {
 pub fn default_scope(op: &str) -> (&'static str, &'static str) {
     match op {
         "system.status" | "approvals.list" | "approvals.decide" | "audit.recent"
-        | "export.request" => ("SYSTEM", "STUDY"),
+        | "export.request" | "backup.list" => ("SYSTEM", "STUDY"),
         "backup.create" | "backup.verify" | "backup.restore_test" => ("SYSTEM", "MAINTENANCE"),
         "curriculum.import" | "curriculum.promote" => ("LEARNING", "MAINTENANCE"),
         "assessment.begin" | "assessment.submit" => ("LEARNING", "EXAM"),

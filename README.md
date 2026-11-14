@@ -54,6 +54,10 @@ tests/             integration, e2e, recovery, adversarial
 scripts/           validators run by CI (python3 -I); nothing runs by default
 ```
 
+## First run
+
+A new install needs three decisions, all in the window (Mission Control, then Settings): approve the import of the 12-week G9/CT9 curriculum that ships with the application (480 hours, 72 days, 216 objectives; a proposed seed), choose the Monday week 1 starts, and optionally load the 64 competencies of the eight packs. Then **Plan today's blocks** creates one session per block, linked to the curriculum and placed on the calendar, and the Session Tracker times them. Steps, messages and what is not included: [`docs/runbooks/first-run.md`](docs/runbooks/first-run.md); the decision: [`ADR-0018`](docs/adr/ADR-0018-program-setup-and-planned-days.md).
+
 ## Build and verify
 
 ```bash

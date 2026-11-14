@@ -919,6 +919,134 @@ pub fn deliverables(
     )
 }
 
+/// How many objectives a version holds.
+pub fn count_objectives(conn: &Connection, version: &CurriculumVersionId) -> RepoResult<u32> {
+    let n: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM daily_objectives WHERE curriculum_version_id = ?1",
+        params![version.as_str()],
+        |r| r.get(0),
+    )?;
+    Ok(u32::try_from(n).unwrap_or(u32::MAX))
+}
+
+/// The title of a curriculum (`curricula.title`), if it exists.
+pub fn curriculum_title(conn: &Connection, id: &CurriculumId) -> RepoResult<Option<String>> {
+    query_opt(
+        conn,
+        "SELECT title FROM curricula WHERE id = ?1",
+        &[&id.as_str()],
+        |r| Ok(r.get::<_, String>("title")?),
+    )
+}
+
+// ---------------------------------------------------------------------------
+// The program plan (migration 0015): the Monday of week 1 and the time of day a
+// planned day's first block starts.
+// ---------------------------------------------------------------------------
+
+/// Where the program sits on the calendar. The curriculum names weeks, days and
+/// blocks but no dates; the operator anchors it here.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ProgramPlanRow {
+    /// The curriculum the plan belongs to.
+    pub curriculum_id: CurriculumId,
+    /// `YYYY-MM-DD`: the Monday of week 1 (the caller checks the weekday; storage keeps the format).
+    pub start_monday: String,
+    /// Minutes after local midnight at which a planned day's first block starts.
+    pub day_start_minute: u32,
+    /// Optimistic concurrency revision.
+    pub revision: Revision,
+    /// Row creation.
+    pub created_at: UtcMillis,
+    /// Last change.
+    pub updated_at: UtcMillis,
+}
+
+/// The plan of `curriculum_id`, if the operator set one.
+pub fn get_program_plan(
+    conn: &Connection,
+    curriculum_id: &CurriculumId,
+) -> RepoResult<Option<ProgramPlanRow>> {
+    query_opt(
+        conn,
+        "SELECT curriculum_id, start_monday, day_start_minute, revision, created_at, updated_at
+           FROM program_plan WHERE curriculum_id = ?1",
+        &[&curriculum_id.as_str()],
+        |r| {
+            Ok(ProgramPlanRow {
+                curriculum_id: parse_id(&r.get::<_, String>("curriculum_id")?)?,
+                start_monday: r.get("start_monday")?,
+                day_start_minute: u32::try_from(r.get::<_, i64>("day_start_minute")?)
+                    .map_err(|_| StorageError::Internal("program_plan.day_start_minute"))?,
+                revision: rev_from_i64(r.get("revision")?),
+                created_at: from_ms(r.get("created_at")?),
+                updated_at: from_ms(r.get("updated_at")?),
+            })
+        },
+    )
+}
+
+/// Set the plan of `curriculum_id`: insert it, or replace it under a revision check
+/// (`expected_revision` of `None` on an existing plan checks nothing, like every
+/// other update the interface sends without a revision). Returns the new revision.
+pub fn put_program_plan(
+    conn: &Connection,
+    curriculum_id: &CurriculumId,
+    start_monday: &str,
+    day_start_minute: u32,
+    expected_revision: Option<Revision>,
+    now: UtcMillis,
+) -> RepoResult<Revision> {
+    let bytes = start_monday.as_bytes();
+    let dated = bytes.len() == 10
+        && bytes.iter().enumerate().all(|(i, b)| {
+            if i == 4 || i == 7 {
+                *b == b'-'
+            } else {
+                b.is_ascii_digit()
+            }
+        });
+    if !dated || day_start_minute > 1439 {
+        return Err(RepoError::Storage(StorageError::InvalidInput(
+            "program plan: a date as YYYY-MM-DD and a start minute from 0 to 1439".to_string(),
+        )));
+    }
+    match (get_program_plan(conn, curriculum_id)?, expected_revision) {
+        (None, None) => {
+            conn.execute(
+                "INSERT INTO program_plan (curriculum_id, start_monday, day_start_minute, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?4)",
+                params![curriculum_id.as_str(), start_monday, i64::from(day_start_minute), ms(now)],
+            )?;
+            Ok(Revision::INITIAL)
+        }
+        (None, Some(_)) => Err(RepoError::Storage(StorageError::NotFound("program_plan"))),
+        (Some(current), expected) => {
+            let expected = expected.unwrap_or(current.revision);
+            let changed = conn.execute(
+                "UPDATE program_plan
+                    SET start_monday = ?3, day_start_minute = ?4, revision = revision + 1, updated_at = ?5
+                  WHERE curriculum_id = ?1 AND revision = ?2",
+                params![
+                    curriculum_id.as_str(),
+                    rev_i64(expected),
+                    start_monday,
+                    i64::from(day_start_minute),
+                    ms(now)
+                ],
+            )?;
+            finish_update(
+                conn,
+                "program_plan",
+                "curriculum_id",
+                curriculum_id.as_str(),
+                expected,
+                changed,
+            )
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1518,5 +1646,69 @@ mod tests {
             )
             .unwrap();
         assert_eq!(linked, Some(objective));
+    }
+    #[test]
+    fn a_program_plan_is_set_then_moved_under_a_revision_check() {
+        let db = db();
+        let conn = db.conn();
+        let id: CurriculumId = parse_id("g9-ct9-480").unwrap();
+        // The curriculum must exist (foreign key).
+        assert!(put_program_plan(conn, &id, "2026-11-16", 540, None, t(1)).is_err());
+        conn.execute(
+            "INSERT INTO curricula (id, title, created_at, updated_at) VALUES ('g9-ct9-480', 'p', 1, 1)",
+            [],
+        )
+        .unwrap();
+        assert_eq!(get_program_plan(conn, &id).unwrap(), None);
+        // A first set cannot carry a revision.
+        assert!(matches!(
+            put_program_plan(conn, &id, "2026-11-16", 540, Some(Revision::INITIAL), t(2)),
+            Err(RepoError::Storage(StorageError::NotFound("program_plan")))
+        ));
+        assert_eq!(
+            put_program_plan(conn, &id, "2026-11-16", 540, None, t(2)).unwrap(),
+            Revision::INITIAL
+        );
+        let row = get_program_plan(conn, &id).unwrap().unwrap();
+        assert_eq!(
+            (
+                row.start_monday.as_str(),
+                row.day_start_minute,
+                row.revision
+            ),
+            ("2026-11-16", 540, Revision::INITIAL)
+        );
+        // Moved without a revision (the interface does not track one), then with the right and a wrong one.
+        assert_eq!(
+            put_program_plan(conn, &id, "2026-11-23", 480, None, t(3)).unwrap(),
+            Revision::new(2)
+        );
+        assert_eq!(
+            put_program_plan(conn, &id, "2026-11-30", 480, Some(Revision::new(2)), t(4)).unwrap(),
+            Revision::new(3)
+        );
+        assert!(matches!(
+            put_program_plan(conn, &id, "2026-12-07", 480, Some(Revision::new(2)), t(5)),
+            Err(RepoError::Storage(StorageError::StaleRevision { .. }))
+        ));
+        let row = get_program_plan(conn, &id).unwrap().unwrap();
+        assert_eq!(
+            (row.start_monday.as_str(), row.revision),
+            ("2026-11-30", Revision::new(3))
+        );
+        // Only a date and a minute of the day are stored.
+        for bad in [
+            "2026-1-16",
+            "16.11.2026",
+            "2026-11-16T09:00",
+            "",
+            "'; DROP TABLE program_plan; --",
+        ] {
+            assert!(
+                put_program_plan(conn, &id, bad, 540, None, t(6)).is_err(),
+                "{bad}"
+            );
+        }
+        assert!(put_program_plan(conn, &id, "2026-11-16", 1440, None, t(6)).is_err());
     }
 }

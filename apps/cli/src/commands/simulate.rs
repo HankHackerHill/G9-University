@@ -1159,6 +1159,7 @@ mod tests {
             program_start: None,
             operator_id: "op".into(),
             clock: None,
+            native_confirmation: false,
         }
     }
 

@@ -15,6 +15,7 @@ pub mod competency;
 pub mod curriculum;
 pub mod evidence;
 pub mod notes;
+mod packs;
 pub mod privacy;
 pub mod retention;
 pub mod sessions;
@@ -50,6 +51,8 @@ pub fn handler_for(name: &str) -> Option<Handler> {
         "curriculum.import" => curriculum::import,
         "curriculum.promote" => curriculum::promote,
         "curriculum.daily_plan" => curriculum::daily_plan,
+        "curriculum.program" => curriculum::program,
+        "curriculum.set_program_start" => curriculum::set_program_start,
         "calendar.list" => calendar::list,
         "calendar.propose" => calendar::propose,
         "calendar.apply" => calendar::apply,
@@ -62,6 +65,10 @@ pub fn handler_for(name: &str) -> Option<Handler> {
         "session.correct_time" => sessions::correct_time,
         "notes.create" => notes::create,
         "notes.revise" => notes::revise,
+        "notes.list" => notes::list,
+        "competency.import_pack" => packs::import_pack,
+        "backup.list" => backup::list,
+        "notes.get" => notes::get,
         "assessment.list" => assessment::list,
         "assessment.begin" => assessment::begin,
         "assessment.submit" => assessment::submit,
@@ -81,6 +88,7 @@ pub fn handler_for(name: &str) -> Option<Handler> {
         "export.request" => privacy::export_request,
         "deletion.request" => privacy::deletion_request,
         "session.create" => sessions::create,
+        "session.plan_day" => sessions::plan_day,
         "calendar.create_event" => calendar::create_event,
         "calendar.update_event" => calendar::update_event,
         "calendar.delete_event" => calendar::delete_event,

@@ -185,7 +185,8 @@ describe('Learning Journal: the editor', () => {
     await user.click(screen.getByRole('button', { name: 'Save note' }));
     expect(harness.calls.find((c) => c.op === 'notes.create')?.payload).toMatchObject({ title: 'Session fixation', classification: 'INTERNAL', domain: 'LEARNING' });
     expect(await screen.findByTestId('note-saved')).toHaveTextContent('Note saved: “Session fixation”, version 1. It is selected in the list.');
-    const list = screen.getByRole('list', { name: 'Notes saved in this session' });
+    // The list is the backend's (`notes.list`): it shows the note once the read after the save answers.
+    const list = await screen.findByRole('list', { name: 'Stored notes' });
     const row = within(list).getByRole('button', { name: /^Session fixation/ });
     expect(row).toHaveAttribute('aria-pressed', 'true');
     expect(row).toHaveTextContent('Learning area, internal');
@@ -204,7 +205,9 @@ describe('Learning Journal: the editor', () => {
     expect(revise?.meta.expected_revision).toBe(1);
     expect((revise?.payload as RequestOf<'notes.revise'>).body_markdown.endsWith('Regenerate the id at login.')).toBe(true);
     expect(await screen.findByTestId('note-saved')).toHaveTextContent('Revision saved: “Session fixation”, now 2 versions.');
-    expect(within(list).getByRole('button', { name: /^Session fixation/ })).toHaveTextContent('2 versions');
+    await waitFor(() => {
+      expect(within(list).getByRole('button', { name: /^Session fixation/ })).toHaveTextContent('2 versions');
+    });
     expect(within(editor).getByTestId('revision')).toHaveTextContent('revision 2');
   });
 

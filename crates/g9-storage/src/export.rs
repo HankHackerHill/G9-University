@@ -124,6 +124,7 @@ const TABLES: &[(&str, Scope)] = &[
     // Curriculum (0002).
     ("curricula", own()),
     ("curriculum_versions", child("curriculum_id", "curricula")),
+    ("program_plan", child("curriculum_id", "curricula")),
     (
         "weeks",
         child("curriculum_version_id", "curriculum_versions"),

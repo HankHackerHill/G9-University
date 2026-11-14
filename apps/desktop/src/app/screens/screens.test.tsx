@@ -199,7 +199,7 @@ describe('Settings/Recovery', () => {
     expect(verify).toBeEnabled();
     expect(restore).toBeDisabled();
     await user.click(verify);
-    const table = screen.getByRole('table', { name: 'Backups in this session' });
+    const table = screen.getByRole('table', { name: 'Backups' });
     // CHECKED in the backend's words; the stamp says Verified and keeps the exact name in its title.
     expect(await within(table).findByText('Verified')).toHaveAttribute('title', 'CHECKED');
     expect(within(table).getByRole('button', { name: 'Test restore' })).toBeEnabled();

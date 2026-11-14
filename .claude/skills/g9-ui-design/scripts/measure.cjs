@@ -2,7 +2,8 @@
 // Layout and accessibility measurements of the running G9 MENTOR desktop UI (mock backend).
 // It measures what a screenshot shows but a person can miss, and what jsdom cannot compute.
 //
-// Usage: node measure.cjs [baseUrl] [--json]
+// Usage: node measure.cjs [baseUrl] [--json] [--fresh]
+//   --fresh  measures the first-run states: the page asks the mock to start as a new install (`?mock=fresh`).
 //   needs the dev server (`npx vite --host 127.0.0.1 --port 5173` in apps/desktop) and Playwright.
 //
 // For every screen, at 1280x800 (the default window) and 960x640 (the minimum window), it reports:
@@ -102,6 +103,7 @@ function measure() {
 (async () => {
   const args = process.argv.slice(2);
   const json = args.includes('--json');
+  const fresh = args.includes('--fresh');
   const base = args.find((a) => a.startsWith('http')) || 'http://127.0.0.1:5173';
   const browser = await chromium.launch();
   const report = [];
@@ -114,7 +116,7 @@ function measure() {
     });
     for (const [title, path] of ROUTES) {
       errors.length = 0;
-      await page.goto(`${base}/#${path}`, { waitUntil: 'networkidle' });
+      await page.goto(`${base}/${fresh ? '?mock=fresh' : ''}#${path}`, { waitUntil: 'networkidle' });
       // The route is lazy: wait until the page head of this screen is in the document.
       await page
         .waitForFunction((t) => (document.querySelector('main h1')?.textContent || '').replace(/\s*\/\s*/g, '/') === t, title, { timeout: 5000 })

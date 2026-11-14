@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/notes.list.response",
+  "title": "notes.list response (v1.0)",
+  "description": "`result` of CommandOutcome for `notes.list` (payload_schema_version 1.0): notes without bodies, most recently changed first; erased notes are not listed.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "note_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "title": {
+            "type": "string"
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "PUBLIC",
+              "INTERNAL",
+              "PRIVATE",
+              "SECRET"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "LEARNING",
+              "BUSINESS",
+              "PERSONAL",
+              "SECURITY_SENSITIVE",
+              "SYSTEM"
+            ]
+          },
+          "objective_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "UTC instant, integer epoch milliseconds."
+          },
+          "updated_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "UTC instant, integer epoch milliseconds."
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Optimistic-concurrency revision (u64)."
+          },
+          "version_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Size of the current body in bytes."
+          }
+        },
+        "required": [
+          "note_id",
+          "title",
+          "classification",
+          "domain",
+          "objective_id",
+          "version_count",
+          "size_bytes",
+          "created_at",
+          "updated_at",
+          "revision"
+        ]
+      }
+    }
+  },
+  "required": [
+    "notes"
+  ]
+}

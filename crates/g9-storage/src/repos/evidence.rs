@@ -236,6 +236,69 @@ pub fn list_notes_between(
     )
 }
 
+/// One note without its body: enough to recognise it in a list.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NoteSummaryRow {
+    /// Note id.
+    pub id: NoteId,
+    /// Title of the current revision.
+    pub title: String,
+    /// Linked objective row.
+    pub objective_id: Option<String>,
+    /// Privacy domain.
+    pub data_domain: DataDomain,
+    /// Classification.
+    pub classification: Classification,
+    /// Revisions kept (`note_versions`).
+    pub version_count: u32,
+    /// Size of the current body in bytes.
+    pub size_bytes: u64,
+    /// Revision.
+    pub revision: Revision,
+    /// Row creation.
+    pub created_at: UtcMillis,
+    /// Last change.
+    pub updated_at: UtcMillis,
+}
+
+/// The newest notes in `scope` (most recently changed first), without bodies. Erased notes have
+/// nothing left to show and are not listed. `limit` is clamped to 1..=500.
+pub fn list_note_summaries(
+    conn: &Connection,
+    scope: &ReadScope,
+    limit: u32,
+) -> RepoResult<Vec<NoteSummaryRow>> {
+    query_all(
+        conn,
+        "SELECT n.id, n.title, n.objective_id, n.data_domain, n.classification, n.revision,
+                n.created_at, n.updated_at, length(CAST(n.body_markdown AS BLOB)) AS size_bytes,
+                (SELECT COUNT(*) FROM note_versions v WHERE v.note_id = n.id) AS version_count
+           FROM notes n
+          WHERE n.erased = 0 AND (?1 = 1 OR n.data_domain = ?2)
+          ORDER BY n.updated_at DESC, n.id DESC
+          LIMIT ?3",
+        &[
+            &scope.sql_flag(),
+            &scope.sql_domain()?,
+            &i64::from(limit.clamp(1, 500)),
+        ],
+        |r| {
+            Ok(NoteSummaryRow {
+                id: parse_id(&r.get::<_, String>("id")?)?,
+                title: r.get("title")?,
+                objective_id: r.get("objective_id")?,
+                data_domain: enum_from_text(&r.get::<_, String>("data_domain")?)?,
+                classification: enum_from_text(&r.get::<_, String>("classification")?)?,
+                version_count: u32_from_i64(r.get("version_count")?, "version_count")?,
+                size_bytes: u64::try_from(r.get::<_, i64>("size_bytes")?).unwrap_or(0),
+                revision: rev_from_i64(r.get("revision")?),
+                created_at: from_ms(r.get("created_at")?),
+                updated_at: from_ms(r.get("updated_at")?),
+            })
+        },
+    )
+}
+
 /// Append a revision: new `note_versions` row (`version_no = current + 1`) and
 /// the note's current title/body under a revision check. Erased notes refuse
 /// revisions. Returns `(version_no, revision)`.

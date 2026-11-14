@@ -24,7 +24,8 @@ use g9_domain::{
     ManifestProvenance, ResourceKind, ResourceRef,
 };
 use g9_storage::repos::curriculum::{
-    self as repo, CurriculumVersionRow, NewCurriculumVersion, ProvenanceApproval,
+    self as repo, CurriculumVersionRow, NewCurriculumVersion, ProvenanceApproval, TrainingDayRow,
+    WeekRow,
 };
 use g9_storage::repos::sessions as sessions_repo;
 use g9_storage::repos::ReadScope;
@@ -72,6 +73,228 @@ pub(crate) fn active_version(
     let mut versions = repo::list_versions(conn, &svc.config.curriculum_id)?;
     versions.sort_by_key(|v| (v.imported_at, v.id.clone()));
     Ok(versions.pop())
+}
+
+/// The Monday of week 1: the bridge's override (`AppConfig::program_start`, the CLI's
+/// `--program-start`) or, failing that, the plan the operator set (`curriculum.set_program_start`).
+pub(crate) fn effective_program_start(
+    conn: &Connection,
+    svc: &Services,
+) -> Result<Option<CivilDate>, G9Error> {
+    if let Some(start) = svc.config.program_start {
+        return Ok(Some(start));
+    }
+    match repo::get_program_plan(conn, &svc.config.curriculum_id)? {
+        Some(plan) => Ok(Some(parse_date(&plan.start_monday)?)),
+        None => Ok(None),
+    }
+}
+
+/// The training day of the active version that falls on `date`: the program runs Monday to
+/// Saturday of each week counted from the program start. `None` for a Sunday, a date outside the
+/// weeks the version holds and a day the version does not define.
+pub(crate) fn training_day_on(
+    conn: &Connection,
+    svc: &Services,
+    date: CivilDate,
+) -> Result<Option<(CurriculumVersionRow, WeekRow, TrainingDayRow)>, G9Error> {
+    let version = active_version(conn, svc)?.ok_or_else(|| {
+        G9Error::not_found(
+            "curriculum.not_imported",
+            "no curriculum version is imported",
+        )
+    })?;
+    let start = effective_program_start(conn, svc)?.ok_or_else(|| {
+        G9Error::precondition_failed(
+            "curriculum.program_start_not_configured",
+            "the program start date (Monday of week 1) is not configured",
+        )
+    })?;
+    let index = date.to_days() - start.to_days();
+    let week = index.div_euclid(7) + 1;
+    let weekday = index.rem_euclid(7) + 1;
+    if weekday > 6 {
+        return Ok(None);
+    }
+    let Some(week_row) = repo::list_weeks(conn, &version.id)?
+        .into_iter()
+        .find(|w| i64::from(w.week_number) == week)
+    else {
+        return Ok(None);
+    };
+    let day = repo::list_training_days(conn, &version.id)?
+        .into_iter()
+        .find(|d| d.week_id == week_row.id && i64::from(d.day_of_week.get()) == weekday);
+    Ok(day.map(|d| (version, week_row, d)))
+}
+
+/// The minute of the day a planned day starts when the operator set no other (09:00).
+pub(crate) const DEFAULT_DAY_START_MINUTE: u32 = 540;
+
+/// `HH:MM` as minutes after midnight.
+fn parse_day_start(text: &str) -> Result<u32, G9Error> {
+    let bad = || {
+        G9Error::invalid_input(
+            "program.day_start_invalid",
+            "the time a day starts is HH:MM, from 00:00 to 23:59",
+        )
+    };
+    let (h, m) = text.split_once(':').ok_or_else(bad)?;
+    if h.len() != 2 || m.len() != 2 {
+        return Err(bad());
+    }
+    let (h, m): (u32, u32) = (h.parse().map_err(|_| bad())?, m.parse().map_err(|_| bad())?);
+    if h > 23 || m > 59 {
+        return Err(bad());
+    }
+    Ok(h * 60 + m)
+}
+
+fn format_day_start(minute: u32) -> String {
+    format!("{:02}:{:02}", minute / 60, minute % 60)
+}
+
+/// `curriculum.program`: what is imported and where the program sits on the calendar
+/// (read-only). The setup of the interface reads this to know what is left to do.
+pub fn program(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    let resource = ResourceRef::new(ResourceKind::Curriculum, "program");
+    pipeline::execute(
+        ctx,
+        meta,
+        Command {
+            spec,
+            resource: &resource,
+            payload,
+        },
+        |_, _| {
+            Ok(Facts::new_record(rc(
+                DataDomain::Learning,
+                Classification::Internal,
+                false,
+            )))
+        },
+        |env| {
+            let curriculum = match active_version(env.conn, env.svc)? {
+                None => Value::Null,
+                Some(version) => {
+                    let days = repo::list_training_days(env.conn, &version.id)?;
+                    json!({
+                        "version_id": version.id,
+                        "name": repo::curriculum_title(env.conn, &version.curriculum_id)?,
+                        "version_label": version.version_label,
+                        "provenance": version.provenance,
+                        "weeks": repo::list_weeks(env.conn, &version.id)?.len(),
+                        "days": days.len(),
+                        "objectives": repo::count_objectives(env.conn, &version.id)?,
+                        "planned_minutes": days.iter().map(|d| u64::from(d.planned_minutes)).sum::<u64>(),
+                        "imported_at": version.imported_at,
+                    })
+                }
+            };
+            let start = match repo::get_program_plan(env.conn, &env.svc.config.curriculum_id)? {
+                Some(plan) => json!({
+                    "monday": plan.start_monday,
+                    "day_start": format_day_start(plan.day_start_minute),
+                    "revision": plan.revision.get(),
+                }),
+                None => Value::Null,
+            };
+            let shipped = super::packs::catalog()?;
+            let loaded = g9_storage::repos::competency::list_competencies(
+                env.conn,
+                &ReadScope::domain(DataDomain::Learning),
+            )?
+            .iter()
+            .filter(|c| shipped.contains(c.id.as_str()))
+            .count();
+            let mut m = Mutation::new(Value::Null, None);
+            m.result = to_value(&json!({
+                "curriculum": curriculum,
+                "program_start": start,
+                "competencies": { "loaded": loaded, "available": shipped.len() },
+            }))?;
+            Ok(m)
+        },
+    )
+}
+
+#[derive(Debug, Deserialize)]
+struct SetProgramStartRequest {
+    date: String,
+    day_start: Option<String>,
+}
+
+/// `curriculum.set_program_start`: the Monday of week 1 and the time of day a planned day
+/// starts. The curriculum names weeks, days and blocks but no dates; this anchors it on the
+/// calendar. Sessions already planned keep their own times.
+pub fn set_program_start(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    let req: SetProgramStartRequest = decode(payload)?;
+    let date = parse_date(&req.date)?;
+    if date.iso_weekday() != 1 {
+        return Err(G9Error::invalid_input(
+            "program.start_not_a_monday",
+            "the program starts on a Monday: week 1 runs Monday to Saturday",
+        ));
+    }
+    let minute = parse_day_start(req.day_start.as_deref().unwrap_or("09:00"))?;
+    let curriculum_id = ctx.svc.config.curriculum_id.clone();
+    let resource = ResourceRef::new(ResourceKind::Curriculum, curriculum_id.as_str());
+    pipeline::execute(
+        ctx,
+        meta,
+        Command {
+            spec,
+            resource: &resource,
+            payload,
+        },
+        |conn, svc| {
+            let context = rc(DataDomain::Learning, Classification::Internal, false);
+            Ok(
+                match repo::get_program_plan(conn, &svc.config.curriculum_id)? {
+                    Some(plan) => Facts::existing(context, plan.revision),
+                    None => Facts::new_record(context),
+                },
+            )
+        },
+        |env| {
+            if active_version(env.conn, env.svc)?.is_none() {
+                return Err(G9Error::not_found(
+                    "curriculum.not_imported",
+                    "no curriculum version is imported: import the curriculum first",
+                ));
+            }
+            let revision = repo::put_program_plan(
+                env.conn,
+                &env.svc.config.curriculum_id,
+                &req.date,
+                minute,
+                None,
+                env.now,
+            )?;
+            Ok(Mutation::new(
+                json!({
+                    "curriculum_id": env.svc.config.curriculum_id,
+                    "monday": req.date,
+                    "day_start": format_day_start(minute),
+                }),
+                Some(revision),
+            )
+            .with_event(EventSpec::learning(
+                "curriculum.program_start_set",
+                json!({ "curriculum_id": env.svc.config.curriculum_id, "monday": req.date }),
+            )))
+        },
+    )
 }
 
 #[derive(Debug, Deserialize)]
@@ -382,7 +605,7 @@ struct DailyPlanRequest {
     zone: Option<String>,
 }
 
-fn parse_date(s: &str) -> Result<CivilDate, G9Error> {
+pub(crate) fn parse_date(s: &str) -> Result<CivilDate, G9Error> {
     let bad = || G9Error::invalid_input("date.invalid", "date must be 'YYYY-MM-DD'");
     let mut parts = s.split('-');
     let (Some(y), Some(m), Some(d), None) =
@@ -427,16 +650,16 @@ pub fn daily_plan(
                     .map_err(|_| G9Error::invalid_input("zone.invalid", "unknown IANA zone"))?,
                 None => env.svc.config.zone.clone(),
             };
-            let start = env.svc.config.program_start.ok_or_else(|| {
-                G9Error::precondition_failed(
-                    "curriculum.program_start_not_configured",
-                    "the program start date (Monday of week 1) is not configured",
-                )
-            })?;
             let version = active_version(env.conn, env.svc)?.ok_or_else(|| {
                 G9Error::not_found(
                     "curriculum.not_imported",
                     "no curriculum version is imported",
+                )
+            })?;
+            let start = effective_program_start(env.conn, env.svc)?.ok_or_else(|| {
+                G9Error::precondition_failed(
+                    "curriculum.program_start_not_configured",
+                    "the program start date (Monday of week 1) is not configured",
                 )
             })?;
             let index = date.to_days() - start.to_days();

@@ -77,6 +77,8 @@ React components are in `src/app/components/`. Class-only patterns are in `src/a
 | `Warnings` | `warnings`, `label?`, `testId?` | backend disclosures of every read and action on the screen, merged with `mergeWarnings` |
 | `Table` | `caption`, `headers`, `rows`, `numeric?`, `footer?`, `barred?`, `captionVisible?`, `widths?`, `emptyText?` | records in columns. Scrolls inside its own wrapper |
 | `ApprovalCard` | `approval`, `zone`, `now?`, `onDecide?`, `onApply?`, `disabled?` | the voucher for a protected operation (`.slip`) |
+| `FlowOutcome` | `flow` (from `useApprovalFlow`), `zone`, `now`, `onApplied(answer)` | under the control that asked: the refusal, the cancelled confirmation, the voucher. `onApplied` receives the answer of the re-issued operation |
+| `ProgramSetup` | `program` (`useCommand('curriculum.program')`), `zone`, `now`, `todayIso`, `onChanged`, `heading?` | the three setup steps as `.rows.setup-steps`: import (approval), the Monday and the time of day, the competency packs. Mission Control while the program is not set up; Settings always |
 | `Margin`, `MarginNote` | `label?` / `title?` | the margin column and a note in it |
 | `Meter` | `posted`, `doubted?`, `of`, `label`, `owed?` | one ratio against its plan |
 | `Bars`, `Segmented`, `ProgramMap`, `IntervalStrip`, `Legend`, `ChartFigure`, `onlyPart` | see `charts.tsx` | charts (section 8) |
@@ -192,22 +194,22 @@ Route and title of each screen are fixed by `src/app/router.tsx`. "Primary" is t
 
 | Screen | Layout | Primary | Main column | Detail or margin |
 |---|---|---|---|---|
-| Mission Control | stack, `.bento`, `.with-margin` | none (the now block is the action) | now block; four stats; today's blocks (`Bars`); objectives; the program (`ProgramMap`) | reviews, approvals, next on the calendar, from the mentor |
-| Daily Classroom | `.with-margin` | link "Open the session tracker" | objectives (`.rows`); today's blocks in order with state and a link each | what to hand in (evidence artifact, link to the journal); lesson from the mentor |
+| Mission Control | stack, `.bento`, `.with-margin` | none (the now block is the action) | now block (with **Plan today's blocks** when the plan has blocks and no session); the program setup (`ProgramSetup`) until the program is set up; four stats; today's blocks (`Bars`); objectives; the program (`ProgramMap`) | reviews, approvals, next on the calendar, from the mentor |
+| Daily Classroom | `.with-margin` | link "Open the session tracker" | objectives (`.rows`); today's blocks in order with state and a link each; **Plan today's blocks** / **Plan the missing blocks** in the panel head | what to hand in (evidence artifact, link to the journal); lesson from the mentor |
 | Calendar | stack | "Add an event" (composer) | toolbar (week navigation as `.seg`, "Propose review slots"); the week grid; events of the selected day (`.rows` with edit and delete) | proposal and approval vouchers appear under the control that asked |
-| Curriculum Navigator | `.with-margin` | none | the week: one `details` per day with its objectives and blocks | version and provenance of the curriculum; what "proposed" means here |
+| Curriculum Navigator | `.with-margin` | none (week navigation in the page head: Earlier week, Later week, This week, Week 1) | the week: one `details` per day with its objectives and blocks and **Plan this day's blocks** | the curriculum version (name, label, content, week 1) and provenance; what "proposed" means here |
 | Session Tracker | `.split[data-lead="end"]` | "Plan a session" (composer) | sessions grouped: needs your correction, today, planned by you, other days | timer instrument, correction form, corrections |
-| Competency Graph | `.split` | "Add a competency" (composer) | competencies (`.rows` that pick), state distribution (`Segmented` or a sentence) | the selected competency: state, four dimensions as a table, evidence |
+| Competency Graph | `.split` | "Add a competency" (composer); **Load the competency packs** beside it while some are missing and the graph is not empty (the empty state carries it itself) | competencies (`.rows` that pick), state distribution (`Segmented` or a sentence) | the selected competency: state, four dimensions as a table, evidence |
 | Assessments | `.split[data-lead="end"]` | "Define an assessment" (composer) | attempts grouped by where they stand; definitions | the selected attempt: `.steps`, the next step as primary button, grading form, grade, voucher |
 | Retention Center | stack, `.bento`, `.with-margin` | "Add a review item" (composer) | four stats; queue grouped overdue, due today, beyond budget; per row "Recalled", "Did not recall", "Skip" | the ladder as `.steps` (1, 3, 7, 21, 60 days) and what each answer does |
 | Intervention Center | `.with-margin` | none | interventions (`.rows`) with state and provenance | the lifecycle as `.steps`; diagnosis from the mentor |
-| Learning Journal | `.split[data-lead="end"]` | "New note" | notes of this session (`.rows` that pick) | editor instrument (title, area, classification, Markdown, preview), evidence (attach a file, use the note as evidence), vouchers |
+| Learning Journal | `.split[data-lead="end"]` | "New note" | stored notes (`.rows` that pick; a note is opened with `notes.get`) | editor instrument (title, area, classification, Markdown, preview, **Erase this note…** with its reason field and voucher), evidence (attach a file, use the note as evidence), vouchers |
 | Performance Dashboard | stack, `.bento`, `.grid-2` | none | four stats; study time by day; competencies by state; reviews by ladder step; measures table | none |
 | Executive Workspace | `.with-margin` | none | what is not built, as one `NoData` and a table of the planned operations | why business records are kept apart (data domain) |
 | Mentor Memory Explorer | `.with-margin` | none | hypotheses (`.rows`) with provenance | what a hypothesis is and who decides |
 | Research Center | stack, `.bento` | none | stats: network, sources; sources table | none |
 | Approvals/Audit | stack, `.bento` | none | stats: waiting for you, chain status; vouchers waiting; decided requests folded; audit table | none |
-| Settings/Recovery | `.with-margin` | none | sections: backups, export, model, appearance, about | "On this page" links; where to keep a copy; what an approval is for |
+| Settings/Recovery | `.with-margin` | none | sections: backups (the stored list), export, program (`ProgramSetup`), model, appearance, about | "On this page" links; where to keep a copy; what an approval is for |
 
 ## 12. Rules for a change
 

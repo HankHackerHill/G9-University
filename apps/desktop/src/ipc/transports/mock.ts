@@ -14,6 +14,7 @@
  * Everything here is a test double. Its data is fixture data and is labeled as such in the
  * UI through `SystemStatus.transport === 'mock'`.
  */
+import catalogJson from '../../fixtures/competency-catalog.json';
 import fixtureJson from '../../fixtures/curriculum-week3.json';
 import { canonicalJson } from '../../lib/canonical-json';
 import { BASELINE_RUBRIC, CRITERION_FLOOR_PERCENT, LEVEL_SCALE, PASS_THRESHOLD } from '../../lib/rubric';
@@ -54,6 +55,7 @@ import type {
   CompetencyProjection,
   CriterionResult,
   DailyPlan,
+  DayPlanned,
   Difficulty,
   EvidenceItemView,
   ExportFormat,
@@ -63,8 +65,13 @@ import type {
   Intervention,
   LearningDimension,
   ManifestProvenance,
+  NoteSummary,
   NoteView,
   OperatorEventKind,
+  PackImportResult,
+  ProgramCurriculum,
+  ProgramStart,
+  ProgramStatus,
   ReviewItem,
   ReviewItemAuthoredKind,
   ReviewRecord,
@@ -77,7 +84,6 @@ import type {
   Violation,
 } from '../operations';
 import type {
-  Action,
   Actor,
   ApprovalEvent,
   AssessmentEvent,
@@ -389,6 +395,14 @@ export interface MockOptions {
    * answers `PRECONDITION_FAILED export.dir_not_configured` and the approval is not spent.
    */
   exportDir?: string | null;
+  /**
+   * A new install: nothing imported, no program start, no sessions, calendar events, review
+   * items, assessments or notes. The week-3 fixture then only stands in for the structure of the
+   * imported curriculum (the mock cannot hold all twelve weeks): `curriculum.daily_plan` and
+   * `session.plan_day` answer from it once a curriculum is imported and a start is set, whatever
+   * manifest was imported; the counts `curriculum.program` reports come from the manifest.
+   */
+  fresh?: boolean;
 }
 
 /** Tauri `app_data_dir()` of `com.g9.mentor` on Linux, for a user named `operator` (fixture value). */
@@ -407,6 +421,26 @@ export interface MockTransport extends IpcTransport {
    * second interruption of the same session is reached in mock mode.
    */
   onProcessRestart(): Id[];
+}
+
+interface CatalogPack {
+  pack_id: string;
+  title: string;
+  version: string;
+  status: string;
+  competencies: { id: string; name: string; prerequisites: string[] }[];
+}
+
+/** The competency packs that ship with the application (a copy of what g9-app embeds). */
+const PACK_CATALOG: readonly CatalogPack[] = catalogJson.packs;
+const PACK_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const DAY_START_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+const DEFAULT_DAY_START = '09:00';
+
+/** The competency a prerequisite names: `id` inside the pack, `pack_id:id` across packs. */
+function prerequisiteId(reference: string): string {
+  const colon = reference.indexOf(':');
+  return colon < 0 ? reference : reference.slice(colon + 1);
 }
 
 export function createMockTransport(options: MockOptions = {}): MockTransport {
@@ -452,6 +486,13 @@ class MockState {
   /** Notes erased by an approved `deletion.request` (their domain, for the scope check). */
   private readonly erasedNotes = new Map<Id, DataDomain>();
   private evidenceSeq = 0;
+  private readonly fresh: boolean;
+  /** `curriculum_versions` and `program_plan`: what is imported and where it sits on the calendar. */
+  private program: { curriculum: ProgramCurriculum | null; start: ProgramStart | null };
+  /** Competencies of the shipped packs that `competency.import_pack` stored, in load order. */
+  private readonly packCompetencies = new Map<Id, { name: string; pack: string }>();
+  /** Stored prerequisite edges `from>to` (from = the prerequisite). */
+  private readonly packEdges = new Set<string>();
   /**
    * The approval the running command verified. It is consumed only when the command succeeds;
    * a failure afterwards leaves it APPROVED (g9-app: the command transaction rolls back and the
@@ -471,7 +512,27 @@ class MockState {
     this.confirmApproval = options.confirmApproval ?? (() => true);
     this.attachmentDir = options.attachmentDir === undefined ? MOCK_ATTACHMENT_DIR : options.attachmentDir;
     this.exportDir = options.exportDir === undefined ? MOCK_EXPORT_DIR : options.exportDir;
+    this.fresh = options.fresh === true;
+    this.program = this.fresh
+      ? { curriculum: null, start: null }
+      : { curriculum: this.fixtureCurriculum(), start: { monday: this.fixture.program_start_date, day_start: DEFAULT_DAY_START, revision: 1 } };
     this.seed();
+  }
+
+  /** What `curriculum.program` reports for the preloaded fixture: the one week it holds. */
+  private fixtureCurriculum(): ProgramCurriculum {
+    const days = this.fixture.week.days;
+    return {
+      version_id: this.fixture.curriculum_version_id,
+      name: this.fixture.name,
+      version_label: this.fixture.version,
+      provenance: this.fixture.provenance as ManifestProvenance,
+      weeks: 1,
+      days: days.length,
+      objectives: days.reduce((n, d) => n + d.objectives.length, 0),
+      planned_minutes: days.reduce((n, d) => n + d.planned_minutes, 0),
+      imported_at: this.now(),
+    };
   }
 
   // ----- helpers -----------------------------------------------------------
@@ -486,7 +547,22 @@ class MockState {
   }
 
   private programStart(): CivilDate {
-    return parseIsoDate(this.fixture.program_start_date) ?? { year: 2026, month: 11, day: 2 };
+    return parseIsoDate(this.program.start?.monday ?? this.fixture.program_start_date) ?? { year: 2026, month: 11, day: 2 };
+  }
+
+  /** Same order as the backend: the version first, then the start. */
+  private requireProgram(): void {
+    if (this.program.curriculum === null) {
+      throw fail('NOT_FOUND', 'curriculum.not_imported', 'no curriculum version is imported');
+    }
+    if (this.program.start === null) {
+      throw fail('PRECONDITION_FAILED', 'curriculum.program_start_not_configured', 'the program start date (Monday of week 1) is not configured');
+    }
+  }
+
+  /** The session of a block of a day (the planner's sessions and the fixture's both carry day and block). */
+  private sessionOfBlock(dayId: Id, seq: number, date: string): SessionRecord | undefined {
+    return [...this.sessions.values()].find((s) => s.day_id === dayId && s.block_seq === seq && s.date === date);
   }
 
   private dateOfDay(day: FixtureDay): CivilDate {
@@ -507,7 +583,8 @@ class MockState {
 
   private blockStart(day: FixtureDay, seq: number): UtcMillis {
     const date = this.dateOfDay(day);
-    let minutes = DAY_START_HOUR * 60;
+    const [hour, minute] = (this.program.start?.day_start ?? DEFAULT_DAY_START).split(':').map(Number);
+    let minutes = (hour ?? DAY_START_HOUR) * 60 + (minute ?? 0);
     for (const b of day.blocks) {
       if (b.seq < seq) {
         minutes += b.minutes;
@@ -519,6 +596,22 @@ class MockState {
   // ----- seeding -----------------------------------------------------------
 
   private seed(): void {
+    if (!this.fresh) {
+      this.seedWeek();
+    }
+    this.appendAudit({
+      actor: { id: 'system', kind: { kind: 'SYSTEM' } },
+      operation: 'mock.seed',
+      resource: { kind: 'CURRICULUM_VERSION', id: this.fixture.curriculum_version_id },
+      decision: 'ALLOW',
+      outcome: 'OK',
+      request_id: 'mock-seed',
+      trace_id: 'mock-seed',
+      details: { fixture: this.fixture.curriculum_version_id, provenance: this.fixture.provenance },
+    });
+  }
+
+  private seedWeek(): void {
     const today = civilDateOf(this.now(), this.zone);
     for (const day of this.fixture.week.days) {
       const date = this.dateOfDay(day);
@@ -638,17 +731,6 @@ class MockState {
     }
 
     this.seedReviewItems();
-
-    this.appendAudit({
-      actor: { id: 'system', kind: { kind: 'SYSTEM' } },
-      operation: 'mock.seed',
-      resource: { kind: 'CURRICULUM_VERSION', id: this.fixture.curriculum_version_id },
-      decision: 'ALLOW',
-      outcome: 'OK',
-      request_id: 'mock-seed',
-      trace_id: 'mock-seed',
-      details: { fixture: this.fixture.curriculum_version_id, provenance: this.fixture.provenance },
-    });
   }
 
   /**
@@ -915,6 +997,20 @@ class MockState {
         return this.evidenceFromNote(payload, meta);
       case 'evidence.list':
         return { result: this.evidenceList(payload, meta) };
+      case 'curriculum.program':
+        return { result: this.curriculumProgram() };
+      case 'curriculum.set_program_start':
+        return this.setProgramStart(payload, meta);
+      case 'session.plan_day':
+        return this.sessionPlanDay(payload);
+      case 'notes.list':
+        return { result: this.notesList(payload, meta) };
+      case 'notes.get':
+        return { result: this.notesGet(payload, meta) };
+      case 'competency.import_pack':
+        return this.competencyImportPack(payload);
+      case 'backup.list':
+        return { result: this.backupList() };
     }
   }
 
@@ -1061,14 +1157,6 @@ class MockState {
   }
 
   /** `policy.denied` for UPDATE/DELETE of a finalized (immutable) record: rule `immutable.finalized.deny`. */
-  private finalizedDenied(action: Action, kind: ResourceKind): CommandFailure {
-    return fail('UNAUTHORIZED', 'policy.denied', 'finalized records are immutable; corrections are superseding records', {
-      rule_id: 'immutable.finalized.deny',
-      action,
-      resource_kind: kind,
-    });
-  }
-
   /**
    * Policy rule `operator.security_sensitive.write.approval`: an operator CREATE/UPDATE of a
    * SECURITY_SENSITIVE record needs a PROTECTED_RECORD_WRITE approval (other domains: allowed in
@@ -1157,12 +1245,28 @@ class MockState {
     const weeks = Array.isArray(m.weeks) ? m.weeks : [];
     let days = 0;
     let objectives = 0;
+    let plannedMinutes = 0;
     for (const w of weeks) {
       const ds = typeof w === 'object' && w !== null && Array.isArray((w as Rec).days) ? ((w as Rec).days as unknown[]) : [];
       days += ds.length;
       for (const d of ds) {
         objectives += typeof d === 'object' && d !== null && Array.isArray((d as Rec).objectives) ? ((d as Rec).objectives as unknown[]).length : 0;
+        plannedMinutes += typeof d === 'object' && d !== null && typeof (d as Rec).planned_minutes === 'number' ? ((d as Rec).planned_minutes as number) : 0;
       }
+    }
+    // The active version is the current canonical one, else the latest import (g9-app `active_version`).
+    if (this.program.curriculum?.provenance !== 'APPROVED_CANONICAL') {
+      this.program.curriculum = {
+        version_id: versionId,
+        name: typeof m.name === 'string' ? m.name : null,
+        version_label: String(m.version),
+        provenance,
+        weeks: weeks.length,
+        days,
+        objectives,
+        planned_minutes: plannedMinutes,
+        imported_at: this.now(),
+      };
     }
     return {
       result: { curriculum_version_id: versionId, checksum_sha256: checksum, provenance, weeks: weeks.length, days, objectives },
@@ -1243,8 +1347,9 @@ class MockState {
 
   private dailyPlan(payload: unknown): Handled<DailyPlan> {
     // Same disclosure as g9-app commands/curriculum.rs: a plan from a non-canonical version says so.
-    const warnings = this.fixture.provenance === 'APPROVED_CANONICAL' ? [] : [NON_CANONICAL_PLAN_WARNING];
-    return { result: this.dailyPlanResult(payload), warnings };
+    const result = this.dailyPlanResult(payload);
+    const warnings = this.program.curriculum?.provenance === 'APPROVED_CANONICAL' ? [] : [NON_CANONICAL_PLAN_WARNING];
+    return { result, warnings };
   }
 
   private dailyPlanResult(payload: unknown): DailyPlan {
@@ -1255,7 +1360,24 @@ class MockState {
       throw fail('INVALID_INPUT', 'date.invalid', "date must be 'YYYY-MM-DD'", { field: 'date' });
     }
     const zone = optStr(rec, 'zone', 'curriculum.daily_plan') ?? this.zone;
+    this.requireProgram();
     const { day, week, weekday } = this.dayForDate(date);
+    // Before week 1 or after the last week the backend finds no week row: unscheduled, and no week named.
+    if (week < 1 || week > this.fixture.structure.weeks) {
+      return {
+        date: dateStr,
+        zone,
+        day_id: null,
+        week_number: null,
+        week_title: null,
+        unscheduled: true,
+        is_assessment_day: false,
+        planned_minutes: 0,
+        evidence_artifact: null,
+        objectives: [],
+        blocks: [],
+      };
+    }
     if (weekday === 7 && week === this.fixture.week.week_number) {
       return {
         date: dateStr,
@@ -1289,7 +1411,7 @@ class MockState {
         seq: b.seq,
         block: b.block,
         minutes: b.minutes,
-        session_id: this.sessions.has(`mock-session-${day.day_id}-${b.seq}`) ? `mock-session-${day.day_id}-${b.seq}` : null,
+        session_id: this.sessionOfBlock(day.day_id, b.seq, dateStr)?.session_id ?? null,
       })),
     };
   }
@@ -2181,6 +2303,232 @@ class MockState {
     return { result: stripSession(session), revision: 1, resource: { kind: 'STUDY_SESSION', id: session.session_id } };
   }
 
+  // ----- program setup, notes read-back, packs, backup list -------------------
+
+  /** `curriculum.program`: what is imported, where it sits on the calendar, the packs. */
+  private curriculumProgram(): ProgramStatus {
+    return {
+      curriculum: this.program.curriculum === null ? null : { ...this.program.curriculum },
+      program_start: this.program.start === null ? null : { ...this.program.start },
+      competencies: { loaded: this.packCompetencies.size, available: PACK_CATALOG.reduce((n, p) => n + p.competencies.length, 0) },
+    };
+  }
+
+  /** `curriculum.set_program_start`: the Monday of week 1 and the time a planned day starts. */
+  private setProgramStart(payload: unknown, meta: CommandMeta): Handled<ResponseOf<'curriculum.set_program_start'>> {
+    const op = 'curriculum.set_program_start';
+    const rec = asRecord(payload, op);
+    const dateStr = patterned(rec, 'date', op, /^\d{4}-\d{2}-\d{2}$/);
+    const dayStart = rec.day_start === undefined ? DEFAULT_DAY_START : patterned(rec, 'day_start', op, DAY_START_PATTERN);
+    const date = parseIsoDate(dateStr);
+    if (date === null) {
+      throw fail('INVALID_INPUT', 'date.invalid', "date must be 'YYYY-MM-DD'", { field: 'date' });
+    }
+    if (isoWeekday(date) !== 1) {
+      throw fail('INVALID_INPUT', 'program.start_not_a_monday', 'the program starts on a Monday: week 1 runs Monday to Saturday');
+    }
+    if (this.program.start !== null) {
+      this.checkRevision(meta, this.program.start.revision);
+    }
+    if (this.program.curriculum === null) {
+      throw fail('NOT_FOUND', 'curriculum.not_imported', 'no curriculum version is imported: import the curriculum first');
+    }
+    const revision = (this.program.start?.revision ?? 0) + 1;
+    this.program.start = { monday: dateStr, day_start: dayStart, revision };
+    const resource: ResourceRef = { kind: 'CURRICULUM', id: this.fixture.curriculum_id };
+    return { result: { curriculum_id: this.fixture.curriculum_id, monday: dateStr, day_start: dayStart }, revision, resource };
+  }
+
+  /**
+   * `session.plan_day`: one PLANNED session for each block of the program day on `date` that has
+   * none, linked to its day and block. The mode of the block is not part of the session view.
+   */
+  private sessionPlanDay(payload: unknown): Handled<DayPlanned> {
+    const op = 'session.plan_day';
+    const rec = asRecord(payload, op);
+    const dateStr = patterned(rec, 'date', op, /^\d{4}-\d{2}-\d{2}$/);
+    const date = parseIsoDate(dateStr);
+    if (date === null) {
+      throw fail('INVALID_INPUT', 'date.invalid', "date must be 'YYYY-MM-DD'", { field: 'date' });
+    }
+    this.requireProgram();
+    const { day } = this.dayForDate(date);
+    if (day === null || day.blocks.length === 0) {
+      throw fail('NOT_FOUND', 'curriculum.no_training_day', 'the program has no training day on this date');
+    }
+    const created: SessionView[] = [];
+    const already: DayPlanned['already_planned'] = [];
+    for (const block of day.blocks) {
+      const linked = this.sessionOfBlock(day.day_id, block.seq, dateStr);
+      if (linked !== undefined) {
+        already.push({ block: block.block, seq: block.seq, session_id: linked.session_id });
+        continue;
+      }
+      const session: SessionRecord = {
+        session_id: this.nextId('session'),
+        state: 'PLANNED',
+        day_id: day.day_id,
+        block: block.block,
+        block_seq: block.seq,
+        planned_ms: block.minutes * 60_000,
+        credited_ms: 0,
+        uncertain_ms: 0,
+        started_at: null,
+        open_interval_started_at: null,
+        requires_correction: false,
+        intervals: [],
+        corrections: [],
+        revision: 1,
+        date: dateStr,
+      };
+      this.sessions.set(session.session_id, session);
+      created.push(stripSession(session));
+      // Like g9-app: each block is also placed on the calendar, by the scheduler (the operator cannot edit it);
+      // the blind practical is an assessment slot the scheduler may not move. `block` and `session_id` stay null.
+      const isAssessment = block.block === 'blind_practical';
+      const start = this.blockStart(day, block.seq);
+      const [hour, minute] = (this.program.start?.day_start ?? DEFAULT_DAY_START).split(':').map(Number);
+      this.events.push({
+        event_id: this.nextId('event'),
+        title: `${day.day_id} ${block.block.replace(/_/g, ' ')}`,
+        kind: isAssessment ? 'ASSESSMENT' : 'STUDY_BLOCK',
+        start,
+        end: start + block.minutes * 60_000,
+        all_day: false,
+        immutable: isAssessment,
+        day_id: day.day_id,
+        block: null,
+        session_id: null,
+        adjusted: block.seq === day.blocks[0]?.seq ? civilToUtc({ ...date, hour: hour ?? DAY_START_HOUR, minute: minute ?? 0 }, this.zone).adjusted : null,
+        provenance: 'SYSTEM_DETERMINISTIC',
+      });
+    }
+    const resource: ResourceRef = { kind: 'STUDY_SESSION', id: `day-${dateStr}` };
+    return { result: { date: dateStr, day_id: day.day_id, created, already_planned: already }, revision: 1, resource };
+  }
+
+  /** `notes.list`: the newest notes of the scope's domain, without bodies; erased notes are gone. */
+  private notesList(payload: unknown, meta: CommandMeta): { notes: NoteSummary[] } {
+    const op = 'notes.list';
+    const rec = asRecord(payload, op);
+    const limit = rec.limit === undefined ? 100 : boundedInt(rec, 'limit', op, 1, 200);
+    const encoder = new TextEncoder();
+    const notes = [...this.notes.values()]
+      .filter((n) => n.domain === meta.scope.domain)
+      .sort((a, b) => b.updated_at - a.updated_at || compareIds(b.note_id, a.note_id))
+      .slice(0, limit)
+      .map(
+        (n): NoteSummary => ({
+          note_id: n.note_id,
+          title: n.title,
+          classification: n.classification,
+          domain: n.domain,
+          objective_id: n.objective_id,
+          version_count: n.version_count,
+          size_bytes: encoder.encode(n.body_markdown).length,
+          created_at: n.created_at,
+          updated_at: n.updated_at,
+          revision: n.revision,
+        }),
+      );
+    return { notes };
+  }
+
+  /** `notes.get`: one note with its body; an unknown id is not found, an erased one says so. */
+  private notesGet(payload: unknown, meta: CommandMeta): NoteView {
+    const op = 'notes.get';
+    const rec = asRecord(payload, op);
+    const id = idField(rec, 'note_id', op);
+    const note = this.notes.get(id);
+    const domain = note?.domain ?? this.erasedNotes.get(id);
+    if (domain === undefined) {
+      throw fail('NOT_FOUND', 'note.not_found', 'note not found');
+    }
+    if (domain !== meta.scope.domain) {
+      throw fail('UNAUTHORIZED', 'storage.cross_domain_read', 'cross-domain read refused; Capability::CrossDomainRead not granted', {
+        table: 'notes',
+        requested_domain: meta.scope.domain,
+        row_domain: domain,
+      });
+    }
+    if (note === undefined) {
+      throw fail('NOT_FOUND', 'note.erased', 'the note was erased; nothing of it is kept');
+    }
+    return { ...note };
+  }
+
+  /**
+   * `competency.import_pack`: load the named packs (all when none is named). Idempotent; the
+   * prerequisite edges of every pack are completed on each run, so a pack loaded later adds the
+   * edges of packs loaded before it.
+   */
+  private competencyImportPack(payload: unknown): Handled<PackImportResult> {
+    const op = 'competency.import_pack';
+    const rec = asRecord(payload, op);
+    let wanted: string[] = PACK_CATALOG.map((p) => p.pack_id);
+    if (rec.pack_ids !== undefined) {
+      const ids = strArray(rec, 'pack_ids', op);
+      if (ids.length < 1 || ids.length > 8 || new Set(ids).size !== ids.length || ids.some((i) => !PACK_ID_PATTERN.test(i))) {
+        throw schemaViolation('pack_ids', `${op}: 'pack_ids' must be 1 to 8 distinct pack ids`);
+      }
+      const unknown = ids.find((i) => !PACK_CATALOG.some((p) => p.pack_id === i));
+      if (unknown !== undefined) {
+        throw fail('NOT_FOUND', 'competency.pack_unknown', 'no competency pack of that id ships with the application');
+      }
+      wanted = [...new Set(ids)].sort();
+    }
+    const results: PackImportResult['packs'] = [];
+    for (const pack of PACK_CATALOG.filter((p) => wanted.includes(p.pack_id))) {
+      let created = 0;
+      let existing = 0;
+      for (const c of pack.competencies) {
+        if (this.packCompetencies.has(c.id)) {
+          existing += 1;
+        } else {
+          this.packCompetencies.set(c.id, { name: c.name, pack: pack.pack_id });
+          created += 1;
+        }
+      }
+      results.push({ pack_id: pack.pack_id, title: pack.title, version: pack.version, status: pack.status, competencies: pack.competencies.length, created, existing, prerequisites_added: 0 });
+    }
+    let added = 0;
+    let pending = 0;
+    for (const pack of PACK_CATALOG) {
+      for (const c of pack.competencies) {
+        if (!this.packCompetencies.has(c.id)) {
+          continue;
+        }
+        for (const reference of c.prerequisites) {
+          const from = prerequisiteId(reference);
+          if (!this.packCompetencies.has(from)) {
+            pending += 1;
+          } else if (!this.packEdges.has(`${from}>${c.id}`)) {
+            this.packEdges.add(`${from}>${c.id}`);
+            added += 1;
+            const own = results.find((r) => r.pack_id === pack.pack_id);
+            if (own !== undefined) {
+              own.prerequisites_added += 1;
+            }
+          }
+        }
+      }
+    }
+    const available = PACK_CATALOG.reduce((n, p) => n + p.competencies.length, 0);
+    return {
+      result: { packs: results, loaded: this.packCompetencies.size, available, prerequisites_added: added, prerequisites_pending: pending },
+      revision: 1,
+      resource: { kind: 'COMPETENCY', id: 'packs' },
+    };
+  }
+
+  /** `backup.list`: the recorded backups, newest first. */
+  private backupList(): ResponseOf<'backup.list'> {
+    const backups = [...this.backups.values()]
+      .sort((a, b) => b.created_at - a.created_at || compareIds(b.backup_id, a.backup_id))
+      .map((b) => ({ ...b }));
+    return { backups, unlisted: 0 };
+  }
+
   private findEvent(id: Id): CalendarEvent {
     const event = this.events.find((e) => e.event_id === id);
     if (event === undefined) {
@@ -2232,9 +2580,8 @@ class MockState {
     const start = optInt(rec, 'start', op, 0);
     const end = optInt(rec, 'end', op, 0);
     const event = this.findEvent(id);
-    if (event.immutable) {
-      throw this.finalizedDenied('UPDATE', 'CALENDAR_EVENT');
-    }
+    // g9-app checks this before policy: an event that cannot be changed is refused, and never put to an approval.
+    assertEditable(event);
     const revision = this.eventRevisions.get(id) ?? 1;
     this.checkRevision(meta, revision);
     assertEditable(event);
@@ -2264,14 +2611,12 @@ class MockState {
     const rec = asRecord(payload, op);
     const id = idField(rec, 'event_id', op);
     const event = this.findEvent(id);
-    if (event.immutable) {
-      throw this.finalizedDenied('DELETE', 'CALENDAR_EVENT');
-    }
+    // g9-app checks this before policy: the operator is never asked to approve a deletion that cannot happen.
+    assertEditable(event);
     const revision = this.eventRevisions.get(id) ?? 1;
     const resource: ResourceRef = { kind: 'CALENDAR_EVENT', id };
     this.requireApproval(op, asJson(payload), resource, 'DATA_DELETE', meta, approvalSummary(op, resource, 'DATA_DELETE'), revision);
     this.checkRevision(meta, revision);
-    assertEditable(event);
     this.events = this.events.filter((e) => e.event_id !== id);
     this.eventRevisions.delete(id);
     return { result: { event_id: id, deleted: true }, resource };
@@ -2368,7 +2713,7 @@ class MockState {
 
   /** Every competency the mock knows: one per fixture study day, one per fixture assessment, and the authored ones. */
   private knownCompetencies(): { id: Id; name: string; objective_ids: Id[] }[] {
-    const days = this.fixture.week.days
+    const days = (this.fresh ? [] : this.fixture.week.days)
       .filter((d) => !d.is_assessment_day)
       .map((d) => ({ id: `mock-competency-${d.day_id}`, name: d.evidence_artifact, objective_ids: d.objectives.map((o) => o.objective_id) }));
     // One competency per fixture assessment definition (the backend definition links one competency).
@@ -2376,7 +2721,8 @@ class MockState {
       .filter((d) => !this.definitionCompetency.has(d.assessment_id))
       .map((d) => ({ id: assessedCompetencyId(d.assessment_id), name: d.title, objective_ids: [] as Id[] }));
     const authored = this.authoredCompetencies.map((c) => ({ id: c.competency_id, name: c.name, objective_ids: [] as Id[] }));
-    return [...days, ...assessed, ...authored];
+    const packs = [...this.packCompetencies].map(([id, c]) => ({ id, name: c.name, objective_ids: [] as Id[] }));
+    return [...days, ...assessed, ...authored, ...packs];
   }
 
   /** The competency an assessment definition assesses. */

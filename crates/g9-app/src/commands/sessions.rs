@@ -38,6 +38,9 @@ use g9_domain::{
     Actor, CommandMeta, CommandOutcome, DurationMs, G9Error, ResourceKind, ResourceRef, SessionId,
     SessionState, UtcMillis,
 };
+use g9_storage::repos::calendar::{
+    self as calendar_repo, CalendarEventKind, CalendarEventRow, DstAdjustment, EventSource,
+};
 use g9_storage::repos::curriculum as curriculum_repo;
 use g9_storage::repos::sessions::{
     self as repo, ClosedBy, ManualTimeCorrectionRow, StudySessionRow,
@@ -757,6 +760,187 @@ pub fn create(
                     EventSpec::learning("session.created", json!({ "session_id": session_id })),
                 ),
             )
+        },
+    )
+}
+
+#[derive(Debug, Deserialize)]
+struct PlanDayRequest {
+    date: String,
+}
+
+/// `session.plan_day`: one PLANNED session for each block of the program day that falls on
+/// `date`, linked to its training day, objective and block, in the mode the curriculum gives the
+/// block, laid out back to back from the time the operator set for a day to start (09:00 by
+/// default) in the configured zone. Each session gets its calendar event (a study block, or an
+/// assessment for the blind practical; source SCHEDULER, so the operator cannot edit it and the
+/// scheduler plans reviews around it). A block that already has a session is left as it is, so
+/// the call can be repeated: it plans what is still missing.
+pub fn plan_day(
+    ctx: &mut AppContext,
+    spec: &'static OpSpec,
+    meta: &CommandMeta,
+    payload: &Value,
+) -> Result<CommandOutcome<Value>, G9Error> {
+    let req: PlanDayRequest = decode(payload)?;
+    let date = super::curriculum::parse_date(&req.date)?;
+    let resource = ResourceRef::new(ResourceKind::StudySession, format!("day-{}", req.date));
+    pipeline::execute(
+        ctx,
+        meta,
+        Command {
+            spec,
+            resource: &resource,
+            payload,
+        },
+        |_, _| {
+            Ok(Facts::new_record(rc(
+                g9_domain::DataDomain::Learning,
+                g9_domain::Classification::Internal,
+                false,
+            )))
+        },
+        |env| {
+            let (_, _, day) = super::curriculum::training_day_on(env.conn, env.svc, date)?
+                .ok_or_else(|| {
+                    G9Error::not_found(
+                        "curriculum.no_training_day",
+                        "the program has no training day on this date",
+                    )
+                })?;
+            let blocks = curriculum_repo::study_blocks(env.conn, &day.id)?;
+            if blocks.is_empty() {
+                return Err(G9Error::not_found(
+                    "curriculum.no_blocks",
+                    "the training day on this date has no study blocks",
+                ));
+            }
+            let scope = ReadScope::domain(g9_domain::DataDomain::Learning);
+            let existing = repo::list_sessions_for_day(env.conn, &scope, &day.id)?;
+            let day_start_minute =
+                curriculum_repo::get_program_plan(env.conn, &env.svc.config.curriculum_id)?
+                    .map_or(super::curriculum::DEFAULT_DAY_START_MINUTE, |p| {
+                        p.day_start_minute
+                    });
+            let hour = u8::try_from(day_start_minute / 60).unwrap_or(0);
+            let minute = u8::try_from(day_start_minute % 60).unwrap_or(0);
+            let civil =
+                g9_domain::CivilDateTime::new(date.year, date.month, date.day, hour, minute, 0)
+                    .map_err(|_| {
+                        G9Error::invalid_input("date.invalid", "date must be 'YYYY-MM-DD'")
+                    })?;
+            let resolved = g9_calendar::resolve_local(&civil, &env.svc.config.zone)?;
+            let day_adjustment = DstAdjustment::from_adjustment(&resolved.adjustment);
+            let mut cursor = resolved.instant;
+            let mut created = Vec::new();
+            let mut events = 0u32;
+            let mut skipped = Vec::new();
+            for block in &blocks {
+                let start = cursor;
+                let end = start
+                    .checked_add(DurationMs::from_minutes_u32(block.minutes))
+                    .map_err(|_| {
+                        G9Error::invalid_input(
+                            "session.planned_end_invalid",
+                            "the planned end overflows",
+                        )
+                    })?;
+                cursor = end;
+                if let Some(linked) = existing
+                    .iter()
+                    .find(|s| s.study_block_id.as_deref() == Some(block.id.as_str()))
+                {
+                    skipped.push(json!({
+                        "block": block.block_code,
+                        "seq": block.ordinal,
+                        "session_id": linked.id,
+                    }));
+                    continue;
+                }
+                let id: SessionId = parse_id(&new_id("session"), "session_id")?;
+                let event_id: g9_domain::CalendarEventId = parse_id(&new_id("ev"), "event_id")?;
+                let zone = env.svc.config.zone.clone();
+                calendar_repo::insert_event(
+                    env.conn,
+                    &CalendarEventRow {
+                        id: event_id.clone(),
+                        title: format!(
+                            "{} {}",
+                            tail(day.day_code.as_str()),
+                            block.block_code.replace('_', " ")
+                        ),
+                        kind: if block.mode == g9_domain::InteractionMode::Exam {
+                            CalendarEventKind::Assessment
+                        } else {
+                            CalendarEventKind::StudyBlock
+                        },
+                        civil_start: g9_calendar::to_civil(start, &zone)?,
+                        civil_end: g9_calendar::to_civil(end, &zone)?,
+                        zone,
+                        start_utc: start,
+                        end_utc: end,
+                        all_day: false,
+                        immutable: block.mode == g9_domain::InteractionMode::Exam,
+                        protected: false,
+                        source: EventSource::Scheduler,
+                        training_day_id: Some(day.id.clone()),
+                        objective_id: block.objective_id.clone(),
+                        study_block_id: Some(block.id.clone()),
+                        dst_adjustment: if created.is_empty() && skipped.is_empty() {
+                            day_adjustment
+                        } else {
+                            None
+                        },
+                        data_domain: g9_domain::DataDomain::Learning,
+                        classification: g9_domain::Classification::Internal,
+                        revision: g9_domain::Revision::INITIAL,
+                        created_at: env.now,
+                        updated_at: env.now,
+                    },
+                )?;
+                events += 1;
+                let row = StudySessionRow {
+                    id: id.clone(),
+                    training_day_id: Some(day.id.clone()),
+                    objective_id: block.objective_id.clone(),
+                    study_block_id: Some(block.id.clone()),
+                    calendar_event_id: Some(event_id),
+                    state: SessionState::Planned,
+                    mode: block.mode,
+                    zone: env.svc.config.zone.clone(),
+                    planned_start_utc: Some(start),
+                    planned_end_utc: Some(end),
+                    planned_minutes: block.minutes,
+                    started_at: None,
+                    ended_at: None,
+                    credited_ms: DurationMs::ZERO,
+                    uncertain_ms: DurationMs::ZERO,
+                    data_domain: g9_domain::DataDomain::Learning,
+                    classification: g9_domain::Classification::Internal,
+                    revision: g9_domain::Revision::INITIAL,
+                    created_at: env.now,
+                    updated_at: env.now,
+                };
+                repo::insert_session(env.conn, &row)?;
+                created.push(session_view(env.conn, env.svc, &row)?);
+            }
+            let ids: Vec<Value> = created
+                .iter()
+                .filter_map(|v| v.get("session_id").cloned())
+                .collect();
+            Ok(Mutation::new(
+                json!({
+                    "date": req.date,
+                    "day_id": tail(day.day_code.as_str()),
+                    "created": created,
+                    "already_planned": skipped,
+                }),
+                Some(g9_domain::Revision::INITIAL),
+            )
+            .with_event(EventSpec::learning(
+                "session.day_planned",
+                json!({ "date": req.date, "day": tail(day.day_code.as_str()), "sessions": ids, "events": events }),
+            )))
         },
     )
 }

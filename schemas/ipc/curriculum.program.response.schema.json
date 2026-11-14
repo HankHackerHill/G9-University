@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g9.local/schemas/ipc/curriculum.program.response",
+  "title": "curriculum.program response (v1.0)",
+  "description": "`result` of CommandOutcome for `curriculum.program` (payload_schema_version 1.0): what is imported, where the program sits on the calendar and how many competencies are defined.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "curriculum": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "description": "The active curriculum version (the current canonical one, else the latest import); null when nothing is imported.",
+      "properties": {
+        "version_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version_label": {
+          "type": "string"
+        },
+        "provenance": {
+          "type": "string",
+          "enum": [
+            "PROPOSED_SEED",
+            "RECONCILED_CANDIDATE",
+            "APPROVED_CANONICAL"
+          ]
+        },
+        "weeks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "objectives": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "planned_minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "imported_at": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "UTC instant, integer epoch milliseconds."
+        }
+      },
+      "required": [
+        "version_id",
+        "name",
+        "version_label",
+        "provenance",
+        "weeks",
+        "days",
+        "objectives",
+        "planned_minutes",
+        "imported_at"
+      ]
+    },
+    "program_start": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "description": "The plan the operator set; null until `curriculum.set_program_start` ran.",
+      "properties": {
+        "monday": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Civil date `YYYY-MM-DD`."
+        },
+        "day_start": {
+          "type": "string",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+          "description": "Time of day `HH:MM` (24 hours), in the configured zone."
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "monday",
+        "day_start",
+        "revision"
+      ]
+    },
+    "competencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Competencies of the packs that ship with the application: stored now, and defined.",
+      "properties": {
+        "loaded": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "available": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "loaded",
+        "available"
+      ]
+    }
+  },
+  "required": [
+    "curriculum",
+    "program_start",
+    "competencies"
+  ]
+}
