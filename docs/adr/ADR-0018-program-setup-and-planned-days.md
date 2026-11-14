@@ -1,6 +1,6 @@
 # ADR-0018: The program is set up in the window and a day is planned in one command
 
-**Status:** Accepted (2026-11-14), owner request: "the GUI version fully complete and ready to use for personal use, with the fully cybersecurity learning curriculum imported in". Extends ADR-0015 (owner decisions) and ADR-0017 (erasure). Changes no controlling rule of `ARCHITECTURE.md`.
+**Status:** Accepted (2026-11-14), owner request: "the GUI version fully complete and ready to use for personal use, with the fully cybersecurity learning curriculum imported in". Extends ADR-0015 (owner decisions) and ADR-0017 (erasure). Changes no controlling rule of `ARCHITECTURE.md`. Where this ADR says the window imports the shipped seed, ADR-0022 supersedes the source: the window imports the built draft (`data/curriculum/g9-ct9-480.draft.v1.json`); the seed stays as the original it is reconciled against.
 
 ## Context
 

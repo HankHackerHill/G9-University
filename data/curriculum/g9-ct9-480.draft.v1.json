@@ -1801,8 +1801,8 @@
             {
               "ref": "https://owasp.org/Top10/",
               "kind": "EXTERNAL",
-              "license_note": "OWASP project, open licence stated by the project, ASSUMED",
-              "version": "current OWASP Top 10 edition; note the year you read"
+              "license_note": "OWASP project, open licence stated by the project; CHECKED 2026-11-14 by search result only, page not opened",
+              "version": "OWASP Top 10, 2025 edition exists (SSRF is inside A01 Broken Access Control); read the current edition"
             },
             {
               "ref": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
@@ -2083,8 +2083,8 @@
             {
               "ref": "https://owasp.org/www-project-application-security-verification-standard/",
               "kind": "EXTERNAL",
-              "license_note": "OWASP project, open licence stated by the project, ASSUMED",
-              "version": "ASVS, edition to be confirmed when you read it"
+              "license_note": "OWASP project, open licence stated by the project; the standard is also published at asvs.owasp.org (reported); CHECKED 2026-11-14 by search result only, page not opened",
+              "version": "ASVS 5.0.0 (30 May 2025); a 5.0.1 patch release is planned"
             },
             {
               "ref": "docs/curriculum/weeks/week-04.md#d23",
@@ -2515,8 +2515,8 @@
             {
               "ref": "https://attack.mitre.org/tactics/TA0003/",
               "kind": "EXTERNAL",
-              "license_note": "MITRE terms of use, ASSUMED",
-              "version": "ATT&CK persistence tactic; pin the ATT&CK release you read"
+              "license_note": "MITRE terms of use; CHECKED 2026-11-14 by search result only, page not opened",
+              "version": "ATT&CK persistence tactic; v20 (October 2026) reported current, pin the release you read"
             },
             {
               "ref": "https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns",
@@ -2693,8 +2693,8 @@
             {
               "ref": "https://attack.mitre.org/tactics/TA0004/",
               "kind": "EXTERNAL",
-              "license_note": "MITRE terms of use, ASSUMED",
-              "version": "ATT&CK privilege escalation tactic; pin the ATT&CK release you read"
+              "license_note": "MITRE terms of use; CHECKED 2026-11-14 by search result only, page not opened",
+              "version": "ATT&CK privilege escalation tactic; v20 (October 2026) reported current, pin the release you read"
             },
             {
               "ref": "docs/curriculum/weeks/week-05.md#d30",
@@ -3130,8 +3130,8 @@
             {
               "ref": "https://attack.mitre.org/techniques/enterprise/",
               "kind": "EXTERNAL",
-              "license_note": "MITRE terms of use, ASSUMED",
-              "version": "ATT&CK Enterprise techniques; pin the release you read"
+              "license_note": "MITRE terms of use; CHECKED 2026-11-14 by search result only, page not opened",
+              "version": "ATT&CK Enterprise techniques; v20 (October 2026) reported current, pin the release you read"
             },
             {
               "ref": "docs/curriculum/weeks/week-06.md#d35",
@@ -3280,10 +3280,10 @@
           "is_assessment_day": false,
           "resources": [
             {
-              "ref": "https://attack.mitre.org/datasources/",
+              "ref": "https://attack.mitre.org/resources/updates/updates-october-2025/",
               "kind": "EXTERNAL",
-              "license_note": "MITRE terms of use, ASSUMED",
-              "version": "ATT&CK data sources; pin the release you read"
+              "license_note": "MITRE terms of use; CHECKED 2026-11-14 by search result only, page not opened",
+              "version": "ATT&CK v18 release notes (October 2025): detection strategies and analytics, data sources deprecated"
             },
             {
               "ref": "https://docs.fluentbit.io/",
@@ -3556,8 +3556,8 @@
             {
               "ref": "https://attack.mitre.org/",
               "kind": "EXTERNAL",
-              "license_note": "MITRE terms of use, ASSUMED",
-              "version": "ATT&CK knowledge base; pin the release you read"
+              "license_note": "MITRE terms of use; CHECKED 2026-11-14 by search result only, page not opened",
+              "version": "ATT&CK knowledge base; v20 (October 2026) reported current, pin the release you read"
             },
             {
               "ref": "https://www.sans.org/white-papers/",
@@ -4690,8 +4690,8 @@
             {
               "ref": "https://www.nist.gov/itl/ai-risk-management-framework",
               "kind": "EXTERNAL",
-              "license_note": "NIST publication, freely available, ASSUMED",
-              "version": "AI Risk Management Framework, current version; note the version you read"
+              "license_note": "NIST publication, freely available; CHECKED 2026-11-14 by search result only, page not opened",
+              "version": "AI RMF 1.0 (January 2023, NIST AI 100-1); a 2.0 revision is reported, not confirmed"
             },
             {
               "ref": "docs/curriculum/weeks/week-09.md#d53",
@@ -5528,8 +5528,8 @@
             {
               "ref": "https://slsa.dev/",
               "kind": "EXTERNAL",
-              "license_note": "open specification, ASSUMED",
-              "version": "supply-chain levels for software artefacts, current specification; note the version you read"
+              "license_note": "open specification; CHECKED 2026-11-14 by search result only, page not opened",
+              "version": "SLSA v1.2 (November 2025), adds the Source track; v1.0 (2023) and v1.1 (April 2025) are earlier"
             },
             {
               "ref": "https://huggingface.co/docs/safetensors",
@@ -5631,8 +5631,8 @@
             {
               "ref": "https://www.nist.gov/itl/ai-risk-management-framework",
               "kind": "EXTERNAL",
-              "license_note": "NIST publication, freely available, ASSUMED",
-              "version": "AI Risk Management Framework, current version; note the version you read"
+              "license_note": "NIST publication, freely available; CHECKED 2026-11-14 by search result only, page not opened",
+              "version": "AI RMF 1.0 (January 2023, NIST AI 100-1); a 2.0 revision is reported, not confirmed"
             },
             {
               "ref": "docs/curriculum/weeks/week-11.md#d64",
@@ -5874,8 +5874,8 @@
             {
               "ref": "https://www.first.org/cvss/",
               "kind": "EXTERNAL",
-              "license_note": "specification published by FIRST, terms to be checked, ASSUMED",
-              "version": "the common vulnerability scoring system, current version; note the version you use (4.0 was published in November 2023)"
+              "license_note": "specification published by FIRST, terms to be checked; CHECKED 2026-11-14 by search result only, page not opened",
+              "version": "CVSS v4.0 (November 2023); no later version was found"
             },
             {
               "ref": "https://attack.mitre.org/",
@@ -6052,8 +6052,8 @@
             {
               "ref": "https://attack.mitre.org/tactics/TA0004/",
               "kind": "EXTERNAL",
-              "license_note": "MITRE terms of use, ASSUMED",
-              "version": "ATT&CK privilege escalation tactic; pin the release you read"
+              "license_note": "MITRE terms of use; CHECKED 2026-11-14 by search result only, page not opened",
+              "version": "ATT&CK privilege escalation tactic; v20 (October 2026) reported current, pin the release you read"
             },
             {
               "ref": "docs/curriculum/weeks/week-12.md#d69",

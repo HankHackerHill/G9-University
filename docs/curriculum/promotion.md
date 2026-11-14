@@ -18,7 +18,7 @@ The draft `data/curriculum/g9-ct9-480.draft.v1.json` is built from `docs/curricu
 | Read the 72 day sheets and the 12 Saturday assessments | `docs/curriculum/weeks/week-01.md` to `week-12.md` | the approval says the content is acceptable to teach from |
 | Read the coverage matrix and the list of changes against the seed | `docs/curriculum/coverage.md` | shows which objective builds which of the 64 competencies |
 | Settle the open items | `docs/curriculum/design.md` "Not decided by this document" | for example the source of each Saturday blind practical |
-| Check the resources you will rely on | the `### Resources` lines of each day | every external resource is `ASSUMED` unless its note says `CHECKED`; none was opened, so terms, versions and availability are unverified |
+| Check the resources you will rely on | the `### Resources` lines of each day | 138 distinct external references (184 uses): none was opened; 15 were checked by search result only, 104 say ASSUMED, and 19 are numbered publications (RFCs, NIST special publications) cited by number and date from knowledge; terms, versions and availability are unverified |
 
 ## Steps
 
@@ -26,7 +26,7 @@ Close the window first: the CLI and the window must not write the same data dire
 
 | # | Command | You should see |
 |---|---|---|
-| 0 | `python3 -I scripts/build_curriculum.py` and `python3 -I scripts/check_curriculum_seed.py data/curriculum/g9-ct9-480.draft.v1.json` | `generated files are current`; `PASS` with canonical checksum `836f989e…a121fc` |
+| 0 | `python3 -I scripts/build_curriculum.py` and `python3 -I scripts/check_curriculum_seed.py data/curriculum/g9-ct9-480.draft.v1.json` | `generated files are current`; `PASS`, and the canonical checksum of the draft (note it: it changes with every edit of a week file) |
 | 1 | `$G9 reconcile --original data/curriculum/g9-ct9-480.seed.v0.json --candidate data/curriculum/g9-ct9-480.draft.v1.json --human` | `days: 0 unchanged, 72 changed, 0 missing, 0 added`; `metadata_changes: []`; one group of 72 days, each changed in the same eight fields (the three objective texts, the three competency lists, `evidence_artifact`, `resources`); `binding: ABSENT`; `promotion_allowed: false`. Note the three checksums |
 | 2 | `$G9 reconcile --original <seed> --candidate <draft> --write-candidate <dir>/rc1.json --candidate-version 1.0.0-rc1 --approved-by <your actor id> --approved-at now` | `binding: MATCHED` and three new files: `rc1.json`, `rc1.import.json`, `rc1.promote.json`. The three review flags have no default: the block says that you reviewed this diff. An existing file is never overwritten |
 | 3 | `$G9 call curriculum.import --data-dir "$D" --payload-file <dir>/rc1.import.json` | `APPROVAL_REQUIRED` and an approval id |
@@ -70,4 +70,4 @@ A later edit is a new version: edit the week files, rebuild, choose a new draft 
 | The route (reconcile, write, import, promote) runs on the real draft and the real seed in a throwaway data directory, including the refusals above | TESTED 2026-11-14: `apps/cli/tests/curriculum_promotion.rs`, `crates/g9-curriculum/tests/draft_v1.rs`, `a01_gate.rs` |
 | The same route on your data directory | NOT RUN: it is your approval |
 | The window cannot promote | PROPOSED: a Settings panel is not built |
-| Resources and licences of the external references | ASSUMED, see above |
+| Resources and licences of the external references | ASSUMED or checked by search result only, see above |

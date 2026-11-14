@@ -43,7 +43,7 @@ Hand in the scope statement and authorization note, the baseline with hashes and
 
 ### Resources
 - https://csrc.nist.gov/pubs/sp/800/115/final | External | SP 800-115 (September 2008) | NIST publication, freely available
-- https://www.first.org/cvss/ | External | the common vulnerability scoring system, current version; note the version you use (4.0 was published in November 2023) | specification published by FIRST, terms to be checked, ASSUMED
+- https://www.first.org/cvss/ | External | CVSS v4.0 (November 2023); no later version was found | specification published by FIRST, terms to be checked; CHECKED 2026-11-14 by search result only, page not opened
 - https://attack.mitre.org/ | External | ATT&CK knowledge base; pin the release you read (version 20 was reported current on 2026-11-14) | MITRE terms of use; CHECKED 2026-11-14 by search result only, page not opened
 
 ### Watch for
@@ -124,7 +124,7 @@ Hand in the enumeration records, the chain diagram with the boundary for each st
 
 ### Resources
 - https://github.com/SpecterOps/BloodHound | External | Community Edition, current release; pin the version you run | open source project, licence to be checked, ASSUMED
-- https://attack.mitre.org/tactics/TA0004/ | External | ATT&CK privilege escalation tactic; pin the release you read | MITRE terms of use, ASSUMED
+- https://attack.mitre.org/tactics/TA0004/ | External | ATT&CK privilege escalation tactic; v20 (October 2026) reported current, pin the release you read | MITRE terms of use; CHECKED 2026-11-14 by search result only, page not opened
 
 ### Watch for
 Reporting a tool's path without the right behind each edge. Verifying a fix with the same step that found the flaw. Ignoring the hosts that are not on the first chain.

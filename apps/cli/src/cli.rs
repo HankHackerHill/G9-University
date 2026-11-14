@@ -82,7 +82,7 @@ pub enum Command {
     },
     /// curriculum.validate then curriculum.import of the seed manifest as PROPOSED_SEED.
     ImportSeed {
-        /// Manifest path (default: data/curriculum/g9-ct9-480.seed.v0.json).
+        /// Manifest path (default: data/curriculum/g9-ct9-480.seed.v0.json, the Appendix A skeleton; the curriculum that ships with the window is data/curriculum/g9-ct9-480.draft.v1.json).
         #[arg(long, value_name = "PATH")]
         manifest: Option<PathBuf>,
     },

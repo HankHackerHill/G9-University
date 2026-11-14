@@ -1,15 +1,18 @@
 import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDuration, formatMinutes, sentenceCase } from '../../lib/format';
+import { findSheet } from '../../lib/lesson-sheets';
 import { SETUP_CODES } from '../../lib/program';
 import { NON_CANONICAL_WARNING, hasWarning, mergeWarnings } from '../../lib/warnings';
 import { ProvenanceBadge, StateBadge } from '../components/Badge';
 import { ErrorDisplay } from '../components/ErrorDisplay';
+import { LessonMarginPanels, LessonSheetPanel, type LessonState } from '../components/LessonSheet';
 import { Margin } from '../components/Margin';
 import { PageHead } from '../components/PageHead';
 import { Loading, ModelUnavailable, NoData, Panel } from '../components/Panel';
 import { Warnings } from '../components/Warnings';
 import { useCommand } from '../hooks/useCommand';
+import { useLessonSheets } from '../hooks/useLessonSheets';
 import { usePlanDay } from '../hooks/usePlanDay';
 import { useToday } from '../hooks/useToday';
 
@@ -37,6 +40,21 @@ export function DailyClassroom() {
   // today, rtm R-004) is a proposal, not a verified record.
   const planLabel = hasWarning(plan.warnings, NON_CANONICAL_WARNING) ? 'PROPOSED' : 'VERIFIED';
   const s = today.status;
+  // The lesson sheets of the day on screen: read once a day with blocks is shown, and used only when
+  // the plan's objectives are the ones the sheet was written for (see lib/lesson-sheets.ts).
+  const sheetDayId = day !== null && !day.unscheduled ? day.day_id : null;
+  const sheetsRead = useLessonSheets(sheetDayId !== null);
+  const lesson: LessonState = {
+    lookup:
+      day !== null && sheetDayId !== null && sheetsRead.sheets !== null
+        ? findSheet(
+            sheetsRead.sheets,
+            sheetDayId,
+            day.objectives.map((o) => o.text),
+          )
+        : null,
+    failed: sheetsRead.failed,
+  };
 
   return (
     <div className="stack">
@@ -199,6 +217,8 @@ export function DailyClassroom() {
                   </ol>
                 )}
               </Panel>
+
+              <LessonSheetPanel day={day} state={lesson} sessions={todaySessions} label={planLabel} />
             </>
           )}
         </div>
@@ -224,6 +244,8 @@ export function DailyClassroom() {
               Notes and evidence go in the journal, where every save is kept as a version under its content hash. <Link to="/journal">Open the Learning Journal</Link>
             </p>
           </Panel>
+
+          <LessonMarginPanels state={lesson} />
 
           <Panel title="Lesson from the mentor" as="aside" actions={<ProvenanceBadge label="RECOMMENDATION" />} note="A lesson is advice. It never changes the plan, a timer or a grade.">
             {s === null ? (

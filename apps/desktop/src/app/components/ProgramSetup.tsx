@@ -16,10 +16,14 @@ import { FlowOutcome } from './FlowOutcome';
 import { Loading, Panel } from './Panel';
 import { Warnings } from './Warnings';
 
-/** The curriculum that ships with the application, read only when the operator asks to import it. */
-async function loadSeed(): Promise<JsonValue> {
-  const seed = await import('../../../../../data/curriculum/g9-ct9-480.seed.v0.json');
-  return seed.default;
+/**
+ * The curriculum that ships with the application, read only when the operator asks to import it:
+ * the draft built in the repository (`docs/curriculum/`, ADR-0022). It is `PROPOSED_SEED` until the
+ * operator promotes it. The Appendix A seed stays in the repository as the original it is reconciled against.
+ */
+async function loadShippedCurriculum(): Promise<JsonValue> {
+  const draft = await import('../../../../../data/curriculum/g9-ct9-480.draft.v1.json');
+  return draft.default;
 }
 
 /** Today when it is a Monday, else the next Monday; empty when today is not known yet. */
@@ -70,7 +74,7 @@ export function ProgramSetup({
 }) {
   const client = useIpc();
   const importFlow = useApprovalFlow<'curriculum.import'>();
-  const [seedProblem, setSeedProblem] = useState<string | null>(null);
+  const [loadProblem, setLoadProblem] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   // Null until the operator touches the field: the suggestion follows today until then.
   const [date, setDate] = useState<string | null>(null);
@@ -93,12 +97,12 @@ export function ProgramSetup({
   };
 
   const importCurriculum = async () => {
-    setSeedProblem(null);
+    setLoadProblem(null);
     let manifest: JsonValue;
     try {
-      manifest = await loadSeed();
+      manifest = await loadShippedCurriculum();
     } catch {
-      setSeedProblem('The curriculum file that ships with the application could not be loaded, so nothing was imported.');
+      setLoadProblem('The curriculum file that ships with the application could not be loaded, so nothing was imported.');
       return;
     }
     await importFlow.run((approvalId) => client.invoke('curriculum.import', { manifest, provenance: 'PROPOSED_SEED' }, approvalId === undefined ? {} : { approvalId }));
@@ -155,7 +159,7 @@ export function ProgramSetup({
               <span className="row-title">{curriculum === null ? '1. Import the curriculum' : '1. Curriculum imported'}</span>
               <span className="row-sub">
                 {curriculum === null
-                  ? 'The 12-week G9/CT9 program (480 hours) ships with this application as a proposed seed. Importing it needs your approval; the confirmation window names what is imported.'
+                  ? 'The 12-week G9/CT9 program (480 hours) ships with this application as a proposed draft: objectives with success criteria, a hand-in and a lesson sheet for every day. Importing it needs your approval; the confirmation window names what is imported.'
                   : `${curriculum.name ?? 'Curriculum'}, version ${curriculum.version_label}: ${curriculum.weeks} weeks, ${curriculum.days} days, ${curriculum.objectives} objectives, ${formatMinutes(curriculum.planned_minutes)}.`}
               </span>
             </div>
@@ -175,9 +179,9 @@ export function ProgramSetup({
                 <ProvenanceBadge label={curriculum.provenance === 'APPROVED_CANONICAL' ? 'VERIFIED' : 'PROPOSED'} />
               )}
             </div>
-            {seedProblem === null ? null : (
+            {loadProblem === null ? null : (
               <p className="setup-body field-error" role="alert">
-                {seedProblem}
+                {loadProblem}
               </p>
             )}
             {curriculum !== null && importedNow === null ? null : (

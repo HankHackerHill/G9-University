@@ -201,7 +201,7 @@ Hand in the telemetry inventory with gaps, the six hypotheses with baselines, th
 
 ### Resources
 - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/advanced-security-auditing | External | current auditing documentation; note the date you read it | vendor documentation, terms to be checked, ASSUMED
-- https://attack.mitre.org/techniques/enterprise/ | External | ATT&CK Enterprise techniques; pin the release you read | MITRE terms of use, ASSUMED
+- https://attack.mitre.org/techniques/enterprise/ | External | ATT&CK Enterprise techniques; v20 (October 2026) reported current, pin the release you read | MITRE terms of use; CHECKED 2026-11-14 by search result only, page not opened
 
 ### Watch for
 Writing thresholds before measuring a baseline. Auditing enabled in the policy but not on the objects. A detection tested only against the behaviour it was written for.

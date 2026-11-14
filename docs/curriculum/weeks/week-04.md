@@ -83,7 +83,7 @@ Add the network layer: an egress rule on the web guest that denies private desti
 Hand in the diagram (the application, the internal service, the allowed and refused flows), the demonstration, the test list by bypass class with failing and passing output, and the egress rule with its test. It is accepted when every bypass class has a test and the network rule is shown to work independently of the validator.
 
 ### Resources
-- https://owasp.org/Top10/ | External | current OWASP Top 10 edition; note the year you read | OWASP project, open licence stated by the project, ASSUMED
+- https://owasp.org/Top10/ | External | OWASP Top 10, 2025 edition exists (SSRF is inside A01 Broken Access Control); read the current edition | OWASP project, open licence stated by the project; CHECKED 2026-11-14 by search result only, page not opened
 - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html | External | current cheat sheet; note the revision date you read | OWASP project, open licence stated by the project, ASSUMED
 - https://portswigger.net/web-security/ssrf | External | Web Security Academy, content as of the day you use it | free account required; terms to be checked, ASSUMED
 
@@ -206,7 +206,7 @@ Hand in the threat model: diagram, threat table with scores and reasoning, the f
 ### Resources
 - https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html | External | current cheat sheet; note the revision date you read | OWASP project, open licence stated by the project, ASSUMED
 - https://owasp.org/www-project-threat-dragon/ | External | current release; pin the version you install | open source project, ASSUMED
-- https://owasp.org/www-project-application-security-verification-standard/ | External | ASVS, edition to be confirmed when you read it | OWASP project, open licence stated by the project, ASSUMED
+- https://owasp.org/www-project-application-security-verification-standard/ | External | ASVS 5.0.0 (30 May 2025); a 5.0.1 patch release is planned | OWASP project, open licence stated by the project; the standard is also published at asvs.owasp.org (reported); CHECKED 2026-11-14 by search result only, page not opened
 
 ### Watch for
 A diagram drawn from memory. Scores with no reasoning. A model nobody updates after the next change.

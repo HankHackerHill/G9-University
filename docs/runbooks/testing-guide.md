@@ -122,6 +122,7 @@ A step that cannot run here (no WebKit for `desktop-shell`, no `cargo-deny` or `
 
 Recorded run, 2026-11-12, `433895a`: rust (fmt, clippy, test: 762 passed, doc tests, tree, cargo-deny with the offline database), frontend (npm ci, typecheck, lint, test, build, npm audit), content gates and both SBOMs passed; `desktop-shell` SKIPPED (no WebKit in the sandbox). TESTED.
 Recorded run, 2026-11-14, after the security remediation (local, no CI): rust (fmt, clippy, test: 951 passed, 0 failed), shell crate type-check and lint, smoke, content gates, frontend (tsc, eslint, vitest 463 in 38 files, vite build), design audit, layout 32/32, `personal.cjs` 22/22. TESTED. NOT RUN: the shell on a display, `tour.cjs`, `cargo deny`. New tests: `crates/g9-skills/tests/package_hardening.rs` (a package is read once from regular files within bounds; a FIFO no longer blocks the load; a package that differs from its pin is refused before it is parsed), `crates/g9-storage/tests/audit_tail.rs` and `crates/g9-app/tests/audit_tail.rs` (the audit tail), `crates/g9-app/tests/exam_mode_derivation.rs` (the backend derives the mode), `crates/g9-app/tests/boundary_revision.rs` (revision 0), `native_confirmation.rs` (a declined confirmation is audited).
+Recorded run, 2026-11-14, after the curriculum and its lesson sheets (local, no CI): rust (fmt, clippy, test: 968 passed, 0 failed; the default members, `cargo test --all-targets`), smoke, content gates (the draft and the seed both PASS), frontend (tsc, eslint, vitest 481 in 40 files, vite build), design audit, `personal.cjs` 29/29. TESTED. NOT RUN: the shell on a display, `tour.cjs`, `cargo deny`, the promotion route on a real data directory. New tests: `crates/g9-curriculum/tests/draft_v1.rs`, `a01_reviewed_diff_is_bound_to_the_candidate_content`, `apps/cli/src/commands/reconcile.rs`, `apps/cli/tests/curriculum_promotion.rs`, `apps/desktop/src/lib/lesson-sheets.test.ts`, `src/app/screens/lesson-sheets.test.tsx`.
 
 ### 1.8 The real interface against the real backend (no GTK, no WebKit)
 
@@ -131,12 +132,27 @@ The desktop shell cannot be built where there is no GTK or WebKit, but everythin
 cargo build -p g9-cli --example bridge_stdio --offline
 (cd apps/desktop && npm run build)
 node scripts/e2e/tour.cjs --out /tmp/g9-tour [--import] [--program-start 2026-11-16]   # opens every screen, prints what a person sees, one screenshot each
-node scripts/e2e/personal.cjs --out /tmp/g9-e2e                                         # the whole first-run flow, 22 checks
+node scripts/e2e/personal.cjs --out /tmp/g9-e2e                                         # the whole first-run flow, 29 checks
 ```
 
-`personal.cjs` (TESTED 2026-11-14: 22 passed, 0 failed) walks: first run says the program is not set up; import with approval and native confirmation (12 weeks, 72 days, 216 objectives); the Monday and the time of day; plan today (one PLANNED session per block, all linked to one day, one scheduler event each); run a block with the timer (the backend credits real seconds, none in doubt); the calendar draws the blocks; a note survives a reload and opens with its text; erasing it (approval, confirmation text, no file of the data directory holds the text, the list is empty); the 64 competencies; a backup listed after a reload; the audit chain intact; no console error, page error or CSP violation. Checks read the backend directly where they can (`session.list`, `calendar.list`, `notes.list`, `audit.recent`) instead of matching page text. It refuses to run on a Sunday (the program has no blocks then).
+`personal.cjs` (TESTED 2026-11-14: 29 passed, 0 failed) walks: first run says the program is not set up; import with approval and native confirmation (12 weeks, 72 days, 216 objectives; the version is the built draft `1.0.0-draft1`); the Monday and the time of day; plan today (one PLANNED session per block, all linked to one day, one scheduler event each); the Classroom's lesson sheet (one section per block in the order of the blocks plus the week, the first block open, watch for and sources in the margin with no link, the text is a lesson and not a placeholder, nothing was written; screenshots at 1280 and 1440 wide, dark, and the boxed `classic-desktop` theme); run a block with the timer, after which the sheet opens the next block (the backend credits real seconds, none in doubt); the calendar draws the blocks; a note survives a reload and opens with its text; erasing it (approval, confirmation text, no file of the data directory holds the text, the list is empty); the 64 competencies; a backup listed after a reload; the audit chain intact; no console error, page error or CSP violation. Checks read the backend directly where they can (`session.list`, `calendar.list`, `notes.list`, `audit.recent`) instead of matching page text. It refuses to run on a Sunday (the program has no blocks then).
 
 Layout of the first-run states: `node .claude/skills/g9-ui-design/scripts/measure.cjs http://127.0.0.1:5173 --fresh` against a dev server; the page starts the mock as a new install when its URL carries `?mock=fresh` (a review aid of the browser build; the shell never reads it). TESTED 2026-11-14: 32 measurements, 32 clean, with and without `--fresh`.
+
+### 1.9 The curriculum, its tooling and its promotion route
+
+The 12 week files are the source; everything generated from them is checked for staleness. None of this starts CI.
+
+```sh
+python3 -I scripts/build_curriculum.py                          # validate the sources; fail when a generated file is stale (--write regenerates)
+python3 -I scripts/check_curriculum_seed.py data/curriculum/g9-ct9-480.draft.v1.json   # independent structural gate on the manifest (stdlib, not the builder)
+cargo test -p g9-curriculum --test draft_v1 --test a01_gate     # the draft against the seed with the application's own parser, validator and diff
+cargo test -p g9-cli --lib reconcile                            # g9 reconcile: 8 unit tests
+cargo test -p g9-cli --test curriculum_promotion                # the route through the binary in a throwaway data directory: report, write, import, promote, refusals
+(cd apps/desktop && npx vitest run src/lib/lesson-sheets.test.ts src/app/screens/lesson-sheets.test.tsx)   # sheets schema and fit with the manifest; the Classroom's panel states
+```
+
+What each check proves (TESTED 2026-11-14 unless stated): the sources keep the Appendix A wording and the structural rules; the draft is valid, `PROPOSED_SEED` and non-authoritative, equals the seed in every structural field, and differs only in the eight enrichment fields of each of the 72 days; `promotion_allowed` is false until a block bound to this exact diff exists, and editing a reviewed field afterwards breaks the binding (`a01_reviewed_diff_is_bound_to_the_candidate_content` failed before the fix); through the binary, an edited candidate imports but cannot be promoted and a tampered promote payload is refused before any approval is asked for; the 12 assessment definitions are accepted by `assessment.define` after `competency.import_pack` (run by hand against a scratch directory, not an automated test: NOT in a test file); the sheets file validates against its schema and records the objective texts of the draft it was generated with. NOT RUN: the route on the owner's own data directory (it is the owner's approval).
 
 ## 2. On the G9 host (Ubuntu 26.04.1 LTS)
 

@@ -1,8 +1,9 @@
 // The whole personal-use flow, in the real interface against the real Rust backend (no mock, no fixture):
 //
 //   first run -> import the curriculum (approval + native confirmation) -> choose the Monday week 1 starts ->
-//   plan today's blocks -> run a block with the timer -> write a note, reload, read it back -> erase it ->
-//   load the competency packs -> make a backup and see it listed after a reload.
+//   plan today's blocks -> read the day's lesson sheet in the Classroom -> run a block with the timer (the sheet
+//   opens the next block) -> write a note, reload, read it back -> erase it -> load the competency packs ->
+//   make a backup and see it listed after a reload.
 //
 //   node scripts/e2e/personal.cjs --out <dir>
 //
@@ -35,7 +36,7 @@ function check(name, ok, detail = '') {
 (async () => {
   const out = arg('--out', path.join(REPO, 'target', 'e2e-personal'));
   fs.mkdirSync(out, { recursive: true });
-  const shot = async (page, name) => { await page.waitForTimeout(250); await page.screenshot({ path: path.join(out, `${name}.png`), fullPage: false }); };
+  const shot = async (page, name, fullPage = false) => { await page.waitForTimeout(250); await page.screenshot({ path: path.join(out, `${name}.png`), fullPage }); };
   // The window asks the backend for "today"; it is the host's today. Week 1 starts on this week's Monday so that today is a program day.
   const monday = mondayOf(new Date());
   if (new Date().getDay() === 0) {
@@ -73,6 +74,7 @@ function check(name, ok, detail = '') {
     await button('Apply with approval').click();
     await waitText('Imported 12 weeks, 72 days and 216 objectives');
     check('import: 12 weeks, 72 days, 216 objectives', (await text()).includes('Imported 12 weeks, 72 days and 216 objectives as PROPOSED_SEED'));
+    check('import: the curriculum that ships is the built draft (1.0.0-draft1), not the Appendix A seed', ((await backend('curriculum.program')).curriculum || {}).version_label === '1.0.0-draft1');
     check('import: the native confirmation named what is imported', confirmations.length === 1 && /curriculum/i.test(confirmations[0].text), confirmations[0] ? confirmations[0].text.replace(/\s+/g, ' ').slice(0, 160) : 'no confirmation');
     await shot(page, '02-imported');
 
@@ -99,6 +101,39 @@ function check(name, ok, detail = '') {
     check('plan: each block is on the calendar, placed by the scheduler (not editable by the operator)', events.length === planned.length && events.every((e) => e.provenance === 'SYSTEM_DETERMINISTIC'), `${events.length} events`);
     await shot(page, '04-planned');
 
+    // ---- 4b. the Classroom: the day's lesson sheet, the first block open --------------------------------------------------------------
+    const lessonDay = planned[0].day_id;
+    await page.goto(h.url('/#/classroom'), { waitUntil: 'networkidle' });
+    await page.getByTestId('lesson-sheet').waitFor({ timeout: 15000 });
+    const sheetBlocks = await page.locator('[data-testid="lesson-sheet"] details[data-block]').evaluateAll((els) => els.map((e) => ({ block: e.getAttribute('data-block'), open: e.hasAttribute('open'), name: e.querySelector('summary')?.textContent?.trim() })));
+    const dayBlocks = [...new Set(planned.map((x) => x.block))];
+    check('classroom: the lesson sheet shows one section per block of the day, in the order of the blocks, plus the week', JSON.stringify(sheetBlocks.filter((b) => b.block !== 'week').map((b) => b.block)) === JSON.stringify(planned.slice().sort((a, b) => a.block_seq - b.block_seq).map((x) => x.block)) && sheetBlocks.some((b) => b.block === 'week'), `${lessonDay}: ${sheetBlocks.map((b) => b.name).join(' | ')}`);
+    check('classroom: the first block of the day is the one open', sheetBlocks.filter((b) => b.open).map((b) => b.block).join() === planned.slice().sort((a, b) => a.block_seq - b.block_seq)[0].block, sheetBlocks.filter((b) => b.open).map((b) => b.block).join());
+    check('classroom: the margin has what to watch for and the sources, as text with no link', (await page.getByRole('complementary', { name: 'Watch for' }).count()) === 1 && (await page.getByRole('complementary', { name: 'Sources for the day' }).locator('code').count()) >= 1 && (await page.locator('main a[href^="http"]').count()) === 0);
+    const sheetOpenText = await page.locator('[data-testid="lesson-sheet"] details[open]').first().innerText();
+    check('classroom: the open section holds the lesson text, not a placeholder', sheetOpenText.split(/\s+/).length > 30, `${sheetOpenText.split(/\s+/).length} words`);
+    await page.waitForTimeout(300);
+    // The window scrolls inside its main column, so a tall viewport shows the whole page.
+    await page.setViewportSize({ width: 1280, height: 2100 });
+    await shot(page, '04b-classroom-lesson');
+    await page.setViewportSize({ width: 1440, height: 2100 });
+    await shot(page, '04c-classroom-lesson-1440');
+    // The same page in the dark scheme and in the boxed classic-desktop theme: the grammar has to survive both.
+    await page.setViewportSize({ width: 1280, height: 2100 });
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await shot(page, '04d-classroom-lesson-dark');
+    await page.evaluate(() => localStorage.setItem('g9.skin', 'classic-desktop'));
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.getByTestId('lesson-sheet').waitFor({ timeout: 15000 });
+    await shot(page, '04e-classroom-lesson-classic-dark');
+    await page.emulateMedia({ colorScheme: 'light' });
+    await shot(page, '04f-classroom-lesson-classic-light');
+    await page.evaluate(() => localStorage.removeItem('g9.skin'));
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.getByTestId('lesson-sheet').waitFor({ timeout: 15000 });
+    await page.setViewportSize({ width: 1280, height: 800 });
+    check('classroom: the sheet is reading only: no write reached the backend (the plan has the same sessions as before)', (await backend('session.list', { date: todayIso })).sessions.length === planned.length);
+
     // ---- 5. run the first block with the timer -------------------------------------------------------------------------------------
     await page.goto(h.url('/#/session'), { waitUntil: 'networkidle' });
     await page.getByRole('region', { name: /Today/ }).first().waitFor({ timeout: 15000 }).catch(() => undefined);
@@ -120,6 +155,14 @@ function check(name, ok, detail = '') {
     check('timer: the block ran, was paused and completed, and the backend credited real time (2 to 30 seconds)', done.length === 1 && done[0].credited_ms >= 2000 && done[0].credited_ms <= 30000, done[0] ? `${done[0].block}: ${done[0].credited_ms} ms credited, ${done[0].uncertain_ms} ms in doubt` : 'no completed session');
     check('timer: no time is in doubt after a clean run', done.length === 1 && done[0].uncertain_ms === 0);
     await shot(page, '06-completed');
+    await page.goto(h.url('/#/classroom'), { waitUntil: 'networkidle' });
+    await page.getByTestId('lesson-sheet').waitFor({ timeout: 15000 });
+    const secondBlock = planned.slice().sort((a, b) => a.block_seq - b.block_seq)[1].block;
+    const openAfter = await page.locator('[data-testid="lesson-sheet"] details[open]').evaluateAll((els) => els.map((e) => e.getAttribute('data-block')));
+    check('classroom: once the first block is completed the sheet opens the next one', openAfter.join() === secondBlock, openAfter.join());
+    await page.setViewportSize({ width: 1280, height: 2100 });
+    await shot(page, '06b-classroom-next-block');
+    await page.setViewportSize({ width: 1280, height: 800 });
 
     // ---- 6. the calendar shows today's blocks -------------------------------------------------------------------------------------
     await page.goto(h.url('/#/calendar'), { waitUntil: 'networkidle' });

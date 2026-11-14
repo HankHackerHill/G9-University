@@ -256,6 +256,54 @@ fn a_candidate_edited_after_the_review_is_imported_but_cannot_be_promoted() {
     );
 }
 
+const ASSESSMENTS: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../data/curriculum/assessments"
+);
+
+#[test]
+fn the_twelve_assessment_definitions_are_accepted_once_the_competency_packs_are_loaded() {
+    let env = Env::new();
+    let (code, init, stderr) = env.run(&["init"]);
+    assert_eq!(code, 0, "{init} {stderr}");
+
+    let mut files: Vec<PathBuf> = fs::read_dir(ASSESSMENTS)
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .filter(|p| p.extension().is_some_and(|x| x == "json"))
+        .collect();
+    files.sort();
+    assert_eq!(files.len(), 12, "one definition per Saturday");
+
+    // A definition names a competency of the packs: before the packs are loaded it is refused.
+    let first = files[0].to_string_lossy().into_owned();
+    let (code, refused, _) = env.run(&["call", "assessment.define", "--payload-file", &first]);
+    assert_eq!(code, 2, "{refused}");
+    assert_eq!(refused["code"], "competency.not_found");
+
+    let (code, packs, stderr) = env.run(&["call", "competency.import_pack", "--payload", "{}"]);
+    assert_eq!(code, 0, "{packs} {stderr}");
+
+    let mut codes = Vec::new();
+    for file in &files {
+        let path = file.to_string_lossy().into_owned();
+        let (code, defined, stderr) =
+            env.run(&["call", "assessment.define", "--payload-file", &path]);
+        assert_eq!(code, 0, "{path}: {defined} {stderr}");
+        assert!(
+            defined["result"]["assessment_id"]
+                .as_str()
+                .is_some_and(|id| id.starts_with("ad-")),
+            "{defined}"
+        );
+        codes.push(defined["result"]["code"].as_str().unwrap().to_string());
+    }
+    let mut expected: Vec<String> = (1..=11).map(|w| format!("W{w:02}-BLIND")).collect();
+    expected.push("W12-CAPSTONE".to_string());
+    codes.sort();
+    assert_eq!(codes, expected);
+}
+
 #[test]
 fn the_review_flags_are_required_and_nothing_is_written_without_them() {
     let env = Env::new();

@@ -9,11 +9,12 @@ Status: **PROPOSED**. Built with the owner from the Appendix A skeleton (`data/c
 | The lessons and the data the application imports: one file per week | `docs/curriculum/weeks/week-01.md` to `week-12.md` | yes: this is the source |
 | The manifest the application imports (schema 1.0.0, provenance `PROPOSED_SEED`) | `data/curriculum/g9-ct9-480.draft.v1.json` | no: generated |
 | One `assessment.define` payload per Saturday | `data/curriculum/assessments/W01-BLIND.json` ... `W12-CAPSTONE.json` | no: generated |
+| The lesson sheets the Daily Classroom shows next to the blocks (schema `schemas/curriculum/lesson-sheets.schema.json`) | `data/curriculum/g9-ct9-480.sheets.v1.json` | no: generated |
 | Competency by week matrix, prerequisite check, changes against the seed | `docs/curriculum/coverage.md` | no: generated |
 | The builder and its checks | `scripts/build_curriculum.py` | yes |
 | The Appendix A skeleton (the baseline every change is compared with) | `data/curriculum/g9-ct9-480.seed.v0.json` | no |
 
-Change a lesson: edit its week file, run `python3 -I scripts/build_curriculum.py --write`, then `python3 -I scripts/check_curriculum_seed.py data/curriculum/g9-ct9-480.draft.v1.json`. Check without writing: omit `--write`; it fails when a rule is broken or a generated file is out of date.
+Change a lesson: edit its week file, run `python3 -I scripts/build_curriculum.py --write`, then `python3 -I scripts/check_curriculum_seed.py data/curriculum/g9-ct9-480.draft.v1.json`. The window shows the new text only after it is rebuilt (`npm run build` in `apps/desktop`). Check without writing: omit `--write`; it fails when a rule is broken or a generated file is out of date.
 
 ## What the build enforces
 
@@ -28,6 +29,7 @@ Change a lesson: edit its week file, run `python3 -I scripts/build_curriculum.py
 | Each day lists at least one external resource with a version and a licence note; the day's own sheet is added as an internal resource `docs/curriculum/weeks/week-NN.md#dNN` | external references carry a version (manifest rule). The fragment is a locator (the day id in lower case, found at the start of the `## DNN —` heading), not a rendered HTML anchor: the builder verifies that the file exists and holds that heading |
 | Each Saturday defines one assessment (code, kind, competency, difficulty within that competency's band, task statement) | importable with `assessment.define` |
 | No hidden or control characters in a source file | the repository scan (`crates/g9-domain/tests/source_text.rs`) |
+| Each week file opens with its `**Purpose.**`, `**Lab stack.**`, `**Competencies.**` and `**Accelerator.**` paragraphs; each day's block sections become its lesson sheet, with the day's three objective texts recorded beside them | the sheets file is generated from the same source; the window shows a sheet only when the plan's objective texts equal the recorded ones, so a sheet never appears next to a curriculum it was not written for (`apps/desktop/src/lib/lesson-sheets.ts`) |
 
 ## Learner model and time
 

@@ -1,0 +1,15 @@
+/* Daily Classroom: screen-only rules. Everything else is the documented classes of components.css. */
+/* The layer order, repeated in every screen stylesheet: whichever stylesheet loads first fixes it. */
+@layer reset, tokens, base, layout, components, screens, skins, utilities;
+
+@layer screens {
+  /* Lesson text (a block folded under its line, or a margin note): reading on the paper, not a raised preview box. */
+  .lesson > .md {
+    padding: var(--s-1) 0 var(--s-4);
+    border: 0;
+    border-radius: 0;
+    background: none;
+    font-size: var(--text-md);
+    line-height: 1.55;
+  }
+}

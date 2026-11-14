@@ -85,6 +85,8 @@ React components are in `src/app/components/`. Class-only patterns are in `src/a
 | `Tabs` | `tabs`, `label` | two to four views of the same record. Not for navigation |
 | `Note` | `label?` | advice from a model or a skill (violet, dashed, mentor voice). Never for a confirmation |
 | `MarkdownPreview` | see file | sanitized Markdown |
+| `LessonSheetPanel` | `day`, `state: { lookup, failed }`, `sessions`, `label` | the lesson text of each block of the day, one `details.day-group.lesson` per block in the order of the blocks, the first block that is not finished open (none while the sessions are unknown), and a week note. Shown only when the plan's objective texts equal the ones the sheet was written for; otherwise a `NoData` that says why. Reading: it sends nothing |
+| `LessonMarginPanels` | `state` | `Watch for` and `Sources for the day` (an address is code to copy: the window opens no link; a note that says ASSUMED was not checked). Nothing unless the sheet is shown |
 
 | Class pattern | Markup | Use |
 |---|---|---|
@@ -195,7 +197,7 @@ Route and title of each screen are fixed by `src/app/router.tsx`. "Primary" is t
 | Screen | Layout | Primary | Main column | Detail or margin |
 |---|---|---|---|---|
 | Mission Control | stack, `.bento`, `.with-margin` | none (the now block is the action) | now block (with **Plan today's blocks** when the plan has blocks and no session); the program setup (`ProgramSetup`) until the program is set up; four stats; today's blocks (`Bars`); objectives; the program (`ProgramMap`) | reviews, approvals, next on the calendar, from the mentor |
-| Daily Classroom | `.with-margin` | link "Open the session tracker" | objectives (`.rows`); today's blocks in order with state and a link each; **Plan today's blocks** / **Plan the missing blocks** in the panel head | what to hand in (evidence artifact, link to the journal); lesson from the mentor |
+| Daily Classroom | `.with-margin` | link "Open the session tracker" | objectives (`.rows`); today's blocks in order with state and a link each; **Plan today's blocks** / **Plan the missing blocks** in the panel head; the lesson sheet, one folded section per block | what to hand in (evidence artifact, link to the journal); watch for; sources for the day; lesson from the mentor (advice) |
 | Calendar | stack | "Add an event" (composer) | toolbar (week navigation as `.seg`, "Propose review slots"); the week grid; events of the selected day (`.rows` with edit and delete) | proposal and approval vouchers appear under the control that asked |
 | Curriculum Navigator | `.with-margin` | none (week navigation in the page head: Earlier week, Later week, This week, Week 1) | the week: one `details` per day with its objectives and blocks and **Plan this day's blocks** | the curriculum version (name, label, content, week 1) and provenance; what "proposed" means here |
 | Session Tracker | `.split[data-lead="end"]` | "Plan a session" (composer) | sessions grouped: needs your correction, today, planned by you, other days | timer instrument, correction form, corrections |

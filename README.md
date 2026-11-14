@@ -45,7 +45,7 @@ crates/
   g9-evaluation    golden / adversarial / recovery fixtures and harness
 apps/desktop       React + strict TS UI (16 screens, mock + tauri transports); src-tauri minimal bridge
 .agents/skills     37 skill packages (SKILL.md, references, schemas, evals)
-data/curriculum    versioned manifests (seed v0 = Appendix A, PROPOSED_SEED)
+data/curriculum    versioned manifests (seed v0 = Appendix A; draft v1 = the built curriculum, both PROPOSED_SEED), 12 assessment definitions, the lesson sheets
 data/competency-packs  8 domain knowledge packs
 data/fixtures      synthetic data, no secrets
 schemas/           ipc, skill-inputs, skill-outputs, event-schemas, curriculum, competency-pack
@@ -56,7 +56,7 @@ scripts/           validators run by CI (python3 -I); nothing runs by default
 
 ## First run
 
-A new install needs three decisions, all in the window (Mission Control, then Settings): approve the import of the 12-week G9/CT9 curriculum that ships with the application (480 hours, 72 days, 216 objectives; a proposed seed), choose the Monday week 1 starts, and optionally load the 64 competencies of the eight packs. Then **Plan today's blocks** creates one session per block, linked to the curriculum and placed on the calendar, and the Session Tracker times them. Steps, messages and what is not included: [`docs/runbooks/first-run.md`](docs/runbooks/first-run.md); the decision: [`ADR-0018`](docs/adr/ADR-0018-program-setup-and-planned-days.md).
+A new install needs three decisions, all in the window (Mission Control, then Settings): approve the import of the 12-week G9/CT9 curriculum that ships with the application (480 hours, 72 days, 216 objectives; a proposed draft with a lesson sheet for every day), choose the Monday week 1 starts, and optionally load the 64 competencies of the eight packs. Then **Plan today's blocks** creates one session per block, linked to the curriculum and placed on the calendar, and the Session Tracker times them. Steps, messages and what is not included: [`docs/runbooks/first-run.md`](docs/runbooks/first-run.md); the decision: [`ADR-0018`](docs/adr/ADR-0018-program-setup-and-planned-days.md).
 
 ## Build and verify
 
@@ -71,6 +71,8 @@ cd apps/desktop && npm ci && npm run typecheck && npm run lint && npm test -- --
 
 # Content gates
 python3 -I scripts/check_curriculum_seed.py data/curriculum/g9-ct9-480.seed.v0.json
+python3 -I scripts/check_curriculum_seed.py data/curriculum/g9-ct9-480.draft.v1.json
+python3 -I scripts/build_curriculum.py          # the week files are the source; the draft, assessments, sheets and coverage must be current
 python3 -I scripts/check_skill_packages.py .agents/skills --expect-count 37
 python3 -I scripts/check_competency_packs.py data/competency-packs --expect-count 8
 python3 -I scripts/check_schemas.py schemas .agents/skills

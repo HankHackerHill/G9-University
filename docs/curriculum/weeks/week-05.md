@@ -147,7 +147,7 @@ Without notes: which two unquoted-path conditions must hold for a service weakne
 
 ### Theory (45 min)
 - Persistence is any way of making code run again without the actor returning. The same places are used legitimately: that is why the baseline matters. Windows: run keys, the startup folder, services, scheduled tasks, event subscriptions in the management instrumentation. Linux: systemd units and timers, cron, shell profile files, SSH authorized keys, preload files and udev rules.
-- A public knowledge base of adversary techniques (ATT&CK) names these, groups them under the persistence tactic, and lists the data sources that can see them. Use it for vocabulary and coverage, not as a checklist to tick.
+- A public knowledge base of adversary techniques (ATT&CK) names these, groups them under the persistence tactic, and describes how each can be detected (since release v18, October 2025, through detection strategies and the log sources behind them; earlier releases listed data sources). Use it for vocabulary and coverage, not as a checklist to tick.
 - Telemetry exists only if enabled: object-access and registry auditing, Sysmon registry and file events, the audit subsystem with watches on the right paths, file integrity monitoring. Know which of your hosts log which mechanism today and which silently do not.
 
 ### Guided lab (120 min)
@@ -166,7 +166,7 @@ Extend the drift check of day 1 into five persistence checks: unit and timer fil
 Hand in the matrix, the evidence of each creation event, the five checks with their before and after output, and the list of mechanisms with no telemetry. It is accepted when each cell of the matrix is backed by an observation or says "no telemetry", and each check has been shown to fire.
 
 ### Resources
-- https://attack.mitre.org/tactics/TA0003/ | External | ATT&CK persistence tactic; pin the ATT&CK release you read | MITRE terms of use, ASSUMED
+- https://attack.mitre.org/tactics/TA0003/ | External | ATT&CK persistence tactic; v20 (October 2026) reported current, pin the release you read | MITRE terms of use; CHECKED 2026-11-14 by search result only, page not opened
 - https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns | External | current Autoruns page; pin the version you run | vendor documentation, terms to be checked, ASSUMED
 - https://github.com/linux-audit/audit-documentation | External | current repository; note the commit you read | open source project, ASSUMED
 
@@ -253,7 +253,7 @@ Deliverables, in this order. First, an enumeration log made as the low-privilege
 You are assessed on: independent execution during the block; enumeration performed as the low-privilege principal; reasons stated in terms of boundaries rather than tool output; tests that fail after the fix; evidence quality; honest limits. The pass rule is non-compensatory: every criterion must reach the pass level.
 
 ### Resources
-- https://attack.mitre.org/tactics/TA0004/ | External | ATT&CK privilege escalation tactic; pin the ATT&CK release you read | MITRE terms of use, ASSUMED
+- https://attack.mitre.org/tactics/TA0004/ | External | ATT&CK privilege escalation tactic; v20 (October 2026) reported current, pin the release you read | MITRE terms of use; CHECKED 2026-11-14 by search result only, page not opened
 
 ### Watch for
 Enumerating as root or as an administrator. Describing the tool output instead of the boundary. Leaving a planted entry in place after the assessment.

@@ -4,7 +4,7 @@ Scope: one person using the desktop window on one machine, from an empty install
 
 | What | Status |
 |---|---|
-| Every step below, in the real interface against the real Rust backend (Chromium, `scripts/e2e/personal.cjs`: 22 checks) | TESTED, 2026-11-14 |
+| Every step below, in the real interface against the real Rust backend (Chromium, `scripts/e2e/personal.cjs`: 29 checks, including the Classroom's lesson sheet) | TESTED, 2026-11-14 |
 | The same steps against the mock backend (`setup-flow.test.tsx`, `program-screens.test.tsx`) and the backend alone (`crates/g9-app/tests/program_setup.rs`, `notes_read_back.rs`, `packs_and_backups.rs`) | TESTED |
 | Building and starting the Tauri window, the native confirmation dialog, WebKitGTK rendering | NOT RUN (no GTK or WebKit in the authoring sandbox) |
 | A restore drill on the host (`docs/runbooks/backup-restore.md`) | NOT RUN |
@@ -25,7 +25,7 @@ Mission Control opens on **Set up your program** until the curriculum is importe
 
 | # | You do | The window then shows | What is stored |
 |---|---|---|---|
-| 1 | **Import the curriculum**, then **Approve**, then **Apply with approval**. **Approve** opens the application's own confirmation window; it names the curriculum and what policy grants. Confirm there | "Imported 12 weeks, 72 days and 216 objectives as PROPOSED_SEED." Step 1 reads "Curriculum imported", with the version and 480 h | a curriculum version `g9-ct9-480:0.1.0-seed`, provenance PROPOSED_SEED, 12 weeks, 72 days, 216 objectives, 28 800 planned minutes. One approval, consumed once, expiring after 10 minutes |
+| 1 | **Import the curriculum**, then **Approve**, then **Apply with approval**. **Approve** opens the application's own confirmation window; it names the curriculum and what policy grants. Confirm there | "Imported 12 weeks, 72 days and 216 objectives as PROPOSED_SEED." Step 1 reads "Curriculum imported", with the version and 480 h | a curriculum version `g9-ct9-480:1.0.0-draft1` (the draft built in this repository, `docs/curriculum/`), provenance PROPOSED_SEED, 12 weeks, 72 days, 216 objectives, 28 800 planned minutes, 256 resource references (trust UNKNOWN). One approval, consumed once, expiring after 10 minutes |
 | 2 | Choose the **Monday week 1 starts** and the time a day starts (default 09:00), **Set the start** | the panel disappears from Mission Control; the page now plans today. A date that is not a Monday is refused before anything is sent ("Tuesday 2026-11-03 is not a Monday") | one `program_plan` row: the Monday, the minute of the day, a revision. No approval |
 | 3 | Optional: **Load the competency packs** (also on Competency Graph) | "Loaded 64 competencies and N prerequisite links from 8 packs" | 64 competencies in the `competencies` table, one per pack entry, with PREREQUISITE edges between them. Nothing is graded; every competency stays "not assessed" |
 | 4 | **Plan today's blocks** (Mission Control, Daily Classroom or the day's line in Curriculum Navigator) | the next block, and every block of today as a PLANNED session | one PLANNED session per block, linked to its day, objective and block, in the block's mode; one calendar event per block (placed by the scheduler: you cannot edit it) |
@@ -40,6 +40,7 @@ Moving the start later changes which date is which program day. Sessions that we
 | When | Where | What |
 |---|---|---|
 | Start of the day | Mission Control | **Plan today's blocks** once; the now block names what is next |
+| During | Daily Classroom | the lesson sheet: one folded section per block of the day, the first block that is not finished open; what to watch for and the sources are in the margin (an address is text to copy: the window opens no link). Reading only |
 | During | Session Tracker | start, pause and complete each block. Notes go in the Learning Journal |
 | After | Learning Journal | write a note (kept as versions under a content hash); attach the day's evidence (the Classroom names it); the list shows every stored note, newest change first, also after a restart |
 | Reviews | Retention Center | the ladder (1, 3, 7, 21, 60 days) shows what is due |
@@ -51,10 +52,11 @@ Erasing a note: Learning Journal, open the note, **Erase this note…**, give a 
 
 | Gap | Why | Status |
 |---|---|---|
-| Assessments for the Saturday blind practicals | the seed names the block, not a task, a rubric or a competency; **Define an assessment** on the Assessments screen writes one | PROPOSED: no authored content is shipped |
-| A mapping of the 216 objectives to the 64 competencies | in neither source; inventing it would be an invented number | PROPOSED |
+| Assessments for the Saturday blind practicals | twelve definitions are written (`data/curriculum/assessments/`: task statement, competency, difficulty; no separate rubric field exists) but none is defined in your database: load the competency packs, then `g9 call assessment.define --payload-file data/curriculum/assessments/W01-BLIND.json` (or paste into **Define an assessment**) for each week as it comes | PROPOSED: the definitions are the draft's; each blind practical still needs its scenario source (`docs/curriculum/design.md`) |
+| A mapping of the 216 objectives to the 64 competencies | written (296 links in the manifest, `docs/curriculum/coverage.md`) and validated, but the importer stores none: `objective_competencies` needs a dimension and a weight that the manifest does not carry, and inventing them would be invented numbers | PROPOSED |
+| Verified resources | 138 distinct external references (184 uses): none was opened; 15 were checked by search result only, 104 say ASSUMED, and 19 are numbered publications (RFCs, NIST special publications) cited by number and date from knowledge | ASSUMED: check the ones you use |
 | NICE framework references on competencies | the packs carry `K-UNPINNED` / `S-UNPINNED` with confidence ASSUMED, so none is stored | PROPOSED until a NICE version is pinned |
-| An approved canonical curriculum | the shipped version is a seed (PROPOSED_SEED, v0.1.0); promoting it needs the original manifest and a reconciliation (`g9 call curriculum.promote`, approval-gated) | the plans say "Proposed" until then |
+| An approved canonical curriculum | the shipped version is the built draft (PROPOSED_SEED, 1.0.0-draft1); promoting it is `g9 reconcile`, then two approved operations, `docs/curriculum/promotion.md`. The window has no promote action | the plans say "Proposed" until then |
 | Curriculum blocks placed on the calendar by a proposal (`FILL_CURRICULUM`) | not implemented; planning a day places its blocks instead | PROPOSED |
 | A model | none is configured | by choice |
 
@@ -75,7 +77,7 @@ Erasing a note: Learning Journal, open the note, **Erase this note…**, give a 
 
 ```sh
 G9=target/debug/g9; D=~/.local/share/com.g9.mentor      # close the window first: one writer at a time
-$G9 import-seed --data-dir "$D"                                               # step 1 (approval round trip inside)
+$G9 import-seed --data-dir "$D" --manifest data/curriculum/g9-ct9-480.draft.v1.json   # step 1 (approval round trip inside)
 $G9 call curriculum.set_program_start --data-dir "$D" --payload '{"date":"2026-11-16","day_start":"09:00"}'   # step 2
 $G9 call competency.import_pack --data-dir "$D" --payload '{}'                # step 3
 $G9 call session.plan_day --data-dir "$D" --payload '{"date":"2026-11-16"}'   # step 4

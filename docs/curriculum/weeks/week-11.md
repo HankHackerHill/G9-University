@@ -125,7 +125,7 @@ Implement the acquisition gate: a script that, for a candidate model or package,
 Hand in the provenance table, the integrity and licence findings with the unverified items marked, the sandbox demonstration, the review of the dependency list and the gate's test output. It is accepted when every artefact has a pinned hash and a recorded licence or is marked unapproved.
 
 ### Resources
-- https://slsa.dev/ | External | supply-chain levels for software artefacts, current specification; note the version you read | open specification, ASSUMED
+- https://slsa.dev/ | External | SLSA v1.2 (November 2025), adds the Source track; v1.0 (2023) and v1.1 (April 2025) are earlier | open specification; CHECKED 2026-11-14 by search result only, page not opened
 - https://huggingface.co/docs/safetensors | External | tensors-only format documentation; pin the version you install | open source project, ASSUMED
 - https://pip.pypa.io/en/stable/topics/secure-installs/ | External | current pip documentation on hash-checking mode; pin the pip version | open source project, ASSUMED
 - https://opensource.org/ai/open-source-ai-definition | External | the Open Source AI Definition, version to be confirmed on the page | open definition, ASSUMED
@@ -168,7 +168,7 @@ Hand in the poisoning curves and trigger results, the validation outcomes, the m
 
 ### Resources
 - https://csrc.nist.gov/pubs/ai/100/2/e2025/final | External | NIST AI 100-2 E2025 (March 2025), on poisoning and privacy attacks | NIST publication, freely available; CHECKED 2026-11-14 by search result only, page not opened
-- https://www.nist.gov/itl/ai-risk-management-framework | External | AI Risk Management Framework, current version; note the version you read | NIST publication, freely available, ASSUMED
+- https://www.nist.gov/itl/ai-risk-management-framework | External | AI RMF 1.0 (January 2023, NIST AI 100-1); a 2.0 revision is reported, not confirmed | NIST publication, freely available; CHECKED 2026-11-14 by search result only, page not opened
 
 ### Watch for
 Judging poisoning by accuracy alone. A deletion that leaves the embeddings. A governance document with no check behind it.

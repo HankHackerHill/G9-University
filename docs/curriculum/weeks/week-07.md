@@ -22,7 +22,7 @@ Without notes: which six identity behaviours did you write detections for last w
 
 ### Theory (45 min)
 - A detection pipeline has stages: collect, normalise, store, detect, triage, respond. A weakness in an early stage cannot be repaired later: an event that was never collected cannot be detected, an event whose clock is wrong cannot be correlated.
-- A coverage map relates behaviours to data sources. The public knowledge base of adversary techniques lists data sources and components for each technique and is a vocabulary for the map. Coverage is not efficacy: a source that exists but is not collected, or is collected without the field you need, covers nothing.
+- A coverage map relates behaviours to the telemetry that would show them. Since release v18 (October 2025) the public knowledge base of adversary techniques describes detection through detection strategies, which point to analytics for each platform, which name the log sources and data components they need; the older data sources were deprecated, so a map made before v18 uses the old vocabulary. Either is a vocabulary for the map. Coverage is not efficacy: a source that exists but is not collected, or is collected without the field you need, covers nothing.
 - Logs are evidence and a target. Ask who can write to a log, who can delete it, where it is stored while it is in transit and how long it lives. Logs also hold personal data; collect what the detection needs.
 - Read the data-source pages of the ATT&CK knowledge base for three techniques you met in weeks 5 and 6.
 
@@ -42,7 +42,7 @@ Write telemetry unit tests: for each behaviour in your matrix a small script cre
 Hand in the inventory, the matrix with the gap ranking, the three collection implementations with the proof of arrival (event, host, time), the test suite output with and without the disabled source, and the plan for the imaginary company. It is accepted when each cell of the matrix names a source and a field or says "no source", and each test fails when its source is disabled.
 
 ### Resources
-- https://attack.mitre.org/datasources/ | External | ATT&CK data sources; pin the release you read | MITRE terms of use, ASSUMED
+- https://attack.mitre.org/resources/updates/updates-october-2025/ | External | ATT&CK v18 release notes (October 2025): detection strategies and analytics, data sources deprecated | MITRE terms of use; CHECKED 2026-11-14 by search result only, page not opened
 - https://docs.fluentbit.io/ | External | current documentation; pin the Fluent Bit version you run | open source project, ASSUMED
 - https://docs.zeek.org/ | External | current documentation; pin the Zeek version you run | open source project, ASSUMED
 - https://docs.suricata.io/ | External | current documentation; pin the Suricata version you run | open source project, ASSUMED
@@ -165,7 +165,7 @@ Express one correlation as a detection: the sequence of a logon, a scheduled tas
 Hand in the scenario script, the timeline with sources and keys, the labels with evidence, the hypothesis table, the questions for owners, and the sequence detection with its tests. It is accepted when every timeline entry cites an event and no statement lacks a label.
 
 ### Resources
-- https://attack.mitre.org/ | External | ATT&CK knowledge base; pin the release you read | MITRE terms of use, ASSUMED
+- https://attack.mitre.org/ | External | ATT&CK knowledge base; v20 (October 2026) reported current, pin the release you read | MITRE terms of use; CHECKED 2026-11-14 by search result only, page not opened
 - https://www.sans.org/white-papers/ | External | public white papers of the SANS Institute; note the paper you use | publisher terms apply, ASSUMED
 - https://plaso.readthedocs.io/ | External | current documentation of the timeline tool; pin the version you run | open source project, ASSUMED
 

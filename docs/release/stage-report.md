@@ -4,6 +4,33 @@ Format: `GOVERNANCE.md` "Stage PASS report (required content)". Evidence labels:
 
 Repository state: branch `ccr-0cea681c-p9jbru`; the commit that last touches this file is the report's HEAD; baseline `f414481` (initial commit, 2026-11-05). All commits are local and **unpushed** by operator instruction ("Do not connect to GitHub only work here"); the remote branch is at `e987383`.
 
+## Update 2026-11-14 (latest): the 12-week curriculum, its promotion route and its lesson sheets
+
+Owner request: "All your recommendations and help me build the 12 week cybersecurity curriculum" (recorded in ADR-0020 and ADR-0022). The curriculum is **PROPOSED**: nothing was promoted, approved or run on the owner's data directory, and no CI was started.
+
+| Delivered | Where | Label |
+|---|---|---|
+| 12 week files (72 day sheets, 12 Saturday assessments) as the single source; a builder that checks them and generates the manifest, the assessment payloads, the lesson sheets and the coverage matrix | `docs/curriculum/weeks/`, `scripts/build_curriculum.py`, `data/curriculum/g9-ct9-480.draft.v1.json`, `assessments/`, `g9-ct9-480.sheets.v1.json`, `docs/curriculum/coverage.md` | PROPOSED content; built and checked |
+| The window imports the draft; the Daily Classroom shows the day's lesson sheet per block, only for the objectives it was written for | `ProgramSetup.tsx`, `LessonSheet.tsx`, `lib/lesson-sheets.ts`, `schemas/curriculum/lesson-sheets.schema.json` | TESTED |
+| `g9 reconcile`: the diff and checksums of two manifests; on explicit review flags, the `RECONCILED_CANDIDATE` and the payloads of import and promote | `apps/cli/src/commands/reconcile.rs`, `docs/curriculum/promotion.md` | TESTED in a throwaway data directory; NOT RUN on the owner's |
+| **Found and fixed:** a reconciliation block bound which fields differed, not what they said, so a reviewed objective reworded afterwards still matched its block. `diff_checksum` now includes the candidate's content checksum | `crates/g9-curriculum/src/{checksum,reconcile}.rs`, ADR-0022 | fail-first test; no real block existed |
+
+| Check | Command | Result | Label |
+|---|---|---|---|
+| Rust fmt, clippy | `cargo fmt --all --check`; `cargo clippy --offline --all-targets -- -D warnings` (default members) | exit 0, exit 0 | VERIFIED |
+| Rust tests | `cargo test --offline --all-targets`; `cargo test --offline --doc` | **968 passed, 0 failed** (951 before: +17 = `draft_v1.rs` 4, `a01_gate.rs` 1, `reconcile.rs` unit 8, `curriculum_promotion.rs` 4); 0 doc tests. After the last data edit `g9-curriculum` and `g9-cli` were re-run: 102 passed, 0 failed | TESTED |
+| Fail-first | `draft_v1.rs::promotion_needs_a_reconciliation_block_bound_to_this_exact_diff` on the old `reconcile` | failed (`assertion failed: matches!(r.binding, DiffChecksumMismatch { .. })`), passes after; `a01_reviewed_diff_is_bound_to_the_candidate_content` added | TESTED |
+| The route through the binary | `apps/cli/tests/curriculum_promotion.rs` | report, write, import (approval), promote (approval) to `APPROVED_CANONICAL`; an edited candidate imports but is refused at promotion; a tampered payload is refused before any approval; the 12 assessments are accepted after the packs load | TESTED (scratch data directory) |
+| UI | `npx tsc --noEmit`, `npx eslint .`, `npx vitest run`, `npx vite build` | clean; **481 passed in 40 files** (463 in 38 before: +9 `lesson-sheets.test.ts`, +8 `lesson-sheets.test.tsx`, +1 layer-order case); the sheets chunk is 326 kB (93 kB gzipped), loaded only when a day with blocks is shown | TESTED |
+| Design system audit | `ds_audit.py --check` | exit 0 | MEASURED |
+| The real interface against the real backend | `node scripts/e2e/personal.cjs` | **29 passed, 0 failed** (22 before; the window imports `1.0.0-draft1`; the Classroom's sheet has one section per block, the first open, no link, nothing written; completing a block opens the next). Screenshots read at 1280 and 1440 wide, dark, and `classic-desktop` | TESTED |
+| Curriculum gates | `build_curriculum.py` (check mode); `check_curriculum_seed.py` on the draft and on the seed | sources valid, generated files current; both PASS (the draft: schema_errors=0 errors=0 violations=0 warnings=0) | VERIFIED |
+| Other gates | `scripts/smoke_test.sh`; `check_skill_packages.py`, `check_competency_packs.py`, `check_schemas.py`; the hidden-character scan | SMOKE TEST PASS; exit 0 each; 2 scan tests pass | TESTED |
+| Resources | 138 distinct external references (184 uses) | none opened: 15 checked by search result only (ATT&CK v20 current since 2026-10-13, ASVS 5.0.0, OWASP Top 10 2025, CVSS 4.0, SLSA v1.2, AI RMF 1.0 and others), 104 ASSUMED, 19 numbered publications cited from knowledge. The check corrected two lesson statements (ATT&CK data sources, Days 28 and 37) | CHECKED by search result only / ASSUMED |
+| Not run | the Tauri shell and WebKitGTK; `tour.cjs`; `cargo deny`; the promotion route on the owner's data directory; any check that needs `genai.owasp.org`, `modelcontextprotocol.io` or `attack.mitre.org` (not reachable from the authoring session's network) | | NOT RUN |
+
+Open: the owner's items in `docs/curriculum/design.md` (the source of each blind practical, the resources they rely on, promotion); the importer stores no objective-to-competency link (the manifest carries 296; storing them needs a dimension and a weight that would be invented); the window has no promote action; the keyed hashes of whole requests in the immutable ledgers (ADR-0020 row 6) are the next change.
+
 ## Update 2026-11-14 (later): the four LOW and four INFO audit findings closed
 
 Owner request: "fix the last few things". The four LOW findings still open from the audit of 2026-11-12 (audit tail truncation, client-declared interaction mode, skill pin hashed from a second read, revision 0 at the boundary) and four INFO items are fixed, each with a test that failed on the old code (`docs/audit/security-audit-2026-11-12.md`, remediation table; ADR-0004 addendum; ADR-0019). Two decisions were taken without the owner and are each reversible in one place: a declined native confirmation is audited, and a production bundle refuses the mock transport. No CI or workflow was started.

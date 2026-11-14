@@ -205,7 +205,7 @@ Hand in the protocol, the cases and the scoring rules, the stub results, the int
 
 ### Resources
 - https://csrc.nist.gov/pubs/ai/100/2/e2025/final | External | NIST AI 100-2 E2025 (March 2025) | NIST publication, freely available; CHECKED 2026-11-14 by search result only, page not opened
-- https://www.nist.gov/itl/ai-risk-management-framework | External | AI Risk Management Framework, current version; note the version you read | NIST publication, freely available, ASSUMED
+- https://www.nist.gov/itl/ai-risk-management-framework | External | AI RMF 1.0 (January 2023, NIST AI 100-1); a 2.0 revision is reported, not confirmed | NIST publication, freely available; CHECKED 2026-11-14 by search result only, page not opened
 
 ### Watch for
 Tuning on the cases you will report. A single run reported as a rate. Calling a defence "tested" because it passed the cases you wrote it against.
