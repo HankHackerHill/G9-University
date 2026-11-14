@@ -1299,12 +1299,13 @@ pub fn a09_model_down() -> Result<ScenarioReport, G9Error> {
 // ---------------------------------------------------------------------------
 
 /// A10-01: an approved deletion redacts the note and its versions, writes a
-/// tombstone with the pre-erasure hash and leaks nothing into events.
+/// tombstone whose digest is not derived from the erased content (ADR-0017) and
+/// leaks nothing into events.
 pub fn a10_deletion_propagation() -> Result<ScenarioReport, G9Error> {
     let mut r = ScenarioReport::new(
         "A10-01",
         "A10",
-        "deletion: approval required; redaction + tombstone hash; versions erased; repeat refused",
+        "deletion: approval required; redaction + tombstone; no digest of the erased body kept; versions erased; repeat refused",
     );
     let (mut h, seed) = seeded(HarnessOptions::default())?;
     let fx = fixtures::week03()?;
@@ -1381,10 +1382,12 @@ pub fn a10_deletion_propagation() -> Result<ScenarioReport, G9Error> {
         json!("APPLIED"),
         out.value()["state"].clone(),
     );
-    r.check_eq(
-        "tombstone carries the pre-erasure hash",
-        json!(body_sha.clone()),
-        out.value()["tombstone_sha256"].clone(),
+    let tombstone = out.value()["tombstone_sha256"].clone();
+    r.check_that(
+        "tombstone digest is not the digest of the erased body",
+        "a 64-character digest that differs from the body's SHA-256",
+        tombstone.clone(),
+        tombstone.as_str().is_some_and(|t| t.len() == 64) && tombstone != json!(body_sha.clone()),
     );
     let after = probes::note(&h, &note)?;
     r.check_eq("note erased", json!(true), after["erased"].clone());

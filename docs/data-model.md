@@ -283,3 +283,9 @@ No blanket cascade: evidentiary and governance rows use RESTRICT; structural chi
 ## Lifecycle
 
 Backups: Online Backup API / `VACUUM INTO` → verify on copy → restore test → RETAINED (ADR-0001). Deletion requests redact content and keep tombstones (docs/privacy/data-lifecycle.md). Audit metadata is hash-chained and metadata-only (ADR-0004).
+
+## Schema version 14 (2026-11-13)
+
+| Migration | Change |
+|---|---|
+| 0014_erasure_digests.sql | no table changes; `trg_note_versions_update_only_erasure` is recreated so that the one update still allowed on a note version (an erasure of a version that was not erased, to an empty body, nothing else changed) must also change `body_sha256`: erasure replaces every stored digest of the erased content (ADR-0017). The column `deletion_tombstones.content_sha256_before` keeps its historical name and now holds the tombstone's identity digest. Pinned schema digest of version 14: `7f6b7505670598abc96287fea675ae2457aa92153248329e0274e04378dbfc9e` (452 objects, `migrations::tests::the_schema_at_version_14_is_pinned_too`). |

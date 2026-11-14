@@ -701,8 +701,9 @@ fn a10_deletion_request_redacts_and_tombstones() {
     )
     .unwrap();
 
-    // content redacted in place; hash kept; rows still exist
-    let (title, body, sha_kept, erased, erasure_id): (String, String, String, i64, Option<String>) = db
+    // content redacted in place; its digest replaced (ADR-0017); rows still exist
+    let content_sha = sha("# Lab log\nkernel boots via GRUB");
+    let (title, body, sha_now, erased, erasure_id): (String, String, String, i64, Option<String>) = db
         .conn()
         .query_row(
             "SELECT title, body_markdown, body_sha256, erased, erasure_request_id FROM notes WHERE id = ?1",
@@ -712,7 +713,11 @@ fn a10_deletion_request_redacts_and_tombstones() {
         .unwrap();
     assert_eq!(title, "[REDACTED]");
     assert_eq!(body, "");
-    assert_eq!(sha_kept, sha("# Lab log\nkernel boots via GRUB"));
+    assert_eq!(
+        sha_now,
+        deletion::tombstone_digest("del-1", "notes", &fx.note_id, t(20))
+    );
+    assert_ne!(sha_now, content_sha);
     assert_eq!(erased, 1);
     assert_eq!(erasure_id.as_deref(), Some("del-1"));
     let (vbody, verased): (String, i64) = db
@@ -737,7 +742,8 @@ fn a10_deletion_request_redacts_and_tombstones() {
         ("[REDACTED]", "", 1)
     );
 
-    // tombstones keep the pre-erasure hashes
+    // a tombstone's digest identifies the tombstone (request, table, row, time) and is
+    // never a digest of what was erased: the digest of a short text is the text
     assert_count(db.conn(), "deletion_tombstones", 3);
     let stones: Vec<(String, String, String)> = db
         .conn()
@@ -749,13 +755,35 @@ fn a10_deletion_request_redacts_and_tombstones() {
         .unwrap()
         .map(|r| r.unwrap())
         .collect();
-    assert!(stones.contains(&("notes".into(), fx.note_id.clone(), sha_kept.clone())));
-    assert!(stones.contains(&("note_versions".into(), fx.note_version_id.clone(), sha_kept)));
-    assert!(stones.contains(&(
-        "attachments".into(),
-        fx.attachment_id.clone(),
-        fx.attachment_sha.clone()
-    )));
+    for (table, row_id) in [
+        ("notes", &fx.note_id),
+        ("note_versions", &fx.note_version_id),
+        ("attachments", &fx.attachment_id),
+    ] {
+        let expected = deletion::tombstone_digest("del-1", table, row_id, t(20));
+        assert!(
+            stones.contains(&(table.to_string(), row_id.clone(), expected)),
+            "{table}: {stones:?}"
+        );
+    }
+    for (_, _, digest) in &stones {
+        assert!(
+            digest != &content_sha && digest != &fx.attachment_sha,
+            "a tombstone holds a digest of erased content"
+        );
+    }
+    // and no column of the three rows holds one either
+    let leftover: i64 = db
+        .conn()
+        .query_row(
+            "SELECT (SELECT COUNT(*) FROM notes WHERE body_sha256 IN (?1, ?2))
+                  + (SELECT COUNT(*) FROM note_versions WHERE body_sha256 IN (?1, ?2))
+                  + (SELECT COUNT(*) FROM attachments WHERE content_sha256 IN (?1, ?2) OR instr(storage_ref, ?2) > 0)",
+            params![content_sha, fx.attachment_sha],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(leftover, 0);
     assert_eq!(report.tombstones.len(), 3);
     assert_eq!(
         report.attachment_storage_refs_to_purge,
@@ -799,7 +827,17 @@ fn a10_deletion_request_redacts_and_tombstones() {
     let done = deletion::get_request(db.conn(), "del-1").unwrap().unwrap();
     assert_eq!(done.state, DeletionState::Executed);
     assert_eq!(done.executed_at, Some(t(20)));
-    assert_eq!(done.report.unwrap(), report);
+    // The stored report is the returned one without the files to remove: their paths
+    // are digests of the erased content, which no table keeps (ADR-0017).
+    let stored = done.report.unwrap();
+    assert!(stored.attachment_storage_refs_to_purge.is_empty());
+    assert_eq!(
+        stored,
+        deletion::ErasureReport {
+            attachment_storage_refs_to_purge: Vec::new(),
+            ..report.clone()
+        }
+    );
     let e = sql_err(db.conn().execute(
         "UPDATE deletion_requests SET state = 'REQUESTED' WHERE id = 'del-1'",
         [],

@@ -344,20 +344,27 @@ fn normalize_sha256(text: &str) -> Result<String, CliError> {
 
 fn plan_value(plan: &Plan, actual_sha256: &str) -> Value {
     let matches = actual_sha256 == plan.expected_sha256;
-    let mut command = String::from("g9 restore");
+    // The confirming command, built from arguments and never from text: a path
+    // is data, and a folder named `$(...)` must not become a command when the
+    // operator copies this line (security audit 2026-11-13).
+    let mut argv: Vec<String> = vec!["g9".to_string(), "restore".to_string()];
     match &plan.backup_id {
-        Some(id) => command.push_str(&format!(" --backup-id {id}")),
-        None => command.push_str(&format!(
-            " --snapshot {} --expect-sha256 {}",
-            plan.snapshot.display(),
-            plan.expected_sha256
-        )),
+        Some(id) => argv.extend(["--backup-id".to_string(), id.to_string()]),
+        None => argv.extend([
+            "--snapshot".to_string(),
+            text(&plan.snapshot),
+            "--expect-sha256".to_string(),
+            plan.expected_sha256.clone(),
+        ]),
     }
-    command.push_str(&format!(
-        " --attachments {} --data-dir {} --confirm-replace-live-database",
-        plan.attachments_from.display(),
-        plan.root.display()
-    ));
+    argv.extend([
+        "--attachments".to_string(),
+        text(&plan.attachments_from),
+        "--data-dir".to_string(),
+        text(&plan.root),
+        "--confirm-replace-live-database".to_string(),
+    ]);
+    let (command, command_argv) = crate::output::next_command(&argv);
     json!({
         "restore": "PLAN",
         "confirmed": false,
@@ -384,6 +391,8 @@ fn plan_value(plan: &Plan, actual_sha256: &str) -> Value {
         "attachments_from": text(&plan.attachments_from),
         "note": "stop the application first; the live database and its sidecars are moved to the quarantine directory, never deleted",
         "to_confirm": command,
+        "to_confirm_argv": command_argv,
+        "to_confirm_note": crate::output::NEXT_COMMAND_NOTE,
     })
 }
 
@@ -490,6 +499,8 @@ mod tests {
         assert_eq!(v["quarantine_dir"], "/data/quarantine");
         let command = v["to_confirm"].as_str().unwrap();
         assert!(command.ends_with("--data-dir /data --confirm-replace-live-database"));
+        assert_eq!(v["to_confirm_argv"][0], "g9");
+        assert_eq!(v["to_confirm_argv"][3], "/s/snap.sqlite");
         assert_eq!(
             plan_value(&p, &"00".repeat(32))["snapshot_matches_expected"],
             false

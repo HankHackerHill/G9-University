@@ -36,6 +36,12 @@ pub fn run(boot: &BootOptions) -> Result<Completion, CliError> {
     client.call("session.prepare", json!({ "session_id": id }))?;
     let started = client.call("session.start", json!({ "session_id": id }))?;
     let view = &started["result"];
+    let (next, next_argv) = crate::output::next_command(&[
+        "g9".to_string(),
+        "init".to_string(),
+        "--data-dir".to_string(),
+        booted.layout.root.to_string_lossy().to_string(),
+    ]);
     let value = json!({
         "drill": "crash",
         "session_id": id,
@@ -43,7 +49,9 @@ pub fn run(boot: &BootOptions) -> Result<Completion, CliError> {
         "open_interval_started_at": view["open_interval_started_at"],
         "intervals": view["intervals"],
         "exit": "process exits now without completing the session or closing the database",
-        "next": format!("g9 init --data-dir {}", booted.layout.root.display()),
+        "next": next,
+        "next_argv": next_argv,
+        "next_note": crate::output::NEXT_COMMAND_NOTE,
         "expect_after_init": {
             "recovery.interrupted_sessions": [id],
             "interrupted_sessions[].state": "INTERRUPTED",

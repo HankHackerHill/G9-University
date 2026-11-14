@@ -312,7 +312,7 @@ fn database_at_version_12(path: &std::path::Path) -> g9_storage::Database {
     seed_version_12(db.conn());
     drop(db);
     let db = g9_storage::Database::open(path, options).unwrap();
-    assert_eq!(db.pending_migrations(), &[13]);
+    assert_eq!(db.pending_migrations(), &[13, 14]);
     db
 }
 
@@ -339,7 +339,7 @@ fn migration_0013_applies_to_a_version_12_database_that_holds_assessment_data() 
         "migration was blocked: {report:?}"
     );
     assert!(report.pending_migrations.is_empty(), "{report:?}");
-    assert_eq!(report.migrated.len(), 1, "{report:?}");
+    assert_eq!(report.migrated, vec![13, 14], "{report:?}");
     assert!(report.pre_migration_backup.is_some());
 
     // schema: the registry row carries the embedded checksum; the database is sound
@@ -351,7 +351,16 @@ fn migration_0013_applies_to_a_version_12_database_that_holds_assessment_data() 
             |r| Ok((r.get(0)?, r.get(1)?)),
         )
         .unwrap();
-    assert_eq!((version, name.as_str()), (13, "0013_grade_observations"));
+    assert_eq!((version, name.as_str()), (14, "0014_erasure_digests"));
+    let applied_13: i64 = h
+        .conn()
+        .query_row(
+            "SELECT COUNT(*) FROM schema_migrations WHERE version = 13 AND name = '0013_grade_observations'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(applied_13, 1);
     let integrity: String = h
         .conn()
         .query_row("PRAGMA integrity_check", [], |r| r.get(0))

@@ -159,7 +159,7 @@ const WARNING_MEANINGS: Readonly<Record<string, string>> = {
   'backup.attachments_incomplete': 'The backup was taken, but some attached files were missing or damaged and were not copied with it.',
   'backup.attachments_not_copied': 'The database snapshot was taken, but the attached files could not be copied beside it.',
   'backup.attachments_not_checked': 'This backup holds attached files that could not be checked.',
-  'deletion.attachment_bytes_not_purged': 'The record is erased, but the file itself is still on disk. Removing files is not built yet.',
+  'deletion.attachment_bytes_not_purged': 'The record is erased, but its file was not removed from disk because no attachment folder is configured.',
   'idempotency.replay_rebuilt': 'You sent this before. The result shows what is stored now, not what was sent then.',
   'competency.observations_not_derived': 'The grade is final, but it did not update any competency.',
   'notes.evidence_refs_not_persisted': 'The note is saved, but its links to evidence were not kept.',

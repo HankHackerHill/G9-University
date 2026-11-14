@@ -1317,7 +1317,26 @@ mod tests {
             conn,
             "UPDATE note_versions SET body_markdown = 'rewritten' WHERE version_no = 1",
         );
-        assert_immutable(conn, "UPDATE note_versions SET erased = 1, body_markdown = '', body_sha256 = 'x' WHERE version_no = 1");
+        // An erasure replaces the digest of the body it erases (ADR-0017): one that keeps
+        // it is not the erasure form, and neither is one that touches anything else.
+        assert_immutable(
+            conn,
+            "UPDATE note_versions SET erased = 1, body_markdown = '' WHERE version_no = 1",
+        );
+        assert_immutable(
+            conn,
+            &format!(
+                "UPDATE note_versions SET erased = 1, body_markdown = '', body_sha256 = '{}', author_id = 'someone-else' WHERE version_no = 1",
+                "0".repeat(64)
+            ),
+        );
+        assert_immutable(
+            conn,
+            &format!(
+                "UPDATE note_versions SET erased = 1, body_markdown = 'kept', body_sha256 = '{}' WHERE version_no = 1",
+                "0".repeat(64)
+            ),
+        );
         assert_immutable(conn, "DELETE FROM note_versions WHERE version_no = 1");
         assert_eq!(
             list_note_versions(conn, &learning(), &row.id).unwrap(),

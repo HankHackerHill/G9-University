@@ -30,6 +30,8 @@ pub const APPROVAL_GATED: &[&str] = &[
     "assessment.approve_final",
     "export.request",
     "deletion.request",
+    // Every deletion by the operator needs `DataDelete` (`operator.delete.approval`).
+    "calendar.delete_event",
 ];
 
 /// Client defaults for `op` (unknown operations get the generic default; the
@@ -174,6 +176,7 @@ mod tests {
         for op in APPROVAL_GATED {
             assert!(op_defaults(op).approval_expected, "{op}");
         }
+        assert!(op_defaults("calendar.delete_event").approval_expected);
         assert!(!op_defaults("session.start").approval_expected);
         assert!(!op_defaults("calendar.propose").approval_expected);
     }

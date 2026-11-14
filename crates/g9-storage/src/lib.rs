@@ -61,6 +61,7 @@ pub mod audit;
 pub mod backup;
 pub mod connection;
 pub mod deletion;
+pub mod describe;
 pub mod error;
 pub mod events;
 pub mod export;

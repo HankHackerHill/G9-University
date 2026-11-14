@@ -4,6 +4,26 @@ Format: `GOVERNANCE.md` "Stage PASS report (required content)". Evidence labels:
 
 Repository state: branch `ccr-0cea681c-p9jbru`; the commit that last touches this file is the report's HEAD; baseline `f414481` (initial commit, 2026-11-05). All commits are local and **unpushed** by operator instruction ("Do not connect to GitHub only work here"); the remote branch is at `e987383`.
 
+## Update 2026-11-13: operator features, native confirmation, redesign, security audit
+
+The sections below are the 2026-11-08 snapshot and are unchanged. Since then: the operator features (sessions, calendar events, review results, authoring, evidence, export), the native approval confirmation (ADR-0014), the Ledger 2 redesign of all 16 screens (`docs/ui/design-critique-2026-11-13.md`), the triple security audit of 2026-11-12 and 2026-11-13 with its fixes (`docs/audit/security-audit-2026-11-13.md`, ADR-0017, schema version 14) and a UI skill (`.claude/skills/g9-ui-design`). The branch is pushed (the operator later allowed it); CI runs only when started by hand (ADR-0015) and no workflow was started. **No Stage PASS is issued.**
+
+| Check | Command | Result | Label |
+|---|---|---|---|
+| Rust fmt, clippy | `cargo fmt --all -- --check`; `cargo clippy --workspace --exclude g9-mentor-desktop --all-targets --offline -- -D warnings` | clean; exit 0 | VERIFIED |
+| Rust tests | `cargo test --workspace --exclude g9-mentor-desktop --offline --no-fail-fast` | **880 passed, 0 failed, 0 ignored** | TESTED |
+| Desktop shell, type-check and lint only (no GTK or WebKit here; a stub `pkg-config` lets the crate compile) | `cargo clippy -p g9-mentor-desktop --offline --all-targets -- -D warnings` | exit 0 | VERIFIED; the window, the dialog and a build are NOT RUN |
+| Smoke test | `bash scripts/smoke_test.sh` | SMOKE TEST PASS, 100 assertions passed, 0 failed | TESTED |
+| Content gates | `check_curriculum_seed.py`, `check_skill_packages.py`, `skill_hashes.py --check`, `check_source_register.py`, `verify_source_register.py --selftest`, `check_schemas.py schemas .agents/skills` | all exit 0 | TESTED |
+| UI | `npx tsc --noEmit`, `npx eslint .`, `npx vitest run`, `npx vite build` | clean; **400 passed in 32 files** | TESTED |
+| Design system audit | `ds_audit.py apps/desktop/src --check` | exit 0 | MEASURED |
+| Layout, targets, names, headings in Chromium | `measure.cjs` (16 screens at 1280 x 800 and 960 x 640) | 32 measurements, 32 clean | MEASURED |
+| Source text | `crates/g9-domain/tests/source_text.rs` (part of the Rust tests) | no hidden or direction-changing character in any text file | TESTED |
+| Audit probes | the auditors' probes and two written in pass C, re-run against a rebuilt `g9` | all fixed findings stay fixed (`docs/audit/security-audit-2026-11-13.md`, pass C) | VERIFIED |
+| Supply chain | RustSec advisory database 2026-11-06, scanned offline (486 packages); `npm audit` | 0 vulnerable, 2 informational; production 0, development 7 moderate | OBSERVED (live `cargo deny` is CI and was not run) |
+| Release evidence collector | `scripts/collect_gate_evidence.py` | not re-run: `docs/release/gate-evidence.*` still hold the 2026-11-08 counts; `docs/evaluations/gate-evidence.md` was regenerated for the changed A10-01 scenario | NOT RUN |
+| Tauri shell on the host, restore drill, WebKitGTK rendering, the three evals of the UI skill | n/a | needs the host or a model run | NOT RUN |
+
 ## 1. Requested scope
 
 | # | Request (operator) | Date |

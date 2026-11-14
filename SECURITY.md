@@ -24,7 +24,12 @@ Full threat model, trust boundaries, data flows and adversarial test catalogue: 
 | Hash-chained, metadata-only audit records; raw prompts never persisted | `g9-storage::audit`, `g9-ai-adapter::record` |
 | Consistent backups (Online Backup API / VACUUM INTO), integrity-checked and restore-tested | `g9-storage::backup` |
 | Secret-free IPC errors (closed category set, redacted internals) | `g9-domain::envelope` |
-| Sanitized Markdown rendering (allow-list) | `apps/desktop/src/lib/markdown.ts` |
+| Sanitized Markdown rendering (allow-list; no link in rendered output) | `apps/desktop/src/lib/markdown.ts` |
+| The window stays on the application (navigation guard, `form-action 'none'`) | `apps/desktop/src-tauri/src/lib.rs` (`may_load`), `tauri.conf.json` |
+| The native approval confirmation says what the record is, written by the backend from storage; its words are sanitised; "Approve" is inert for 1.5 s | `g9-app::dispatch` (`ApprovalSummary`), `g9-storage::describe`, `g9-domain::text` |
+| Erasure replaces every stored digest of the erased content and removes the file; exports withhold governance digests, request hashes, the audit chain's check values, deletion reasons and approval MACs (ADR-0017) | `g9-storage::deletion`, `g9-storage::export`, migration 0014 |
+| Names (titles, file names, labels) are one line of visible text, refused otherwise | `g9-app::dispatch` (`refuse_unprintable_names`), `g9-domain::text` |
+| Backup snapshots and their copies are `0600`; `g9` output and printed commands never carry a raw control character | `g9-storage::backup`, `apps/cli/src/output.rs` |
 
 ## Residual risks (cannot be eliminated by prompts or policy)
 

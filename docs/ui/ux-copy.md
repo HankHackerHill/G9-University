@@ -104,7 +104,7 @@ A warning is the backend disclosing that a result is partial or proposed. The wi
 | `session.uncorrected_uncertain_time` | Some time in this session could not be vouched for. It is not credited until you correct it. |
 | `export.attachments_missing` | The export was written, but some attached files were missing or damaged. They are listed in manifest.json. |
 | `backup.attachments_incomplete` | The backup was taken, but some attached files were missing or damaged and were not copied with it. |
-| `deletion.attachment_bytes_not_purged` | The record is erased, but the file itself is still on disk. Removing files is not built yet. |
+| `deletion.attachment_bytes_not_purged` | The record is erased, but its file was not removed from disk because no attachment folder is configured. |
 | `idempotency.replay_rebuilt` | You sent this before. The result shows what is stored now, not what was sent then. |
 | other codes | see `WARNING_MEANINGS`; an unknown code shows the backend's sentence alone |
 

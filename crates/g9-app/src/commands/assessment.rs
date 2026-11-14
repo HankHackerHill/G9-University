@@ -683,9 +683,13 @@ pub fn submit(
         .iter()
         .map(|e| parse_id(e, "evidence_refs[]"))
         .collect::<Result<_, _>>()?;
-    let digest = sha256_json(&json!({ "evidence_refs": req.evidence_refs, "notes": req.notes }));
-    // app-5: the text was hashed into `submission_sha256` and otherwise lost.
+    // app-5: the text was hashed into `submission_sha256` and otherwise lost. It is now stored as an
+    // erasable note, so the attempt (an evidentiary row that is never erased) commits to the evidence
+    // and to whether notes were handed in, never to their text: a digest of erasable text is the
+    // text for anyone who can guess it (ADR-0017).
     let notes = req.notes.clone().filter(|n| !n.trim().is_empty());
+    let digest =
+        sha256_json(&json!({ "evidence_refs": req.evidence_refs, "has_notes": notes.is_some() }));
     if let Some(text) = &notes {
         if text.len() as u64 > MAX_NOTE_BYTES {
             return Err(G9Error::invalid_input(

@@ -5,11 +5,15 @@
 //! operator-only for deletion). Deletion of personal content runs
 //! `g9_storage::deletion`: the approved command records a `deletion_requests`
 //! row in the command transaction, then `execute_erasure` (which opens its own
-//! `BEGIN IMMEDIATE`) redacts the content in place, writes one tombstone per
-//! redacted row with the pre-erasure hash and invalidates derived rows. If the
-//! erasure fails, the request stays `REQUESTED` with its approval spent (fail
-//! closed: nothing is erased without a fresh approval). Evidentiary records are
-//! never deleted (policy `evidentiary.delete.deny`, storage `ON DELETE RESTRICT`).
+//! `BEGIN IMMEDIATE`) redacts the content in place, replaces every stored digest
+//! of that content, writes one tombstone per redacted row (its digest identifies
+//! the tombstone and is never derived from the content: ADR-0017), invalidates
+//! derived rows and removes the files of the erased attachments from the
+//! attachment folder before it commits. If the erasure fails, the request stays
+//! `REQUESTED` with its approval spent (fail closed: nothing is erased without a
+//! fresh approval; a file already removed stays removed and the next erasure of
+//! the record completes). Evidentiary records are never deleted (policy
+//! `evidentiary.delete.deny`, storage `ON DELETE RESTRICT`).
 //!
 //! Export: the approved request writes `<exports>/<export_id>/` in the command
 //! transaction (`g9_storage::export`: the selected domains, never a SECRET row,
@@ -40,6 +44,15 @@ struct ExportRequest {
     domains: Vec<DataDomain>,
     format: ExportFormat,
     include_private: bool,
+}
+
+/// The attachment folder, when one is configured inside an approved root.
+fn attachment_store_of(svc: &Services) -> Option<PathBuf> {
+    let dir = svc.config.attachment_dir.clone()?;
+    svc.approved_roots
+        .as_ref()
+        .is_some_and(|roots| roots.contains_directory(&dir))
+        .then_some(dir)
 }
 
 fn export_dir(svc: &Services) -> Result<PathBuf, G9Error> {
@@ -307,18 +320,22 @@ pub fn deletion_request(
             let requested_at = row.requested_at;
             let step: PostCommit = Box::new(move |post| {
                 let executor = post.meta.actor.id.clone();
-                let report = deletion::execute_erasure(
+                // The approval covered the erasure of this record and its files: the bytes
+                // leave the application's own folder with the rows (ADR-0017).
+                let store = attachment_store_of(post.svc);
+                let report = deletion::execute_erasure_in_store(
                     post.db.conn_mut(),
                     &request_id,
                     &executor,
                     post.now,
+                    store.as_deref(),
                 )?;
                 let tombstone = report
                     .tombstones
                     .iter()
                     .find(|t| t.row_id == resource.id)
                     .or_else(|| report.tombstones.first())
-                    .map(|t| t.content_sha256_before.clone());
+                    .map(|t| t.tombstone_sha256.clone());
                 let stored = deletion::get_request(post.db.conn(), &request_id)?
                     .ok_or_else(|| G9Error::internal_redacted("deletion.reload"))?;
                 let state = match stored.state {
@@ -346,9 +363,10 @@ pub fn deletion_request(
                         "invalidated_derived": report.invalidated_derived.len(),
                     }),
                 ));
+                // Files remain only when this process was not given the folder they are in.
                 if !report.attachment_storage_refs_to_purge.is_empty() {
                     m = m.with_warning(
-                        "deletion.attachment_bytes_not_purged: removing attachment files needs a FilesystemWrite approval; PROPOSED",
+                        "deletion.attachment_bytes_not_purged: the record is erased, but no attachment folder inside an approved root is configured, so its file was not removed from disk",
                     );
                 }
                 Ok(m)

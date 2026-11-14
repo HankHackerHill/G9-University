@@ -28,6 +28,7 @@ pub mod privacy;
 pub mod revision;
 pub mod skill;
 pub mod state;
+pub mod text;
 pub mod time;
 pub mod trust;
 

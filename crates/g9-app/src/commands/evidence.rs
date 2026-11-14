@@ -19,10 +19,11 @@
 //!    commits; if the commit fails, the file stays unreferenced (harmless:
 //!    content-addressed, and no row points at it).
 //!
-//! The attachment takes the data domain and classification of its note, so a
-//! file on a security-sensitive note needs an approval like the note did
-//! (`operator.security_sensitive.write.approval`). Without a note it is
-//! LEARNING data. Its trust class is `IMPORTED_DOCUMENT`: data, never
+//! The attachment takes the data domain of its note and the stricter of the
+//! note's classification and the one asked for (a file can be more sensitive
+//! than its note, never less), so a file on a security-sensitive note needs an
+//! approval like the note did (`operator.security_sensitive.write.approval`).
+//! Without a note it is LEARNING data. Its trust class is `IMPORTED_DOCUMENT`: data, never
 //! instructions, never parsed (PDF included).
 //!
 //! # `evidence.from_note`, `evidence.list`
@@ -154,7 +155,11 @@ fn owner(
             Ok(Owner {
                 note_id: Some(id),
                 domain: note.data_domain,
-                classification: note.classification,
+                // The stricter of the note's and the one asked for: a file can be
+                // more sensitive than the note it is on, never less.
+                classification: req
+                    .classification
+                    .map_or(note.classification, |asked| asked.max(note.classification)),
             })
         }
         None => Ok(Owner {
@@ -288,7 +293,8 @@ pub fn attach_file(
                 .with_event(EventSpec {
                     domain: o.domain,
                     classification: o.classification,
-                    content_sha256: Some(reference.sha256.clone()),
+                    // No digest of the file on an immutable event (ADR-0017).
+                    content_sha256: None,
                     ..EventSpec::learning(
                         "attachment.added",
                         json!({ "attachment_id": attachment_id, "evidence_id": item.id, "note_id": o.note_id }),

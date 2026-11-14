@@ -30,7 +30,7 @@ Before this change the operator could not create sessions, calendar events, revi
 - Quarantine of attachments whose bytes do not match their type (needs columns).
 - Hashing attachment files during backup verification (copies are hash-checked; verification checks existence).
 - Signing the export manifest with the local key; an `export_records` table (the domain events `export.requested` and `export.written` record each export today).
-- Purging an erased attachment's bytes from the live store: the erasure redacts the row and reports `deletion.attachment_bytes_not_purged`; the files stay until the owner decides whether the approved erasure may also remove them (and whether backup copies follow).
+- Purging an erased attachment's bytes from the live store: resolved by ADR-0017 (2026-11-13): the approved erasure removes the files of the erased attachments inside its transaction and the confirmation says how many go. Whether backup copies follow is still open (a snapshot is a copy of the database and is not rewritten).
 - Custom rubric criteria and the QUIZ and REPORT assessment kinds (no storage).
 - A storage quota for attachments: each call is capped at 16 MiB, there is no total cap, and the bytes are not reclaimed until the purge decision above (LOW; a compromised webview could already grow the database through notes and backups).
 - An export folder written by a command whose commit then fails (disk full, crash) stays on disk without an `export.*` event, and the approval stays usable until it expires (INFO; the webview cannot cause it).

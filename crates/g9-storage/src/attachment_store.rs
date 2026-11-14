@@ -346,6 +346,63 @@ pub fn referenced_digests(conn: &rusqlite::Connection) -> StorageResult<Vec<Stri
     Ok(out)
 }
 
+/// Remove the stored file at the store-relative path `storage_ref` (the path an
+/// attachment row recorded: `<2 hex>/<2 hex>/<64 hex>`). Returns whether a file
+/// was removed; a file that is already gone is not an error.
+///
+/// This is how the bytes of an erased attachment leave the store. It removes
+/// exactly the file it is given: the store can hold files the open database does
+/// not reference (after a restore, a quarantined database still does), so
+/// nothing here walks the tree or infers what is unused. A path that is not the
+/// content-addressed shape, a path through a symlink and anything that is not a
+/// regular file are refused.
+pub fn remove(root: &Path, storage_ref: &str) -> StorageResult<bool> {
+    let name = Path::new(storage_ref)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or_default()
+        .to_string();
+    if !is_sha256_hex(&name) || relpath(&name)? != storage_ref {
+        return Err(StorageError::Precondition(
+            "the stored path of an attachment is not content-addressed".to_string(),
+        ));
+    }
+    match fs::symlink_metadata(root) {
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(e) => return Err(StorageError::io("inspect the attachment store", &e)),
+        Ok(_) => {}
+    }
+    let root = canonical_root(root)?;
+    let dir = root.join(&name[0..2]).join(&name[2..4]);
+    // Each component must be a real directory of the store, never a link out of it.
+    for part in [root.join(&name[0..2]), dir.clone()] {
+        match fs::symlink_metadata(&part) {
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+            Err(e) => return Err(StorageError::io("inspect the attachment store", &e)),
+            Ok(meta) if !meta.file_type().is_dir() => {
+                return Err(StorageError::Precondition(
+                    "the attachment store holds something that is not a folder where a folder is expected"
+                        .to_string(),
+                ))
+            }
+            Ok(_) => {}
+        }
+    }
+    let file = dir.join(&name);
+    match fs::symlink_metadata(&file) {
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(e) => Err(StorageError::io("inspect an attachment", &e)),
+        Ok(meta) if !meta.file_type().is_file() => Err(StorageError::Precondition(
+            "the stored attachment is not a regular file".to_string(),
+        )),
+        Ok(_) => {
+            fs::remove_file(&file).map_err(|e| StorageError::io("remove an attachment", &e))?;
+            sync_dir(&dir)?;
+            Ok(true)
+        }
+    }
+}
+
 /// [`referenced_digests`] of a database file opened read-only (a snapshot or
 /// a stopped live database); nothing is written.
 pub fn referenced_digests_in(path: &Path) -> StorageResult<Vec<String>> {
@@ -394,6 +451,72 @@ mod tests {
                 0o600
             );
         }
+    }
+
+    #[test]
+    fn remove_takes_exactly_the_file_it_is_given_and_nothing_reached_another_way() {
+        let dir = tempfile::tempdir().unwrap();
+        let (one, two) = (digest(b"one"), digest(b"two"));
+        put(dir.path(), &one, b"one").unwrap();
+        put(dir.path(), &two, b"two").unwrap();
+        let rel = relpath(&one).unwrap();
+        assert!(remove(dir.path(), &rel).unwrap());
+        assert!(!dir.path().join(&rel).exists());
+        assert!(
+            holds_intact(dir.path(), &two).unwrap(),
+            "another file was touched"
+        );
+        // Gone already, or a store that does not exist: nothing to do, not an error.
+        assert!(!remove(dir.path(), &rel).unwrap());
+        assert!(!remove(&dir.path().join("missing"), &rel).unwrap());
+        // A stored path that is not the content address is never followed.
+        for bad in [
+            "../outside",
+            "/etc/passwd",
+            "ab/cd/not-a-digest",
+            &format!("zz/zz/{one}"),
+            &format!("{}/{}/../../{one}", &one[0..2], &one[2..4]),
+            "",
+        ] {
+            assert!(
+                matches!(remove(dir.path(), bad), Err(StorageError::Precondition(_))),
+                "{bad:?}"
+            );
+        }
+        assert!(holds_intact(dir.path(), &two).unwrap());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn remove_does_not_follow_a_link_out_of_the_store() {
+        let dir = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        let sha = digest(b"victim");
+        // The shard folder is a link to a folder outside the store that holds a file with the right name.
+        let shard = outside.path().join(&sha[2..4]);
+        fs::create_dir_all(&shard).unwrap();
+        fs::write(shard.join(&sha), b"victim").unwrap();
+        std::os::unix::fs::symlink(outside.path(), dir.path().join(&sha[0..2])).unwrap();
+        assert!(matches!(
+            remove(dir.path(), &relpath(&sha).unwrap()),
+            Err(StorageError::Precondition(_))
+        ));
+        assert!(
+            shard.join(&sha).is_file(),
+            "a file outside the store was removed"
+        );
+        // The file itself is a link.
+        let dir = tempfile::tempdir().unwrap();
+        let target = outside.path().join("target");
+        fs::write(&target, b"victim").unwrap();
+        let inner = dir.path().join(&sha[0..2]).join(&sha[2..4]);
+        fs::create_dir_all(&inner).unwrap();
+        std::os::unix::fs::symlink(&target, inner.join(&sha)).unwrap();
+        assert!(matches!(
+            remove(dir.path(), &relpath(&sha).unwrap()),
+            Err(StorageError::Precondition(_))
+        ));
+        assert!(target.is_file());
     }
 
     #[test]

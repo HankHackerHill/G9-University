@@ -40,8 +40,40 @@ pub fn dispatch(
         .ok_or_else(|| G9Error::internal_redacted("ipc.handler_missing"))?;
     let meta = ipc::parse_meta(op, &meta_json, ctx.operator())?;
     schemas::validate_request(op, &payload_json)?;
+    refuse_unprintable_names(&payload_json)?;
     let outcome = handler(ctx, spec, &meta, &payload_json)?;
     serde_json::to_value(&outcome).map_err(|_| G9Error::internal_redacted("ipc.serialize"))
+}
+
+/// Keys of a request whose value is a name: one line that lists, the native
+/// approval confirmation and exports show as a fact.
+const NAME_KEYS: [&str; 3] = ["title", "filename", "label"];
+
+/// Refuse a request in which a name is blank or holds a hidden character
+/// (`g9_domain::text::name_defect`). One check at the boundary, by key, so that
+/// an operation added later is covered without its handler knowing the rule
+/// (security audit 2026-11-13). The refusal names the field and the code point,
+/// never the text.
+fn refuse_unprintable_names(payload: &Value) -> Result<(), G9Error> {
+    match payload {
+        Value::Object(map) => {
+            for (key, value) in map {
+                if let (true, Value::String(text)) = (NAME_KEYS.contains(&key.as_str()), value) {
+                    if let Some(reason) = g9_domain::text::name_defect(text) {
+                        return Err(G9Error::invalid_input(
+                            "input.name_not_printable",
+                            "a title, file name or label needs visible text and no control, invisible or text-reordering characters",
+                        )
+                        .with_details(serde_json::json!({ "field": key, "reason": reason })));
+                    }
+                }
+                refuse_unprintable_names(value)?;
+            }
+            Ok(())
+        }
+        Value::Array(items) => items.iter().try_for_each(refuse_unprintable_names),
+        _ => Ok(()),
+    }
 }
 
 /// What an approval grants, for a confirmation shown outside the webview
@@ -63,20 +95,40 @@ pub struct ApprovalSummary {
     pub requested_at: g9_domain::UtcMillis,
     /// When the request expires.
     pub expires_at: g9_domain::UtcMillis,
+    /// What the record is, read from storage by the backend when the confirmation
+    /// is raised (a note's stored title and classification, an event's time, the
+    /// grade an attempt would make final), as one sanitised line. For a record
+    /// that does not exist yet it says so. Never taken from the request.
+    pub subject: String,
+    /// What the approval grants, as policy decided it when the request was stored
+    /// (`protected record write`, `data delete`, ...). Never taken from the request.
+    pub grants: String,
+    /// Area and mode the request was made in. The requester states these; they are
+    /// one of a closed set of words and are shown as the context of the request,
+    /// not as a fact about the record.
+    pub scope: String,
+    /// First 16 hexadecimal characters of the fingerprint of the exact values.
+    pub fingerprint: String,
 }
 
 impl ApprovalSummary {
-    /// The text the confirmation shows.
+    /// The text the confirmation shows. One fact per line, each written by the
+    /// backend; an identifier is labelled as one, because part of it can be chosen
+    /// by whoever asked (a curriculum id, for example).
     pub fn text(&self) -> String {
         let revision = self
             .expected_revision
-            .map_or_else(String::new, |r| format!(" at revision {r}"));
+            .map_or_else(String::new, |r| format!(", revision {r}"));
         format!(
-            "Approve {} on {} {}{}?\n\nRequested {}; the approval expires {}.\nApproval {}",
+            "Approve: {}\nWhat: {}\nGrants: {}\nAsked in: {}\nRecord: {} with the id \"{}\"{}\nFingerprint of the exact values: {}…\n\nRequested {}; the approval expires {}.\nApproval {}",
             self.operation,
+            self.subject,
+            self.grants,
+            self.scope,
             self.resource_kind,
             self.resource_id,
             revision,
+            self.fingerprint,
             self.requested_at,
             self.expires_at,
             self.approval_id
@@ -104,14 +156,46 @@ pub fn approval_summary(
     } else {
         name.to_string()
     };
+    let word = |v: Result<Value, serde_json::Error>| {
+        v.ok()
+            .and_then(|v| v.as_str().map(|s| s.replace('_', " ").to_lowercase()))
+            .unwrap_or_else(|| "unknown".to_string())
+    };
+    // What the record is comes from storage, never from the request: a page that
+    // shows one note and asks about another cannot make this line agree with it.
+    let subject = g9_storage::describe::describe_resource(
+        ctx.db.conn(),
+        row.operation.resource.kind,
+        &row.operation.resource.id,
+    )?
+    .unwrap_or_else(|| {
+        format!(
+            "a new {} that is not stored yet; its content is fixed by the fingerprint below",
+            kind.replace('_', " ").to_lowercase()
+        )
+    });
+    let scope = format!(
+        "the {} area, {} mode",
+        word(serde_json::to_value(row.operation.scope.domain)),
+        word(serde_json::to_value(row.operation.scope.mode))
+    );
+    let grants = row.required_capability.map_or_else(
+        || "this one operation, no standing capability".to_string(),
+        |c| word(serde_json::to_value(c)),
+    );
     Ok(ApprovalSummary {
         approval_id: row.id.as_str().to_string(),
         operation,
         resource_kind: kind,
-        resource_id: row.operation.resource.id.clone(),
+        // An id may hold characters chosen by the requester: one printable line.
+        resource_id: g9_domain::text::one_line(&row.operation.resource.id, 160),
         expected_revision: row.expected_revision.map(|r| r.get()),
         requested_at: row.requested_at,
         expires_at: row.expires_at,
+        subject,
+        grants,
+        scope,
+        fingerprint: row.operation.parameters_sha256.chars().take(16).collect(),
     })
 }
 

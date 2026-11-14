@@ -66,7 +66,10 @@
       "description": "Reference to a protected resource (ResourceRef)."
     },
     "reason": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "Why the record is erased. Kept with the request on this machine; never exported (ADR-0017)."
     }
   },
   "required": [

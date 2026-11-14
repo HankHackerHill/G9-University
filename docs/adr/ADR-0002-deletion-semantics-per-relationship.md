@@ -21,3 +21,7 @@ Deleting a curriculum version with attempts is refused; privacy erasure is expli
 ## Verification
 
 `deletion_restrict_on_evidentiary_rows`, `a10_deletion_request_redacts_and_tombstones`, `foreign_keys_enforced`.
+
+## Amended by ADR-0017 (2026-11-13)
+
+Tombstones no longer keep the hash of what was erased: a digest of erasable content is content. A tombstone's digest identifies the tombstone, and erasure replaces every stored digest of the erased content. See ADR-0017.

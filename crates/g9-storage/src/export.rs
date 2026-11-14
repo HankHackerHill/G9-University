@@ -305,11 +305,89 @@ const LINKS: &[(&str, &str, &str)] = &[
 ];
 
 /// Columns never exported (`(table, column, reason)`; listed in the manifest).
-const WITHHELD: &[(&str, &str, &str)] = &[(
-    "assessment_versions",
-    "task_statement",
-    "blind assessment integrity: an exported task is an exposure the exposure log never records",
-)];
+const WITHHELD: &[(&str, &str, &str)] = &[
+    (
+        "assessment_versions",
+        "task_statement",
+        "blind assessment integrity: an exported task is an exposure the exposure log never records",
+    ),
+    // ADR-0017: a digest of content is content. A record of an erasure, and the
+    // immutable ledgers, leave without anything derived from what a row held.
+    (
+        "deletion_tombstones",
+        "content_sha256_before",
+        "a tombstone identifies an erased row; rows written before ADR-0017 hold a digest of the erased content",
+    ),
+    (
+        "deletion_requests",
+        "report_json",
+        "erasure reports written before ADR-0017 hold digests of the erased content",
+    ),
+    (
+        "deletion_requests",
+        "reason",
+        "free text the operator wrote about content that was then erased",
+    ),
+    (
+        "domain_events",
+        "content_sha256",
+        "events are immutable: a digest of a record's content there outlives the record",
+    ),
+    (
+        "source_provenance",
+        "content_sha256",
+        "the provenance ledger is immutable: a digest of a record's content there outlives the record",
+    ),
+    // The hash of a whole request ({operation, payload}) is a guess-confirmation oracle: a short
+    // secret in the payload is recovered in as many tries as it has values when the rest of the
+    // payload is guessable. The ledgers keep these hashes (they are immutable and bind approvals);
+    // an export carries none of them, nor the chain values a guess could be checked against.
+    (
+        "policy_decisions",
+        "parameters_sha256",
+        "the hash of a whole request confirms a guessed payload, secret content included",
+    ),
+    (
+        "approval_requests",
+        "parameters_sha256",
+        "the hash of a whole request confirms a guessed payload, secret content included",
+    ),
+    (
+        "approval_requests",
+        "operation_json",
+        "the descriptor repeats the parameters hash; its other fields are columns of the table",
+    ),
+    (
+        "approval_decisions",
+        "parameters_sha256",
+        "the hash of a whole request confirms a guessed payload, secret content included",
+    ),
+    (
+        "audit_metadata",
+        "details_sha256",
+        "the hash of the details holds the request hash",
+    ),
+    (
+        "audit_metadata",
+        "prev_hash",
+        "chain values would confirm a guessed request hash; the chain is checked in the database",
+    ),
+    (
+        "audit_metadata",
+        "row_hash",
+        "chain values would confirm a guessed request hash; the chain is checked in the database",
+    ),
+    (
+        "approval_requests",
+        "binding_mac",
+        "the approval MAC is checked on this machine and never leaves it",
+    ),
+    (
+        "approval_decisions",
+        "binding_mac",
+        "the approval MAC is checked on this machine and never leaves it",
+    ),
+];
 
 const fn domain_sql(d: DataDomain) -> &'static str {
     match d {

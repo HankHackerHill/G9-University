@@ -145,17 +145,33 @@ fn attachments_value(report: &CopyReport) -> Value {
     })
 }
 
-/// `<dest>.partial` → sync → rename → sync the directory.
-fn durable_copy(from: &Path, dest: &Path) -> Result<(), CliError> {
+/// A new `<dest>.partial` that only its owner can read: a copy of a snapshot is
+/// a copy of the database, wherever it is written and whatever mode its source
+/// has (`fs::copy` would carry the source's mode over; security audit 2026-11-13).
+fn private_partial(dest: &Path) -> Result<(PathBuf, fs::File), CliError> {
     let partial = partial_of(dest);
     let _ = fs::remove_file(&partial);
-    fs::copy(from, &partial).map_err(|e| io_error("copy the snapshot", &e))?;
+    g9_storage::backup::create_new_private(&partial)
+        .and_then(|()| fs::OpenOptions::new().write(true).open(&partial))
+        .map(|file| (partial, file))
+        .map_err(|e| io_error("create the copy", &e))
+}
+
+/// `<dest>.partial` → sync → rename → sync the directory.
+fn durable_copy(from: &Path, dest: &Path) -> Result<(), CliError> {
+    let (partial, mut out) = private_partial(dest)?;
+    let mut source = fs::File::open(from).map_err(|e| io_error("open the snapshot", &e))?;
+    std::io::copy(&mut source, &mut out).map_err(|e| io_error("copy the snapshot", &e))?;
+    drop(out);
     finish(&partial, dest)
 }
 
 fn write_durably(dest: &Path, bytes: &[u8]) -> Result<(), CliError> {
-    let partial = partial_of(dest);
-    fs::write(&partial, bytes).map_err(|e| io_error("write the manifest", &e))?;
+    use std::io::Write as _;
+    let (partial, mut out) = private_partial(dest)?;
+    out.write_all(bytes)
+        .map_err(|e| io_error("write the manifest", &e))?;
+    drop(out);
     finish(&partial, dest)
 }
 

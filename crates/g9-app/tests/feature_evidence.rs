@@ -193,6 +193,78 @@ fn a_file_on_a_security_sensitive_note_needs_an_approval() {
     );
 }
 
+/// Security audit 2026-11-13: with a `note_id` the requested classification was
+/// dropped, so a file marked SECRET on an INTERNAL note was stored INTERNAL and
+/// could leave in an export. The file takes the stricter of the two.
+#[test]
+fn a_file_on_a_note_takes_the_stricter_of_its_own_and_the_notes_classification() {
+    let (mut h, _root) = harness();
+    let class_of = |h: &Harness, id: &str| -> String {
+        h.conn()
+            .query_row(
+                "SELECT classification FROM attachments WHERE id = ?1",
+                [id],
+                |r| r.get(0),
+            )
+            .unwrap()
+    };
+    let attach_as = |h: &mut Harness, note_id: &str, name: &str, asked: Option<&str>| -> String {
+        let mut payload = json!({ "note_id": note_id, "filename": name, "media_type": "text/plain", "content_base64": b64(name.as_bytes()) });
+        if let Some(c) = asked {
+            payload["classification"] = json!(c);
+        }
+        // A PRIVATE or SECRET record is protected: the same call goes through its approval.
+        let out = match h.call("evidence.attach_file", payload.clone()) {
+            Ok(out) => out,
+            Err(e) => {
+                assert_eq!(e.category, ErrorCategory::ApprovalRequired, "{e:?}");
+                h.approved("evidence.attach_file", payload, &Opts::default())
+            }
+        };
+        out["result"]["attachment_id"].as_str().unwrap().to_string()
+    };
+    let internal = note(&mut h, "internal note");
+    // Stricter than the note: kept.
+    let id = attach_as(&mut h, &internal, "secret.txt", Some("SECRET"));
+    assert_eq!(class_of(&h, &id), "SECRET");
+    let id = attach_as(&mut h, &internal, "private.txt", Some("PRIVATE"));
+    assert_eq!(class_of(&h, &id), "PRIVATE");
+    // Weaker than the note, or not given: the note's.
+    let id = attach_as(&mut h, &internal, "public.txt", Some("PUBLIC"));
+    assert_eq!(class_of(&h, &id), "INTERNAL");
+    let id = attach_as(&mut h, &internal, "plain.txt", None);
+    assert_eq!(class_of(&h, &id), "INTERNAL");
+
+    // A SECRET file never leaves in an export, whatever its note is.
+    let out = h.approved(
+        "export.request",
+        json!({ "domains": ["LEARNING"], "format": "JSON", "include_private": true }),
+        &Opts::default(),
+    );
+    let dir = PathBuf::from(out["result"]["location"].as_str().unwrap());
+    let mut text = String::new();
+    let mut stack = vec![dir];
+    while let Some(d) = stack.pop() {
+        for entry in std::fs::read_dir(&d).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_dir() {
+                stack.push(path);
+            } else {
+                text.push_str(&path.to_string_lossy());
+                text.push_str(&String::from_utf8_lossy(&std::fs::read(&path).unwrap()));
+            }
+        }
+    }
+    assert!(
+        !text.contains("secret.txt") && !text.contains(&sha(b"secret.txt")),
+        "a SECRET file is in the export"
+    );
+    assert!(
+        text.contains("private.txt"),
+        "the PRIVATE file was asked for and is missing"
+    );
+}
+
 #[test]
 fn a_typed_note_becomes_evidence() {
     let (mut h, _root) = harness();
@@ -322,8 +394,16 @@ fn an_erasure_leaves_no_title_or_file_name_in_evidence_listings_or_replays() {
 
 #[test]
 fn a_note_title_with_control_characters_still_becomes_evidence() {
+    // Such a title is refused at the boundary now (tests/names.rs); a row stored
+    // before that rule can still hold one, and listing it must stay safe.
     let (mut h, _root) = harness();
-    let n = note(&mut h, "Lab\r\nnotes");
+    let n = note(&mut h, "Lab notes");
+    h.conn()
+        .execute(
+            "UPDATE notes SET title = ?2 WHERE id = ?1",
+            rusqlite::params![n, "Lab\r\nnotes"],
+        )
+        .unwrap();
     let made = h
         .call("evidence.from_note", json!({ "note_id": n }))
         .unwrap();

@@ -16,13 +16,49 @@ describe('markdown sanitizer', () => {
     expect(html).not.toContain('onerror');
   });
 
-  it('drops javascript: and data: URLs but keeps https links with safe rel and no target', () => {
-    const html = renderMarkdown('[a](javascript:alert(1)) [b](data:text/html;base64,PHNjcmlwdD4=) [c](https://example.org) <a href="https://x.y" target="_blank">d</a>');
-    expect(html).not.toContain('javascript:');
-    expect(html).not.toContain('data:');
-    expect(html).toContain('href="https://example.org"');
-    expect(html).not.toContain('target=');
-    expect(html).toContain('rel="noopener noreferrer nofollow"');
+  // Security audit 2026-11-13: a webview follows a link by itself (context menu, middle
+  // click, keyboard, drag) and no Tauri capability is involved, so a link in a note could
+  // take the window to another origin. Rendered Markdown therefore has no links at all.
+  it('renders no link whatever the form: the text stays and a web or mail address is shown as text', () => {
+    const forms = [
+      '[c](https://example.org/path?q=1)',
+      '<https://example.org/auto>',
+      'bare https://example.org/bare address',
+      '[ref][r]\n\n[r]: https://example.org/ref "t"',
+      '<a href="https://x.y" target="_blank">raw</a>',
+      '[in app](#/settings)',
+      '[rooted](/index.html)',
+      '[scheme-relative](//evil.example/x)',
+      '[backslash](/\\evil.example/x)',
+      '[js](javascript:alert(1))',
+      '[data](data:text/html;base64,PHNjcmlwdD4=)',
+      '[mail](mailto:someone@example.org)',
+      '[file](file:///etc/passwd)',
+      '[nested **bold** text](https://example.org/n)',
+    ];
+    for (const source of forms) {
+      const html = renderMarkdown(source);
+      expect(html, source).not.toMatch(/<a[\s>]/i);
+      expect(html, source).not.toMatch(/href|target=|rel=/i);
+      expect(html, source).not.toContain('javascript:');
+      expect(html, source).not.toContain('data:text');
+    }
+    // The words of the link stay; a web or mail address is shown next to them, as text to copy.
+    expect(renderMarkdown('[c](https://example.org/path?q=1)')).toBe('<p>c (<code>https://example.org/path?q=1</code>)</p>\n');
+    expect(renderMarkdown('[nested **bold** text](https://example.org/n)')).toBe('<p>nested <strong>bold</strong> text (<code>https://example.org/n</code>)</p>\n');
+    expect(renderMarkdown('[mail](mailto:someone@example.org)')).toBe('<p>mail (<code>mailto:someone@example.org</code>)</p>\n');
+    // An address that is its own text is shown once.
+    expect(renderMarkdown('<https://example.org/auto>')).toBe('<p>https://example.org/auto</p>\n');
+    // Anything that is not a web or mail address keeps its words and loses the address.
+    expect(renderMarkdown('[in app](#/settings)')).toBe('<p>in app</p>\n');
+    expect(renderMarkdown('[rooted](/index.html)')).toBe('<p>rooted</p>\n');
+    expect(renderMarkdown('[scheme-relative](//evil.example/x)')).toBe('<p>scheme-relative</p>\n');
+    expect(renderMarkdown('[js](javascript:alert(1))')).toBe('<p>js</p>\n');
+  });
+
+  it('shows the address of a link as text that cannot become markup', () => {
+    const html = sanitizeHtml('<a href="https://example.org/?a=&lt;b&gt;&amp;c=&quot;d&quot;">x</a>');
+    expect(html).toBe('x (<code>https://example.org/?a=&lt;b&gt;&amp;c="d"</code>)');
   });
 
   it('removes <svg onload>, <iframe>, <object>, <style> and <form> controls', () => {

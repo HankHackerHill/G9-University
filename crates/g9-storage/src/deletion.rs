@@ -112,8 +112,12 @@ pub struct Tombstone {
     pub table_name: String,
     /// Redacted row id.
     pub row_id: String,
-    /// Content hash before redaction.
-    pub content_sha256_before: String,
+    /// Digest that identifies this tombstone (request, table, row, time). It is never
+    /// derived from the erased content: the digest of a short text is the text
+    /// (ADR-0017). Stored in the column `content_sha256_before`, whose name is
+    /// historical; reports written before ADR-0017 used that name as the key.
+    #[serde(rename = "tombstone_sha256", alias = "content_sha256_before")]
+    pub tombstone_sha256: String,
     /// When redacted.
     pub erased_at: UtcMillis,
 }
@@ -141,7 +145,11 @@ pub struct ErasureReport {
     /// Content-addressed attachment paths whose bytes the application must remove
     /// from the approved attachment root (this crate performs no filesystem deletion).
     /// A path still referenced by another non-erased attachment (identical bytes)
-    /// is never listed.
+    /// is never listed. A path is the digest of the file, so the list is handed to
+    /// the caller and never written to `report_json` (ADR-0017); the caller purges
+    /// every unreferenced file of the store, which also covers a purge that a
+    /// crash interrupted.
+    #[serde(default, skip_serializing)]
     pub attachment_storage_refs_to_purge: Vec<String>,
 }
 
@@ -285,26 +293,30 @@ struct Eraser<'a> {
 }
 
 impl Eraser<'_> {
-    fn tombstone(&mut self, table: &str, row_id: &str, sha_before: &str) -> StorageResult<()> {
+    /// Write the tombstone of one erased row and return its digest. The digest
+    /// identifies the tombstone; it replaces every stored digest of the erased
+    /// content, so nothing derived from that content outlives it (ADR-0017).
+    fn tombstone(&mut self, table: &str, row_id: &str) -> StorageResult<String> {
         self.tombstone_seq += 1;
         let id = format!("{}:{}:{}", self.request_id, table, self.tombstone_seq);
+        let digest = tombstone_digest(self.request_id, table, row_id, self.now);
         self.tx.execute(
             "INSERT INTO deletion_tombstones (id, deletion_request_id, table_name, row_id, content_sha256_before, erased_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![id, self.request_id, table, row_id, sha_before, self.now.as_millis()],
+            params![id, self.request_id, table, row_id, digest, self.now.as_millis()],
         )?;
         self.report.tombstones.push(Tombstone {
             id,
             table_name: table.to_string(),
             row_id: row_id.to_string(),
-            content_sha256_before: sha_before.to_string(),
+            tombstone_sha256: digest.clone(),
             erased_at: self.now,
         });
         self.report.redacted_rows.push(RowRef {
             table_name: table.to_string(),
             row_id: row_id.to_string(),
         });
-        Ok(())
+        Ok(digest)
     }
 
     fn invalidate_evidence(&mut self, column: &str, id: &str) -> StorageResult<()> {
@@ -325,11 +337,15 @@ impl Eraser<'_> {
         for eid in ids {
             // The summary repeats erased content (a note title, a file name):
             // it is redacted with the item, never left readable.
+            // The digest of the content goes with the content (ADR-0017): the item
+            // keeps a digest of its own identity, and its provenance no digest at all.
+            let digest = tombstone_digest(self.request_id, "evidence_items", &eid, self.now);
             self.tx.execute(
                 "UPDATE evidence_items SET invalidated_at = ?2, invalidation_reason = ?3, summary = ?4,
+                     content_sha256 = ?5, provenance_json = json_remove(provenance_json, '$.content_sha256'),
                      revision = revision + 1, updated_at = ?2
                  WHERE id = ?1",
-                params![eid, self.now.as_millis(), reason, REDACTED],
+                params![eid, self.now.as_millis(), reason, REDACTED, digest],
             )?;
             self.report.invalidated_derived.push(RowRef {
                 table_name: "evidence_items".to_string(),
@@ -381,19 +397,19 @@ impl Eraser<'_> {
                 |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
             )
             .optional()?;
-        let Some((sha, storage_ref, erased)) = row else {
+        let Some((_sha, storage_ref, erased)) = row else {
             return Err(StorageError::NotFound("attachment"));
         };
         if erased == 1 {
             return Ok(());
         }
+        let digest = self.tombstone("attachments", attachment_id)?;
         self.tx.execute(
-            "UPDATE attachments SET original_filename = ?2, storage_ref = '', erased = 1, erased_at = ?3,
-                erasure_request_id = ?4, revision = revision + 1, updated_at = ?3
+            "UPDATE attachments SET original_filename = ?2, storage_ref = '', content_sha256 = ?5, erased = 1,
+                erased_at = ?3, erasure_request_id = ?4, revision = revision + 1, updated_at = ?3
              WHERE id = ?1",
-            params![attachment_id, REDACTED, self.now.as_millis(), self.request_id],
+            params![attachment_id, REDACTED, self.now.as_millis(), self.request_id, digest],
         )?;
-        self.tombstone("attachments", attachment_id, &sha)?;
         // Paths are content-addressed, so identical bytes share one path: the path
         // is purged only when no other non-erased attachment still uses it (the
         // last erasure of those bytes lists it).
@@ -422,19 +438,19 @@ impl Eraser<'_> {
                 |r| Ok((r.get(0)?, r.get(1)?)),
             )
             .optional()?;
-        let Some((sha, erased)) = row else {
+        let Some((_sha, erased)) = row else {
             return Err(StorageError::NotFound("note"));
         };
         if erased == 1 {
             return Ok(());
         }
+        let digest = self.tombstone("notes", note_id)?;
         self.tx.execute(
-            "UPDATE notes SET title = ?2, body_markdown = '', erased = 1, erased_at = ?3, erasure_request_id = ?4,
-                revision = revision + 1, updated_at = ?3
+            "UPDATE notes SET title = ?2, body_markdown = '', body_sha256 = ?5, erased = 1, erased_at = ?3,
+                erasure_request_id = ?4, revision = revision + 1, updated_at = ?3
              WHERE id = ?1",
-            params![note_id, REDACTED, self.now.as_millis(), self.request_id],
+            params![note_id, REDACTED, self.now.as_millis(), self.request_id, digest],
         )?;
-        self.tombstone("notes", note_id, &sha)?;
 
         let versions: Vec<(String, String)> = {
             let mut stmt = self
@@ -449,12 +465,12 @@ impl Eraser<'_> {
             }
             v
         };
-        for (vid, vsha) in versions {
+        for (vid, _vsha) in versions {
+            let digest = self.tombstone("note_versions", &vid)?;
             self.tx.execute(
-                "UPDATE note_versions SET title = ?2, body_markdown = '', erased = 1 WHERE id = ?1",
-                params![vid, REDACTED],
+                "UPDATE note_versions SET title = ?2, body_markdown = '', body_sha256 = ?3, erased = 1 WHERE id = ?1",
+                params![vid, REDACTED, digest],
             )?;
-            self.tombstone("note_versions", &vid, &vsha)?;
         }
 
         let attachments: Vec<String> = {
@@ -484,28 +500,78 @@ impl Eraser<'_> {
                 |r| Ok((r.get(0)?, r.get(1)?)),
             )
             .optional()?;
-        let Some((sha, erased)) = row else {
+        let Some((_sha, erased)) = row else {
             return Err(StorageError::NotFound("opt-in reflection"));
         };
         if erased == 1 {
             return Ok(());
         }
+        let digest = self.tombstone("opt_in_reflections", id)?;
         self.tx.execute(
-            "UPDATE opt_in_reflections SET body = '', erased = 1, erased_at = ?2, erasure_request_id = ?3,
-                revision = revision + 1, updated_at = ?2
+            "UPDATE opt_in_reflections SET body = '', body_sha256 = ?4, erased = 1, erased_at = ?2,
+                erasure_request_id = ?3, revision = revision + 1, updated_at = ?2
              WHERE id = ?1",
-            params![id, self.now.as_millis(), self.request_id],
+            params![id, self.now.as_millis(), self.request_id, digest],
         )?;
-        self.tombstone("opt_in_reflections", id, &sha)
+        Ok(())
     }
 }
 
+/// Digest that identifies one tombstone: the request, the table, the row and the
+/// time of erasure. It stands wherever a digest of the erased content stood, and
+/// is never derived from that content (ADR-0017: the digest of a short text is
+/// the text).
+pub fn tombstone_digest(
+    request_id: &str,
+    table: &str,
+    row_id: &str,
+    erased_at: UtcMillis,
+) -> String {
+    g9_domain::hashing::sha256_hex(
+        format!(
+            "g9-tombstone-v1\n{request_id}\n{table}\n{row_id}\n{}",
+            erased_at.as_millis()
+        )
+        .as_bytes(),
+    )
+}
+
 /// Execute an approved deletion request in one transaction and checkpoint the WAL afterwards.
+///
+/// The bytes of erased attachments are not removed (no store is given): the
+/// caller is told which files remain through
+/// `ErasureReport::attachment_storage_refs_to_purge`. Use
+/// [`execute_erasure_in_store`] where the store is known.
 pub fn execute_erasure(
     conn: &mut Connection,
     request_id: &str,
     executed_by: &ActorId,
     now: UtcMillis,
+) -> StorageResult<ErasureReport> {
+    execute_erasure_in_store(conn, request_id, executed_by, now, None)
+}
+
+/// [`execute_erasure`], and with `attachment_root` the files of the erased
+/// attachments leave the store inside the same transaction, before it commits.
+///
+/// Order matters. Removing the bytes first means a crash or a failed commit
+/// leaves rows that still name a file that is gone: verification reports it and
+/// running the erasure again completes it. The other order would leave an erased
+/// row and its bytes on disk, with no record of which file to remove (the
+/// record would be a digest of the erased content, ADR-0017). The write lock of
+/// the transaction also keeps an upload of another process out: an upload writes
+/// its bytes inside its own write transaction, so none is between "bytes
+/// written" and "row committed" while a file is removed here.
+///
+/// Only the files this erasure made unreferenced are removed (identical bytes
+/// share one file, which goes with its last attachment). Returns the report with
+/// `attachment_storage_refs_to_purge` empty when every such file was removed.
+pub fn execute_erasure_in_store(
+    conn: &mut Connection,
+    request_id: &str,
+    executed_by: &ActorId,
+    now: UtcMillis,
+    attachment_root: Option<&std::path::Path>,
 ) -> StorageResult<ErasureReport> {
     let request =
         get_request(conn, request_id)?.ok_or(StorageError::NotFound("deletion request"))?;
@@ -542,6 +608,12 @@ pub fn execute_erasure(
         }
         eraser.report
     };
+    let mut report = report;
+    if let Some(root) = attachment_root {
+        for storage_ref in std::mem::take(&mut report.attachment_storage_refs_to_purge) {
+            crate::attachment_store::remove(root, &storage_ref)?;
+        }
+    }
     let report_json = serde_json::to_string(&report)
         .map_err(|_| StorageError::Internal("erasure report json"))?;
     let changed = tx.execute(

@@ -4,7 +4,7 @@ import { sha256HexBytes } from '../../lib/sha256';
 import { createClient, isG9Error, type InvokeResult } from '../client';
 import { OPERATIONS, type CriterionResult, type GradeSource, type OperationName, type RequestOf } from '../operations';
 import type { ClientCommandMeta } from '../types';
-import { BASELINE_CRITERIA, MOCK_DEFAULT_NOW, MOCK_EXPORT_DIR, computeGrade, createMockClock, createMockTransport, type MockOptions } from './mock';
+import { BASELINE_CRITERIA, MOCK_DEFAULT_NOW, MOCK_EXPORT_DIR, computeGrade, createMockClock, createMockTransport, evidenceSummary, type MockOptions } from './mock';
 import { encodeBase64 } from './mock-attachments';
 
 function harness(options: Omit<MockOptions, 'clock'> = {}) {
@@ -856,7 +856,8 @@ describe('mock transport: authoring (competency.create, assessment.define)', () 
     const comp = ok(await client.invoke('competency.create', { code: 'WCP', title: ' Web cache poisoning ', validity_days: 120 })).result;
     expect(comp).toMatchObject({ code: 'WCP', title: 'Web cache poisoning', validity_days: 120 });
     expect(err(await client.invoke('competency.create', { code: 'WCP', title: 'again' }))).toMatchObject({ category: 'CONFLICT', code: 'storage.unique_violation' });
-    expect(err(await client.invoke('competency.create', { code: 'BLANK', title: '   ' })).code).toBe('competency.invalid');
+    // A blank title is a name that is not storable: refused at the boundary, before the handler.
+    expect(err(await client.invoke('competency.create', { code: 'BLANK', title: '   ' }))).toMatchObject({ code: 'input.name_not_printable', details: { field: 'title' } });
     expect(err(await client.invoke('competency.create', { code: 'lower', title: 'x' })).category).toBe('INVALID_INPUT');
     expect(ok(await client.invoke('competency.create', { code: 'DEF', title: 'Default validity' })).result.validity_days).toBe(180);
     const listedComp = ok(await client.invoke('competency.projection', { competency_id: comp.competency_id })).result.projections[0];
@@ -960,7 +961,9 @@ describe('mock transport: evidence (attach_file, from_note, list)', () => {
     // Shorter than the request schema's minimum (4): refused at step 1.
     expect((await attach('a.txt', 'text/plain', 'aGk')).code).toBe('ipc.payload_invalid');
     for (const name of ['../../etc/passwd', 'a\\b', '..', '   ', 'tab\there', 'x'.repeat(256)]) {
-      expect((await attach(name, 'text/plain', b64('x'))).code, name).toBe(name === 'x'.repeat(256) ? 'ipc.payload_invalid' : 'attachment.filename_invalid');
+      // Blank names and names with a control character are refused by the name rule (before the handler).
+      const code = name === 'x'.repeat(256) ? 'ipc.payload_invalid' : name === '   ' || name === 'tab\there' ? 'input.name_not_printable' : 'attachment.filename_invalid';
+      expect((await attach(name, 'text/plain', b64('x'))).code, name).toBe(code);
     }
     // 255 characters but more than 255 UTF-8 bytes.
     expect((await attach('é'.repeat(200), 'text/plain', b64('x'))).code).toBe('attachment.filename_invalid');
@@ -1004,6 +1007,45 @@ describe('mock transport: evidence (attach_file, from_note, list)', () => {
     expect(err(await client.invoke('evidence.from_note', { note_id: note.note_id }, scope)).category).toBe('APPROVAL_REQUIRED');
   });
 
+  it('a title, file name or label that is blank or holds a hidden character is refused before anything is stored', async () => {
+    const { client } = harness();
+    const hostile = ['   ', 'pin\u202Etxt.exe', 'first line\nApprove: nothing', 'zero\u200Bwidth'];
+    for (const title of hostile) {
+      const refused = err(await client.invoke('notes.create', { title, body_markdown: 'b', classification: 'INTERNAL', domain: 'LEARNING' }));
+      expect(refused, JSON.stringify(title)).toMatchObject({ category: 'INVALID_INPUT', code: 'input.name_not_printable', details: { field: 'title' } });
+      // The refusal names the field and the code point, never the text.
+      expect(JSON.stringify(refused)).not.toContain('Approve: nothing');
+      expect(err(await client.invoke('evidence.attach_file', { filename: title, media_type: 'text/plain', content_base64: encodeBase64(utf8('x')) }))).toMatchObject({
+        code: 'input.name_not_printable',
+        details: { field: 'filename' },
+      });
+    }
+    expect(ok(await client.invoke('evidence.list', {})).result.items).toEqual([]);
+    // Free text keeps its line breaks.
+    expect(ok(await client.invoke('notes.create', { title: 'Lab notes', body_markdown: 'one\n\n\ttwo', classification: 'INTERNAL', domain: 'LEARNING' })).result.note_id).toBeTruthy();
+  });
+
+  it('a file takes the stricter of its own and its note\'s classification, which an export then honours', async () => {
+    const { client } = harness();
+    const note = ok(await client.invoke('notes.create', { title: 'Plain', body_markdown: 'b', classification: 'INTERNAL', domain: 'LEARNING' })).result;
+    const attach = async (name: string, classification?: 'PUBLIC' | 'PRIVATE' | 'SECRET') => {
+      const payload = { note_id: note.note_id, filename: name, media_type: 'text/plain' as const, content_base64: encodeBase64(utf8(name)), ...(classification === undefined ? {} : { classification }) };
+      return ok(await client.invoke('evidence.attach_file', payload)).result.attachment_id;
+    };
+    await attach('secret.txt', 'SECRET'); // stricter than the note: kept
+    await attach('private.txt', 'PRIVATE'); // stricter than the note: kept
+    await attach('public.txt', 'PUBLIC'); // weaker than the note: the note's INTERNAL
+    await attach('plain.txt'); // not given: the note's INTERNAL
+    const exportOf = async (include_private: boolean) => {
+      const payload: RequestOf<'export.request'> = { domains: ['LEARNING'], format: 'JSON', include_private };
+      const approvalId = await approvalFor(client, await client.invoke('export.request', payload));
+      return ok(await client.invoke('export.request', payload, { approvalId })).result;
+    };
+    // Two INTERNAL files leave in a plain export; the PRIVATE one only on request; the SECRET one never.
+    expect((await exportOf(false)).attachments).toBe(2);
+    expect((await exportOf(true)).attachments).toBe(3);
+  });
+
   it('an erased note takes no attachment; its files and evidence items are erased and invalidated', async () => {
     const { client } = harness();
     const note = ok(await client.invoke('notes.create', { title: 'Diary', body_markdown: 'private', classification: 'PRIVATE', domain: 'LEARNING' })).result;
@@ -1013,7 +1055,11 @@ describe('mock transport: evidence (attach_file, from_note, list)', () => {
     const erase = { resource: { kind: 'NOTE' as const, id: note.note_id }, reason: 'no longer needed' };
     const deletion = ok(await client.invoke('deletion.request', erase, { approvalId: await approvalFor(client, await client.invoke('deletion.request', erase)) }));
     expect(deletion.result.state).toBe('APPLIED');
-    expect(deletion.warnings).toEqual(['deletion.attachment_bytes_not_purged: removing attachment files needs a FilesystemWrite approval; PROPOSED']);
+    // The file leaves the attachment folder inside the erasure, so there is nothing to warn about,
+    // and the tombstone's digest is not the digest of the erased body (ADR-0017).
+    expect(deletion.warnings ?? []).toEqual([]);
+    expect(deletion.result.tombstone_sha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(deletion.result.tombstone_sha256).not.toBe(sha256HexBytes(utf8('private')));
     expect(err(await client.invoke('evidence.attach_file', payload))).toMatchObject({ category: 'CONFLICT', code: 'note.erased' });
     expect(err(await client.invoke('evidence.from_note', { note_id: note.note_id }))).toMatchObject({ category: 'CONFLICT', code: 'note.erased' });
     const items = ok(await client.invoke('evidence.list', { note_id: note.note_id })).result.items;
@@ -1030,21 +1076,24 @@ describe('mock transport: evidence (attach_file, from_note, list)', () => {
 
   it('rebuilds an attach_file or from_note replay from the current rows (names and titles are not retained) and says so', async () => {
     const { client } = harness();
-    const note = ok(await client.invoke('notes.create', { title: '  Lab\u0007 log\n', body_markdown: 'b', classification: 'INTERNAL', domain: 'LEARNING' })).result;
+    const note = ok(await client.invoke('notes.create', { title: '  Lab log  ', body_markdown: 'b', classification: 'INTERNAL', domain: 'LEARNING' })).result;
     const payload = { note_id: note.note_id, filename: 'log.txt', media_type: 'text/plain' as const, content_base64: encodeBase64(utf8('log line')) };
     const first = ok(await client.invoke('evidence.attach_file', payload, { idempotencyKey: 'attach-once' }));
     expect(first.warnings).toBeUndefined();
     const again = ok(await client.invoke('evidence.attach_file', payload, { idempotencyKey: 'attach-once' }));
     expect(again).toMatchObject({ replayed: true, result: first.result });
     expect(again.warnings).toEqual([expect.stringMatching(/^idempotency\.replay_rebuilt: names and titles are not retained/)]);
-    // evidence.rs `summary_of`: control characters become spaces, then the line is trimmed.
+    // evidence.rs `summary_of`: the line is trimmed.
     const made = ok(await client.invoke('evidence.from_note', { note_id: note.note_id }, { idempotencyKey: 'note-once' }));
-    expect(made.result.summary).toBe('Lab  log');
+    expect(made.result.summary).toBe('Lab log');
     const madeAgain = ok(await client.invoke('evidence.from_note', { note_id: note.note_id }, { idempotencyKey: 'note-once' }));
     expect(madeAgain).toMatchObject({ replayed: true, result: made.result });
     expect(madeAgain.warnings).toHaveLength(1);
-    const blank = ok(await client.invoke('notes.create', { title: ' ', body_markdown: 'b', classification: 'INTERNAL', domain: 'LEARNING' })).result;
-    expect(ok(await client.invoke('evidence.from_note', { note_id: blank.note_id })).result.summary).toBe('Note');
+    // A blank title can no longer be created (input.name_not_printable); a row stored before that
+    // rule can still hold one, or control characters, and the summary stays one printable line.
+    expect(err(await client.invoke('notes.create', { title: ' ', body_markdown: 'b', classification: 'INTERNAL', domain: 'LEARNING' })).code).toBe('input.name_not_printable');
+    expect(evidenceSummary(' ')).toBe('Note');
+    expect(evidenceSummary('  Lab\u0007 log\n')).toBe('Lab  log');
     // After the note is erased, the rebuilt replay shows the redacted file name.
     const erase = { resource: { kind: 'NOTE' as const, id: note.note_id }, reason: 'erase' };
     ok(await client.invoke('deletion.request', erase, { approvalId: await approvalFor(client, await client.invoke('deletion.request', erase)) }));

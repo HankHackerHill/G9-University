@@ -444,7 +444,7 @@ Gate: A09 · Test: `tests/integration/a09_model_down.rs`
 | no approval or action created by the failed invocation | 0 | 0 | PASS |
 | competency state unchanged by the model being down | ["INTRODUCED","INDEPENDENT"] | ["INTRODUCED","INDEPENDENT"] | PASS |
 
-### A10-01 — deletion: approval required; redaction + tombstone hash; versions erased; repeat refused (PASS)
+### A10-01 — deletion: approval required; redaction + tombstone; no digest of the erased body kept; versions erased; repeat refused (PASS)
 
 Gate: A10 · Test: `tests/integration/a10_export_deletion.rs`
 
@@ -468,7 +468,7 @@ Gate: A10 · Test: `tests/integration/a10_export_deletion.rs`
 | deletion with approval: recorded decision | ALLOW | ALLOW | PASS |
 | deletion with approval: outcome | OK | OK | PASS |
 | deletion state APPLIED | APPLIED | APPLIED | PASS |
-| tombstone carries the pre-erasure hash | b462a17270efa669c0fa305a08e6c579a8f41d6152c9eb22564be0b3b1f11cbd | b462a17270efa669c0fa305a08e6c579a8f41d6152c9eb22564be0b3b1f11cbd | PASS |
+| tombstone digest is not the digest of the erased body | a 64-character digest that differs from the body's SHA-256 | d8f8d41a57f855ac09bac866439a5bbd8335807576608c6cfc3b9a0bf7889fe2 | PASS |
 | note erased | true | true | PASS |
 | stored body redacted | current body hash differs from the original | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 | PASS |
 | every version erased | 1 | 1 | PASS |

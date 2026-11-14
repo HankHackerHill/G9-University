@@ -414,6 +414,175 @@ fn a_snapshot_restores_into_a_fresh_data_directory_without_quarantine() {
     assert!(fresh.data.join("restore-log.jsonl").is_file());
 }
 
+/// Security audit 2026-11-13: the plan printed a paste-ready command built from
+/// unquoted paths, so a snapshot in a folder named like shell syntax turned the
+/// operator's copy and paste into command execution. The command is now printed
+/// as an exact argument list and as a line quoted for a POSIX shell.
+#[cfg(unix)]
+#[test]
+fn the_confirming_command_is_one_shell_word_per_argument_whatever_the_paths_hold() {
+    use std::process::Command;
+
+    let source = Env::new();
+    let id = source.retained_backup();
+    let (_, plan, _) = source.run(&["restore", "--backup-id", &id]);
+    let snapshot = plan["snapshot"].as_str().unwrap().to_string();
+    let sha = plan["expected_sha256"].as_str().unwrap().to_string();
+
+    // A folder whose name is shell syntax: a command substitution, a separator,
+    // both kinds of quote, a backtick substitution, a glob and a comment.
+    let hostile_dir = source
+        .data
+        .parent()
+        .unwrap()
+        .join("usb backup $(touch PWNED) ; touch RAN `touch TICK` 'q' \"d\" * #");
+    std::fs::create_dir_all(&hostile_dir).unwrap();
+    let hostile = hostile_dir.join("snap.sqlite");
+    std::fs::copy(&snapshot, &hostile).unwrap();
+    let target = hostile_dir.join("data dir; touch PWNED2");
+
+    let (code, plan, _) = g9(&[
+        "restore",
+        "--snapshot",
+        hostile.to_str().unwrap(),
+        "--expect-sha256",
+        &sha,
+        "--data-dir",
+        target.to_str().unwrap(),
+        "--no-skills",
+    ]);
+    assert_eq!(code, 1, "{plan}");
+    assert!(!target.exists(), "the plan alone creates nothing");
+
+    let argv: Vec<String> = plan["to_confirm_argv"]
+        .as_array()
+        .expect("the exact arguments are listed")
+        .iter()
+        .map(|v| v.as_str().unwrap().to_string())
+        .collect();
+    assert_eq!(argv[..2], ["g9".to_string(), "restore".to_string()]);
+    assert!(
+        argv.contains(&hostile.to_str().unwrap().to_string()),
+        "{argv:?}"
+    );
+    assert!(
+        argv.contains(&target.to_str().unwrap().to_string()),
+        "{argv:?}"
+    );
+    assert_eq!(
+        argv.last().map(String::as_str),
+        Some("--confirm-replace-live-database")
+    );
+
+    // A POSIX shell reads the printed line as exactly those arguments and runs nothing else.
+    let line = plan["to_confirm"]
+        .as_str()
+        .expect("a line for a POSIX shell");
+    let cwd = tempfile::tempdir().unwrap();
+    let out = Command::new("sh")
+        .arg("-c")
+        .arg(format!("set -- {line}\nprintf '%s\\0' \"$@\""))
+        .current_dir(cwd.path())
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin")
+        .output()
+        .unwrap();
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let mut words: Vec<String> = out
+        .stdout
+        .split(|b| *b == 0)
+        .map(|w| String::from_utf8(w.to_vec()).unwrap())
+        .collect();
+    assert_eq!(
+        words.pop().as_deref(),
+        Some(""),
+        "the list ends with a terminator"
+    );
+    assert_eq!(
+        words, argv,
+        "the shell split the line differently from the argument list"
+    );
+    assert_eq!(
+        std::fs::read_dir(cwd.path()).unwrap().count(),
+        0,
+        "reading the printed line ran a command"
+    );
+
+    // The arguments as listed do restore, into the folder with the hostile name.
+    let mut args: Vec<&str> = argv[1..].iter().map(String::as_str).collect();
+    args.push("--no-skills");
+    let (code, out, err) = g9(&args);
+    assert_eq!(code, 0, "{out} {err}");
+    assert!(target.join("g9.sqlite").is_file());
+}
+
+/// A path with a control character cannot be pasted safely into any shell (a
+/// terminal acts on it before the shell reads it): no line is offered, only the
+/// exact arguments, and no output carries the raw character.
+#[cfg(unix)]
+#[test]
+fn a_path_with_a_control_character_gets_no_paste_ready_line_and_never_reaches_the_terminal_raw() {
+    use std::process::Command;
+
+    let source = Env::new();
+    let id = source.retained_backup();
+    let (_, plan, _) = source.run(&["restore", "--backup-id", &id]);
+    let snapshot = plan["snapshot"].as_str().unwrap().to_string();
+    let sha = plan["expected_sha256"].as_str().unwrap().to_string();
+    let odd_dir = source
+        .data
+        .parent()
+        .unwrap()
+        .join("usb\u{1b}[2K\u{9b}31m\u{202e}\nrm");
+    std::fs::create_dir_all(&odd_dir).unwrap();
+    let odd = odd_dir.join("snap.sqlite");
+    std::fs::copy(&snapshot, &odd).unwrap();
+
+    for human in [false, true] {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_g9"));
+        command
+            .args(["restore", "--snapshot"])
+            .arg(&odd)
+            .args(["--expect-sha256", &sha, "--no-skills", "--data-dir"])
+            .arg(odd_dir.join("data"));
+        if human {
+            command.arg("--human");
+        }
+        let out = command.output().unwrap();
+        assert_eq!(out.status.code(), Some(1));
+        let stdout = String::from_utf8(out.stdout).unwrap();
+        let stderr = String::from_utf8(out.stderr).unwrap();
+        for text in [&stdout, &stderr] {
+            for c in ['\u{1b}', '\u{9b}', '\u{202e}'] {
+                assert!(
+                    !text.contains(c),
+                    "human={human}: U+{:04X} reached the terminal raw",
+                    u32::from(c)
+                );
+            }
+        }
+        if !human {
+            let plan: Value = serde_json::from_str(&stdout).unwrap();
+            assert_eq!(plan["to_confirm"], Value::Null, "{plan}");
+            // The exact arguments still say what to run, and the escaped text decodes to the real path.
+            let argv = plan["to_confirm_argv"].as_array().unwrap();
+            assert!(
+                argv.iter()
+                    .any(|a| a.as_str() == Some(odd.to_str().unwrap())),
+                "{plan}"
+            );
+            assert_eq!(plan["snapshot"].as_str(), Some(odd.to_str().unwrap()));
+        } else {
+            // One value per line: the line break in the name did not start a new line.
+            assert!(!stdout.lines().any(|l| l.starts_with("rm")), "{stdout}");
+        }
+    }
+}
+
 #[test]
 fn the_seed_writing_commands_refuse_to_run_without_scratch() {
     let env = Env::new();
@@ -511,6 +680,31 @@ fn a_backup_copied_to_another_drive_restores_from_its_own_manifest() {
             .unwrap();
     assert_eq!(manifest["sha256"], out["sha256"]);
     assert_eq!(manifest["backup_id"], id.as_str());
+
+    // Security audit 2026-11-13: a snapshot is a full copy of the database. It and
+    // everything written beside it are readable by their owner only, on this disk
+    // and at the destination, whatever the umask and the destination folder allow.
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut files = vec![env.data.join("backups").join(format!("{id}.sqlite"))];
+        let mut stack = vec![usb.path().to_path_buf()];
+        while let Some(dir) = stack.pop() {
+            for entry in std::fs::read_dir(&dir).unwrap() {
+                let path = entry.unwrap().path();
+                if path.is_dir() {
+                    stack.push(path);
+                } else {
+                    files.push(path);
+                }
+            }
+        }
+        assert!(files.len() >= 3, "{files:?}");
+        for file in files {
+            let mode = std::fs::metadata(&file).unwrap().permissions().mode() & 0o777;
+            assert_eq!(mode & 0o077, 0, "{} is {mode:o}", file.display());
+        }
+    }
 
     let (code, again, _) = env.run(&["copy-backup", "--backup-id", &id, "--to", to]);
     assert_ne!(code, 0, "a copy never overwrites: {again}");

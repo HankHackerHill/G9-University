@@ -14,7 +14,7 @@ Every content-bearing record carries `data_domain` (LEARNING, BUSINESS, PERSONAL
 |---|---|---|
 | Authoritative evidence (attempts, criterion results, grade decisions, observations) | indefinite | immutable; corrections supersede |
 | Audit metadata, policy decisions, approval decisions | indefinite | hash-chained; tamper-evident |
-| Notes, note versions, attachments | until operator deletion | erasure via `deletion_requests` (tombstone keeps sha256 + size + timestamps) |
+| Notes, note versions, attachments | until operator deletion | erasure via `deletion_requests` (the tombstone identifies the erased row and keeps no digest of its content; the file is removed) |
 | Opt-in reflections, capacity self-reports | 365 days default, configurable | PERSONAL domain; excluded from exports by default |
 | Skill invocation records | 180 days | metadata only |
 | Idempotency records | 30 days | |
@@ -26,9 +26,10 @@ Retention is enforced by a deterministic maintenance command (`system.retention_
 
 1. Operator creates a `deletion_request` (scope: record ids or a domain + time range).
 2. Policy requires `Capability::DataDelete` approval bound to the request hash.
-3. Execution (single transaction): content columns are redacted to NULL/empty, a tombstone keeps `content_sha256`, `byte_len`, timestamps and provenance; derived rows that referenced the content get `invalidated_by = deletion_request_id`; evidentiary rows that *must* survive (grades, audit) are retained but their content references resolve to tombstones.
+3. Execution (single transaction): content columns are redacted to NULL/empty and every stored digest of the content (`notes.body_sha256`, `note_versions.body_sha256`, `attachments.content_sha256`, `evidence_items.content_sha256`, `opt_in_reflections.body_sha256`) is replaced by the tombstone's identity digest, because a digest of erasable content is content (ADR-0017: the SHA-256 of a four-digit code is the code). A tombstone keeps the table, row id, request and timestamps, never a digest of what was erased; the files of the erased attachments are removed from the attachment folder before the transaction commits; derived rows that referenced the content get `invalidated_by = deletion_request_id`; evidentiary rows that *must* survive (grades, audit) are retained but their content references resolve to tombstones. Append-only tables (events, provenance) never receive a digest of erasable content.
 4. Backups: deletion is recorded in `deletion_requests`; backups created before the deletion remain until their retention expires; on restore, the deletion ledger is replayed before the database is accepted (`backup_manifests.deletion_ledger_checkpoint`). This is the explicit reconciliation of "user deletion vs backup retention" (handoff §7).
-5. Exports produced after deletion exclude tombstoned content (erased rows, and the summaries of evidence that pointed at them); exports produced before are the operator's responsibility and are named by the `export.written` events.
+5. Exports produced after deletion exclude tombstoned content (erased rows, and the summaries of evidence that pointed at them). Exports never carry digests of governance records (tombstones, deletion reports and reasons, event and provenance digests), hashes of whole requests or the audit chain's check values (a hash of `{operation, payload}` confirms a guessed secret), or approval MACs; they never carry SECRET rows. Exports produced before are the operator's responsibility and are named by the `export.written` events.
+6. Rows erased before migration 0014 keep their old digests (PROPOSED: a data migration to scrub them; no such database is known), and backup snapshots keep everything they held.
 
 ## Encryption and key management (decision: layered, operator-chosen)
 

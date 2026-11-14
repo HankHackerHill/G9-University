@@ -1072,10 +1072,11 @@ fn a10_deletion_request_gated_and_tombstones_content() {
         .call_with("deletion.request", payload, &Opts::approval(id.as_str()))
         .unwrap();
     assert_eq!(done["result"]["state"], "APPLIED");
-    assert_eq!(
-        done["result"]["tombstone_sha256"],
-        json!(g9_domain::hashing::sha256_hex(body.as_bytes()))
-    );
+    // The tombstone's digest identifies the tombstone; it is never the digest of the
+    // erased body (ADR-0017: the digest of a short text is the text).
+    let tombstone = done["result"]["tombstone_sha256"].as_str().unwrap();
+    assert_eq!(tombstone.len(), 64);
+    assert_ne!(tombstone, g9_domain::hashing::sha256_hex(body.as_bytes()));
     let note = evidence_repo::get_note(h.conn(), &learning(), &nid)
         .unwrap()
         .unwrap();

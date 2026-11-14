@@ -58,14 +58,21 @@ pub fn parse_zone(zone: &str) -> Result<IanaZone, CliError> {
 /// seed rows straight to storage and refuse to run without `--scratch`. The flag
 /// is an explicit acknowledgement that the data directory is disposable; the
 /// directory is not inspected (PROPOSED: refuse a directory that holds operator
-/// data). Checked before anything is opened or created.
-pub fn require_scratch(scratch: bool) -> Result<(), CliError> {
-    if scratch {
-        Ok(())
-    } else {
-        Err(CliError::Usage(SCRATCH_REFUSAL.to_string()))
+/// data), so the directory must be named: `--scratch` without `--data-dir` would
+/// declare the default data directory disposable (security audit 2026-11-13).
+/// Checked before anything is opened or created.
+pub fn require_scratch(scratch: bool, data_dir_named: bool) -> Result<(), CliError> {
+    if !scratch {
+        return Err(CliError::Usage(SCRATCH_REFUSAL.to_string()));
     }
+    if !data_dir_named {
+        return Err(CliError::Usage(SCRATCH_NEEDS_DATA_DIR.to_string()));
+    }
+    Ok(())
 }
+
+/// Why `--scratch` alone is refused.
+pub const SCRATCH_NEEDS_DATA_DIR: &str = "--scratch confirms that --data-dir is disposable, so name that directory with --data-dir; the default data directory is never treated as scratch";
 
 /// Run the parsed command line.
 pub fn run(cli: &Cli) -> Result<Completion, CliError> {
@@ -95,12 +102,12 @@ pub fn run(cli: &Cli) -> Result<Completion, CliError> {
             manifest.as_deref(),
         )?)),
         Command::SimulateWeek(args) => {
-            require_scratch(args.scratch)?;
+            require_scratch(args.scratch, cli.data_dir.is_some())?;
             let options = simulate::SimulateOptions::from_cli(cli, args)?;
             Ok(Completion::of(simulate::run(options)?))
         }
         Command::CrashDrill(args) => {
-            require_scratch(args.scratch)?;
+            require_scratch(args.scratch, cli.data_dir.is_some())?;
             crash_drill::run(&boot_options(cli)?)
         }
         Command::Restore(args) => Ok(Completion::of(restore::run(&boot_options(cli)?, args)?)),
@@ -152,6 +159,23 @@ mod tests {
             !data.exists(),
             "a refused command must not create the data directory"
         );
-        assert!(require_scratch(true).is_ok());
+        assert!(require_scratch(true, true).is_ok());
+        // `--scratch` alone would declare the default data directory disposable.
+        for args in [
+            vec!["g9", "crash-drill", "--scratch"],
+            vec![
+                "g9",
+                "simulate-week",
+                "--scratch",
+                "--start-date",
+                "2026-11-16",
+            ],
+        ] {
+            let message = refused(&args);
+            assert!(
+                message.contains("name that directory with --data-dir"),
+                "{message}"
+            );
+        }
     }
 }

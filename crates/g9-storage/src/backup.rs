@@ -204,14 +204,36 @@ fn same_file(a: &Path, b: &Path) -> bool {
     }
 }
 
+/// Create `path` as a new, empty file that only its owner can read or write.
+/// Fails with `AlreadyExists` when something is already there.
+pub fn create_new_private(path: &Path) -> std::io::Result<()> {
+    let mut options = std::fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    options.open(path).map(|_| ())
+}
+
 /// Copy every page of `src` into a brand-new database file at `dest` with the
 /// Online Backup API, then switch the copy to rollback-journal mode.
 fn copy_with_backup_api(src: &Connection, dest: &Path) -> StorageResult<u64> {
-    if dest.exists() {
-        return Err(StorageError::Conflict(
-            "destination already exists; backups never overwrite".to_string(),
-        ));
-    }
+    // The copy holds everything the database holds: it is created here, empty and
+    // readable by its owner only, before SQLite opens it (SQLite would create it
+    // with the process umask, 0644 on most hosts; security audit 2026-11-13).
+    // SQLite gives a journal the mode of its database. `create_new` is also the
+    // check that a backup never overwrites, without a gap between check and use.
+    create_new_private(dest).map_err(|e| {
+        if e.kind() == std::io::ErrorKind::AlreadyExists {
+            StorageError::Conflict(
+                "destination already exists; backups never overwrite".to_string(),
+            )
+        } else {
+            StorageError::io("create the snapshot file", &e)
+        }
+    })?;
     let mut dst = Connection::open_with_flags(
         dest,
         OpenFlags::SQLITE_OPEN_READ_WRITE

@@ -21,7 +21,9 @@
 //! | Honest status | bridge facts the backend cannot see (key file fallback, zone fallback, refused skills, read-only storage reason) are appended to `CommandOutcome.warnings` of `system.status` |
 //!
 //! Capabilities: `capabilities/default.json` grants only `core:default` to the
-//! `main` window; no plugin is registered (no shell, fs, http, dialog, opener).
+//! `main` window; no Tauri plugin crate is used (no shell, fs, http, dialog,
+//! opener). The one plugin, built in this file, has no command: it refuses every
+//! navigation of the window away from the application ([`may_load`]).
 //!
 //! STATUS: the Tauri wiring (`run`, module `shell`) cannot be compiled in the
 //! authoring sandbox (no webkit2gtk-4.1/GTK3 system libraries): NOT RUN. The
@@ -568,7 +570,39 @@ mod platform {
     }
 }
 
-/// Tauri wiring. Everything above is Tauri-free.
+/// Whether the window may load `url`: the application itself and nothing else
+/// (security audit 2026-11-13).
+///
+/// A webview follows a link, a form, a redirect or an assignment to `location`
+/// by itself; no Tauri capability is involved and the CSP does not govern it.
+/// Loading another origin would replace the interface with a page the operator
+/// did not install and would be a network request from an offline application.
+/// Tauri refuses IPC from such a page (no remote capability), so the page could
+/// not reach the backend; it could still show anything inside this window.
+///
+/// * `tauri://localhost`: the bundled interface on Linux and macOS;
+/// * `http(s)://tauri.localhost`: the same on Windows and Android, only there;
+/// * the origin of `build.devUrl`, only in a development build (`dev_url` is
+///   `None` otherwise);
+/// * `about:blank`: an empty document, which loads nothing.
+pub fn may_load(url: &tauri::Url, dev_url: Option<&tauri::Url>) -> bool {
+    let same_origin = |other: &tauri::Url| {
+        url.scheme() == other.scheme()
+            && url.host_str() == other.host_str()
+            && url.port_or_known_default() == other.port_or_known_default()
+    };
+    match (url.scheme(), url.host_str()) {
+        ("tauri", Some("localhost")) => url.port().is_none(),
+        ("http" | "https", Some("tauri.localhost")) => {
+            cfg!(any(windows, target_os = "android")) && url.port().is_none()
+        }
+        ("about", None) => url.path() == "blank",
+        _ => dev_url.is_some_and(same_origin),
+    }
+}
+
+/// Tauri wiring. Everything above is Tauri-free except [`may_load`], which only
+/// reads a parsed URL.
 mod shell {
     use super::{
         bootstrap, error_value, host_zone, AppState, Bridge, BridgeOptions, SKILLS_RESOURCE_DIR,
@@ -612,7 +646,10 @@ mod shell {
     /// worker thread; any failure is a refusal.
     #[cfg(target_os = "linux")]
     fn native_confirm(app: &tauri::AppHandle, summary: &g9_app::ApprovalSummary) -> bool {
+        use gtk::glib::object::ObjectExt;
         use gtk::prelude::{DialogExt, GtkWindowExt};
+        /// How long "Approve" stays inert after the confirmation appears.
+        const APPROVE_ARMS_AFTER: std::time::Duration = std::time::Duration::from_millis(1500);
         let (answer, wait) = std::sync::mpsc::channel();
         let text = summary.text();
         let window = app.get_webview_window("main");
@@ -629,6 +666,18 @@ mod shell {
             dialog.add_button("Cancel", gtk::ResponseType::Cancel);
             dialog.add_button("Approve", gtk::ResponseType::Accept);
             dialog.set_default_response(gtk::ResponseType::Cancel);
+            // "Approve" does nothing for a moment after the dialog appears: a click or a
+            // key press already under way when it opened (a page can time its request to
+            // one, and a second request can be queued behind the first) cannot approve
+            // what has not been read (security audit 2026-11-13). The weak reference
+            // makes the timer a no-op when the dialog was closed first.
+            dialog.set_response_sensitive(gtk::ResponseType::Accept, false);
+            let pending = dialog.downgrade();
+            gtk::glib::timeout_add_local_once(APPROVE_ARMS_AFTER, move || {
+                if let Some(dialog) = pending.upgrade() {
+                    dialog.set_response_sensitive(gtk::ResponseType::Accept, true);
+                }
+            });
             let approved = dialog.run() == gtk::ResponseType::Accept;
             dialog.close();
             let _ = answer.send(approved);
@@ -676,9 +725,29 @@ mod shell {
         Ok(())
     }
 
-    /// Start the desktop shell: one command, no plugins.
+    /// The window stays on the application: every navigation is asked of
+    /// [`super::may_load`]. A plugin is how Tauri lets a window created from
+    /// `tauri.conf.json` have a navigation handler (tauri 2.12.5
+    /// `manager/webview.rs`: the handler of every webview consults each plugin's
+    /// `on_navigation`); this one has no command and no permission.
+    fn navigation_guard() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+        tauri::plugin::Builder::new("g9-navigation-guard")
+            .on_navigation(|webview, url| {
+                let dev_url = if cfg!(dev) {
+                    webview.app_handle().config().build.dev_url.clone()
+                } else {
+                    None
+                };
+                super::may_load(url, dev_url.as_ref())
+            })
+            .build()
+    }
+
+    /// Start the desktop shell: one command, and one command-less plugin that
+    /// keeps the window on the application.
     pub fn run() {
         let result = tauri::Builder::default()
+            .plugin(navigation_guard())
             .manage(AppState::starting())
             .invoke_handler(tauri::generate_handler![g9_command])
             .setup(setup)
@@ -691,6 +760,73 @@ mod shell {
 }
 
 pub use shell::run;
+
+#[cfg(test)]
+mod navigation_tests {
+    use super::may_load;
+    use tauri::Url;
+
+    fn url(text: &str) -> Url {
+        Url::parse(text).unwrap()
+    }
+
+    #[test]
+    fn the_window_loads_the_application_and_nothing_else() {
+        let dev = url("http://localhost:5173");
+        // The bundled interface, with any path, query or fragment (the router uses the fragment).
+        for ok in [
+            "tauri://localhost",
+            "tauri://localhost/",
+            "tauri://localhost/index.html#/calendar",
+            "about:blank",
+        ] {
+            assert!(may_load(&url(ok), None), "{ok}");
+        }
+        // Everything a rendered note, a redirect or injected script could point at.
+        for refused in [
+            "https://example.org/",
+            "http://example.org/",
+            "http://localhost:5173/",
+            "http://127.0.0.1:5173/",
+            "http://localhost/",
+            "tauri://localhost:8080/",
+            "tauri://evil.example/",
+            "tauri://localhost.evil.example/",
+            "file:///etc/passwd",
+            "data:text/html,<script>1</script>",
+            "javascript:alert(1)",
+            "about:srcdoc",
+            "ipc://localhost/x",
+            "asset://localhost/etc/passwd",
+            "ftp://localhost/",
+            "mailto:someone@example.org",
+        ] {
+            assert!(!may_load(&url(refused), None), "{refused}");
+        }
+        // A development build also loads its own dev server, and only that origin.
+        for ok in [
+            "http://localhost:5173/",
+            "http://localhost:5173/src/main.tsx",
+            "http://localhost:5173/#/settings",
+        ] {
+            assert!(may_load(&url(ok), Some(&dev)), "{ok}");
+        }
+        for refused in [
+            "http://localhost:5174/",
+            "https://localhost:5173/",
+            "http://localhost.evil.example:5173/",
+            "http://127.0.0.1:5173/",
+            "https://example.org/",
+        ] {
+            assert!(!may_load(&url(refused), Some(&dev)), "{refused}");
+        }
+        // The Windows and Android form of the bundled origin is accepted only there.
+        assert_eq!(
+            may_load(&url("http://tauri.localhost/"), None),
+            cfg!(any(windows, target_os = "android"))
+        );
+    }
+}
 
 #[cfg(all(test, unix))]
 mod tests {

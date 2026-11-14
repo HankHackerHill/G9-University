@@ -67,7 +67,11 @@ fn a_copy_left_by_an_interrupted_rehearsal_is_replaced() {
         .dry_run_on_copy(&db, scratch.path())
         .expect("a stale copy must not block the rehearsal");
     assert!(dry.integrity_ok);
-    assert_eq!(dry.report.applied.len(), 1, "migration 13 rehearsed");
+    assert_eq!(
+        dry.report.applied.len(),
+        2,
+        "migrations 13 and 14 rehearsed"
+    );
 }
 
 #[cfg(unix)]

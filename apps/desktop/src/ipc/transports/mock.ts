@@ -30,6 +30,7 @@ import {
 } from '../../lib/civil-time';
 import { ATTACHMENT_MEDIA_TYPES, MAX_ATTACHMENT_BYTES } from '../../lib/attachment';
 import { sha256Hex, sha256HexBytes } from '../../lib/sha256';
+import { firstUnprintableName } from '../../lib/text';
 import {
   APPROVAL_MACHINE,
   ASSESSMENT_MACHINE,
@@ -204,6 +205,24 @@ function fail(category: ErrorCategory, code: string, message: string, details?: 
  */
 function schemaViolation(key: string, message: string): CommandFailure {
   return fail('INVALID_INPUT', 'ipc.payload_invalid', 'payload does not match its schema', { violations: [{ path: `/${key}`, message }] });
+}
+
+/**
+ * g9-app `dispatch`: a title, file name or label that is blank or holds a hidden character is
+ * refused for every operation, before the handler runs (`refuse_unprintable_names`). The backend
+ * runs it after the schema check; here the schema checks live inside the handlers, so the order
+ * of two simultaneous refusals can differ.
+ */
+function refuseUnprintableNames(payload: unknown): void {
+  const found = firstUnprintableName(payload);
+  if (found !== null) {
+    throw fail(
+      'INVALID_INPUT',
+      'input.name_not_printable',
+      'a title, file name or label needs visible text and no control, invisible or text-reordering characters',
+      { field: found.field, reason: found.reason },
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -802,6 +821,7 @@ class MockState {
   }
 
   private dispatch(op: OperationName, payload: unknown, meta: CommandMeta): Handled {
+    refuseUnprintableNames(payload);
     switch (op) {
       case 'system.status':
         return { result: this.systemStatus() };
@@ -2067,14 +2087,18 @@ class MockState {
     if (resource.kind === 'NOTE') {
       const note = this.notes.get(resource.id);
       if (note !== undefined) {
-        const tombstone = note.content_sha256;
+        const requestedAt = this.now();
+        // g9-storage `tombstone_digest`: identifies the tombstone (request, table, row, time) and is
+        // never derived from the erased content (ADR-0017: the digest of a short text is the text).
+        const tombstone = sha256Hex(`g9-tombstone-v1\n${deletionId}\nnotes\n${resource.id}\n${requestedAt}`);
         this.notes.delete(resource.id);
-        const bytesLeft = this.eraseNote(note);
+        const filesLeft = this.eraseNote(note);
         return {
-          result: { deletion_id: deletionId, state: 'APPLIED', resource, tombstone_sha256: tombstone, requested_at: this.now() },
+          result: { deletion_id: deletionId, state: 'APPLIED', resource, tombstone_sha256: tombstone, requested_at: requestedAt },
           revision: 1,
           resource,
-          warnings: bytesLeft ? [ATTACHMENT_BYTES_NOT_PURGED_WARNING] : [],
+          // The files leave the folder inside the erasure; only a missing folder leaves them.
+          warnings: filesLeft && this.attachmentDir === null ? [ATTACHMENT_BYTES_NOT_PURGED_WARNING] : [],
         };
       }
     }
@@ -2085,8 +2109,10 @@ class MockState {
    * g9-storage deletion `erase_note`, reduced to what the mock keeps: the note is remembered as
    * erased (attaching to it answers `note.erased`), its attachments are erased (their file name
    * is no longer listed), and the evidence items of the note and of those attachments are
-   * invalidated. Returns true when bytes are left in the store that no remaining attachment
-   * uses: removing them needs a FilesystemWrite approval (PROPOSED), so they stay.
+   * invalidated. Returns true when the erased attachments held bytes that no remaining attachment
+   * uses: the backend removes those files from the attachment folder inside the erasure (the
+   * approval covers the record and its files, ADR-0017), so the caller warns only when no folder
+   * is configured.
    */
   private eraseNote(note: NoteView): boolean {
     this.erasedNotes.set(note.note_id, note.domain);
@@ -2490,7 +2516,12 @@ class MockState {
     }
     const note = noteId === undefined ? null : this.noteInScope(noteId, meta, 'the note is erased; nothing can be attached to it');
     const domain: DataDomain = note?.domain ?? 'LEARNING';
-    const ownerClassification: Classification = note?.classification ?? classification ?? 'INTERNAL';
+    // The stricter of the note's classification and the one asked for: a file can be more
+    // sensitive than its note, never less (security audit 2026-11-13).
+    const ownerClassification: Classification =
+      note === null
+        ? classification ?? 'INTERNAL'
+        : CLASSIFICATIONS[Math.max(CLASSIFICATIONS.indexOf(note.classification), classification === undefined ? 0 : CLASSIFICATIONS.indexOf(classification))] ?? note.classification;
     this.requireSensitiveWriteApproval(op, domain, asJson(payload), resource, meta);
     if (bytes.length === 0) {
       throw fail('INVALID_INPUT', 'attachment.empty', 'the file is empty');
@@ -2786,15 +2817,20 @@ function compareIds(a: Id, b: Id): number {
 // Warning texts copied from g9-app (commands/curriculum.rs, privacy.rs, assessment.rs, notes.rs, retention.rs).
 const NON_CANONICAL_PLAN_WARNING = 'curriculum.non_canonical: plan derived from a version that is not APPROVED_CANONICAL';
 /** privacy.rs `deletion.request`: erased attachments whose bytes no remaining attachment uses. */
-const ATTACHMENT_BYTES_NOT_PURGED_WARNING = 'deletion.attachment_bytes_not_purged: removing attachment files needs a FilesystemWrite approval; PROPOSED';
+const ATTACHMENT_BYTES_NOT_PURGED_WARNING =
+  'deletion.attachment_bytes_not_purged: the record is erased, but no attachment folder inside an approved root is configured, so its file was not removed from disk';
 /** evidence.rs: an `evidence.attach_file` / `evidence.from_note` replay rebuilt from current rows. */
 const REPLAY_REBUILT_WARNING =
   'idempotency.replay_rebuilt: names and titles are not retained in idempotency records; the result shows the evidence as currently stored';
 /** g9-storage deletion `REDACTED`: what an erased attachment's file name reads. */
 const REDACTED = '[REDACTED]';
 
-/** evidence.rs `summary_of`: one line (control characters become spaces), at most 500 characters, never empty. */
-function evidenceSummary(title: string): string {
+/**
+ * evidence.rs `summary_of`: one line (control characters become spaces), at most 500 characters, never empty.
+ * Exported for its own test: a title with control characters can no longer be created (`input.name_not_printable`),
+ * but a row stored before that rule can still hold one.
+ */
+export function evidenceSummary(title: string): string {
   const line = rustTrim(
     Array.from(title, (c) => {
       const code = c.codePointAt(0) ?? 0;

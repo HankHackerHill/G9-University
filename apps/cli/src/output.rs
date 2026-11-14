@@ -114,13 +114,93 @@ pub fn error_value(error: &G9Error) -> Value {
 }
 
 /// Render a success value.
+///
+/// No output carries a hidden character raw (`g9_domain::text::is_hidden`): a
+/// stored title or a path is data, and a terminal acts on an escape sequence or a
+/// direction override before anyone reads it (security audit 2026-11-13). In JSON
+/// such a character is written as a `\u` escape, which every parser reads back as
+/// the same text; in the `--human` form it is written as `\u{…}`.
 pub fn render_value(value: &Value, human: bool) -> String {
     if human {
         render_human(value)
     } else {
-        serde_json::to_string_pretty(value).unwrap_or_else(|_| "null".to_string())
+        json_for_terminal(
+            &serde_json::to_string_pretty(value).unwrap_or_else(|_| "null".to_string()),
+        )
     }
 }
+
+/// `json` (as serde_json wrote it) with every hidden character inside a string
+/// written as a JSON `\u` escape. serde_json already escapes U+0000 to U+001F, so
+/// the only line breaks left are the ones between members, which stay.
+fn json_for_terminal(json: &str) -> String {
+    let mut out = String::with_capacity(json.len());
+    for c in json.chars() {
+        if c != '\n' && g9_domain::text::is_hidden(c) {
+            let mut units = [0u16; 2];
+            for unit in c.encode_utf16(&mut units) {
+                out.push_str(&format!("\\u{unit:04x}"));
+            }
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
+/// `text` for a terminal outside JSON: every hidden character as `\u{…}`, so a
+/// value stays on its line and cannot move the cursor, recolour or reorder.
+pub fn visible(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for c in text.chars() {
+        if g9_domain::text::is_hidden(c) {
+            out.push_str(&format!("\\u{{{:04x}}}", u32::from(c)));
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
+/// `arg` as one word of a POSIX shell (sh, bash, dash, zsh): unchanged when it
+/// holds only characters no shell interprets, otherwise in single quotes with
+/// each single quote written as `'\''`.
+pub fn sh_word(arg: &str) -> String {
+    let plain = !arg.is_empty()
+        && arg
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '/' | ':' | ',' | '-'));
+    if plain {
+        arg.to_string()
+    } else {
+        format!("'{}'", arg.replace('\'', "'\\''"))
+    }
+}
+
+/// A command for the operator to run next, in two forms: the exact arguments as
+/// a JSON array, and one line quoted for a POSIX shell. The line is `null` when
+/// an argument holds a hidden character: a terminal acts on such a character
+/// when it is pasted, before the shell reads the quotes, so no quoting makes the
+/// line safe. Returns `(line, argv)`.
+pub fn next_command(argv: &[String]) -> (Value, Value) {
+    let hidden = argv
+        .iter()
+        .any(|a| a.chars().any(g9_domain::text::is_hidden));
+    let line = if hidden {
+        Value::Null
+    } else {
+        Value::String(
+            argv.iter()
+                .map(|a| sh_word(a))
+                .collect::<Vec<_>>()
+                .join(" "),
+        )
+    };
+    (line, serde_json::json!(argv))
+}
+
+/// How to read the two forms of [`next_command`]; printed next to them.
+pub const NEXT_COMMAND_NOTE: &str = "the line is quoted for a POSIX shell (sh, bash, zsh) and is null when a path holds a control or invisible character; in any other shell, or when it is null, pass the arguments of the list exactly as they are";
 
 /// What to print and where for an error.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -138,7 +218,8 @@ pub fn render_error(error: &CliError, human: bool) -> Rendered {
     match error {
         CliError::Usage(msg) | CliError::Io(msg) => Rendered {
             stdout: None,
-            stderr: Some(format!("g9: {msg}")),
+            // A message can quote a path the caller gave.
+            stderr: Some(format!("g9: {}", visible(msg))),
             code: EXIT_USAGE,
         },
         CliError::Backend(e) => Rendered {
@@ -173,7 +254,7 @@ pub fn render_human(value: &Value) -> String {
                 if k == "steps" {
                     continue;
                 }
-                out.push_str(&format!("{k}: {}\n", compact(v)));
+                out.push_str(&format!("{}: {}\n", visible(k), compact(v)));
             }
         }
         return out;
@@ -189,14 +270,16 @@ fn render_tree(value: &Value, indent: usize, out: &mut String) {
             for (k, v) in map {
                 match v {
                     Value::Object(inner) if !inner.is_empty() => {
+                        let k = visible(k);
                         out.push_str(&format!("{pad}{k}:\n"));
                         render_tree(v, indent + 2, out);
                     }
                     Value::Array(items) if items.iter().any(Value::is_object) => {
+                        let k = visible(k);
                         out.push_str(&format!("{pad}{k}:\n"));
                         render_tree(v, indent + 2, out);
                     }
-                    _ => out.push_str(&format!("{pad}{k}: {}\n", compact(v))),
+                    _ => out.push_str(&format!("{pad}{}: {}\n", visible(k), compact(v))),
                 }
             }
         }
@@ -217,9 +300,9 @@ fn render_tree(value: &Value, indent: usize, out: &mut String) {
 
 fn compact(v: &Value) -> String {
     match v {
-        Value::String(s) => s.clone(),
+        Value::String(s) => visible(s),
         Value::Null => "null".to_string(),
-        other => serde_json::to_string(other).unwrap_or_else(|_| "?".to_string()),
+        other => visible(&serde_json::to_string(other).unwrap_or_else(|_| "?".to_string())),
     }
 }
 
@@ -342,5 +425,96 @@ mod tests {
         assert!(text.contains("passed: true"));
         let tree = render_human(&json!({ "a": { "b": [1, 2] }, "c": "x" }));
         assert_eq!(tree, "a:\n  b: [1,2]\nc: x\n");
+    }
+
+    /// Stored text and paths reach a terminal: an escape sequence, a C1 control,
+    /// a direction override or a tag character must not arrive raw in any form.
+    const HOSTILE: &str = "t\u{1b}[2K\u{9b}31m\u{7f}\u{202e}gpj.exe\u{e0041}\nnext: forged";
+
+    #[test]
+    fn json_output_escapes_hidden_characters_and_still_parses_to_the_same_value() {
+        let value = json!({ "title": HOSTILE, "list": [HOSTILE], HOSTILE: 1 });
+        let text = render_value(&value, false);
+        assert!(
+            !text
+                .chars()
+                .any(|c| c != '\n' && g9_domain::text::is_hidden(c)),
+            "{text:?}"
+        );
+        assert!(text.contains("\\u001b") && text.contains("\\u009b") && text.contains("\\u202e"));
+        // A character beyond U+FFFF is written as its surrogate pair.
+        assert!(text.contains("\\udb40\\udc41"), "{text}");
+        let back: Value = serde_json::from_str(&text).unwrap();
+        assert_eq!(back, value);
+        // Every line break left is one the printer put between members.
+        assert_eq!(text.lines().count(), 7, "{text}");
+    }
+
+    #[test]
+    fn human_output_keeps_each_value_on_its_line_and_shows_hidden_characters() {
+        let text = render_human(&json!({ "title": HOSTILE, "n": { "inner": [HOSTILE] } }));
+        assert!(
+            !text
+                .chars()
+                .any(|c| c != '\n' && g9_domain::text::is_hidden(c)),
+            "{text:?}"
+        );
+        assert!(
+            !text.lines().any(|l| l.trim_start().starts_with("next:")),
+            "{text}"
+        );
+        assert!(
+            text.contains("\\u{001b}[2K")
+                && text.contains("\\u{202e}")
+                && text.contains("\\u{000a}"),
+            "{text}"
+        );
+        let usage = render_error(&CliError::Usage(format!("cannot read {HOSTILE}")), true);
+        assert!(!usage
+            .stderr
+            .unwrap()
+            .chars()
+            .any(g9_domain::text::is_hidden));
+    }
+
+    #[test]
+    fn a_shell_word_is_quoted_unless_no_shell_would_interpret_it() {
+        for plain in [
+            "g9",
+            "restore",
+            "--data-dir",
+            "/home/op/.local/share/com.g9.mentor",
+            "bk-01J:2,3",
+        ] {
+            assert_eq!(sh_word(plain), plain);
+        }
+        assert_eq!(sh_word(""), "''");
+        assert_eq!(sh_word("a b"), "'a b'");
+        assert_eq!(sh_word("$(id)"), "'$(id)'");
+        assert_eq!(sh_word("it's"), "'it'\\''s'");
+        // A leading tilde or equals sign is expanded by some shells; a glob by all.
+        for special in [
+            "~/x", "=ls", "a*", "a;b", "a&b", "a|b", "a#b", "a\\b", "a\"b", "a`b`", "{a,b}", "a>b",
+            "!x", "a%b", "a@b", "a+b",
+        ] {
+            assert!(sh_word(special).starts_with('\''), "{special}");
+        }
+    }
+
+    #[test]
+    fn a_next_command_has_an_exact_list_and_a_line_only_when_it_can_be_pasted() {
+        let (line, argv) = next_command(&[
+            "g9".to_string(),
+            "init".to_string(),
+            "--data-dir".to_string(),
+            "/d/a b".to_string(),
+        ]);
+        assert_eq!(line, json!("g9 init --data-dir '/d/a b'"));
+        assert_eq!(argv, json!(["g9", "init", "--data-dir", "/d/a b"]));
+        for hidden in ["/d/a\nb", "/d/a\u{1b}[2Kb", "/d/a\u{202e}b", "/d/a\u{7f}"] {
+            let (line, argv) = next_command(&["g9".to_string(), hidden.to_string()]);
+            assert_eq!(line, Value::Null, "{hidden:?}");
+            assert_eq!(argv[1], hidden);
+        }
     }
 }
