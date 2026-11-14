@@ -507,8 +507,7 @@ pub fn correct_time(
     let req: CorrectRequest = decode(payload)?;
     let id: SessionId = parse_id(&req.session_id, "session_id")?;
     // Corrections are refused during an open exam (`operator.correct.allow`
-    // excludes EXAM); the mode is backend-derived (TEC-25).
-    let meta = &super::with_backend_mode(ctx, meta)?;
+    // excludes EXAM); the mode is backend-derived in dispatch (TEC-25).
     let resource = ResourceRef::new(ResourceKind::TimeInterval, req.interval_id.as_str());
     let scope = scope_of(meta);
     let facts_id = id.clone();

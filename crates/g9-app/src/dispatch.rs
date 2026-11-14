@@ -41,6 +41,8 @@ pub fn dispatch(
     let meta = ipc::parse_meta(op, &meta_json, ctx.operator())?;
     schemas::validate_request(op, &payload_json)?;
     refuse_unprintable_names(&payload_json)?;
+    // The mode a handler evaluates is the backend's, derived here once for every operation.
+    let meta = commands::effective_meta(ctx, spec, &meta)?;
     let outcome = handler(ctx, spec, &meta, &payload_json)?;
     serde_json::to_value(&outcome).map_err(|_| G9Error::internal_redacted("ipc.serialize"))
 }
@@ -223,6 +225,8 @@ pub fn dispatch_confirming(
         .ok_or_else(|| G9Error::invalid_input("ipc.payload_invalid", "approval_id is required"))?;
     let summary = approval_summary(ctx, &id)?;
     if !confirm(&summary) {
+        // The operator's "no" is a decision about a stored request: it is recorded.
+        crate::pipeline::record_declined_confirmation(ctx, &meta_json, &id);
         return Err(G9Error::unauthorized(
             "approval.not_confirmed",
             "the approval was not confirmed",

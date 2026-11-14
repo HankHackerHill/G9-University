@@ -5,6 +5,8 @@ Two parts:
 | Part | Path | Built by |
 |---|---|---|
 | React 19 + strict TypeScript UI (16 screens, typed IPC client, `mock` and `tauri` transports) | `apps/desktop/src`, `index.html`, `vite.config.ts` | `npm ci && npm run build` (output `apps/desktop/dist`) |
+
+A production bundle (`npm run build`) uses the `tauri` transport only: opened where the Tauri runtime is absent (a browser, a file URL) every call answers `RESOURCE_UNAVAILABLE ipc.tauri_runtime_missing` and no synthetic data is shown. The mock backend is for `npm run dev`, the tests and review builds that ask for it by name: `VITE_G9_TRANSPORT=mock npm run build` (add `?mock=fresh` to the page for a new install). Never ship a build made that way.
 | Thin Tauri 2 bridge (Rust crate `g9-mentor-desktop`, lib `g9_mentor_desktop_lib`) | `apps/desktop/src-tauri` | `cargo build -p g9-mentor-desktop` on a host with WebKitGTK 4.1 |
 
 The bridge is excluded from the workspace `default-members`, so `cargo test --workspace` stays runnable on hosts without WebKitGTK.

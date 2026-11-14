@@ -78,8 +78,9 @@
     },
     "expected_revision": {
       "type": "integer",
-      "minimum": 0,
-      "description": "Optimistic-concurrency revision (u64)."
+      "minimum": 1,
+      "maximum": 9223372036854775807,
+      "description": "Optimistic-concurrency revision: 1 up to what storage holds (i64::MAX). Revisions start at 1; 0 is refused at the boundary."
     },
     "idempotency_key": {
       "type": "string",

@@ -12,6 +12,20 @@ describe('transport selection', () => {
     expect(chooseTransport('garbage', false)).toBe('mock');
   });
 
+  // Security audit 2026-11-13, INFO: a production bundle opened where the Tauri runtime is absent
+  // (a browser, a file URL, a port someone else serves) ran on the mock and showed synthetic
+  // data under the application's name. It must refuse instead: the Tauri transport, which
+  // answers every call RESOURCE_UNAVAILABLE.
+  it('does not fall back to the mock in a production bundle', () => {
+    expect(chooseTransport(undefined, false, true)).toBe('tauri');
+    expect(chooseTransport(undefined, true, true)).toBe('tauri');
+    expect(chooseTransport('garbage', false, true)).toBe('tauri');
+    // The mock is still available where it is meant to be: the dev server, the tests, and a
+    // build that asks for it by name (`VITE_G9_TRANSPORT=mock npm run build`, a review build).
+    expect(chooseTransport(undefined, false, false)).toBe('mock');
+    expect(chooseTransport('mock', false, true)).toBe('mock');
+  });
+
   it('starts the mock as a new install only when the page asks for it (a review aid of the browser build)', () => {
     expect(mockOptionsFromSearch('?mock=fresh')).toEqual({ fresh: true });
     expect(mockOptionsFromSearch('?x=1&mock=fresh')).toEqual({ fresh: true });

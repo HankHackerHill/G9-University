@@ -281,14 +281,14 @@ pub fn invoke(
     payload: &Value,
 ) -> Result<CommandOutcome<Value>, G9Error> {
     let req: InvokeRequest = decode(payload)?;
+    // `meta.scope.mode` is the mode the backend evaluates (derived in dispatch, TEC-25), so a
+    // payload mode that disagrees with it is refused, an open exam included.
     if req.mode.is_some_and(|m| m != meta.scope.mode) {
         return Err(G9Error::invalid_input(
             "skills.mode_mismatch",
             "payload mode must equal the command scope mode",
         ));
     }
-    // The backend-derived mode replaces the declared one (TEC-25, SEC-10).
-    let meta = &super::with_backend_mode(ctx, meta)?;
     let resource = ResourceRef::new(ResourceKind::Skill, req.skill_code.as_str());
     pipeline::execute(
         ctx,

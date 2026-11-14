@@ -7,7 +7,8 @@ for every regular file under the package directory, recursively, sorted by its
 
     path bytes | 0x00 | file length as 8 big-endian bytes | file bytes
 
-Symlinks are refused. The result is the lowercase hex SHA-256.
+Symlinks and every other entry that is not a regular file or a directory (FIFO, socket,
+device) are refused, as the loader refuses them. The result is the lowercase hex SHA-256.
 
 Recorded in two places, both of which this script checks:
 
@@ -46,6 +47,8 @@ def package_sha256(directory: Path) -> str:
             if (base_path / name).is_symlink():
                 raise SystemExit(f"symlink in skill package: {(base_path / name).relative_to(directory)}")
         for name in names:
+            if not (base_path / name).is_file():
+                raise SystemExit(f"not a regular file in skill package: {(base_path / name).relative_to(directory)}")
             files.append((base_path / name).relative_to(directory).as_posix())
     files.sort(key=lambda rel: rel.encode("utf-8"))
     digest = hashlib.sha256()

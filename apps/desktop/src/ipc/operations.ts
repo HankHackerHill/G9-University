@@ -652,7 +652,7 @@ export interface Operations {
   };
 
   'session.create': {
-    /** `planned_minutes` 1..600; `planned_start` defaults to now; `objective_id` is an objective code of the imported curriculum. */
+    /** `planned_minutes` 1..600; `planned_start` defaults to now and is at most 2100-01-01T00:00:00Z (4102444800000); `objective_id` is an objective code of the imported curriculum. */
     request: { planned_minutes: number; planned_start?: UtcMillis; mode?: PlannedSessionMode; objective_id?: Id };
     response: SessionView;
   };

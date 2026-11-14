@@ -14,7 +14,8 @@
     "planned_start": {
       "type": "integer",
       "minimum": 0,
-      "description": "UTC epoch milliseconds; default: now."
+      "maximum": 4102444800000,
+      "description": "UTC epoch milliseconds, 0 to 4102444800000 (2100-01-01T00:00:00Z); default: now."
     },
     "mode": {
       "type": "string",

@@ -20,6 +20,13 @@ pub struct OpSpec {
     pub action: Action,
     /// Policy resource kind.
     pub resource_kind: ResourceKind,
+    /// `true` for an administrative operation that is evaluated in the mode the request
+    /// declares even while an EXAM attempt is open. Every other mutating operation is evaluated
+    /// in EXAM then (`commands::effective_meta`, TEC-25, SEC-10). Only the backup operations are
+    /// exempt: they copy and verify the database, they cannot reveal or change an exam, and the
+    /// policy allows system writes in MAINTENANCE only, so an exam attempt that was left open
+    /// would otherwise block every backup. The flag is backend data; a request cannot set it.
+    pub exam_exempt: bool,
 }
 
 const fn op(
@@ -34,6 +41,15 @@ const fn op(
         mutating,
         action,
         resource_kind,
+        exam_exempt: false,
+    }
+}
+
+/// The same operation, exempt from the EXAM derivation (see [`OpSpec::exam_exempt`]).
+const fn exam_exempt(spec: OpSpec) -> OpSpec {
+    OpSpec {
+        exam_exempt: true,
+        ..spec
     }
 }
 
@@ -203,14 +219,24 @@ pub const OPERATIONS: &[OpSpec] = &[
         Action::Read,
         ResourceKind::AuditMetadata,
     ),
-    op("backup.create", true, Action::Create, ResourceKind::Backup),
-    op("backup.verify", true, Action::Update, ResourceKind::Backup),
-    op(
+    exam_exempt(op(
+        "backup.create",
+        true,
+        Action::Create,
+        ResourceKind::Backup,
+    )),
+    exam_exempt(op(
+        "backup.verify",
+        true,
+        Action::Update,
+        ResourceKind::Backup,
+    )),
+    exam_exempt(op(
         "backup.restore_test",
         true,
         Action::Update,
         ResourceKind::Backup,
-    ),
+    )),
     op("skills.invoke", true, Action::Invoke, ResourceKind::Skill),
     op("export.request", true, Action::Export, ResourceKind::Export),
     op("deletion.request", true, Action::Delete, ResourceKind::Note),

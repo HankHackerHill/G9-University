@@ -264,6 +264,9 @@ function int(rec: Rec, key: string, op: string, min = Number.MIN_SAFE_INTEGER): 
   return v;
 }
 
+/** Latest `planned_start` the request schema accepts: 2100-01-01T00:00:00Z in epoch milliseconds. */
+const MAX_PLANNED_START_MS = 4_102_444_800_000;
+
 function optInt(rec: Rec, key: string, op: string, min = Number.MIN_SAFE_INTEGER): number | undefined {
   return rec[key] === undefined ? undefined : int(rec, key, op, min);
 }
@@ -837,6 +840,10 @@ class MockState {
       return fail('INVALID_INPUT', 'ipc.schema_version_rejected', `payload schema version not accepted for ${opName}`, {
         accepted: `${spec.schemaVersion.major}.${spec.schemaVersion.minor}`,
       }).error;
+    }
+    // The boundary refuses a revision that cannot exist (revisions start at 1) before anything else, as g9-app does.
+    if (clientMeta.expected_revision !== undefined && (!Number.isSafeInteger(clientMeta.expected_revision) || clientMeta.expected_revision < 1)) {
+      return fail('INVALID_INPUT', 'meta.invalid', 'command metadata is malformed').error;
     }
     const meta: CommandMeta = { ...clientMeta, actor: OPERATOR };
 
@@ -2274,7 +2281,7 @@ class MockState {
     const op = 'session.create';
     const rec = asRecord(payload, op);
     const minutes = boundedInt(rec, 'planned_minutes', op, 1, 600);
-    const plannedStart = optInt(rec, 'planned_start', op, 0);
+    const plannedStart = rec['planned_start'] === undefined ? undefined : boundedInt(rec, 'planned_start', op, 0, MAX_PLANNED_START_MS);
     // The request schema allows STUDY, LAB and REVIEW: EXAM is refused at the boundary.
     optOneOf(rec, 'mode', ['STUDY', 'LAB', 'REVIEW'] as const, op);
     const objective = optId(rec, 'objective_id', op);

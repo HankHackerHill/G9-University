@@ -17,7 +17,7 @@ Labels: VERIFIED (checked by running it or reading the exact code), TESTED (a te
 | `g9 --human` writes untrusted strings to the terminal (earlier audit, LOW) | LOW | Fixed | Escaped in `--human` (`\u{...}`) and in JSON (a `\u` escape) | `apps/cli/src/output.rs` tests |
 | `--scratch` accepted without `--data-dir`; `g9 ops` says `approval_expected: false` for `calendar.delete_event` | INFO | Fixed | Both commands name the directory; the list includes the deletion | `apps/cli/src/commands/mod.rs`, `meta.rs` tests |
 | Markdown allow-list kept `href="/\evil.example/x"` (earlier audit, INFO) | INFO | Moot | Rendered Markdown carries no link | `lib/markdown.test.ts` |
-| Audit tail truncation; client-declared interaction mode; skill pin hashed from a second read; revision 0 refusal; the INFO items below | LOW, INFO | Open | not touched | see section 2 and the 2026-11-12 report |
+| Audit tail truncation; client-declared interaction mode; skill pin hashed from a second read; revision 0 refusal; the INFO items below | LOW, INFO | The four LOW items fixed 2026-11-14; the INFO items below partly | see the 2026-11-12 report's remediation table, ADR-0004 addendum and ADR-0019 | `crates/g9-storage/tests/audit_tail.rs`, `crates/g9-app/tests/{audit_tail,exam_mode_derivation,boundary_revision}.rs`, `crates/g9-skills/tests/package_hardening.rs` |
 
 Found while fixing (2026-11-13), kept because each changes what to trust:
 
@@ -158,10 +158,10 @@ Confidence: Plausible (A2). `core:default` grants the webview, among other thing
 
 ### INFO
 
-- Still open from 2026-11-12: audit tail truncation is not detected; interaction mode is client-declared for 33 of 35 operations; the skill pin is hashed from a second read of the package; a refusal for expected revision 0 leaves no decision or audit row.
-- A declined native confirmation leaves no audit row (the refusal is `approval.not_confirmed`; nothing is written). Fix: a refusal transaction in `dispatch_confirming`.
-- `session.create` has no upper bound on `planned_start`; an attachment of 16 MiB or less that is a PNG followed by an archive is accepted as a PNG (a polyglot: the signature check reads the start only).
-- The production bundle falls back to the mock transport when the Tauri object is absent from the window; the shell shows a banner "Synthetic data", and no data is stored, but the bundle should refuse instead (`VITE_G9_TRANSPORT`).
+- Still open from 2026-11-12: audit tail truncation is not detected; interaction mode is client-declared for 33 of 35 operations; the skill pin is hashed from a second read of the package; a refusal for expected revision 0 leaves no decision or audit row. **All four fixed 2026-11-14** (2026-11-12 report, remediation table).
+- A declined native confirmation leaves no audit row (the refusal is `approval.not_confirmed`; nothing is written). Fix: a refusal transaction in `dispatch_confirming`. **Fixed 2026-11-14:** one metadata-only audit row (`approvals.decide`, `NOT_EVALUATED`, `UNAUTHORIZED`, the approval id and the code hashed); nothing is written over a read-only database; the request stays pending (`native_confirmation.rs`).
+- `session.create` has no upper bound on `planned_start` (**fixed 2026-11-14**: at most 2100-01-01T00:00:00Z, schema and mock); an attachment of 16 MiB or less that is a PNG followed by an archive is accepted as a PNG (a polyglot: the signature check reads the start only; still open).
+- The production bundle falls back to the mock transport when the Tauri object is absent from the window; the shell shows a banner "Synthetic data", and no data is stored, but the bundle should refuse instead (`VITE_G9_TRANSPORT`). **Fixed 2026-11-14:** a production bundle without the runtime keeps the Tauri transport and every call answers `RESOURCE_UNAVAILABLE ipc.tauri_runtime_missing`; `npm run dev`, the tests and a build with `VITE_G9_TRANSPORT=mock` still use the mock (`ipc/index.test.ts`).
 - `evidence.attach_file` answers `already_stored` for identical bytes in the caller's scope: an oracle for known files within that scope (INFERRED; no cross-scope path).
 - The CLI's default data directory (`g9-mentor`) differs from the desktop application's (`com.g9.mentor`); `g9` against the default directory inspects nothing of the installed application.
 - Workspace dependencies use caret requirements; the lock file fixes the versions (VERIFIED in `Cargo.lock`); `npm` dependencies are pinned exactly.
@@ -211,7 +211,7 @@ Every probe was run again against a `g9` rebuilt from the fixed tree (`target/in
 1. Run the shell on the host (see section 4): the three fixes marked NOT RUN are the ones a display decides.
 2. Confirm or reverse the decision in ADR-0017 that an approved erasure also removes the files.
 3. Decide whether `core:default` may become an empty list (needs the owners of ARCHITECTURE.md, SECURITY.md, the threat model and the RTM, and one run on a display).
-4. Decide whether a declined confirmation should leave an audit row, and whether the production bundle should refuse to start on the mock transport.
-5. Close the four LOW items still open from 2026-11-12 (audit tail truncation, backend-derived interaction mode, single read of a skill package, revision 0 at the boundary).
+4. ~~Decide whether a declined confirmation should leave an audit row, and whether the production bundle should refuse to start on the mock transport.~~ **Done 2026-11-14 without the owner, both as the audit proposed (yes, yes).** Each is reversible in one place: `record_declined_confirmation` is one call in `dispatch_confirming`; the refusal is the third argument of `chooseTransport`.
+5. ~~Close the four LOW items still open from 2026-11-12~~ **Done 2026-11-14** (audit tail truncation, backend-derived interaction mode, single read of a skill package, revision 0 at the boundary).
 
 → Recommended next: run the preflight on a clean export of the commit that contains this report (`scripts/ci_preflight.sh`), then the host checklist above.

@@ -69,3 +69,30 @@ fn an_unknown_objective_is_refused() {
         "{refused:?}"
     );
 }
+
+/// Security audit 2026-11-13, INFO: `planned_start` had no upper bound, so a session could be
+/// planned millions of years ahead and every calendar view that formats it would fail. The bound
+/// is 2100-01-01T00:00:00Z, inclusive.
+#[test]
+fn a_planned_start_after_2100_01_01_is_refused_at_the_boundary() {
+    let mut h = Harness::new();
+    let bound = 4_102_444_800_000_i64; // 2100-01-01T00:00:00Z
+    h.call(
+        "session.create",
+        json!({ "planned_minutes": 30, "planned_start": bound }),
+    )
+    .unwrap();
+    for start in [bound + 1, 8_640_000_000_000_000_i64, i64::MAX] {
+        let refused = h
+            .call(
+                "session.create",
+                json!({ "planned_minutes": 30, "planned_start": start }),
+            )
+            .unwrap_err();
+        assert_eq!(
+            refused.category,
+            ErrorCategory::InvalidInput,
+            "{start}: {refused:?}"
+        );
+    }
+}

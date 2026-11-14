@@ -19,6 +19,12 @@ jsonschema = { workspace = true }
 sha2 = { workspace = true }
 hex = { workspace = true }
 
+# Not in `[workspace.dependencies]`: platform constants only (`O_NOFOLLOW`, `O_NONBLOCK`, `ELOOP`)
+# for reading package files without following links or waiting on a pipe (package.rs). Exact
+# version, the one Cargo.lock already pins for the rest of the tree.
+[target.'cfg(unix)'.dependencies]
+libc = "=0.2.191"
+
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 

@@ -47,3 +47,31 @@ fn live_registry_is_complete_and_valid() {
         assert!(report.passed(), "{}: {:?}", p.name, report.issues);
     }
 }
+
+/// The pins compiled into the desktop binary (`apps/desktop/src-tauri/skill-pins.json`) must be
+/// what the loader computes for the packages in the repository: the call the shell makes
+/// (`Registry::load_pinned`) accepts the shipped tree under the shipped pins. The same file is
+/// checked against an independent implementation by `scripts/skill_hashes.py --check`.
+#[test]
+fn live_registry_loads_under_the_shipped_pins() {
+    let path =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/desktop/src-tauri/skill-pins.json");
+    let doc: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    assert_eq!(doc["algorithm"], "g9_skills::package::package_sha256");
+    let pins: std::collections::BTreeMap<g9_domain::SkillId, String> = doc["pins"]
+        .as_object()
+        .unwrap()
+        .iter()
+        .map(|(name, hash)| {
+            (
+                g9_domain::SkillId::parse(name).unwrap(),
+                hash.as_str().unwrap().to_string(),
+            )
+        })
+        .collect();
+    assert_eq!(pins.len(), 37);
+    let registry = Registry::load_pinned(&live_root(), &pins)
+        .unwrap_or_else(|e| panic!("the shipped packages do not match the shipped pins: {e}"));
+    assert_eq!(registry.len(), 37);
+}

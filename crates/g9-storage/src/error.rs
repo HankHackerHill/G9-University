@@ -77,8 +77,10 @@ pub enum StorageError {
     /// A foreign-key constraint refused the statement (RESTRICT deletion semantics).
     #[error("foreign key constraint failed: {0}")]
     ForeignKey(String),
-    /// A CHECK constraint refused the statement (enum/range/json mirror of g9-domain).
-    #[error("check constraint failed: {0}")]
+    /// A CHECK constraint refused the statement (enum/range/json mirror of g9-domain). The payload
+    /// is SQLite's own text (table, column, expression): it is for logs and tests, and is not part
+    /// of the displayed message that reaches a caller (security audit 2026-11-12).
+    #[error("a value was refused by a storage constraint")]
     CheckViolation(String),
     /// A UNIQUE/PRIMARY KEY constraint refused the statement.
     #[error("unique constraint failed: {0}")]

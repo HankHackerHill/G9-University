@@ -56,6 +56,14 @@ describe('mock transport: pipeline', () => {
     expect(audit.result.entries.every((e) => e.actor_kind === 'OPERATOR' || e.actor_kind === 'SYSTEM')).toBe(true);
   });
 
+  it('refuses a revision of 0 at the boundary, before any approval is asked, as g9-app does', async () => {
+    const { client } = harness();
+    const before = ok(await client.invoke('approvals.list', {})).result.approvals.length;
+    const refused = err(await client.invoke('assessment.approve_final', { attempt_id: 'mock-attempt-prev' }, { expectedRevision: 0 }));
+    expect(refused).toMatchObject({ category: 'INVALID_INPUT', code: 'meta.invalid' });
+    expect(ok(await client.invoke('approvals.list', {})).result.approvals).toHaveLength(before);
+  });
+
   it('reports the model as unavailable with NO_RUNTIME_CONFIGURED and network egress off', async () => {
     const { client } = harness();
     const s = ok(await client.invoke('system.status', {})).result;
@@ -694,6 +702,10 @@ describe('mock transport: session.create', () => {
     const { client } = harness();
     const exam = { planned_minutes: 30, mode: 'EXAM' } as unknown as RequestOf<'session.create'>;
     expect(err(await client.invoke('session.create', exam)).category).toBe('INVALID_INPUT');
+    // `planned_start` may be at most 2100-01-01T00:00:00Z (4102444800000), as the request schema says.
+    expect(ok(await client.invoke('session.create', { planned_minutes: 30, planned_start: 4_102_444_800_000 })).result.state).toBe('PLANNED');
+    const late = { planned_minutes: 30, planned_start: 4_102_444_800_001 };
+    expect(err(await client.invoke('session.create', late)).category).toBe('INVALID_INPUT');
     expect(err(await client.invoke('session.create', { planned_minutes: 601 })).category).toBe('INVALID_INPUT');
     expect(err(await client.invoke('session.create', { planned_minutes: 0 })).category).toBe('INVALID_INPUT');
     expect(err(await client.invoke('session.create', { planned_minutes: 30, objective_id: 'NO-SUCH-OBJECTIVE' }))).toMatchObject({

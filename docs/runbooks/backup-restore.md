@@ -82,6 +82,14 @@ If the process is killed (power loss, `SIGKILL`) during step 4.5, the live path 
 - `binding.key` is not touched; approvals stored in the restored database stay bound to it.
 - A `domain_events` row `recovery.restored` is PROPOSED (not implemented): the restore is recorded in `restore-log.jsonl` and by the quarantine, not in the database.
 
+### If the window opens read-only because the audit chain is broken
+
+| You see | It means | Do |
+|---|---|---|
+| Every change is refused with `DATA_CORRUPTION recovery.integrity_failed`; `audit.recent` and Settings report the chain as not intact; `g9 init` prints `audit_chain_ok: false` with `audit_first_bad_seq` | A row of the audit ledger was changed or inserted, **or the newest rows are missing**: the sequence counter (`sqlite_sequence` for `audit_metadata`) or the audit row a backup records as its anchor names rows that are gone (security audit 2026-11-12, ADR-0004 addendum). `backup.verify` refuses a snapshot with the same fault | Do not edit the database. Take the newest backup that verifies (`g9 call backup.list`, `backup.verify`), restore it by the procedure above, and redo what was done after it. `audit_first_bad_seq` is the first position that does not verify or the first one that is missing |
+
+This detects damage, a crashed writer and a naive edit. It does not detect a deliberate editor with the same file access who also resets the counter and rewrites the manifests that anchor the rows; an anchor kept outside the file is PROPOSED (ADR-0004).
+
 ### PROPOSED (not implemented)
 
 - An in-app restore operation: select a `Retained` backup in Settings/Recovery, restore into a disposable copy, replay the deletion ledger after the backup's checkpoint, require an operator approval of `DataDelete` class bound to the backup id and the current live revision hash (the live database is replaced), then swap with the same quarantine rule. `g9_storage::restore::restore_over_live` is the storage primitive for it.

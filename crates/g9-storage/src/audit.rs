@@ -10,6 +10,12 @@
 //! edited row is detected. Periodic anchors (`seq`, `row_hash`) are copied into
 //! `backup_manifests` by the backup module.
 //!
+//! The links cannot show that the *newest* rows are gone: what is left still verifies.
+//! [`AuditChain::verify_chain`] therefore also checks two facts kept beside the rows, the
+//! sequence counter that `AUTOINCREMENT` maintains (the largest `seq` ever allocated) and every
+//! anchor that a backup manifest names. Both live in the database file, so they raise the bar
+//! against a naive edit only; a writer who rewrites them too is not detected (ADR-0004).
+//!
 //! The body never contains content: callers hash their details JSON into
 //! `details_sha256` ([`AuditEntry::details_hash`]).
 
@@ -142,11 +148,12 @@ pub struct AuditRecord {
 pub struct ChainReport {
     /// Rows examined.
     pub rows: u64,
-    /// `true` when every link verified.
+    /// `true` when every link verified and nothing is missing at the end of the chain.
     pub ok: bool,
-    /// `seq` of the first row whose `prev_hash` or `row_hash` did not verify.
+    /// `seq` of the first row whose `prev_hash` or `row_hash` did not verify, or the first
+    /// position at which rows are missing (the counter or a backup anchor says they existed).
     pub first_bad_seq: Option<i64>,
-    /// Why the first bad row failed.
+    /// Why the first bad row failed, or what is missing.
     pub first_bad_reason: Option<String>,
     /// `row_hash` of the last row (chain head), when any.
     pub head_hash: Option<String>,
@@ -178,6 +185,104 @@ fn chain_hash(prev_hash: &str, body: &RowBody<'_>) -> StorageResult<String> {
     bytes.extend_from_slice(prev_hash.as_bytes());
     bytes.extend_from_slice(canonical_json(&value).as_bytes());
     Ok(sha256_hex(&bytes))
+}
+
+/// What is wrong at the end of an otherwise intact chain.
+struct TailProblem {
+    seq: Option<i64>,
+    reason: String,
+}
+
+/// Checks that the rows the chain cannot vouch for itself are all there: `newest` is the `seq` of
+/// the last row whose links verified (0 when there is none).
+///
+/// 1. `sqlite_sequence` holds the largest `seq` ever allocated for `audit_metadata`; rows are
+///    never deleted, so it equals the newest row. Deleting the newest rows leaves it behind.
+/// 2. Every backup manifest that names an anchor (`audit_anchor_seq`, `audit_anchor_hash`) names
+///    a row that exists with that hash, which also covers a counter that was reset to match.
+fn tail_problem(conn: &Connection, newest: i64) -> StorageResult<Option<TailProblem>> {
+    use rusqlite::types::Value;
+
+    let counter: Option<Value> = conn.query_row(
+        "SELECT MAX(seq) FROM sqlite_sequence WHERE name = 'audit_metadata'",
+        [],
+        |r| r.get(0),
+    )?;
+    let allocated = match counter {
+        None | Some(Value::Null) => 0,
+        Some(Value::Integer(n)) => n,
+        Some(_) => {
+            return Ok(Some(TailProblem {
+                seq: None,
+                reason: "the audit sequence counter is not an integer".to_string(),
+            }))
+        }
+    };
+    if allocated > newest {
+        return Ok(Some(TailProblem {
+            seq: Some(newest + 1),
+            reason: format!(
+                "audit rows after seq {newest} are missing: the sequence counter reached {allocated}"
+            ),
+        }));
+    }
+    if allocated < newest {
+        return Ok(Some(TailProblem {
+            seq: Some(allocated + 1),
+            reason: format!(
+                "the audit sequence counter ({allocated}) is behind the newest row ({newest})"
+            ),
+        }));
+    }
+
+    let mut stmt = conn.prepare(
+        "SELECT id, audit_anchor_seq, audit_anchor_hash FROM backup_manifests
+          WHERE audit_anchor_seq IS NOT NULL OR audit_anchor_hash IS NOT NULL
+          ORDER BY audit_anchor_seq, id",
+    )?;
+    let anchors = stmt.query_map([], |r| {
+        Ok((
+            r.get::<_, String>(0)?,
+            r.get::<_, Option<i64>>(1)?,
+            r.get::<_, Option<String>>(2)?,
+        ))
+    })?;
+    for anchor in anchors {
+        let (backup, seq, hash) = anchor?;
+        let (Some(seq), Some(hash)) = (seq, hash) else {
+            return Ok(Some(TailProblem {
+                seq,
+                reason: format!("backup {backup} records half an audit anchor"),
+            }));
+        };
+        let stored: Option<String> = conn
+            .query_row(
+                "SELECT row_hash FROM audit_metadata WHERE seq = ?1",
+                params![seq],
+                |r| r.get(0),
+            )
+            .optional()?;
+        match stored {
+            Some(h) if h == hash => {}
+            Some(_) => {
+                return Ok(Some(TailProblem {
+                    seq: Some(seq),
+                    reason: format!(
+                        "the audit row at seq {seq} differs from the anchor recorded by backup {backup}"
+                    ),
+                }))
+            }
+            None => {
+                return Ok(Some(TailProblem {
+                    seq: Some(seq),
+                    reason: format!(
+                        "the audit row at seq {seq}, the anchor recorded by backup {backup}, is missing"
+                    ),
+                }))
+            }
+        }
+    }
+    Ok(None)
 }
 
 /// Append-only hash chain over `audit_metadata`.
@@ -300,6 +405,7 @@ impl AuditChain {
         let mut expected_prev = GENESIS_PREV_HASH.to_string();
         let mut count = 0_u64;
         let mut head = None;
+        let mut newest = 0_i64;
         for row in rows {
             let (
                 seq,
@@ -358,6 +464,16 @@ impl AuditChain {
             }
             expected_prev = row_hash.clone();
             head = Some(row_hash);
+            newest = seq;
+        }
+        if let Some(problem) = tail_problem(conn, newest)? {
+            return Ok(ChainReport {
+                rows: count,
+                ok: false,
+                first_bad_seq: problem.seq,
+                first_bad_reason: Some(problem.reason),
+                head_hash: head,
+            });
         }
         Ok(ChainReport {
             rows: count,

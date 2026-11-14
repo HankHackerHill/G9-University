@@ -59,6 +59,120 @@ fn a_grant_the_operator_declines_in_the_dialog_is_refused() {
     assert_eq!(state_of(&h, &id), "PENDING");
 }
 
+/// Security audit 2026-11-13, INFO: a declined confirmation left nothing behind. The operator
+/// looked at what an approval grants and said no; that is a decision about a stored request and
+/// it belongs in the ledger, as metadata only, without changing the request.
+#[test]
+fn a_declined_confirmation_leaves_one_metadata_only_audit_row_and_changes_nothing_else() {
+    let mut h = Harness::new();
+    let id = pending_approval(&mut h);
+    let rows = h.audit_rows();
+    let decisions: i64 = h
+        .conn()
+        .query_row("SELECT COUNT(*) FROM policy_decisions", [], |r| r.get(0))
+        .unwrap();
+
+    let refused = h
+        .confirmed_with("approvals.decide", approve(&id), &mut |_| false)
+        .unwrap_err();
+    assert_eq!(refused.code, "approval.not_confirmed", "{refused:?}");
+
+    assert_eq!(h.audit_rows(), rows + 1, "one row for the decline");
+    let (operation, kind, resource, decision, outcome, details): (
+        String,
+        String,
+        String,
+        String,
+        String,
+        Option<String>,
+    ) = h
+        .conn()
+        .query_row(
+            "SELECT operation, resource_kind, resource_id, decision, outcome, details_sha256
+               FROM audit_metadata ORDER BY seq DESC LIMIT 1",
+            [],
+            |r| {
+                Ok((
+                    r.get(0)?,
+                    r.get(1)?,
+                    r.get(2)?,
+                    r.get(3)?,
+                    r.get(4)?,
+                    r.get(5)?,
+                ))
+            },
+        )
+        .unwrap();
+    assert_eq!(operation, "approvals.decide");
+    assert_eq!(
+        (kind.as_str(), resource.as_str()),
+        ("APPROVAL", id.as_str())
+    );
+    // The policy was not asked: nothing was decided by a rule, so no policy decision is stored.
+    assert_eq!(decision, "NOT_EVALUATED");
+    assert_eq!(outcome, "UNAUTHORIZED");
+    assert_eq!(details.map(|d| d.len()), Some(64), "a hash, never content");
+    let after: i64 = h
+        .conn()
+        .query_row("SELECT COUNT(*) FROM policy_decisions", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(after, decisions);
+    assert_eq!(state_of(&h, &id), "PENDING", "the request is untouched");
+    let audit = h.call("audit.recent", json!({})).unwrap();
+    assert_eq!(audit["result"]["chain_ok"], true);
+
+    // Declining again is another decision, and the request can still be approved afterwards.
+    h.confirmed_with("approvals.decide", approve(&id), &mut |_| false)
+        .unwrap_err();
+    assert_eq!(h.audit_rows(), rows + 2);
+    h.confirmed_with("approvals.decide", approve(&id), &mut |_| true)
+        .unwrap();
+    assert_eq!(state_of(&h, &id), "APPROVED");
+}
+
+#[test]
+fn a_declined_confirmation_writes_nothing_over_a_database_that_is_read_only() {
+    let mut h = Harness::new();
+    let id = pending_approval(&mut h);
+    // A writer removes the newest audit rows; the next open finds the tail truncated and the
+    // database is read-only.
+    let guard: String = h
+        .conn()
+        .query_row(
+            "SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = 'trg_audit_metadata_no_delete'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    let rows = i64::try_from(h.audit_rows()).unwrap();
+    h.conn()
+        .execute_batch("DROP TRIGGER trg_audit_metadata_no_delete")
+        .unwrap();
+    h.conn()
+        .execute("DELETE FROM audit_metadata WHERE seq = ?1", [rows])
+        .unwrap();
+    h.conn().execute_batch(&guard).unwrap();
+    h.restart();
+    assert_eq!(
+        h.ctx().recovery_report().write_block_reason(),
+        Some("audit_chain_broken")
+    );
+    let before: i64 = h
+        .conn()
+        .query_row("SELECT COUNT(*) FROM audit_metadata", [], |r| r.get(0))
+        .unwrap();
+
+    let refused = h
+        .confirmed_with("approvals.decide", approve(&id), &mut |_| false)
+        .unwrap_err();
+    assert_eq!(refused.code, "approval.not_confirmed", "{refused:?}");
+    let after: i64 = h
+        .conn()
+        .query_row("SELECT COUNT(*) FROM audit_metadata", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(after, before, "nothing is written over a broken chain");
+}
+
 #[test]
 fn a_confirmed_grant_goes_through_and_the_dialog_text_comes_from_the_stored_request() {
     let mut h = Harness::new();

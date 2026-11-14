@@ -19,8 +19,9 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 /// The only accepted `$schema`.
@@ -65,6 +66,16 @@ pub const BUDGET_TOKENS: (u32, u32) = (1, 32_768);
 pub const BUDGET_SECONDS: (u32, u32) = (1, 600);
 /// See [`BUDGET_TOKENS`].
 pub const BUDGET_TOOL_CALLS: (u32, u32) = (0, 16);
+
+/// Largest file a package may hold (bytes). The 37 shipped packages are 9 files of at most
+/// 5 KiB each; a package is text, schemas and eval cases, and nothing in it needs a megabyte more.
+pub const MAX_FILE_BYTES: u64 = 1024 * 1024;
+/// Largest package (all files together, bytes).
+pub const MAX_PACKAGE_BYTES: u64 = 8 * 1024 * 1024;
+/// Most files in one package.
+pub const MAX_PACKAGE_FILES: usize = 256;
+/// Deepest directory nesting below the package root.
+pub const MAX_PACKAGE_DEPTH: usize = 6;
 
 /// Promotion status (`g9-status`), handoff §11 "Skill promotion gates".
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -435,20 +446,34 @@ impl From<PackageError> for G9Error {
 
 /// Load and validate one package directory.
 ///
+/// The directory is read once ([`PackageFiles`]); every rule is checked against those bytes and
+/// the package hash is computed from the same bytes, so what is validated is what is pinned.
+///
 /// Validation order: layout → frontmatter → name → description → metadata →
 /// body sections → references → schemas → evals → hash.
 pub fn load_package(dir: &Path) -> Result<SkillPackage, PackageError> {
     if !dir.is_dir() {
         return Err(PackageError::NotADirectory(dir.to_path_buf()));
     }
+    let files = PackageFiles::read(dir)?;
+    parse_package(dir, &files)
+}
+
+/// Validate a package from the bytes that were read from `dir` (see [`PackageFiles`]). Nothing
+/// is read from disk here: a file replaced after [`PackageFiles::read`] changes neither the
+/// result nor the hash.
+pub(crate) fn parse_package(
+    dir: &Path,
+    files: &PackageFiles,
+) -> Result<SkillPackage, PackageError> {
     let dir_name = dir
         .file_name()
         .and_then(|n| n.to_str())
         .ok_or(PackageError::DirName)?
         .to_string();
 
-    let text = read_text(dir, "SKILL.md")?;
-    let parsed = frontmatter::parse(&text)?;
+    let text = files.text("SKILL.md")?;
+    let parsed = frontmatter::parse(text)?;
     let fm = parsed.frontmatter;
 
     // name
@@ -607,28 +632,21 @@ pub fn load_package(dir: &Path) -> Result<SkillPackage, PackageError> {
     // rule as one whose directory holds no `*.md` file (≥1 reference file), so
     // an absent directory is `MissingReferences`, not an I/O fault. Version
     // control cannot store an empty directory, so the two cases must be
-    // indistinguishable to callers. Any other I/O error stays `Io`.
-    let refs_dir = dir.join("references");
-    let has_md = match fs::read_dir(&refs_dir) {
-        Ok(entries) => entries
-            .flatten()
-            .any(|e| e.path().is_file() && e.path().extension().is_some_and(|x| x == "md")),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => false,
-        Err(e) => return Err(io_err("references", &e)),
-    };
-    if !has_md {
+    // indistinguishable to callers. Any other I/O error stays `Io` (raised while the
+    // directory is read, before this point).
+    if !files.has_markdown_reference() {
         return Err(PackageError::MissingReferences);
     }
 
     // schemas
-    let input_schema = load_schema(dir, "input", name.as_str())?;
-    let output_schema = load_schema(dir, "output", name.as_str())?;
+    let input_schema = load_schema(files, "input", name.as_str())?;
+    let output_schema = load_schema(files, "output", name.as_str())?;
 
     // evals
-    let evals = load_evals(dir, &code)?;
+    let evals = load_evals(files, &code)?;
 
-    // hash
-    let package_sha256 = package_sha256(dir)?;
+    // hash: of the bytes that were parsed above, not of a second read
+    let package_sha256 = files.sha256();
 
     Ok(SkillPackage {
         name,
@@ -658,46 +676,239 @@ pub fn load_package(dir: &Path) -> Result<SkillPackage, PackageError> {
 /// Hex SHA-256 of a package directory: for every regular file (recursively,
 /// sorted by `/`-joined relative path) the hasher absorbs the path bytes, a
 /// `0x00` separator, the file length as 8 big-endian bytes and the file bytes.
-/// Symlinks are refused (a package must be self-contained).
+///
+/// The directory is read once, with the bounds and refusals of [`PackageFiles::read`]: a symlink
+/// or any other entry that is not a regular file or a directory is an error, never skipped.
 pub fn package_sha256(dir: &Path) -> Result<String, PackageError> {
-    let mut files = Vec::new();
-    collect_files(dir, dir, &mut files)?;
-    files.sort();
-    let mut hasher = Sha256::new();
-    for rel in files {
-        let bytes = fs::read(dir.join(&rel)).map_err(|e| io_err(&rel, &e))?;
-        hasher.update(rel.as_bytes());
-        hasher.update([0u8]);
-        hasher.update((bytes.len() as u64).to_be_bytes());
-        hasher.update(&bytes);
-    }
-    Ok(hex::encode(hasher.finalize()))
+    Ok(PackageFiles::read(dir)?.sha256())
 }
 
-fn collect_files(root: &Path, dir: &Path, out: &mut Vec<String>) -> Result<(), PackageError> {
+/// Every file of one package directory, read exactly once.
+///
+/// Parsing ([`parse_package`]) and hashing ([`PackageFiles::sha256`]) both work from these
+/// buffers, so the bytes that are validated are the bytes that are pinned: nothing is read from
+/// disk a second time, and a file replaced after the read changes neither. Only regular files
+/// are opened. An entry of any other kind (symlink, FIFO, socket, device) refuses the package, so
+/// the loader can neither wait on a pipe nor leave an entry the hash does not cover, and the
+/// bounds [`MAX_FILE_BYTES`], [`MAX_PACKAGE_BYTES`], [`MAX_PACKAGE_FILES`] and
+/// [`MAX_PACKAGE_DEPTH`] cap what a hostile directory can make the loader read.
+pub(crate) struct PackageFiles {
+    /// `/`-joined path relative to the package root → file bytes. A `BTreeMap` iterates in the
+    /// byte order of the keys, which is the order the hash is defined over.
+    files: BTreeMap<String, Vec<u8>>,
+}
+
+impl std::fmt::Debug for PackageFiles {
+    // Names and sizes only: a package's bytes do not belong in a log line.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PackageFiles")
+            .field("files", &self.files.len())
+            .field(
+                "bytes",
+                &self.files.values().map(|b| b.len() as u64).sum::<u64>(),
+            )
+            .finish()
+    }
+}
+
+/// Running totals while a package directory is read.
+#[derive(Default)]
+struct ReadState {
+    files: BTreeMap<String, Vec<u8>>,
+    bytes: u64,
+}
+
+const NOT_REGULAR: &str =
+    "not a regular file: only regular files and directories are allowed in a skill package";
+const SYMLINK: &str = "symlinks are not allowed in a skill package";
+const CHANGED: &str = "the entry changed while the package was being read";
+
+fn refuse(rel: &str, reason: &str) -> PackageError {
+    PackageError::Io {
+        path: rel.to_string(),
+        reason: reason.to_string(),
+    }
+}
+
+impl PackageFiles {
+    /// Read every file below `dir` once. Errors name the entry relative to `dir`.
+    pub(crate) fn read(dir: &Path) -> Result<Self, PackageError> {
+        let mut state = ReadState::default();
+        read_dir_into(dir, dir, 0, &mut state)?;
+        Ok(Self { files: state.files })
+    }
+
+    /// The package hash (see [`package_sha256`]), over the bytes held here.
+    pub(crate) fn sha256(&self) -> String {
+        let mut hasher = Sha256::new();
+        for (rel, bytes) in &self.files {
+            hasher.update(rel.as_bytes());
+            hasher.update([0u8]);
+            hasher.update((bytes.len() as u64).to_be_bytes());
+            hasher.update(bytes);
+        }
+        hex::encode(hasher.finalize())
+    }
+
+    /// A file as UTF-8 text. A missing file and bytes that are not UTF-8 are reported the way a
+    /// failed read of that file always was (`entity not found`, `invalid data`).
+    fn text(&self, rel: &str) -> Result<&str, PackageError> {
+        let bytes = self
+            .files
+            .get(rel)
+            .ok_or_else(|| io_err(rel, &std::io::ErrorKind::NotFound.into()))?;
+        std::str::from_utf8(bytes).map_err(|_| io_err(rel, &std::io::ErrorKind::InvalidData.into()))
+    }
+
+    /// True when `references/` directly holds at least one `*.md` file.
+    fn has_markdown_reference(&self) -> bool {
+        self.files.keys().any(|rel| {
+            rel.strip_prefix("references/").is_some_and(|name| {
+                !name.contains('/') && Path::new(name).extension().is_some_and(|x| x == "md")
+            })
+        })
+    }
+}
+
+fn read_dir_into(
+    root: &Path,
+    dir: &Path,
+    depth: usize,
+    state: &mut ReadState,
+) -> Result<(), PackageError> {
     let rel_dir = relative(root, dir);
-    let mut entries: Vec<_> = fs::read_dir(dir)
+    let mut entries: Vec<fs::DirEntry> = fs::read_dir(dir)
         .map_err(|e| io_err(&rel_dir, &e))?
         .collect::<Result<_, _>>()
         .map_err(|e| io_err(&rel_dir, &e))?;
-    entries.sort_by_key(|e| e.file_name());
+    entries.sort_by_key(fs::DirEntry::file_name);
     for entry in entries {
         let path = entry.path();
         let rel = relative(root, &path);
-        let ft = entry.file_type().map_err(|e| io_err(&rel, &e))?;
-        if ft.is_symlink() {
-            return Err(PackageError::Io {
-                path: rel,
-                reason: "symlinks are not allowed in a skill package".into(),
-            });
+        // Two names that differ only in how a lossy conversion shows them would collide in the
+        // map and one file would silently fall out of the hash.
+        if entry.file_name().to_str().is_none() {
+            return Err(refuse(&rel, "file names in a skill package must be UTF-8"));
         }
-        if ft.is_dir() {
-            collect_files(root, &path, out)?;
-        } else if ft.is_file() {
-            out.push(rel);
+        // Not followed: a symlink reports as a symlink.
+        let kind = entry.file_type().map_err(|e| io_err(&rel, &e))?;
+        if kind.is_symlink() {
+            return Err(refuse(&rel, SYMLINK));
+        }
+        if kind.is_dir() {
+            if depth + 1 > MAX_PACKAGE_DEPTH {
+                return Err(refuse(
+                    &rel,
+                    "directories are nested deeper than a skill package allows",
+                ));
+            }
+            read_dir_into(root, &path, depth + 1, state)?;
+        } else if kind.is_file() {
+            read_regular_file(&path, &rel, state)?;
+        } else {
+            return Err(refuse(&rel, NOT_REGULAR));
         }
     }
     Ok(())
+}
+
+fn read_regular_file(path: &Path, rel: &str, state: &mut ReadState) -> Result<(), PackageError> {
+    if state.files.len() >= MAX_PACKAGE_FILES {
+        return Err(refuse(
+            rel,
+            "the package holds more files than a skill package may",
+        ));
+    }
+    // The type is checked on the path, the file is opened without following a link and without
+    // waiting for a writer, and the type is checked again on what was actually opened (and, on
+    // Unix, that it is the same file): an entry swapped between the checks is refused.
+    let before = fs::symlink_metadata(path).map_err(|e| io_err(rel, &e))?;
+    if before.file_type().is_symlink() {
+        return Err(refuse(rel, SYMLINK));
+    }
+    if !before.file_type().is_file() {
+        return Err(refuse(rel, NOT_REGULAR));
+    }
+    let file = open_regular(path).map_err(|e| {
+        if is_symlink_loop(&e) {
+            refuse(rel, SYMLINK)
+        } else {
+            io_err(rel, &e)
+        }
+    })?;
+    let opened = file.metadata().map_err(|e| io_err(rel, &e))?;
+    if !opened.file_type().is_file() || !same_file(&before, &opened) {
+        return Err(refuse(rel, CHANGED));
+    }
+    let too_large = || {
+        refuse(
+            rel,
+            &format!("file is larger than the {MAX_FILE_BYTES} bytes a skill package file may be"),
+        )
+    };
+    if opened.len() > MAX_FILE_BYTES {
+        return Err(too_large());
+    }
+    // `take` bounds the read even if the file grows after the size was checked.
+    let mut bytes = Vec::new();
+    file.take(MAX_FILE_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|e| io_err(rel, &e))?;
+    let len = bytes.len() as u64;
+    if len > MAX_FILE_BYTES {
+        return Err(too_large());
+    }
+    state.bytes += len;
+    if state.bytes > MAX_PACKAGE_BYTES {
+        return Err(refuse(
+            rel,
+            &format!(
+                "the package is larger than the {MAX_PACKAGE_BYTES} bytes a skill package may be"
+            ),
+        ));
+    }
+    if state.files.insert(rel.to_string(), bytes).is_some() {
+        return Err(refuse(rel, "the same entry was listed twice"));
+    }
+    Ok(())
+}
+
+/// Open for reading without following a final symlink (`O_NOFOLLOW`) and without blocking on a
+/// FIFO that has no writer (`O_NONBLOCK`, which a regular file ignores).
+#[cfg(unix)]
+fn open_regular(path: &Path) -> std::io::Result<fs::File> {
+    use std::os::unix::fs::OpenOptionsExt;
+    fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(path)
+}
+
+#[cfg(not(unix))]
+fn open_regular(path: &Path) -> std::io::Result<fs::File> {
+    fs::File::open(path)
+}
+
+#[cfg(unix)]
+fn is_symlink_loop(e: &std::io::Error) -> bool {
+    // `open(2)` with `O_NOFOLLOW` on a symlink fails with `ELOOP`.
+    e.raw_os_error() == Some(libc::ELOOP)
+}
+
+#[cfg(not(unix))]
+fn is_symlink_loop(_: &std::io::Error) -> bool {
+    false
+}
+
+#[cfg(unix)]
+fn same_file(a: &fs::Metadata, b: &fs::Metadata) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    a.dev() == b.dev() && a.ino() == b.ino()
+}
+
+#[cfg(not(unix))]
+fn same_file(_: &fs::Metadata, _: &fs::Metadata) -> bool {
+    true
 }
 
 fn relative(root: &Path, path: &Path) -> String {
@@ -714,10 +925,6 @@ fn io_err(rel: &str, e: &std::io::Error) -> PackageError {
         path: rel.to_string(),
         reason: e.kind().to_string(),
     }
-}
-
-fn read_text(dir: &Path, rel: &str) -> Result<String, PackageError> {
-    fs::read_to_string(dir.join(rel)).map_err(|e| io_err(rel, &e))
 }
 
 fn parse_family(s: &str) -> Option<SkillFamily> {
@@ -876,10 +1083,10 @@ fn check_activation(lines: &[String]) -> Result<(), PackageError> {
     Ok(())
 }
 
-fn load_schema(dir: &Path, which: &str, name: &str) -> Result<Value, PackageError> {
+fn load_schema(files: &PackageFiles, which: &str, name: &str) -> Result<Value, PackageError> {
     let rel = format!("schemas/{which}.schema.json");
-    let text = read_text(dir, &rel)?;
-    let value: Value = serde_json::from_str(&text).map_err(|e| PackageError::Json {
+    let text = files.text(&rel)?;
+    let value: Value = serde_json::from_str(text).map_err(|e| PackageError::Json {
         path: rel,
         reason: e.to_string(),
     })?;
@@ -976,14 +1183,14 @@ fn find_ref(node: &Value, path: &str) -> Option<String> {
     }
 }
 
-fn load_evals(dir: &Path, code: &SkillCode) -> Result<EvalSet, PackageError> {
+fn load_evals(files: &PackageFiles, code: &SkillCode) -> Result<EvalSet, PackageError> {
     let mut seen: BTreeSet<String> = BTreeSet::new();
     let mut set = EvalSet::default();
     for kind in EvalKind::ALL {
         let file = kind.file_name();
-        let text = read_text(dir, &format!("evals/{file}"))?;
+        let text = files.text(&format!("evals/{file}"))?;
         let cases: Vec<EvalCase> =
-            serde_json::from_str(&text).map_err(|e| PackageError::EvalInvalid {
+            serde_json::from_str(text).map_err(|e| PackageError::EvalInvalid {
                 file: file.to_string(),
                 reason: e.to_string(),
             })?;
@@ -1141,5 +1348,92 @@ mod tests {
         let g: G9Error = PackageError::MissingPrefix.into();
         assert_eq!(g.category, g9_domain::ErrorCategory::PreconditionFailed);
         assert_eq!(g.details.unwrap()["rule"], "name.g9_prefix");
+    }
+
+    fn copy_tree(src: &Path, dst: &Path) {
+        fs::create_dir_all(dst).unwrap();
+        for entry in fs::read_dir(src).unwrap() {
+            let entry = entry.unwrap();
+            let to = dst.join(entry.file_name());
+            if entry.file_type().unwrap().is_dir() {
+                copy_tree(&entry.path(), &to);
+            } else {
+                fs::copy(entry.path(), &to).unwrap();
+            }
+        }
+    }
+
+    /// The property the pin rests on: a package is parsed and hashed from the buffers of one
+    /// read. A file replaced (or added) after that read changes neither the parsed package nor
+    /// its hash; before this seam existed, `package_sha256` read every file a second time.
+    #[test]
+    fn parsing_and_hashing_use_the_bytes_that_were_read_not_the_disk() {
+        let src =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/valid/g9-session-director");
+        let root = std::env::temp_dir().join(format!("g9-skills-read-once-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let dir = root.join("g9-session-director");
+        copy_tree(&src, &dir);
+
+        let files = PackageFiles::read(&dir).unwrap();
+        let hash_of_the_read = files.sha256();
+        assert!(
+            !format!("{files:?}").contains("## Mission"),
+            "Debug shows no content"
+        );
+
+        fs::write(dir.join("SKILL.md"), "replaced after the read").unwrap();
+        fs::write(
+            dir.join("references").join("added.md"),
+            "added after the read",
+        )
+        .unwrap();
+
+        let package = parse_package(&dir, &files).unwrap();
+        assert_eq!(package.package_sha256, hash_of_the_read);
+        assert!(package.body.contains("## Mission"));
+        assert!(!package.body.contains("replaced after the read"));
+
+        // A new read sees the disk as it is now, and the hash says so.
+        assert_ne!(PackageFiles::read(&dir).unwrap().sha256(), hash_of_the_read);
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_missing_or_non_utf8_file_is_reported_as_a_failed_read_of_that_file() {
+        let files = PackageFiles {
+            files: BTreeMap::from([("bad.json".to_string(), vec![0xff, 0xfe])]),
+        };
+        match files.text("absent.json") {
+            Err(PackageError::Io { path, reason }) => {
+                assert_eq!(path, "absent.json");
+                assert_eq!(reason, "entity not found");
+            }
+            other => panic!("{other:?}"),
+        }
+        match files.text("bad.json") {
+            Err(PackageError::Io { path, reason }) => {
+                assert_eq!(path, "bad.json");
+                assert_eq!(reason, "invalid data");
+            }
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn only_a_markdown_file_directly_under_references_counts() {
+        let with = |names: &[&str]| PackageFiles {
+            files: names
+                .iter()
+                .map(|n| ((*n).to_string(), Vec::new()))
+                .collect(),
+        };
+        assert!(with(&["references/a.md"]).has_markdown_reference());
+        assert!(with(&["references/a.b.md"]).has_markdown_reference());
+        assert!(!with(&["references/a.txt"]).has_markdown_reference());
+        assert!(!with(&["references/.md"]).has_markdown_reference());
+        assert!(!with(&["references/sub/a.md"]).has_markdown_reference());
+        assert!(!with(&["other/a.md"]).has_markdown_reference());
+        assert!(!with(&[]).has_markdown_reference());
     }
 }

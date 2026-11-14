@@ -3,10 +3,10 @@
 //! present exactly once, and verifies package hashes against a pinned table
 //! (supply-chain rule: mismatched hashes are refused at runtime).
 
-use crate::package::{load_package, PackageError, SkillPackage};
+use crate::package::{parse_package, PackageError, PackageFiles, SkillPackage};
 use g9_domain::{DataDomain, G9Error, InteractionMode, SkillCode, SkillFamily, SkillId};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -163,10 +163,53 @@ pub struct Registry {
     packages: BTreeMap<SkillId, SkillPackage>,
 }
 
+/// Read one package directory once. A package directory that is itself a symlink is refused:
+/// a package must be self-contained, and a link would make its content depend on a place the
+/// registry root does not control.
+fn read_package_dir(dir: &Path, dir_name: &str) -> Result<PackageFiles, PackageError> {
+    let is_link = fs::symlink_metadata(dir).is_ok_and(|m| m.file_type().is_symlink());
+    if is_link {
+        return Err(PackageError::Io {
+            path: dir_name.to_string(),
+            reason: "symlinks are not allowed in a skill package".to_string(),
+        });
+    }
+    PackageFiles::read(dir)
+}
+
 impl Registry {
     /// Load every subdirectory of `root` (sorted by name; entries starting with
     /// `.` and non-directories are skipped). Any invalid package fails the load.
+    /// A symlinked package directory is refused, not followed.
     pub fn load(root: &Path) -> Result<Self, RegistryError> {
+        Self::load_checked(root, None)
+    }
+
+    /// [`Registry::load`] with the pin compared **before** anything is parsed: each package
+    /// directory is read once, its hash is compared with `expected`, and only a package that
+    /// matches is parsed (from the same bytes that were hashed). A package that differs from its
+    /// pin, a package with no pin and a pin with no package refuse the whole registry
+    /// (runtime supply-chain rule); changed or unknown content is never loaded as a package.
+    pub fn load_pinned(
+        root: &Path,
+        expected: &BTreeMap<SkillId, String>,
+    ) -> Result<Self, RegistryError> {
+        let registry = Self::load_checked(root, Some(expected))?;
+        // Every loaded package matched its pin before it was parsed. The comparison is repeated
+        // on the finished registry so that a later change to the loader cannot silently weaken
+        // the rule; it costs a string comparison per package.
+        let mismatches = registry.verify_hashes(expected);
+        if mismatches.is_empty() {
+            Ok(registry)
+        } else {
+            Err(RegistryError::HashMismatch(mismatches))
+        }
+    }
+
+    fn load_checked(
+        root: &Path,
+        pins: Option<&BTreeMap<SkillId, String>>,
+    ) -> Result<Self, RegistryError> {
         if !root.is_dir() {
             return Err(RegistryError::NotADirectory(root.to_path_buf()));
         }
@@ -184,12 +227,44 @@ impl Registry {
         dirs.sort();
         let mut packages = BTreeMap::new();
         let mut failures = Vec::new();
+        let mut mismatches = Vec::new();
+        let mut seen: BTreeSet<SkillId> = BTreeSet::new();
         for dir in dirs {
             let dir_name = dir
                 .file_name()
                 .map(|n| n.to_string_lossy().into_owned())
                 .unwrap_or_default();
-            match load_package(&dir) {
+            let skill_id = SkillId::parse(&dir_name).ok();
+            if let Some(id) = &skill_id {
+                seen.insert(id.clone());
+            }
+            let files = match read_package_dir(&dir, &dir_name) {
+                Ok(files) => files,
+                Err(error) => {
+                    failures.push(PackageFailure {
+                        dir: dir_name,
+                        error,
+                    });
+                    continue;
+                }
+            };
+            if let (Some(pins), Some(id)) = (pins, &skill_id) {
+                let actual = files.sha256();
+                match pins.get(id) {
+                    Some(pinned) if *pinned == actual => {}
+                    other => {
+                        mismatches.push(HashMismatch {
+                            skill: id.clone(),
+                            expected: other.cloned(),
+                            actual: Some(actual),
+                        });
+                        continue;
+                    }
+                }
+            }
+            // A directory whose name is not a skill id cannot hold a valid package: the parse
+            // refuses it on the name rules.
+            match parse_package(&dir, &files) {
                 Ok(p) => {
                     packages.insert(p.name.clone(), p);
                 }
@@ -199,6 +274,22 @@ impl Registry {
                 }),
             }
         }
+        if let Some(pins) = pins {
+            for (name, hash) in pins {
+                if !seen.contains(name) {
+                    mismatches.push(HashMismatch {
+                        skill: name.clone(),
+                        expected: Some(hash.clone()),
+                        actual: None,
+                    });
+                }
+            }
+        }
+        // A mismatch is reported first: it is the supply-chain signal, and a tampered package
+        // must not be reported as a mere validation failure.
+        if !mismatches.is_empty() {
+            return Err(RegistryError::HashMismatch(mismatches));
+        }
         if !failures.is_empty() {
             return Err(RegistryError::Packages(failures));
         }
@@ -206,21 +297,6 @@ impl Registry {
             root: root.to_path_buf(),
             packages,
         })
-    }
-
-    /// [`Registry::load`] followed by [`Registry::verify_hashes`]; any mismatch
-    /// refuses the whole registry (runtime supply-chain rule).
-    pub fn load_pinned(
-        root: &Path,
-        expected: &BTreeMap<SkillId, String>,
-    ) -> Result<Self, RegistryError> {
-        let registry = Self::load(root)?;
-        let mismatches = registry.verify_hashes(expected);
-        if mismatches.is_empty() {
-            Ok(registry)
-        } else {
-            Err(RegistryError::HashMismatch(mismatches))
-        }
     }
 
     /// Build a registry from already-validated packages (tests, in-memory use).

@@ -1124,12 +1124,115 @@ fn record_refusal(
         Err(storage) => {
             tracing::error!(code = %storage.code, original = %refusal.error.code, "failed to record a refused command");
             if refusal.new_approval.is_some() {
-                // Without the persisted request the approval id is useless.
-                storage
+                // Without the persisted request the approval id is useless, and the storage error says
+                // nothing the caller may see. The refused attempt must still leave its decision and its
+                // audit row (security audit 2026-11-12), so they are recorded without the id, in a
+                // transaction of their own.
+                let error = G9Error::new(
+                    storage.category,
+                    "approval.request_not_stored",
+                    "the approval request could not be stored, so nothing can be approved for this attempt",
+                )
+                .with_details(json!({ "cause": storage.code }));
+                record_unstored_request_refusal(ctx, meta, cmd, now, &refusal, &error);
+                error
             } else {
                 refusal.error
             }
         }
+    }
+}
+
+/// The second, smaller failure transaction: the decision and the audit row of a refusal whose
+/// approval request could not be stored. Both are written without the approval id (it names no
+/// stored request); a failure here is logged and changes nothing the caller sees.
+fn record_unstored_request_refusal(
+    ctx: &mut AppContext,
+    meta: &CommandMeta,
+    cmd: &Command<'_>,
+    now: UtcMillis,
+    refusal: &Refusal,
+    error: &G9Error,
+) {
+    let AppContext { db, svc } = ctx;
+    let result = (|| -> Result<(), G9Error> {
+        let tx = db.begin_immediate()?;
+        if let Some(record) = &refusal.record {
+            insert_decision(&tx, record, meta, None)?;
+        }
+        let audit = AuditChain::append(
+            &tx,
+            &audit_entry(
+                meta,
+                now,
+                cmd.spec.name,
+                Some(cmd.resource.clone()),
+                refusal.decision,
+                AuditOutcome::from(error.category),
+                &json!({
+                    "code": error.code,
+                    "rule_id": refusal.record.as_ref().map(|r| r.rule_id.clone()),
+                    "approval_id": Value::Null,
+                }),
+            ),
+        )?;
+        tx.commit().map_err(storage_err)?;
+        svc.note_audit(audit.audit_ref);
+        Ok(())
+    })();
+    if let Err(e) = result {
+        tracing::error!(code = %e.code, "failed to record a refusal whose approval request was not stored");
+    }
+}
+
+/// A declined native confirmation (ADR-0014): the operator was shown what an approval grants and
+/// said no. It is a decision about a stored request, so it leaves one metadata-only audit row
+/// (`approvals.decide`, `NOT_EVALUATED` because no rule decided anything, `UNAUTHORIZED`, the
+/// approval id and the refusal code hashed as details) and changes nothing else: the request
+/// stays pending until it expires, is rejected or is approved later.
+///
+/// Nothing is written when the database is read-only, and the row is skipped when the metadata
+/// is not a valid command metadata (the request is refused as such later). A failure to write
+/// is logged and changes nothing the caller sees: the refusal is the answer either way.
+pub(crate) fn record_declined_confirmation(
+    ctx: &mut AppContext,
+    meta_json: &Value,
+    approval_id: &ApprovalId,
+) {
+    if ctx.svc.recovery.write_block_reason().is_some() {
+        return;
+    }
+    let Ok(meta) = crate::ipc::parse_meta("approvals.decide", meta_json, ctx.operator()) else {
+        return;
+    };
+    let now = ctx.svc.now();
+    let AppContext { db, svc } = ctx;
+    let result = (|| -> Result<(), G9Error> {
+        let tx = db.begin_immediate()?;
+        let audit = AuditChain::append(
+            &tx,
+            &audit_entry(
+                &meta,
+                now,
+                "approvals.decide",
+                Some(ResourceRef::new(
+                    g9_domain::ResourceKind::Approval,
+                    approval_id.as_str(),
+                )),
+                AuditDecision::NotEvaluated,
+                AuditOutcome::Unauthorized,
+                &json!({
+                    "code": "approval.not_confirmed",
+                    "approval_id": approval_id.as_str(),
+                }),
+            ),
+        )?;
+        tx.commit().map_err(storage_err)?;
+        svc.note_audit(audit.audit_ref);
+        Ok(())
+    })();
+    if let Err(e) = result {
+        tracing::error!(code = %e.code, "failed to record a declined confirmation");
     }
 }
 

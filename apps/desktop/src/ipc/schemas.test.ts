@@ -114,6 +114,16 @@ describe('schemas/ipc house rules', () => {
     expect(validate({ ...meta, actor: { id: 'x', kind: { kind: 'OPERATOR' } } })).toBe(false);
   });
 
+  it('command-meta refuses a revision of 0 and one storage cannot hold (revisions start at 1)', () => {
+    const validate = validator('command-meta.schema.json');
+    const meta = buildMeta('session.start', { expectedRevision: 1 }, { now: () => 1, uuid: () => 'u' });
+    expect(validate(meta), JSON.stringify(validate.errors)).toBe(true);
+    // 2^63 cannot be written in a JS number (it rounds to the schema's maximum); the Rust validator refuses it exactly (boundary_revision.rs).
+    for (const bad of [0, -1, 1.5]) {
+      expect(validate({ ...meta, expected_revision: bad }), String(bad)).toBe(false);
+    }
+  });
+
   it('g9-error accepts exactly the 13 categories', () => {
     const validate = validator('g9-error.schema.json');
     expect(validate({ category: 'TIMEOUT', code: 'a.b', message: 'm' })).toBe(true);

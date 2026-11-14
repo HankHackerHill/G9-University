@@ -433,10 +433,15 @@ struct Verdict {
     accepted: Option<(SkillOutputEnvelope, Value)>,
 }
 
+/// Most bytes of a check's detail that are kept.
+const MAX_CHECK_DETAIL_BYTES: usize = 1000;
+
 fn check(name: &str, passed: bool, detail: impl Into<String>) -> ValidationResult {
     let mut detail: String = detail.into();
-    if detail.len() > 1000 {
-        detail.truncate(1000);
+    if detail.len() > MAX_CHECK_DETAIL_BYTES {
+        // Never in the middle of a character: `String::truncate` panics there.
+        let end = detail.floor_char_boundary(MAX_CHECK_DETAIL_BYTES);
+        detail.truncate(end);
     }
     ValidationResult {
         check: name.to_string(),
@@ -750,5 +755,21 @@ mod tests {
     fn check_detail_is_bounded() {
         let c = check("x", true, "y".repeat(5000));
         assert_eq!(c.detail.len(), 1000);
+    }
+
+    /// Byte 1000 is inside the 334th character of this text; `String::truncate(1000)` panics
+    /// there (security audit 2026-11-12, INFO), and a panic under the bridge's mutex would poison
+    /// it for every later command.
+    #[test]
+    fn check_detail_is_cut_on_a_character_boundary() {
+        let c = check("x", true, "\u{20ac}".repeat(400));
+        assert_eq!(c.detail.chars().count(), 333);
+        assert_eq!(c.detail.len(), 999);
+        let c = check("x", true, format!("{}\u{1F4A5}", "y".repeat(999)));
+        assert_eq!(
+            c.detail,
+            "y".repeat(999),
+            "a 4-byte character that straddles the cap is dropped whole"
+        );
     }
 }

@@ -150,6 +150,31 @@ pub(crate) fn with_backend_mode(
     Ok(effective)
 }
 
+/// The metadata a handler evaluates, derived once in [`crate::dispatch::dispatch`] for every
+/// operation (security audit 2026-11-12: the mode was client-declared for 33 of 35 operations).
+///
+/// * A mutating operation is evaluated in `EXAM` while an EXAM attempt is `STARTED`
+///   ([`with_backend_mode`]), unless its [`OpSpec::exam_exempt`] flag says otherwise (the backup
+///   operations). A storage error while looking for an open attempt fails the command: a mode
+///   that cannot be derived is not assumed.
+/// * A read-only operation is passed through as declared. It is evaluated under no mode-gated
+///   rule, and the status and audit views must keep answering when storage is the thing that
+///   is wrong.
+///
+/// Every other mode stays what the client declared: no backend state holds MAINTENANCE, so it
+/// is declared intent, and what it gates (policy and settings changes, system writes, curriculum
+/// import and promotion) is approval-gated or operation-gated separately (ADR-0019).
+pub(crate) fn effective_meta(
+    ctx: &AppContext,
+    spec: &OpSpec,
+    meta: &CommandMeta,
+) -> Result<CommandMeta, G9Error> {
+    if !spec.mutating || spec.exam_exempt {
+        return Ok(meta.clone());
+    }
+    with_backend_mode(ctx, meta)
+}
+
 /// Deserialize a payload that already passed its JSON Schema.
 pub(crate) fn decode<T: DeserializeOwned>(payload: &Value) -> Result<T, G9Error> {
     serde_json::from_value(payload.clone())
