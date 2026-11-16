@@ -21,3 +21,5 @@ __pycache__/
 *.sqlite3
 binding.key
 *.key
+# Isolated git worktrees of agent sessions (git-managed; never part of the tree)
+/.claude/worktrees/
