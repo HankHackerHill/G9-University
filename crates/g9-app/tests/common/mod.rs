@@ -95,6 +95,8 @@ pub struct Setup {
     pub skills: Option<Registry>,
     /// The install secret; `key()` unless a test needs another one.
     pub key: BindingKey,
+    /// The operations log the context writes to (`None`: no log).
+    pub oplog: Option<Arc<g9_app::oplog::OpLog>>,
 }
 
 pub struct Harness {
@@ -106,6 +108,7 @@ pub struct Harness {
     runtime: Option<Arc<dyn InferenceRuntime>>,
     skills: Option<Registry>,
     key: BindingKey,
+    oplog: Option<Arc<g9_app::oplog::OpLog>>,
     n: u64,
 }
 
@@ -144,6 +147,7 @@ impl Harness {
             runtime: None,
             skills: None,
             key: key(),
+            oplog: None,
         };
         f(&mut setup);
         let clock = Arc::new(AtomicI64::new(T0));
@@ -157,6 +161,7 @@ impl Harness {
             runtime: setup.runtime,
             skills: setup.skills,
             key: setup.key,
+            oplog: setup.oplog,
             n: 0,
         };
         h.try_open(db)?;
@@ -180,6 +185,9 @@ impl Harness {
         }
         if let Some(reg) = &self.skills {
             b = b.skills(reg.clone());
+        }
+        if let Some(log) = &self.oplog {
+            b = b.oplog(log.clone());
         }
         self.ctx = Some(b.open()?);
         Ok(())

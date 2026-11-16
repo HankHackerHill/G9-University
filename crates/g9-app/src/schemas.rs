@@ -317,8 +317,10 @@ fn check(name: &str, side: Side, instance: &Value, code: &str, what: &str) -> Re
     };
     let validator = match entry {
         Ok(v) => v,
-        Err(reason) => {
-            tracing::error!(schema = name, %reason, "embedded IPC schema failed to compile");
+        Err(_) => {
+            // The compiler's reason is free text: the schema's name is enough to
+            // reproduce it (`cargo test -p g9-app schemas`).
+            tracing::error!(schema = name, "embedded IPC schema failed to compile");
             return Err(G9Error::internal_redacted("ipc.schema_unavailable"));
         }
     };
@@ -344,7 +346,19 @@ pub fn validate_response(op: &str, result: &Value) -> Result<(), G9Error> {
     match check(op, Side::Response, result, "ipc.response_invalid", "result") {
         Ok(()) => Ok(()),
         Err(e) => {
-            tracing::error!(operation = op, details = ?e.details, "handler result violates its response schema");
+            // How many violations, never which values: a violation quotes the
+            // result it was found in.
+            let differences = e
+                .details
+                .as_ref()
+                .and_then(|d| d.get("violations"))
+                .and_then(serde_json::Value::as_array)
+                .map_or(0, Vec::len);
+            tracing::error!(
+                operation = op,
+                differences,
+                "handler result violates its response schema"
+            );
             Err(G9Error::internal_redacted("ipc.response_schema_violation"))
         }
     }

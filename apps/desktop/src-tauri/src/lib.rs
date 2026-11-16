@@ -80,6 +80,10 @@ pub struct BridgeOptions {
     pub skills_dir: Option<PathBuf>,
     /// Operator time zone; `None` falls back to UTC with a warning.
     pub zone: Option<IanaZone>,
+    /// Send the backend's diagnostic events of this process to the log too
+    /// (`g9_app::oplog::install_event_log`): the application sets it; tests that
+    /// open several data directories in one process do not.
+    pub event_log: bool,
 }
 
 /// The app data directory layout.
@@ -97,6 +101,8 @@ pub struct DataLayout {
     pub scratch: PathBuf,
     /// `<data>/exports`.
     pub exports: PathBuf,
+    /// `<data>/logs`: the operations log (`g9_app::oplog`; it creates the directory `0700`).
+    pub logs: PathBuf,
 }
 
 impl DataLayout {
@@ -115,6 +121,7 @@ impl DataLayout {
             backups: root.join(BACKUPS_DIR),
             scratch: root.join(SCRATCH_DIR),
             exports: root.join(EXPORTS_DIR),
+            logs: root.join(g9_app::oplog::LOG_DIR_NAME),
         })
     }
 
@@ -334,6 +341,18 @@ fn open_context(
     layout.prepare(warnings)?;
     let provisioned = keyring::provision(&layout.root, random)?;
     warnings.extend(provisioned.warnings);
+    // The operations log (OBS-1): one line per command, and the backend's
+    // diagnostic events. It never decides whether the backend opens.
+    let log = match g9_app::oplog::OpLog::open(&layout.logs) {
+        Ok(log) => Some(log),
+        Err(e) => {
+            warnings.push(keyring::warning(&e.code, &e.message));
+            None
+        }
+    };
+    if let (true, Some(log)) = (options.event_log, &log) {
+        g9_app::oplog::install_event_log(log.clone());
+    }
 
     let mut config = AppConfig::new(APP_VERSION)?;
     match &options.zone {
@@ -362,6 +381,9 @@ fn open_context(
     let operator = ActorId::parse(OPERATOR_ID)
         .map_err(|_| G9Error::internal_redacted("bridge.operator_id"))?;
     let mut builder = AppContext::builder(db, config, provisioned.key, operator);
+    if let Some(log) = log {
+        builder = builder.oplog(log);
+    }
     if let Some(registry) = load_skills(options.skills_dir.as_deref(), SKILL_PINS_JSON, warnings) {
         builder = builder.skills(registry);
     }
@@ -710,6 +732,7 @@ mod shell {
                     data_dir,
                     skills_dir,
                     zone: host_zone(),
+                    event_log: true,
                 };
                 bootstrap(&options)
             }
@@ -857,6 +880,7 @@ mod tests {
             data_dir: dir.join("data"),
             skills_dir: None,
             zone: Some(berlin()),
+            event_log: false,
         }
     }
 
@@ -1203,6 +1227,7 @@ mod tests {
             data_dir: PathBuf::from("relative/data"),
             skills_dir: None,
             zone: Some(berlin()),
+            event_log: false,
         });
         let err = relative
             .handle("system.status", meta("system.status", "1", None), json!({}))

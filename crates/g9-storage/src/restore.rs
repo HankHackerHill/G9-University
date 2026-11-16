@@ -365,7 +365,7 @@ impl TempCopy {
 fn remove_if_present(path: &Path, message: &'static str) {
     if let Err(e) = fs::remove_file(path) {
         if e.kind() != io::ErrorKind::NotFound {
-            tracing::warn!(kind = ?e.kind(), "{message}");
+            tracing::warn!(kind = ?e.kind(), what = message, "a file a restore no longer needs was not removed");
         }
     }
 }

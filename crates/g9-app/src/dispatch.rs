@@ -13,8 +13,77 @@ use crate::{analytics, commands, executive, ipc, ops, research, schemas, teachin
 use g9_domain::G9Error;
 use serde_json::Value;
 
-/// Route one IPC call.
+/// Route one IPC call. With an operations log configured
+/// ([`crate::AppContextBuilder::oplog`]) the call leaves one line there:
+/// operation, request id, outcome, duration.
 pub fn dispatch(
+    ctx: &mut AppContext,
+    op: &str,
+    meta_json: Value,
+    payload_json: Value,
+) -> Result<Value, G9Error> {
+    let call = begin(ctx, &meta_json);
+    let result = route(ctx, op, meta_json, payload_json);
+    end(ctx, call, op, &result);
+    result
+}
+
+/// The name the operations log may write for `op`: the registry's own static
+/// name of a routed or PROPOSED operation. What the caller sent is never
+/// written when the registry does not know it.
+fn logged_name(op: &str) -> &'static str {
+    if let Some(spec) = ops::spec(op) {
+        return spec.name;
+    }
+    [
+        teaching::PROPOSED_OPERATIONS,
+        analytics::PROPOSED_OPERATIONS,
+        executive::PROPOSED_OPERATIONS,
+        research::PROPOSED_OPERATIONS,
+    ]
+    .iter()
+    .flat_map(|area| area.iter())
+    .find(|name| **name == op)
+    .copied()
+    .unwrap_or(crate::oplog::UNKNOWN_OPERATION)
+}
+
+/// A call being timed for the operations log.
+struct Call {
+    log: std::sync::Arc<crate::oplog::OpLog>,
+    request_id: Option<String>,
+    started: u64,
+}
+
+/// Start timing a call when the context has an operations log. Without a log
+/// no clock is read and nothing is copied.
+fn begin(ctx: &AppContext, meta_json: &Value) -> Option<Call> {
+    let log = ctx.svc.oplog.clone()?;
+    Some(Call {
+        log,
+        request_id: meta_json
+            .get("request_id")
+            .and_then(Value::as_str)
+            .map(str::to_string),
+        started: ctx.svc.mono(),
+    })
+}
+
+/// Record the call: the duration from the context's monotonic clock, the time
+/// from its wall clock.
+fn end(ctx: &AppContext, call: Option<Call>, op: &str, result: &Result<Value, G9Error>) {
+    if let Some(call) = call {
+        call.log.command(
+            ctx.svc.now(),
+            logged_name(op),
+            call.request_id.as_deref(),
+            result,
+            ctx.svc.mono().saturating_sub(call.started),
+        );
+    }
+}
+
+fn route(
     ctx: &mut AppContext,
     op: &str,
     meta_json: Value,
@@ -218,6 +287,20 @@ pub fn dispatch_confirming(
     if !approve {
         return dispatch(ctx, op, meta_json, payload_json);
     }
+    // One log line for the whole confirmed call, a declined confirmation included.
+    let call = begin(ctx, &meta_json);
+    let result = confirm_then_route(ctx, op, meta_json, payload_json, confirm);
+    end(ctx, call, op, &result);
+    result
+}
+
+fn confirm_then_route(
+    ctx: &mut AppContext,
+    op: &str,
+    meta_json: Value,
+    payload_json: Value,
+    confirm: &mut dyn FnMut(&ApprovalSummary) -> bool,
+) -> Result<Value, G9Error> {
     let id = payload_json
         .get("approval_id")
         .and_then(Value::as_str)
@@ -233,7 +316,7 @@ pub fn dispatch_confirming(
         ));
     }
     ctx.svc.native_confirmed = Some(id);
-    let result = dispatch(ctx, op, meta_json, payload_json);
+    let result = route(ctx, op, meta_json, payload_json);
     ctx.svc.native_confirmed = None;
     result
 }

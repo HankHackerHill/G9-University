@@ -356,7 +356,7 @@ impl Migrator {
                 params![i64::from(m.version), m.name, sha, self.now.as_millis(), self.app_version],
             )?;
             tx.commit()?;
-            tracing::info!(version = m.version, name = m.name, "migration applied");
+            tracing::info!(version = m.version, migration = m.name, "migration applied");
             applied.push(AppliedMigration {
                 version: m.version,
                 name: m.name.to_string(),

@@ -295,6 +295,9 @@ pub struct Services {
     pub storage_wal: bool,
     /// Audit rows appended by this process, oldest first (bounded).
     pub recent_audit: VecDeque<AuditRef>,
+    /// The operations log, when the host gave one (`crate::oplog`): one line per
+    /// dispatched command. `None` in tests and tools that need no log.
+    pub oplog: Option<Arc<crate::oplog::OpLog>>,
     last_monotonic: AtomicU64,
     /// Exclusive hold on a file database's data (app-4); `None` in memory.
     _data_lock: Option<crate::lock::DataLock>,
@@ -374,6 +377,7 @@ impl AppContext {
             skills: None,
             clock: None,
             monotonic: None,
+            oplog: None,
         }
     }
 
@@ -419,6 +423,7 @@ pub struct AppContextBuilder {
     skills: Option<Registry>,
     clock: Option<WallClockFn>,
     monotonic: Option<MonotonicFn>,
+    oplog: Option<Arc<crate::oplog::OpLog>>,
 }
 
 impl fmt::Debug for AppContextBuilder {
@@ -460,6 +465,15 @@ impl AppContextBuilder {
     /// (PROPOSED).
     pub fn monotonic(mut self, mono: Box<dyn Fn() -> u64 + Send + Sync>) -> Self {
         self.monotonic = Some(Arc::from(mono));
+        self
+    }
+
+    /// Write one line per dispatched command to `log` (default: no log). The
+    /// host opens the log of its data directory and, to record the backend's
+    /// diagnostic events as well, installs it with
+    /// [`crate::oplog::install_event_log`] before calling [`Self::open`].
+    pub fn oplog(mut self, log: Arc<crate::oplog::OpLog>) -> Self {
+        self.oplog = Some(log);
         self
     }
 
@@ -513,6 +527,7 @@ impl AppContextBuilder {
             recovery: RecoveryReport::default(),
             storage_wal: self.db.profile().journal_mode.eq_ignore_ascii_case("wal"),
             recent_audit: VecDeque::new(),
+            oplog: self.oplog,
             last_monotonic: AtomicU64::new(0),
             _data_lock: data_lock,
             native_confirmed: None,

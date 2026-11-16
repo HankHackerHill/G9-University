@@ -27,6 +27,7 @@ pub fn boot_options(cli: &Cli) -> Result<BootOptions, CliError> {
     };
     let mut opts = BootOptions::new(data_dir);
     opts.operator_id = cli.operator_id.clone();
+    opts.event_log = true;
     if cli.no_skills {
         opts.skills_dir = None;
     } else if let Some(dir) = &cli.skills_dir {

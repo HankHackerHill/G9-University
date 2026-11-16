@@ -280,6 +280,28 @@ impl From<TransitionError> for StorageError {
     }
 }
 
+/// The variant of a `rusqlite::Error`, as a word. Its `Display` can quote a
+/// column name, a path or part of a statement, so only the name is logged.
+fn rusqlite_variant(e: &rusqlite::Error) -> &'static str {
+    match e {
+        rusqlite::Error::SqliteFailure { .. } => "SqliteFailure",
+        rusqlite::Error::SqliteSingleThreadedMode => "SqliteSingleThreadedMode",
+        rusqlite::Error::Utf8Error { .. } => "Utf8Error",
+        rusqlite::Error::NulError { .. } => "NulError",
+        rusqlite::Error::InvalidParameterName { .. } => "InvalidParameterName",
+        rusqlite::Error::InvalidPath { .. } => "InvalidPath",
+        rusqlite::Error::ExecuteReturnedResults => "ExecuteReturnedResults",
+        rusqlite::Error::InvalidColumnIndex { .. } => "InvalidColumnIndex",
+        rusqlite::Error::InvalidColumnName { .. } => "InvalidColumnName",
+        rusqlite::Error::StatementChangedRows { .. } => "StatementChangedRows",
+        rusqlite::Error::ToSqlConversionFailure { .. } => "ToSqlConversionFailure",
+        rusqlite::Error::InvalidQuery => "InvalidQuery",
+        rusqlite::Error::MultipleStatement => "MultipleStatement",
+        rusqlite::Error::InvalidParameterCount { .. } => "InvalidParameterCount",
+        _ => "other",
+    }
+}
+
 impl From<rusqlite::Error> for StorageError {
     fn from(e: rusqlite::Error) -> Self {
         match e {
@@ -335,14 +357,16 @@ impl From<rusqlite::Error> for StorageError {
                     ffi::ErrorCode::CannotOpen
                     | ffi::ErrorCode::SystemIoFailure
                     | ffi::ErrorCode::ReadOnly => {
-                        tracing::warn!(?code, extended_code, "sqlite i/o failure");
+                        tracing::warn!(sqlite = ?code, extended_code, "sqlite i/o failure");
                         StorageError::Io {
                             context: "sqlite",
                             kind: std::io::ErrorKind::Other,
                         }
                     }
                     _ => {
-                        tracing::error!(?code, extended_code, %message, "unmapped sqlite failure");
+                        // The text SQLite gives for a failure can quote what a statement held:
+                        // the codes are logged, the text is not (`g9_app::oplog`).
+                        tracing::error!(sqlite = ?code, extended_code, "unmapped sqlite failure");
                         StorageError::Internal("sqlite")
                     }
                 }
@@ -355,12 +379,16 @@ impl From<rusqlite::Error> for StorageError {
             | rusqlite::Error::IntegralValueOutOfRange(_, _) => {
                 StorageError::RowDecode("value out of range".to_string())
             }
-            rusqlite::Error::SqlInputError { ref msg, .. } => {
-                tracing::error!(%msg, "sql input error");
+            rusqlite::Error::SqlInputError { ref error, .. } => {
+                tracing::error!(
+                    sqlite = ?error.code,
+                    extended_code = error.extended_code,
+                    "sql input error"
+                );
                 StorageError::Internal("sql")
             }
             other => {
-                tracing::error!(error = %other, "unmapped rusqlite error");
+                tracing::error!(kind = rusqlite_variant(&other), "unmapped rusqlite error");
                 StorageError::Internal("rusqlite")
             }
         }

@@ -1,7 +1,7 @@
 [package]
 name = "g9-cli"
 description = "Command-line driver for G9 MENTOR: a thin client of g9_app::dispatch for end-to-end testing without the GTK/WebKit toolchain and for scripted operation on the G9 host."
-version = "0.1.0"
+version.workspace = true
 edition = "2021"
 rust-version = "1.97"
 license = "Apache-2.0"

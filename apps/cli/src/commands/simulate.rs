@@ -1160,6 +1160,7 @@ mod tests {
             operator_id: "op".into(),
             clock: None,
             native_confirmation: false,
+            event_log: false,
         }
     }
 

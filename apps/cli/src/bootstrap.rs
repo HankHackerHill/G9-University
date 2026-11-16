@@ -37,6 +37,8 @@ pub const SCRATCH_DIR: &str = "scratch";
 pub const EXPORTS_DIR: &str = "exports";
 /// Where `g9 restore` moves the replaced database and its sidecars (never deleted).
 pub const QUARANTINE_DIR: &str = "quarantine";
+/// `<data>/logs`: the operations log (`g9_app::oplog`).
+pub const LOGS_DIR: &str = g9_app::oplog::LOG_DIR_NAME;
 /// Append-only, metadata-only log of `g9 restore` runs.
 pub const RESTORE_LOG_FILE: &str = "restore-log.jsonl";
 /// Default data directory name under `$XDG_DATA_HOME` / `~/.local/share`.
@@ -139,6 +141,8 @@ pub struct DataLayout {
     pub scratch: PathBuf,
     /// `<data>/exports`.
     pub exports: PathBuf,
+    /// `<data>/logs` (created `0700` by the log itself).
+    pub logs: PathBuf,
 }
 
 impl DataLayout {
@@ -152,6 +156,7 @@ impl DataLayout {
             backups: root.join(BACKUPS_DIR),
             scratch: root.join(SCRATCH_DIR),
             exports: root.join(EXPORTS_DIR),
+            logs: root.join(LOGS_DIR),
             root,
         };
         for dir in [
@@ -228,6 +233,11 @@ pub struct BootOptions {
     /// CLI, a terminal surface the operator types into; the desktop bridge and the
     /// `bridge_stdio` example (a stand-in for it in tests) set `true`.
     pub native_confirmation: bool,
+    /// Also send the backend's diagnostic events of this process to the log of
+    /// this data directory (`g9_app::oplog::install_event_log`). The `g9`
+    /// binary sets it; a library caller that opens several data directories
+    /// in one process leaves it off (the first installed log would get them all).
+    pub event_log: bool,
 }
 
 impl BootOptions {
@@ -241,6 +251,7 @@ impl BootOptions {
             operator_id: OPERATOR_ID.to_string(),
             clock: None,
             native_confirmation: false,
+            event_log: false,
         }
     }
 }
@@ -269,6 +280,8 @@ pub struct Booted {
     pub skills: SkillsStatus,
     /// Zone in use.
     pub zone: IanaZone,
+    /// The operations log, when it could be opened.
+    pub log: Option<std::sync::Arc<g9_app::oplog::OpLog>>,
 }
 
 /// Open the backend exactly as the bridge does.
@@ -277,6 +290,18 @@ pub fn open(opts: &BootOptions) -> Result<Booted, CliError> {
     let mut warnings = Vec::new();
     let provisioned = keyfile::provision(&layout.root, &mut keyfile::os_random)?;
     warnings.extend(provisioned.warnings);
+    // The log never decides whether the backend opens: without it the
+    // commands run and the warning says why there is no record.
+    let log = match g9_app::oplog::OpLog::open(&layout.logs) {
+        Ok(log) => Some(log),
+        Err(e) => {
+            warnings.push(keyfile::warning(&e.code, &e.message));
+            None
+        }
+    };
+    if let (true, Some(log)) = (opts.event_log, &log) {
+        g9_app::oplog::install_event_log(log.clone());
+    }
 
     let mut config = AppConfig::new(APP_VERSION)?;
     let zone = match &opts.zone {
@@ -330,6 +355,9 @@ pub fn open(opts: &BootOptions) -> Result<Booted, CliError> {
     if let Some(clock) = &opts.clock {
         builder = builder.clock(clock.wall_fn()).monotonic(clock.mono_fn());
     }
+    if let Some(log) = &log {
+        builder = builder.oplog(log.clone());
+    }
     let (registry, skills) = load_skills(opts.skills_dir.as_deref(), &mut warnings);
     if let Some(registry) = registry {
         builder = builder.skills(registry);
@@ -352,6 +380,7 @@ pub fn open(opts: &BootOptions) -> Result<Booted, CliError> {
         warnings,
         skills,
         zone,
+        log,
     })
 }
 

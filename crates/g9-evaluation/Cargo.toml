@@ -72,5 +72,9 @@ name = "layering_gate"
 path = "../../tests/integration/layering_gate.rs"
 
 [[test]]
+name = "version_gate"
+path = "../../tests/integration/version_gate.rs"
+
+[[test]]
 name = "st_adversarial_catalogue"
 path = "../../tests/adversarial/st_adversarial_catalogue.rs"
