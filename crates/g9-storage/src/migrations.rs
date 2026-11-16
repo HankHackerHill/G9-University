@@ -206,11 +206,24 @@ pub struct DryRunReport {
     pub table_counts: BTreeMap<String, u64>,
 }
 
+/// Which database a migrator changes, for the `migration applied` event the
+/// operations log records (`g9_app::oplog`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Events {
+    /// The application's database.
+    Live,
+    /// The copy a dry run migrates first ([`Migrator::dry_run_on_copy`]).
+    Rehearsal,
+    /// The in-memory reference the schema check is compared with: no event.
+    Silent,
+}
+
 /// Applies and verifies embedded migrations.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Migrator {
     app_version: String,
     now: UtcMillis,
+    events: Events,
 }
 
 impl Migrator {
@@ -219,6 +232,16 @@ impl Migrator {
         Self {
             app_version: app_version.into(),
             now,
+            events: Events::Live,
+        }
+    }
+
+    /// The same migrator, raising no `migration applied` event (the in-memory
+    /// schema reference, which migrates nobody's data).
+    fn silent(self) -> Self {
+        Self {
+            events: Events::Silent,
+            ..self
         }
     }
 
@@ -356,7 +379,25 @@ impl Migrator {
                 params![i64::from(m.version), m.name, sha, self.now.as_millis(), self.app_version],
             )?;
             tx.commit()?;
-            tracing::info!(version = m.version, migration = m.name, "migration applied");
+            match self.events {
+                Events::Live => {
+                    tracing::info!(
+                        version = m.version,
+                        migration = m.name,
+                        what = "live",
+                        "migration applied"
+                    );
+                }
+                Events::Rehearsal => {
+                    tracing::info!(
+                        version = m.version,
+                        migration = m.name,
+                        what = "rehearsal",
+                        "migration applied"
+                    );
+                }
+                Events::Silent => {}
+            }
             applied.push(AppliedMigration {
                 version: m.version,
                 name: m.name.to_string(),
@@ -407,7 +448,11 @@ impl Migrator {
             )?;
             copy.pragma_update(None, "foreign_keys", true)?;
             copy.pragma_update(None, "trusted_schema", false)?;
-            let report = self.migrate(&mut copy)?;
+            let rehearsal = Self {
+                events: Events::Rehearsal,
+                ..self.clone()
+            };
+            let report = rehearsal.migrate(&mut copy)?;
             let integrity = integrity_check(&copy)?;
             let foreign_key_violations = foreign_key_check(&copy)?;
             let table_counts = table_counts(&copy)?;
@@ -605,16 +650,23 @@ fn expected_schema(version: u32) -> StorageResult<SchemaMap> {
             return Ok(map.clone());
         }
     }
-    let mut conn = Connection::open_in_memory()?;
-    conn.pragma_update(None, "foreign_keys", true)?;
-    Migrator::new("schema-reference", UtcMillis::from_millis(0))
-        .migrate_up_to(&mut conn, version)?;
-    let map = schema_map(&conn)?;
+    let map = build_reference_schema(version)?;
     cache
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .insert(version, map.clone());
     Ok(map)
+}
+
+/// [`expected_schema`] without the cache: an in-memory database migrated to
+/// `version`, read back as a schema map.
+fn build_reference_schema(version: u32) -> StorageResult<SchemaMap> {
+    let mut conn = Connection::open_in_memory()?;
+    conn.pragma_update(None, "foreign_keys", true)?;
+    Migrator::new("schema-reference", UtcMillis::from_millis(0))
+        .silent()
+        .migrate_up_to(&mut conn, version)?;
+    schema_map(&conn)
 }
 
 /// Compare the schema of `conn` with the schema the embedded migrations produce
@@ -735,6 +787,96 @@ mod tests {
             "{} objects",
             schema.len()
         );
+    }
+
+    /// The `migration applied` events raised on this thread, as `what` values.
+    #[derive(Clone, Default)]
+    struct Applied(std::sync::Arc<std::sync::Mutex<Vec<String>>>);
+
+    struct Fields {
+        message: String,
+        what: String,
+    }
+
+    impl tracing::field::Visit for Fields {
+        fn record_str(&mut self, field: &tracing::field::Field, value: &str) {
+            if field.name() == "what" {
+                self.what = value.to_string();
+            }
+        }
+        fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+            match field.name() {
+                "message" => self.message = format!("{value:?}"),
+                "what" => self.what = format!("{value:?}").trim_matches('"').to_string(),
+                _ => {}
+            }
+        }
+    }
+
+    impl tracing::Subscriber for Applied {
+        fn enabled(&self, _: &tracing::Metadata<'_>) -> bool {
+            true
+        }
+        fn new_span(&self, _: &tracing::span::Attributes<'_>) -> tracing::span::Id {
+            tracing::span::Id::from_u64(1)
+        }
+        fn record(&self, _: &tracing::span::Id, _: &tracing::span::Record<'_>) {}
+        fn record_follows_from(&self, _: &tracing::span::Id, _: &tracing::span::Id) {}
+        fn event(&self, event: &tracing::Event<'_>) {
+            let mut f = Fields {
+                message: String::new(),
+                what: String::new(),
+            };
+            event.record(&mut f);
+            if f.message == "migration applied" {
+                self.0.lock().unwrap().push(f.what);
+            }
+        }
+        fn enter(&self, _: &tracing::span::Id) {}
+        fn exit(&self, _: &tracing::span::Id) {}
+    }
+
+    fn applied_events(f: impl FnOnce()) -> Vec<String> {
+        let seen = Applied::default();
+        tracing::subscriber::with_default(seen.clone(), f);
+        let out = seen.0.lock().unwrap().clone();
+        out
+    }
+
+    /// The schema check builds a reference database in memory; that is not a
+    /// migration of anyone's data and must not read as one in the log.
+    #[test]
+    fn the_schema_reference_is_built_without_migration_events() {
+        let events = applied_events(|| {
+            build_reference_schema(3).unwrap();
+        });
+        assert_eq!(events, Vec::<String>::new());
+    }
+
+    /// A real migration says which database it migrated: the live file, or
+    /// the rehearsal copy a dry run makes first.
+    #[test]
+    fn a_migration_event_names_the_live_database_or_the_rehearsal_copy() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("live.sqlite");
+        let m = Migrator::new("0.1.0-test", UtcMillis::from_millis(1_700_000_000_000));
+        {
+            let mut conn = Connection::open(&path).unwrap();
+            conn.pragma_update(None, "foreign_keys", true).unwrap();
+            m.migrate_up_to(&mut conn, 2).unwrap();
+        }
+        let rehearsal = applied_events(|| {
+            let report = m.dry_run_on_copy(&path, dir.path()).unwrap();
+            remove_scratch_copy(&report.copy_path).unwrap();
+        });
+        let pending = CURRENT_SCHEMA_VERSION as usize - 2;
+        assert_eq!(rehearsal, vec!["rehearsal".to_string(); pending]);
+        let live = applied_events(|| {
+            let mut conn = Connection::open(&path).unwrap();
+            conn.pragma_update(None, "foreign_keys", true).unwrap();
+            m.migrate(&mut conn).unwrap();
+        });
+        assert_eq!(live, vec!["live".to_string(); pending]);
     }
 
     #[test]
