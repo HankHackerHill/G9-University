@@ -7,7 +7,7 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 | Metric | Value | Counted from |
 |---|---|---|
 | Workspace members (crates) | 15 (13 under `crates/`; 14 default members) | `Cargo.toml` |
-| Rust lines | 129,324 (src 94,089, tests 34,511, other 724) | the members' `.rs` files and `[[test]]` paths |
+| Rust lines | 129,323 (src 94,088, tests 34,511, other 724) | the members' `.rs` files and `[[test]]` paths |
 | `#[test]` attributes | 1,161 | the same files |
 | Routed IPC operations | 53 | `OPERATIONS` in `crates/g9-app/src/ops.rs` |
 | PROPOSED IPC operations | 15 (analytics 3, executive 4, research 4, teaching 4) | `PROPOSED_OPERATIONS` of the modules `crates/g9-app/src/dispatch.rs` names |
@@ -37,11 +37,11 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 | g9-retention | `crates/g9-retention` | yes | 7 | 952 | 0 | 0 | 11 |
 | g9-ai-adapter | `crates/g9-ai-adapter` | yes | 11 | 2,613 | 614 | 0 | 40 |
 | g9-skills | `crates/g9-skills` | yes | 15 | 4,484 | 1,423 | 0 | 63 |
-| g9-app | `crates/g9-app` | yes | 80 | 14,495 | 15,803 | 46 | 299 |
+| g9-app | `crates/g9-app` | yes | 80 | 14,494 | 15,803 | 46 | 299 |
 | g9-evaluation | `crates/g9-evaluation` | yes | 18 | 6,714 | 1,873 | 0 | 60 |
 | g9-cli | `apps/cli` | yes | 38 | 9,181 | 3,562 | 660 | 114 |
 | g9-mentor-desktop | `apps/desktop/src-tauri` | no | 4 | 1,592 | 0 | 18 | 23 |
-| Total | | | 288 | 94,089 | 34,511 | 724 | 1,161 |
+| Total | | | 288 | 94,088 | 34,511 | 724 | 1,161 |
 
 Rust files that no member builds: none.
 

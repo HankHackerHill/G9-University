@@ -4,7 +4,37 @@ Format: `GOVERNANCE.md` "Stage PASS report (required content)". Evidence labels:
 
 Repository state: branch `ccr-0cea681c-p9jbru`; the commit that last touches this file is the report's HEAD; baseline `f414481` (initial commit, 2026-11-05). All commits are local and **unpushed** by operator instruction ("Do not connect to GitHub only work here"); the remote branch is at `e987383`.
 
-## Update 2026-11-14 (latest): the 12-week curriculum, its promotion route, its lesson sheets and the keyed ledger digests
+## Update 2026-11-17 (latest): the no-decision steps of the path to 10, the 2026-11-10 review leads, and a final security review
+
+Owner requests: "Start now" (the 20 no-decision steps of `docs/release/path-to-10.md` section 9), "Finish this build and don't stop until complete", and "Continue until project is completely finished and fully tested codebase for errors and security". No CI or workflow was started (owner instruction: CI runs only when the owner starts it). Every step's evidence is a row of `docs/release/path-to-10-evidence.md`.
+
+| Delivered | Where | Label |
+|---|---|---|
+| Operations log: one allow-listed JSON line per command, 0600, rotated; a source gate on every log call site; a probe that every audit row has its log line (OBS-1, OBS-2) | `crates/g9-app/src/oplog.rs`, `crates/g9-app/tests/log_call_sites.rs`, `crates/g9-app/tests/oplog_probe.rs` | TESTED |
+| The dependency law over everything `Cargo.lock` resolves; one version source (ARCH-1, BUILD-3) | `tests/integration/layering_gate.rs`, `tests/integration/version_gate.rs` | TESTED; the version gate failed on its first run (`apps/cli` stated its own version) |
+| Registry completeness over all 53 operations (POL-2); the definition of done for one operation (APP-2) | `crates/g9-app/tests/registry_completeness.rs`, `docs/release/operation-checklist.md` | TESTED, mutation-checked |
+| Backup verification hashes attachments (STOR-2); disk-full behaviour (STOR-4, free-space factor 2 PROPOSED); upgrade from every schema version 1 to 15 (REL-5) | `crates/g9-storage/src/backup.rs`, `crates/g9-app/tests/{backup_attachment_bytes,disk_full,upgrade_path}.rs` | TESTED; REL-5 found that schema 1 to 4 could not migrate with an attachment directory (fixed) |
+| Raw-byte erasure probe (PRIV-3); data inventory of 81 tables (PRIV-7) | `apps/cli/tests/erasure_probe.rs`, `docs/data-model.md`, `scripts/check_data_inventory.py` | TESTED; PRIV-7 found gap G1 (fixed, see below) |
+| 12-month performance fixture, latency harness, query-plan gate (PERF-1 to PERF-3) | `apps/cli/src/perf/`, `apps/cli/examples/perf_ipc.rs`, `apps/cli/tests/query_plans.rs`, `docs/release/perf-sandbox-2026-11-16.json` | TESTED (gate); MEASURED once in the sandbox: `audit.recent` p95 284 ms and `session.list` without a date p95 125 ms exceed the provisional 100 ms (PERF-6) |
+| Content and document gates: tests for the six content gates (CLI-2; 7 gate defects found and fixed), error-code catalogue (OBS-5), document references and metrics (DOC-2), backlog ratchet (DOC-1), flake check (TEST-4) | `scripts/tests/`, `docs/runbooks/error-codes.md`, `scripts/check_doc_refs.py`, `docs/release/metrics.md`, `docs/release/backlog-map.json`, `scripts/flake_check.sh` | TESTED; DOC-1 "0 orphans" NOT MET (109 rows need plan steps or owner decisions) |
+| The 50 leads of the 2026-11-10 review re-assessed and the open ones fixed (PROC-7): 27 FIXED (17 by this round), 2 PARTIAL, 2 OWNER, 1 OPEN (PERF-6), 17 LATENT, 1 NOT A DEFECT | `docs/audit/review-2026-11-10-leads.md`; commits `0edcefc`, `f55077e`, `324161a` | TESTED: each fix fail-first or mutation-checked, each group independently reviewed |
+
+**Owner decisions needed** (nothing below was decided by the build):
+
+| Item | Question | Where |
+|---|---|---|
+| `app-13` | Derived observations store uncertainty 0.0: report it as not modelled (null plus a warning), or a versioned default per reliability class (LRN-26)? | `docs/audit/review-2026-11-10-leads.md` |
+| `core-12` | Keep ADR-0019 Decision 4 (declared MAINTENANCE) and relabel TEC-25 PARTIAL, or build a backend-held maintenance state? | ADR-0019 |
+| `app-7` | What verifies an objective (a passing final decision, an observation, other)? Should a manifest name the objective each study block serves, so planned day sessions move it? | `crates/g9-app/src/commands/curriculum.rs` |
+| `app-10` | Record the first `deletion.request` audit row as ACCEPTED (a new outcome and a migration of the immutable audit table)? Execute a pending erasure at open (needs an ADR; today fail-closed)? | `crates/g9-app/src/recovery.rs` |
+| `app-11` | Store a key fingerprint in the database to detect a different valid key (migration)? | `crates/g9-app/src/keyfile.rs` |
+| G1 remainder | Texts that have no erasure path (competency and assessment titles, review prompts, backup labels, correction reasons) stay in stored command results until the 30-day purge at the next open; add a periodic sweep? | `docs/data-model.md` |
+| PERF-6 | Confirm the latency budgets (provisional 100 ms), then bound `session.list` without a date and `audit.recent` | `docs/ui/performance-budgets.md` |
+| STOR-4 | Confirm the free-space factor 2 (PROPOSED) | `docs/runbooks/backup-restore.md` |
+| DOC-1 | Map or close the 109 unmapped improvement-backlog rows | `docs/release/backlog-map.json` |
+| Skill contract | Does `$dynamicRef` count as the forbidden `$ref` in skill schemas? | `docs/skills/skill-package-contract.md` |
+
+## Update 2026-11-14: the 12-week curriculum, its promotion route, its lesson sheets and the keyed ledger digests
 
 Owner request: "All your recommendations and help me build the 12 week cybersecurity curriculum" (recorded in ADR-0020 and ADR-0022). The curriculum is **PROPOSED**: nothing was promoted, approved or run on the owner's data directory, and no CI was started.
 

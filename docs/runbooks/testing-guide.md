@@ -154,6 +154,26 @@ cargo test -p g9-cli --test curriculum_promotion                # the route thro
 
 What each check proves (TESTED 2026-11-14 unless stated): the sources keep the Appendix A wording and the structural rules; the draft is valid, `PROPOSED_SEED` and non-authoritative, equals the seed in every structural field, and differs only in the eight enrichment fields of each of the 72 days; `promotion_allowed` is false until a block bound to this exact diff exists, and editing a reviewed field afterwards breaks the binding (`a01_reviewed_diff_is_bound_to_the_candidate_content` failed before the fix); through the binary, an edited candidate imports but cannot be promoted and a tampered promote payload is refused before any approval is asked for; the 12 assessment definitions are accepted by `assessment.define` after `competency.import_pack` (run by hand against a scratch directory, not an automated test: NOT in a test file); the sheets file validates against its schema and records the objective texts of the draft it was generated with. NOT RUN: the route on the owner's own data directory (it is the owner's approval).
 
+### 1.10 Gates, probes and performance tooling (2026-11-16 and 2026-11-17)
+
+Added by the steps of `docs/release/path-to-10.md` section 9 and the fixes of the 2026-11-10 review leads. Each runs in the default suite or the preflight; the evidence of each first run is `docs/release/path-to-10-evidence.md`.
+
+| Command | What it proves |
+|---|---|
+| `cargo test -p g9-evaluation --test layering_gate` (and `-- --ignored` for the `deny.toml` target graph) | no crate reaches a forbidden one, directly or through anything `Cargo.lock` resolves for it (ARCH-1) |
+| `cargo test -p g9-evaluation --test version_gate` | every member inherits the workspace version (BUILD-3) |
+| `cargo test -p g9-app --test log_call_sites --test oplog_probe` | the operations log names allow-listed fields only, and every audit row of a request has its log line (OBS-1, OBS-2) |
+| `cargo test -p g9-app --test registry_completeness` | registry, handler, payload fixture and `operations.ts` agree for every operation; policy, mode, decision and audit rows per outcome (POL-2) |
+| `cargo test -p g9-cli --test erasure_probe -- --nocapture` | after an approved erasure no file of the data directory holds the erased bytes, except the backup taken before it (PRIV-3) |
+| `cargo test -p g9-app --test backup_attachment_bytes --test disk_full --test upgrade_path` | backup verification hashes attachments; disk-full behaviour; every schema version 1 to 15 upgrades (STOR-2, STOR-4, REL-5) |
+| `cargo test -p g9-cli --test perf_fixture --test query_plans` | the 12-month fixture is reproducible; no statement reads a large table whole or searches an index without a constraint unless allow-listed with a reason (PERF-1, PERF-3) |
+| `cargo run --release -p g9-cli -- perf-fixture --scratch --data-dir <fresh dir>` then `cargo run --release -p g9-cli --example perf_ipc -- --data-dir <copy> --scratch` | builds the fixture; p50/p95 per read operation (PERF-2; a measurement, not a gate) |
+| `G9_REQUIRE_JSONSCHEMA=1 python3 -I -m unittest discover -s scripts/tests -p 'test_*.py'` | the content and document gates themselves (CLI-2); without `jsonschema` the run fails instead of skipping |
+| `python3 -I scripts/gen_error_codes.py`, `check_doc_refs.py`, `gen_metrics.py`, `check_backlog.py`, `check_data_inventory.py` | the error-code catalogue, document paths, metrics, backlog map and data inventory are current (`--write` regenerates the generated ones) |
+| `scripts/flake_check.sh --rust N --rust-single N --vitest N --e2e N --out DIR` | runs each suite N times and fails on any difference between runs (TEST-4) |
+
+Tests added with the lead fixes (each failed before its fix or was mutation-checked): `crates/g9-app/tests/{skills_invoke_records,read_only_reads,approval_clock_back,deletion_recovery,binding_key_hygiene,storage_error_text,payload_limits,grade_evidence,objective_status,idempotency_retention}.rs`, `apps/cli/tests/binding_key.rs`, and unit tests in `crates/g9-storage/src/migrations.rs`, `crates/g9-storage/src/restore.rs`, `crates/g9-storage/src/error.rs`, `crates/g9-storage/src/repos/assessment.rs`, `crates/g9-storage/src/repos/sessions.rs` and `crates/g9-storage/tests/gates.rs`.
+
 ## 2. On the G9 host (Ubuntu 26.04.1 LTS)
 
 | Step | Command | Notes | Status |
