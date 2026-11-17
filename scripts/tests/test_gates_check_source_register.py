@@ -7,11 +7,11 @@ Rules enumerated from the script (validate() and main()):
   license_url    `license_url` is https
   entity         no HTML entity in the text fields
   approval       every entry is NOT_APPROVED
-  verified-date  VERIFIED needs a clean ISO date in `checked_on`
-  verified-url   VERIFIED needs evidence that names a fetched URL
-  clean-date     PARTIAL/UNVERIFIED must not carry a clean fetch date
+  verified-date  VERIFIED needs a clean ISO date in `checked_on` that is a real calendar date
+  verified-url   VERIFIED needs evidence that names an http(s) URL with a host name
+  clean-date     PARTIAL/UNVERIFIED must not carry a date-shaped `checked_on` (valid or not)
   status         register status stays PROPOSED_UNVERIFIED
-  stale          docs/research/reference-source-register.md equals the rendering of the register
+  stale          docs/research/reference-source-register.md exists and equals the rendering of the register
   usage          any argument other than --write-markdown is a usage error (exit 2)
 
 The script resolves its root from its own location, so each test runs a byte-for-byte copy of it at
@@ -159,35 +159,65 @@ class Mutations(GateTestCase):
     def test_usage_error_on_unknown_argument(self) -> None:
         self.assertRule(self.run_copy("--frobnicate"), "Usage", code=2)
 
-    # -- gaps: mutations that should be rejected and are accepted today ---------------
-    # The VERIFIED probes run the temporary copy with --write-markdown, which writes only when
-    # validate() found no problem: exit 0 then means "the register rule accepted the entry", not
-    # "the stale-page check happened to pass".
-    @unittest.expectedFailure
-    def test_gap_verified_accepts_impossible_calendar_date(self) -> None:
-        # GAP: CLEAN_DATE is the shape ^\d{4}-\d{2}-\d{2}$, not a calendar date, so "2026-13-45" passes
-        # as "the ISO date a page was read" (docstring: "VERIFIED requires a clean ISO date").
-        self.assertKnownGap(
-            lambda: self.edit_entry(0, verification="VERIFIED", checked_on="2026-13-45", evidence="Read https://example.org/terms on the day."),
-            lambda: self.run_copy("--write-markdown"),
-            "VERIFIED needs checked_on to be the ISO date a page was read",
-        )
+    # -- VERIFIED entries: calendar date and URL -------------------------------------
+    # These probes run the temporary copy with --write-markdown, which writes only when validate()
+    # found no problem: exit 0 then means "the register rule accepted the entry", not "the stale-page
+    # check happened to pass".
+    def test_verified_needs_a_calendar_date(self) -> None:
+        # The shape ^\d{4}-\d{2}-\d{2}$ alone accepted month 13, day 45 or 30 February as "the ISO
+        # date a page was read".
+        # A trailing line feed also passed the shape test (`$` matches before a final newline).
+        for bad in ("2026-13-45", "2026-02-30", "2026-00-10", "2025-02-29", "0000-01-01", "2026-11-08\n"):
+            with self.subTest(checked_on=bad):
+                self.edit_entry(0, verification="VERIFIED", checked_on=bad, evidence="Read https://example.org/terms on the day.")
+                self.assertRule(self.run_copy("--write-markdown"), "VERIFIED needs checked_on to be the ISO date a page was read")
 
-    @unittest.expectedFailure
-    def test_gap_verified_accepts_evidence_without_url(self) -> None:
-        # GAP: the evidence rule is the substring test `"http" in evidence`, so evidence that names no
-        # URL at all ("the http fetch was never made") satisfies "evidence that names the fetched URL".
-        self.assertKnownGap(
-            lambda: self.edit_entry(0, verification="VERIFIED", checked_on="2026-11-08", evidence="No page was read; the http fetch was never made."),
-            lambda: self.run_copy("--write-markdown"),
-            "VERIFIED needs evidence that names the fetched URL",
-        )
+    def test_verified_needs_evidence_with_an_http_url(self) -> None:
+        # The substring test `"http" in evidence` accepted evidence that names no URL at all.
+        for evidence in (
+            "No page was read; the http fetch was never made.",
+            "Fetched over https on the day.",
+            "See https:// for the terms.",
+            "Read ftp://example.org/terms on the day.",
+            "Read example.org/terms on the day.",
+        ):
+            with self.subTest(evidence=evidence):
+                self.edit_entry(0, verification="VERIFIED", checked_on="2026-11-08", evidence=evidence)
+                self.assertRule(self.run_copy("--write-markdown"), "VERIFIED needs evidence that names the fetched URL")
 
-    @unittest.expectedFailure
-    def test_gap_missing_generated_markdown_is_accepted(self) -> None:
-        # GAP (INFERRED requirement): the stale check runs only `if MARKDOWN.exists()`, so deleting the
-        # generated register page passes; build_curriculum.py treats a missing generated file as out of date.
-        self.assertKnownGap(lambda: (self.tmp / MARKDOWN).unlink(), self.run_copy, "reference-source-register.md is stale")
+    def test_verified_with_calendar_date_and_url_is_accepted(self) -> None:
+        # Control for the two rules above: a real date (a leap day included) and an http(s) URL pass.
+        for checked_on, evidence in (
+            ("2026-11-08", "Read https://example.org/terms on the day: 'CC BY 4.0'."),
+            ("2028-02-29", "Licence page (http://example.org/licence.html) read in full."),
+            ("2026-01-31", "HTTPS://EXAMPLE.ORG/TERMS."),
+        ):
+            with self.subTest(checked_on=checked_on, evidence=evidence):
+                self.edit_entry(0, verification="VERIFIED", checked_on=checked_on, evidence=evidence)
+                proc = self.run_copy("--write-markdown")
+                self.assertExit(proc, 0)
+                self.assertIn("source register: OK", output_of(proc))
+
+    def test_unverified_must_not_carry_an_impossible_date_either(self) -> None:
+        # A date-shaped checked_on on a non-VERIFIED entry is still a claimed fetch date, valid or not.
+        self.edit_entry(0, verification="UNVERIFIED", checked_on="2026-13-45")
+        self.assertRule(self.run_copy(), "UNVERIFIED entry carries a clean fetch date")
+
+    # -- generated page missing ----------------------------------------------------------
+    def test_missing_generated_markdown_is_out_of_date(self) -> None:
+        # Before the fix the stale check ran only `if MARKDOWN.exists()`, so deleting the generated page
+        # passed; build_curriculum.py treats a missing generated file as out of date, and so does this gate.
+        (self.tmp / MARKDOWN).unlink()
+        proc = self.run_copy()
+        self.assertRule(proc, "source register: FAIL docs/research/reference-source-register.md is missing; run with --write-markdown")
+
+    def test_write_markdown_recreates_missing_page_in_copy(self) -> None:
+        md = self.tmp / MARKDOWN
+        md.unlink()
+        self.assertExit(self.run_copy("--write-markdown"), 0)
+        self.assertEqual(read_text(md), read_text(REPO / MARKDOWN))
+        self.assertExit(self.run_copy(), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

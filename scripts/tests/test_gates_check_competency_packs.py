@@ -10,7 +10,8 @@ Rules enumerated from the script (load_pack, check_pack, check_graph, main):
   self        no competency lists itself (bare or pack-qualified) as a prerequisite
   approved    an APPROVED pack has only VERIFIED sources and VERIFIED nice_refs
   resolve     `pack:comp` names a known pack and a competency in it; a bare id exists in the pack
-  cycle       no prerequisite cycle across the whole graph
+  cycle       no prerequisite cycle across the whole graph; every elementary cycle is reported
+              (at most 100, then a line saying that more exist), without a traceback
   root        no non-directory entries in the packs root; --expect-count valid packs (default 8)
   usage       root is a directory and the schema loads (exit 2)
 
@@ -44,6 +45,11 @@ PACK = "linux-python-systems"
 INPUTS = [PACKS, SCHEMA]
 
 _GUARD = InputGuard(INPUTS)
+
+
+def _cycle(*ids: str) -> str:
+    """The FAIL text for a prerequisite cycle through competencies of PACK, in the order given."""
+    return "prerequisite cycle: " + " -> ".join(f"{PACK}:{i}" for i in ids)
 
 
 def setUpModule() -> None:
@@ -198,9 +204,8 @@ class Mutations(GateTestCase):
         self.assertRule(self.run_copy(), "APPROVED pack has ASSUMED nice_refs")
 
     # -- prerequisites ----------------------------------------------------------------
-    # The self-reference and cycle cases use linux.blind-troubleshooting (index 7), which no other
-    # competency depends on: the cycle detector reports cleanly only when no later node reaches the
-    # cycle (see the known-defect tests below).
+    # The self-reference and cycle cases below use linux.blind-troubleshooting (index 7), which no other
+    # competency depends on; the cases after them close cycles that later nodes reach again.
     def test_self_prerequisite_bare(self) -> None:
         self.edit(lambda d: d["competencies"][7]["prerequisites"].append("linux.blind-troubleshooting"))
         self.assertRule(self.run_copy(), "linux.blind-troubleshooting: lists itself as a prerequisite")
@@ -230,30 +235,77 @@ class Mutations(GateTestCase):
             " -> linux-python-systems:linux.blind-troubleshooting",
         )
 
-    # -- known defects ------------------------------------------------------------------
-    @unittest.expectedFailure
-    def test_defect_cycle_reached_from_later_node_crashes(self) -> None:
-        # DEFECT: check_graph() clears `stack` after the first cycle but leaves its nodes GREY; the next
-        # DFS that reaches one of them calls stack.index() on a node no longer on the stack and dies
-        # with ValueError (exit 1, traceback, no FAIL lines). Mutation: lab.authorization gains the
-        # prerequisite linux.blind-troubleshooting, closing a cycle that many competencies depend on.
-        self.assertKnownGap(
-            lambda: self.edit(lambda d: d["competencies"][0].update({"prerequisites": ["linux.blind-troubleshooting"]})),
-            self.run_copy,
-            "prerequisite cycle: ",
-            kind="crash",
+    # Cycles that a later depth-first search reaches again. Before the fix, check_graph() cleared its
+    # stack after the first cycle but left those nodes GREY; the next search that reached one called
+    # stack.index() on a node no longer on the stack and died with ValueError (exit 1, a traceback and
+    # no FAIL line at all, so every other failure of the run went unreported too).
+    def test_cycle_reached_from_later_nodes_reports_every_cycle(self) -> None:
+        # lab.authorization (index 0) gains linux.blind-troubleshooting. Two elementary cycles close
+        # through that edge (via linux.hardening-baseline and via python.testing-fixtures), and most of
+        # the pack depends on lab.authorization. A stray file adds a failure reported after the graph.
+        self.edit(lambda d: d["competencies"][0].update({"prerequisites": ["linux.blind-troubleshooting"]}))
+        write_text(self.root / "README.md", "stray\n")
+        proc = self.run_copy()
+        self.assertRule(
+            proc,
+            _cycle("lab.authorization", "linux.blind-troubleshooting", "linux.hardening-baseline", "linux.evidence-completeness",
+                   "linux.processes-services", "linux.filesystem", "lab.authorization"),
         )
+        out = output_of(proc)
+        self.assertNotIn("Traceback", out)
+        self.assertIn(
+            _cycle("lab.authorization", "linux.blind-troubleshooting", "python.testing-fixtures", "python.secure-parsing",
+                   "linux.processes-services", "linux.filesystem", "lab.authorization"),
+            out,
+        )
+        self.assertEqual(out.count("FAIL  prerequisite cycle: "), 2)
+        self.assertIn("non-directory entries in packs root are not allowed: ['README.md']", out)
+        self.assertIn("RESULT: FAIL", out)
 
-    @unittest.expectedFailure
-    def test_defect_self_prerequisite_with_dependents_crashes(self) -> None:
-        # DEFECT: same root cause. linux.filesystem lists itself; linux.processes-services depends on it,
-        # so the report ("lists itself as a prerequisite") is never printed.
-        self.assertKnownGap(
-            lambda: self.edit(lambda d: d["competencies"][1]["prerequisites"].append("linux.filesystem")),
-            self.run_copy,
-            "linux.filesystem: lists itself as a prerequisite",
-            kind="crash",
+    def test_self_prerequisite_with_dependents_is_reported(self) -> None:
+        # linux.filesystem (index 1) lists itself; linux.processes-services and everything after it
+        # depend on it. Both the pack rule and the one-node cycle are reported.
+        self.edit(lambda d: d["competencies"][1]["prerequisites"].append("linux.filesystem"))
+        proc = self.run_copy()
+        self.assertRule(proc, "linux.filesystem: lists itself as a prerequisite")
+        out = output_of(proc)
+        self.assertNotIn("Traceback", out)
+        self.assertIn(_cycle("linux.filesystem", "linux.filesystem"), out)
+        self.assertEqual(out.count("FAIL  prerequisite cycle: "), 1)
+
+    def test_cycles_in_two_packs_are_both_reported(self) -> None:
+        # One cycle per pack, the second in a pack that depends on the first (networking ->
+        # linux-python-systems:lab.authorization): each is reported once.
+        self.edit(lambda d: d["competencies"][0].update({"prerequisites": ["linux.filesystem"]}))
+        edit_json(
+            self.root / "networking-protocols-recon" / "pack.json",
+            lambda d: d["competencies"][0].update({"prerequisites": ["net.tcp-states"]}),
         )
+        proc = self.run_copy()
+        self.assertRule(proc, _cycle("lab.authorization", "linux.filesystem", "lab.authorization"))
+        out = output_of(proc)
+        self.assertIn(
+            "prerequisite cycle: networking-protocols-recon:net.layers-addressing -> networking-protocols-recon:net.tcp-states"
+            " -> networking-protocols-recon:net.layers-addressing",
+            out,
+        )
+        self.assertEqual(out.count("FAIL  prerequisite cycle: "), 2)
+        self.assertNotIn("Traceback", out)
+
+    def test_cycle_report_is_bounded(self) -> None:
+        # Every competency of the pack requires every other one: 16064 elementary cycles. The gate
+        # lists the first 100 and says that more exist, instead of enumerating all of them.
+        def fn(d: dict) -> None:
+            ids = [c["id"] for c in d["competencies"]]
+            for c in d["competencies"]:
+                c["prerequisites"] = [i for i in ids if i != c["id"]]
+
+        self.edit(fn)
+        proc = self.run_copy()
+        self.assertRule(proc, "prerequisite cycles: more than 100; only the first 100 are listed")
+        out = output_of(proc)
+        self.assertEqual(out.count("FAIL  prerequisite cycle: "), 100)
+        self.assertNotIn("Traceback", out)
 
     # -- root -------------------------------------------------------------------------
     def test_stray_file_in_root(self) -> None:

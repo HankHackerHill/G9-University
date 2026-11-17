@@ -8,7 +8,8 @@ House rules (CLAUDE.md "Documents and schemas", docs/skills/skill-package-contra
     (non-`https://g9.local/` ids produce a warning)
   * `title` non-empty, `type: "object"`, `additionalProperties: false`,
     explicit `required` array whose names all exist in `properties`
-  * no external `$ref` (only `#...` fragments that resolve inside the document)
+  * no external `$ref` or `$dynamicRef` (only `#...` fragments that resolve inside the document:
+    a `#/pointer` that exists, or a `#name` defined by `$anchor` or `$dynamicAnchor`)
   * validates against the Draft 2020-12 metaschema with the `jsonschema` package
   * warning: nested object schemas without `additionalProperties: false`
 
@@ -74,12 +75,18 @@ class SchemaReport:
         }
 
 
-def iter_refs(node: Any, path: str = "#") -> list[tuple[str, Any]]:
-    out: list[tuple[str, Any]] = []
+# Keywords whose value is a URI reference to another schema; file resolution is disabled, so each
+# must be an internal fragment.
+REF_KEYWORDS = ("$ref", "$dynamicRef")
+
+
+def iter_refs(node: Any, path: str = "#") -> list[tuple[str, str, Any]]:
+    """(location, keyword, target) for every `$ref` and `$dynamicRef` in the document."""
+    out: list[tuple[str, str, Any]] = []
     if isinstance(node, dict):
         for k, v in node.items():
-            if k == "$ref":
-                out.append((f"{path}/{k}", v))
+            if k in REF_KEYWORDS:
+                out.append((f"{path}/{k}", k, v))
             out.extend(iter_refs(v, f"{path}/{k}"))
     elif isinstance(node, list):
         for i, v in enumerate(node):
@@ -88,11 +95,13 @@ def iter_refs(node: Any, path: str = "#") -> list[tuple[str, Any]]:
 
 
 def iter_anchors(node: Any) -> set[str]:
+    """Plain-name fragments defined in the document: `$anchor` and `$dynamicAnchor` both define one."""
     anchors: set[str] = set()
     if isinstance(node, dict):
-        a = node.get("$anchor")
-        if isinstance(a, str):
-            anchors.add(a)
+        for keyword in ("$anchor", "$dynamicAnchor"):
+            a = node.get(keyword)
+            if isinstance(a, str):
+                anchors.add(a)
         for v in node.values():
             anchors |= iter_anchors(v)
     elif isinstance(node, list):
@@ -169,16 +178,16 @@ def check_schema(path: Path) -> SchemaReport:
         rep.check(len(set(req)) == len(req), "required has duplicates")
 
     anchors = iter_anchors(doc)
-    for where, target in iter_refs(doc):
-        if not rep.check(isinstance(target, str), f"{where}: $ref must be a string"):
+    for where, keyword, target in iter_refs(doc):
+        if not rep.check(isinstance(target, str), f"{where}: {keyword} must be a string"):
             continue
-        if not rep.check(target.startswith("#"), f"{where}: external $ref {target!r} is not allowed"):
+        if not rep.check(target.startswith("#"), f"{where}: external {keyword} {target!r} is not allowed"):
             continue
         frag = target[1:]
         if frag.startswith("/") or frag == "":
-            rep.check(resolve_pointer(doc, frag), f"{where}: internal $ref {target!r} does not resolve")
+            rep.check(resolve_pointer(doc, frag), f"{where}: internal {keyword} {target!r} does not resolve")
         else:
-            rep.check(frag in anchors, f"{where}: internal $ref {target!r} names an unknown $anchor")
+            rep.check(frag in anchors, f"{where}: internal {keyword} {target!r} names an unknown $anchor or $dynamicAnchor")
 
     try:
         Draft202012Validator.check_schema(doc)

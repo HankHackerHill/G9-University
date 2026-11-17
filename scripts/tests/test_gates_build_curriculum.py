@@ -25,14 +25,16 @@ Rules enumerated from the script, one case each in CASES (label: where the messa
 Not reachable through the inputs: the day-sheet locator check ("does not resolve to a '## Dnn — '
 heading") re-reads the file that was just parsed and every parsed day heading satisfies it.
 Not encoded as rules here: U+000D is in HIDDEN but never reaches the scan (Path.read_text() turns CR
-and CRLF into LF), which matches crates/g9-domain/tests/source_text.rs (CR is file-format whitespace);
-HIDDEN is narrower than g9_domain::text::is_hidden (it lacks U+2028/U+2029, U+FFF9..U+FFFB and the tag
-characters U+E0000..U+E007F), which that Rust scan applies to every text file, week files included.
+and CRLF into LF), which matches crates/g9-domain/tests/source_text.rs (CR is file-format whitespace).
+HIDDEN is g9_domain::text::is_hidden (crates/g9-domain/src/text.rs) without TAB and LF, the whitespace of
+a Markdown source; Sanity.test_hidden_matches_g9_domain_is_hidden pins that by reading text.rs.
 """
 
 from __future__ import annotations
 
+import importlib.util
 import os
+import re
 import shutil
 import time
 import unittest
@@ -151,6 +153,14 @@ def taught_before_prerequisite(t: Tree) -> None:
 CASES: list[tuple[str, Callable[[Tree], None], list[str]]] = [
     # -- parse_week --------------------------------------------------------------------------
     ("hidden_zero_width_space", lambda t: t.sub(1, "Build the laboratory", "Build the\u200b laboratory"), ["week-01.md:3: hidden or control character U+200B"]),
+    # The classes g9_domain::text::is_hidden refuses that HIDDEN lacked before (one case per class, both ends of each range).
+    ("hidden_line_separator", lambda t: t.sub(1, "Build the laboratory", "Build the\u2028 laboratory"), ["week-01.md:3: hidden or control character U+2028"]),
+    ("hidden_paragraph_separator", lambda t: t.sub(1, "Build the laboratory", "Build the\u2029 laboratory"), ["week-01.md:3: hidden or control character U+2029"]),
+    ("hidden_interlinear_annotation_anchor", lambda t: t.sub(1, "Build the laboratory", "Build the\ufff9 laboratory"), ["week-01.md:3: hidden or control character U+FFF9"]),
+    ("hidden_interlinear_annotation_terminator", lambda t: t.sub(1, "Build the laboratory", "Build the\ufffb laboratory"), ["week-01.md:3: hidden or control character U+FFFB"]),
+    ("hidden_tag_range_start", lambda t: t.sub(1, "Build the laboratory", "Build the\U000E0000 laboratory"), ["week-01.md:3: hidden or control character U+E0000"]),
+    ("hidden_tag_latin_letter", lambda t: t.sub(1, "Build the laboratory", "Build the\U000E0041 laboratory"), ["week-01.md:3: hidden or control character U+E0041"]),
+    ("hidden_cancel_tag", lambda t: t.sub(1, "Build the laboratory", "Build the\U000E007F laboratory"), ["week-01.md:3: hidden or control character U+E007F"]),
     ("second_week_heading", lambda t: t.sub(1, "## D02 — ", "# Week 1 — Linux, Python and secure lab engineering\n\n## D02 — "), ["more than one week heading"]),
     ("day_before_week_heading", lambda t: t.sub(1, "# Week 1 — ", "## D01 — Too early\n\n# Week 1 — "), ["week-01.md:1: a day before the week heading"]),
     ("preamble_field_twice", lambda t: t.sub(1, "**Accelerator.**", "**Accelerator.** Once.\n\n**Accelerator.**"), ["'Accelerator' appears twice before the first day"]),
@@ -321,6 +331,27 @@ class Sanity(unittest.TestCase):
     def test_repository_inputs_present(self) -> None:
         missing = [k for k, v in digest_inputs(INPUTS).items() if v == "<missing>"]
         self.assertEqual(missing, [])
+
+    def test_hidden_matches_g9_domain_is_hidden(self) -> None:
+        # Drift guard: HIDDEN must stay the set g9_domain::text::is_hidden refuses, minus TAB and LF.
+        # Reads the function body of is_hidden from text.rs: `c.is_control()` (general category Cc,
+        # U+0000..U+001F and U+007F..U+009F) plus every '\u{..}' character or '\u{..}'..='\u{..}' range
+        # in its matches! arm.
+        source = read_text(REPO / "crates" / "g9-domain" / "src" / "text.rs")
+        start = source.index("pub fn is_hidden(c: char) -> bool {")
+        body = source[start : source.index("\n}\n", start)]
+        self.assertIn("c.is_control()", body)
+        rust = set(range(0x00, 0x20)) | set(range(0x7F, 0xA0))
+        pattern = re.compile(r"'\\u\{([0-9A-Fa-f]+)\}'(?:\s*\.\.=\s*'\\u\{([0-9A-Fa-f]+)\}')?")
+        ranges = pattern.findall(body)
+        self.assertGreater(len(ranges), 5, "is_hidden in text.rs no longer has the expected shape")
+        for low, high in ranges:
+            rust |= set(range(int(low, 16), int(high or low, 16) + 1))
+        spec = importlib.util.spec_from_file_location("build_curriculum_under_test", REPO / "scripts" / SCRIPT)
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertEqual(set(module.HIDDEN), rust - {0x09, 0x0A})
 
 
 if __name__ == "__main__":

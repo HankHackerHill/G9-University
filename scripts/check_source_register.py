@@ -8,8 +8,11 @@ honesty invariants that a schema cannot express:
   * ids are unique; every `host` equals the host of `url`; `license_url` is https
   * no HTML entities left in text fields
   * every entry is NOT_APPROVED (nothing in this file approves ingestion)
-  * VERIFIED requires a clean ISO date in `checked_on` (the day a page was actually read) and
-    evidence that names a fetched URL; PARTIAL/UNVERIFIED must not claim a clean fetch date
+  * VERIFIED requires a clean ISO date in `checked_on` that is a real calendar date (the day a page
+    was actually read) and evidence that names a fetched http(s) URL with a host name;
+    PARTIAL/UNVERIFIED must not claim a clean fetch date (any YYYY-MM-DD value, valid or not)
+  * docs/research/reference-source-register.md exists and equals the rendering of the register
+    (a missing generated page is out of date, as in build_curriculum.py)
   * the register status stays PROPOSED_UNVERIFIED
 
 Usage (repository root; needs `jsonschema`; no network):
@@ -21,6 +24,7 @@ Exit codes: 0 valid; 1 any failure; 2 usage/environment error.
 from __future__ import annotations
 
 import collections
+import datetime
 import json
 import re
 import sys
@@ -38,8 +42,33 @@ REGISTER = ROOT / "data" / "sources" / "reference-source-register.v0.json"
 SCHEMA = ROOT / "schemas" / "sources" / "reference-source-register.schema.json"
 MARKDOWN = ROOT / "docs" / "research" / "reference-source-register.md"
 CLEAN_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+URL_IN_TEXT = re.compile(r"https?://\S+", re.IGNORECASE)
+HOST_NAME = re.compile(r"^[a-z0-9-]+(\.[a-z0-9-]+)+$")
 ENTITY = re.compile(r"&(amp|lt|gt|quot|#\d+);")
 TEXT_FIELDS = ("name", "publisher", "provides", "access", "license_or_terms", "update_cadence", "caveats", "evidence")
+
+
+def is_calendar_date(value: str) -> bool:
+    """True if `value` is YYYY-MM-DD and names a day that exists (no month 13, no 30 February)."""
+    if not CLEAN_DATE.match(value):
+        return False
+    try:
+        datetime.date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
+def names_http_url(text: str) -> bool:
+    """True if `text` contains an absolute http(s) URL with a dotted host name, not just the word http."""
+    for candidate in URL_IN_TEXT.findall(text):
+        try:
+            host = urlparse(candidate.rstrip(".,;:!?)]}>'\"")).hostname or ""
+        except ValueError:
+            continue
+        if HOST_NAME.match(host):
+            return True
+    return False
 
 
 def validate(reg: dict) -> list[str]:
@@ -63,13 +92,13 @@ def validate(reg: dict) -> list[str]:
         if e.get("approval_state") != "NOT_APPROVED":
             problems.append(f"{i}: approval_state must be NOT_APPROVED")
         v = e.get("verification")
-        clean = bool(CLEAN_DATE.match(str(e.get("checked_on", ""))))
+        checked_on = str(e.get("checked_on", ""))
         if v == "VERIFIED":
-            if not clean:
+            if not is_calendar_date(checked_on):
                 problems.append(f"{i}: VERIFIED needs checked_on to be the ISO date a page was read")
-            if "http" not in str(e.get("evidence", "")):
+            if not names_http_url(str(e.get("evidence", ""))):
                 problems.append(f"{i}: VERIFIED needs evidence that names the fetched URL")
-        elif clean:
+        elif CLEAN_DATE.match(checked_on):
             problems.append(f"{i}: {v} entry carries a clean fetch date; either verify it or record why it is not")
     if reg.get("status") != "PROPOSED_UNVERIFIED":
         problems.append("register status must stay PROPOSED_UNVERIFIED")
@@ -129,7 +158,10 @@ def main(argv: list[str]) -> int:
     if argv[1:] == ["--write-markdown"]:
         MARKDOWN.write_text(markdown(reg), encoding="utf-8")
         print("wrote", MARKDOWN.relative_to(ROOT))
-    elif MARKDOWN.exists() and MARKDOWN.read_text(encoding="utf-8") != markdown(reg):
+    elif not MARKDOWN.is_file():
+        print("source register: FAIL docs/research/reference-source-register.md is missing; run with --write-markdown")
+        return 1
+    elif MARKDOWN.read_text(encoding="utf-8") != markdown(reg):
         print("source register: FAIL docs/research/reference-source-register.md is stale; run with --write-markdown")
         return 1
     return 0

@@ -10,7 +10,8 @@ Rules (schemas/competency-pack.schema.json plus cross-record rules):
   * BLIND_PRACTICAL and TRANSFER_CHECK assessments carry >= 1 rubric_focus
   * each pack has >= 1 BLIND_PRACTICAL assessment and >= 1 nice_refs entry
   * prerequisites resolve: bare ids within the pack, `pack_id:competency_id`
-    to another pack; no self-reference; no cycles across the whole graph
+    to another pack; no self-reference; no cycles across the whole graph (every elementary
+    cycle is reported on its own FAIL line, at most MAX_REPORTED_CYCLES of them)
   * APPROVED packs: every source and nice_refs entry is VERIFIED
   * --expect-count N (default 8): number of VALID packs must equal N
 
@@ -37,6 +38,8 @@ except ImportError:  # pragma: no cover
     sys.exit(2)
 
 DEFAULT_SCHEMA = Path(__file__).resolve().parent.parent / "schemas" / "competency-pack.schema.json"
+# Prerequisite cycles listed one per FAIL line; past this many, one more line says that more exist.
+MAX_REPORTED_CYCLES = 100
 
 
 class PackReport:
@@ -166,34 +169,99 @@ def check_graph(reports: list[PackReport], docs: dict[str, dict[str, Any]]) -> l
                     edges.append(f"{pid}:{pre}")
             nodes[node] = edges
 
-    WHITE, GREY, BLACK = 0, 1, 2
-    color = {n: WHITE for n in nodes}
-    stack: list[str] = []
-
-    def dfs(n: str) -> str | None:
-        color[n] = GREY
-        stack.append(n)
-        for m in nodes.get(n, []):
-            if m not in color:
-                continue
-            if color[m] == GREY:
-                cyc = stack[stack.index(m):] + [m]
-                return " -> ".join(cyc)
-            if color[m] == WHITE:
-                found = dfs(m)
-                if found:
-                    return found
-        stack.pop()
-        color[n] = BLACK
-        return None
-
-    for n in sorted(nodes):
-        if color[n] == WHITE:
-            cyc = dfs(n)
-            if cyc:
-                failures.append(f"prerequisite cycle: {cyc}")
-                stack.clear()
+    cycles, more = elementary_cycles(nodes, MAX_REPORTED_CYCLES)
+    for cyc in cycles:
+        failures.append("prerequisite cycle: " + " -> ".join(cyc))
+    if more:
+        failures.append(f"prerequisite cycles: more than {MAX_REPORTED_CYCLES}; only the first {MAX_REPORTED_CYCLES} are listed")
     return failures
+
+
+class _EnoughCycles(Exception):
+    """Raised inside elementary_cycles() once more than `limit` cycles were found."""
+
+
+def elementary_cycles(graph: dict[str, list[str]], limit: int) -> tuple[list[list[str]], bool]:
+    """Every elementary cycle of `graph` (node -> prerequisite nodes), each listed once.
+
+    Johnson's algorithm (SIAM J. Comput. 4(1), 1975): for each start node s in sorted order, search
+    the strongly connected component of s among the nodes >= s and list each cycle through s, so a
+    cycle is listed once, starting and ending at its smallest node (a self-prerequisite is [s, s]).
+    Successors are visited in sorted order, so the output is deterministic. Returns at most `limit`
+    cycles and whether more exist; the search stops there, which bounds the work on a dense graph.
+    """
+    order = sorted(graph)
+    succ = {n: sorted({m for m in graph[n] if m in graph}) for n in order}
+    cycles: list[list[str]] = []
+    try:
+        for i, s in enumerate(order):
+            comp = _component_of(s, set(order[i:]), succ)
+            if len(comp) > 1 or s in succ[s]:
+                _cycles_through(s, comp, succ, cycles, limit)
+    except _EnoughCycles:
+        return cycles[:limit], True
+    return cycles, False
+
+
+def _component_of(start: str, allowed: set[str], succ: dict[str, list[str]]) -> set[str]:
+    """The strongly connected component of `start` in the subgraph induced by `allowed`."""
+    reverse: dict[str, list[str]] = {}
+    for n in allowed:
+        for m in succ[n]:
+            reverse.setdefault(m, []).append(n)
+
+    def reach(adjacency: dict[str, list[str]]) -> set[str]:
+        seen = {start}
+        todo = [start]
+        while todo:
+            for m in adjacency.get(todo.pop(), []):
+                if m in allowed and m not in seen:
+                    seen.add(m)
+                    todo.append(m)
+        return seen
+
+    return reach(succ) & reach(reverse)
+
+
+def _cycles_through(s: str, comp: set[str], succ: dict[str, list[str]], cycles: list[list[str]], limit: int) -> None:
+    """Johnson's CIRCUIT search from `s` inside `comp`: append every elementary cycle through `s`."""
+    blocked: set[str] = set()
+    blocked_by: dict[str, set[str]] = {}
+    path: list[str] = [s]
+
+    def unblock(u: str) -> None:
+        todo = [u]
+        while todo:
+            v = todo.pop()
+            if v in blocked:
+                blocked.discard(v)
+                todo.extend(blocked_by.pop(v, set()))
+
+    def circuit(v: str) -> bool:
+        closed = False
+        blocked.add(v)
+        for w in succ[v]:
+            if w not in comp:
+                continue
+            if w == s:
+                cycles.append(path + [s])
+                if len(cycles) > limit:
+                    raise _EnoughCycles
+                closed = True
+            elif w not in blocked:
+                path.append(w)
+                if circuit(w):
+                    closed = True
+                path.pop()
+        if closed:
+            unblock(v)
+        else:
+            for w in succ[v]:
+                if w in comp:
+                    blocked_by.setdefault(w, set()).add(v)
+        return closed
+
+    circuit(s)
 
 
 def main(argv: list[str]) -> int:

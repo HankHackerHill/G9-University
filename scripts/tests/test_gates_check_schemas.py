@@ -9,7 +9,8 @@ Rules enumerated from the script (check_schema(), main()):
   additional   additionalProperties: false at the root
   properties   an object
   required     an explicit array of strings, every name in properties, no duplicates
-  $ref         a string; no external target; `#/pointer` resolves; `#name` names a known $anchor
+  $ref         a string; no external target; `#/pointer` resolves; `#name` names a known $anchor or
+               $dynamicAnchor; the same rules apply to $dynamicRef
   metaschema   valid against the Draft 2020-12 metaschema
   empty        at least one *.schema.json under the roots
   usage        every root exists (exit 2)
@@ -200,16 +201,48 @@ class Mutations(GateTestCase):
         self.assertExit(proc, 0)
         self.assertIn("WARN  nested object schemas without additionalProperties:false at ['#/$defs/entry']", output_of(proc))
 
-    # -- gaps ----------------------------------------------------------------------------------
-    @unittest.expectedFailure
-    def test_gap_external_dynamic_ref_is_accepted(self) -> None:
-        # GAP (INFERRED): only the keyword `$ref` is inspected; `$dynamicRef` to another document is a
-        # reference outside the file just the same ("no external $ref ... file resolution is disabled").
-        self.assertKnownGap(
-            lambda: self.edit(lambda d: d["properties"]["entries"]["items"].update({"$dynamicRef": "https://example.org/schemas/entry"})),
-            self.run_copy,
-            "external $dynamicRef",
-        )
+    # -- $dynamicRef: the same rules as $ref ------------------------------------------------
+    # Before the fix only the keyword `$ref` was inspected, so a `$dynamicRef` to another document (a
+    # reference outside the file just the same: "no external $ref ... file resolution is disabled")
+    # passed. The cases mirror the $ref cases above.
+    def test_dynamic_ref_must_be_string(self) -> None:
+        self.edit(lambda d: d["properties"]["entries"]["items"].update({"$dynamicRef": 5}))
+        self.assertRule(self.run_copy(), "#/properties/entries/items/$dynamicRef: $dynamicRef must be a string")
+
+    def test_external_dynamic_ref(self) -> None:
+        self.edit(lambda d: d["properties"]["entries"]["items"].update({"$dynamicRef": "https://example.org/schemas/entry"}))
+        self.assertRule(self.run_copy(), "external $dynamicRef 'https://example.org/schemas/entry' is not allowed")
+
+    def test_relative_file_dynamic_ref(self) -> None:
+        self.edit(lambda d: d["properties"]["entries"]["items"].update({"$dynamicRef": "entry.schema.json#meta"}))
+        self.assertRule(self.run_copy(), "external $dynamicRef 'entry.schema.json#meta' is not allowed")
+
+    def test_internal_dynamic_ref_pointer_must_resolve(self) -> None:
+        self.edit(lambda d: d["properties"]["entries"]["items"].update({"$dynamicRef": "#/$defs/no_such_entry"}))
+        self.assertRule(self.run_copy(), "internal $dynamicRef '#/$defs/no_such_entry' does not resolve")
+
+    def test_dynamic_ref_must_name_known_anchor(self) -> None:
+        self.edit(lambda d: d["properties"]["entries"]["items"].update({"$dynamicRef": "#entryAnchor"}))
+        self.assertRule(self.run_copy(), "internal $dynamicRef '#entryAnchor' names an unknown $anchor")
+
+    def test_dynamic_ref_to_dynamic_anchor_passes(self) -> None:
+        # Control: `$dynamicAnchor` defines a plain-name fragment (as `$anchor` does), so both
+        # `$dynamicRef` and `$ref` to "#entry" resolve inside the document.
+        def fn(d: dict) -> None:
+            d["$defs"]["entry"]["$dynamicAnchor"] = "entry"
+            d["properties"]["entries"]["items"] = {"$dynamicRef": "#entry"}
+            d["properties"]["entries"]["contains"] = {"$ref": "#entry"}
+
+        self.edit(fn)
+        proc = self.run_copy()
+        self.assertExit(proc, 0)
+        self.assertIn("RESULT: PASS", output_of(proc))
+
+    def test_dynamic_ref_to_pointer_passes(self) -> None:
+        self.edit(lambda d: d["properties"]["entries"]["items"].update({"$dynamicRef": "#/$defs/entry"}))
+        proc = self.run_copy()
+        self.assertExit(proc, 0)
+        self.assertIn("RESULT: PASS", output_of(proc))
 
 
 class Sanity(unittest.TestCase):

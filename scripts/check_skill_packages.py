@@ -153,6 +153,13 @@ FORBIDDEN_FRAMING_RE = re.compile(
     re.IGNORECASE,
 )
 USE_CUE_RE = re.compile(r"\buse\b", re.IGNORECASE)
+# A `use` that belongs to a negative cue ("do not use", "never use", "when not to use", ...). These
+# phrases are removed before USE_CUE_RE looks for the positive cue, so "Do not use for X" alone does
+# not count as stating when to use the skill.
+NEGATED_USE_RE = re.compile(
+    r"\b(?:not|never|don['\u2019]?t|doesn['\u2019]?t|can['\u2019]?t|cannot)(?:\s+to)?\s+use\b",
+    re.IGNORECASE,
+)
 NEG_CUE_RE = re.compile(
     r"\b(do not use|don'?t use|never use|not for|not when|not during|not in|must not|except)\b",
     re.IGNORECASE,
@@ -600,7 +607,8 @@ def check_frontmatter(rep: PackageReport, pkg: Path, text: str) -> tuple[dict[st
     desc = data.get("description", "")
     if isinstance(desc, str):
         rep.check(1 <= len(desc) <= 1024, f"frontmatter: description must be 1-1024 characters (got {len(desc)})")
-        rep.check(bool(USE_CUE_RE.search(desc)), "frontmatter: description must state when to use the skill (contains `use`)")
+        rep.check(bool(USE_CUE_RE.search(NEGATED_USE_RE.sub(" ", desc))),
+                  "frontmatter: description must state when to use the skill (`use` outside a negative cue such as `do not use`)")
         rep.check(bool(NEG_CUE_RE.search(desc)),
                   "frontmatter: description must state when NOT to use the skill (e.g. `do not use`, `not for`, `never`)")
         rep.check(not FORBIDDEN_FRAMING_RE.search(desc), "frontmatter: description uses forbidden `act as the world's best expert` framing")

@@ -90,14 +90,20 @@ HAND_IN_RE = re.compile(r"^\*\*Hand in\.\*\* (.+?)\s*$")
 OBJECTIVE_RE = re.compile(r"^(\d)\. (.+?) \[([a-z0-9][a-z0-9.\-]*(?:, ?[a-z0-9][a-z0-9.\-]*)*)\]\s*$")
 ASSESSMENT_CODE_RE = re.compile(r"^[A-Z0-9][A-Z0-9-]{0,31}$")
 
-# Characters that must never appear in a source file: controls, soft hyphen, zero-width, bidi, BOM.
+# Characters that must never appear in a source file: the set g9_domain::text::is_hidden refuses
+# (crates/g9-domain/src/text.rs), except TAB and LF, which are the whitespace of a Markdown file.
+# scripts/tests/test_gates_build_curriculum.py reads text.rs and fails if the two sets drift apart.
 HIDDEN = (
-    {c for c in range(0x00, 0x20) if c not in (0x09, 0x0A)}
-    | {0x7F, 0xAD, 0x061C, 0x180E, 0xFEFF}
-    | set(range(0x80, 0xA0))
-    | set(range(0x200B, 0x2010))
-    | set(range(0x202A, 0x202F))
-    | set(range(0x2060, 0x2070))
+    {c for c in range(0x00, 0x20) if c not in (0x09, 0x0A)}  # C0 controls (Cc)
+    | {0x7F}
+    | set(range(0x80, 0xA0))  # DEL and C1 controls (Cc)
+    | {0xAD, 0x061C, 0x180E}  # soft hyphen, Arabic letter mark, Mongolian vowel separator
+    | set(range(0x200B, 0x2010))  # zero-width space, joiners, direction marks
+    | set(range(0x2028, 0x202F))  # line and paragraph separators, embeddings, overrides
+    | set(range(0x2060, 0x2070))  # word joiner, invisible operators, isolates
+    | {0xFEFF}  # byte order mark
+    | set(range(0xFFF9, 0xFFFC))  # interlinear annotation
+    | set(range(0xE0000, 0xE0080))  # tag characters
 )
 
 

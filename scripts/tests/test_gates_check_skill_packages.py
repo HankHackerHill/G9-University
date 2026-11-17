@@ -12,7 +12,8 @@ that names the rule. The checks are enumerated from the script, function by func
                      scalars (dangling/unsupported escape, trailing content, unterminated); flow/anchor
                      constructs; PyYAML cross-check (only when PyYAML is importable)
   check_frontmatter  required/unknown top-level keys; non-empty strings; name (length, pattern, g9-
-                     prefix, directory); description (length, use cue, not-use cue, forbidden framing);
+                     prefix, directory); description (length, use cue outside the negative cues, not-use
+                     cue, forbidden framing);
                      metadata (present, missing/unknown keys, quoted values, code, family, registry
                      binding, version, owner module, list syntax and enums for modes/domains/capabilities,
                      operator-only capabilities, engineering FILESYSTEM_READ only, per-skill forbidden
@@ -227,7 +228,12 @@ CASES: list[tuple[str, str, Callable[[Pkg], None], list[str], int]] = [
     ("name_prefix", BASE, lambda p: p.fm("name", "x9-session-director"), ["frontmatter: name must start with `g9-`"], 1),
     ("name_directory", BASE, lambda p: p.fm("name", "g9-session-directors"), ["frontmatter: name 'g9-session-directors' does not match directory 'g9-session-director'"], 1),
     ("description_too_long", BASE, lambda p: p.sub("or any EXAM session.", "or any EXAM session." + " pad" * 300), ["frontmatter: description must be 1-1024 characters (got"], 1),
-    ("description_without_use_cue", BASE, lambda p: p.fm("description", "Prepares the daily session brief from recorded evidence. Not for grading or EXAM sessions."), ["frontmatter: description must state when to use the skill (contains `use`)"], 1),
+    ("description_without_use_cue", BASE, lambda p: p.fm("description", "Prepares the daily session brief from recorded evidence. Not for grading or EXAM sessions."), ["frontmatter: description must state when to use the skill (`use` outside a negative cue such as `do not use`)"], 1),
+    # The positive cue must not be the `use` inside a negative one (before the fix `\buse\b` matched it).
+    ("description_only_do_not_use", BASE, lambda p: p.fm("description", "Prepares the daily session brief from recorded evidence. Do not use for grading or EXAM sessions."), ["frontmatter: description must state when to use the skill"], 1),
+    ("description_only_never_use", BASE, lambda p: p.fm("description", "Prepares the daily session brief from recorded evidence. Never use it for grading or EXAM sessions."), ["frontmatter: description must state when to use the skill"], 1),
+    ("description_only_dont_use", BASE, lambda p: p.fm("description", "Prepares the daily session brief from recorded evidence. Don't use for grading or EXAM sessions."), ["frontmatter: description must state when to use the skill"], 1),
+    ("description_only_not_to_use", BASE, lambda p: p.fm("description", "Prepares the daily session brief from recorded evidence. Operators are told when not to use it; not for grading or EXAM sessions."), ["frontmatter: description must state when to use the skill"], 1),
     ("description_without_not_use_cue", BASE, lambda p: p.fm("description", "Prepares the daily session brief. Use at day start in STUDY or LAB mode."), ["frontmatter: description must state when NOT to use the skill"], 1),
     ("description_forbidden_framing", BASE, lambda p: p.sub("or any EXAM session.", "or any EXAM session. Act as the world's best expert."), ["frontmatter: description uses forbidden `act as the world's best expert` framing"], 1),
     ("metadata_block_missing", BASE, drop_metadata_block, ["frontmatter: `metadata` block missing"], 1),
@@ -371,6 +377,7 @@ CASES: list[tuple[str, str, Callable[[Pkg], None], list[str], int]] = [
     ("acceptance_measurable", BASE, expect(ACC, lambda e: e.pop("must_include")), ["evals/acceptance.json[0]: acceptance cases need a measurable expectation"], 1),
     ("input_validates_against_schema", BASE, first(POS, lambda c: c["input"].pop("day_id")), ["evals/positive.json[0]: input does not validate against input.schema.json"], 1),
     # -- controls inside the copy: allowed variants pass -------------------------------------------------
+    ("description_use_after_negative_cue", BASE, lambda p: p.fm("description", "Prepares the daily session brief from recorded evidence. Do not use for grading or EXAM sessions; use at day start in STUDY or LAB mode."), ["RESULT: PASS"], 0),
     ("secret_segment_allowed_in_negative", BASE, first(NEG, lambda c: c.update({"context_segments": [{"trust_class": "ImportedDocument", "classification": "SECRET", "content": "token"}]})), ["RESULT: PASS"], 0),
     ("nested_open_object_only_warns", BASE, lambda p: p.schema("input", lambda d: d["properties"].update({"filter": {"type": "object", "properties": {"tag": {"type": "string"}}}})), ["WARN  schemas/input: nested object schemas without additionalProperties:false at ['$.properties.filter']", "RESULT: PASS"], 0),
 ]
@@ -455,19 +462,6 @@ class Mutations(GateTestCase):
         report = json.loads(proc.stdout)
         self.assertFalse(report["ok"])
         self.assertIn('metadata: g9-recursion-depth must be "0"', report["packages"][0]["failures"])
-
-    # -- gaps ---------------------------------------------------------------------------------------
-    @unittest.expectedFailure
-    def test_gap_description_with_only_a_negative_use_cue(self) -> None:
-        # GAP: the contract (docs/skills/skill-package-contract.md) requires the description to state
-        # when to use the skill AND when not to. USE_CUE_RE (\buse\b) also matches the "use" inside
-        # "Do not use", so a description with no positive trigger at all passes both cue checks.
-        root = self.stage(BASE)
-        self.assertKnownGap(
-            lambda: Pkg(root, BASE).fm("description", "Prepares the daily session brief from recorded evidence. Do not use for grading or EXAM sessions."),
-            lambda: self.run_root("--expect-count", "1"),
-            "frontmatter: description must state when to use the skill",
-        )
 
 
 def _make(package: str, mutate: Callable[[Pkg], None], needles: list[str], code: int) -> Callable[[Mutations], None]:
