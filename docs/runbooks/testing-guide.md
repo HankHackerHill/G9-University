@@ -118,6 +118,8 @@ Replicates every job of `.github/workflows/ci.yml` inside `git archive <rev>`, s
 | `scripts/ci_preflight.sh --only rust,content-gates` / `--skip sbom` | select jobs (`rust`, `desktop-shell`, `frontend`, `content-gates`, `sbom`) |
 | `scripts/ci_preflight.sh --offline` | skip the steps that need the registry; cargo-deny uses the local advisory database |
 
+`--target` shared with the working tree: the `g9` binary and the examples built from the export embed the export's paths (the default seed manifest and skills directory are compile-time paths), and cargo does not re-link the working tree's binaries afterwards. Before `scripts/smoke_test.sh` or the e2e scenarios, touch `apps/cli/src/bootstrap.rs` and rebuild (seen 2026-11-17: the smoke test failed 21 checks on the export's binary, then passed after the rebuild).
+
 A step that cannot run here (no WebKit for `desktop-shell`, no `cargo-deny` or `cargo-cyclonedx` installed, no `jsonschema` module) is printed as `SKIPPED` with the reason; SKIPPED is not PASS. Exit status: 0 when no step failed, 1 when any failed (its log path is printed), 2 on a usage error.
 
 Recorded run, 2026-11-12, `433895a`: rust (fmt, clippy, test: 762 passed, doc tests, tree, cargo-deny with the offline database), frontend (npm ci, typecheck, lint, test, build, npm audit), content gates and both SBOMs passed; `desktop-shell` SKIPPED (no WebKit in the sandbox). TESTED.
@@ -170,7 +172,7 @@ Added by the steps of `docs/release/path-to-10.md` section 9 and the fixes of th
 | `cargo run --release -p g9-cli -- perf-fixture --scratch --data-dir <fresh dir>` then `cargo run --release -p g9-cli --example perf_ipc -- --data-dir <copy> --scratch` | builds the fixture; p50/p95 per read operation (PERF-2; a measurement, not a gate) |
 | `G9_REQUIRE_JSONSCHEMA=1 python3 -I -m unittest discover -s scripts/tests -p 'test_*.py'` | the content and document gates themselves (CLI-2); without `jsonschema` the run fails instead of skipping |
 | `python3 -I scripts/gen_error_codes.py`, `check_doc_refs.py`, `gen_metrics.py`, `check_backlog.py`, `check_data_inventory.py` | the error-code catalogue, document paths, metrics, backlog map and data inventory are current (`--write` regenerates the generated ones) |
-| `scripts/flake_check.sh --rust N --rust-single N --vitest N --e2e N --out DIR` | runs each suite N times and fails on any difference between runs (TEST-4) |
+| `scripts/flake_check.sh --rust N --rust-single N --vitest N --e2e N --out DIR` | runs each suite N times and fails on any difference between runs (TEST-4). Recorded 2026-11-17 on `3524cd7`: Rust 2 + 1 single-thread runs (1153 tests), vitest 3 (487), e2e 2 (29): 0 failures, 0 differences |
 
 Tests added with the lead fixes (each failed before its fix or was mutation-checked): `crates/g9-app/tests/{skills_invoke_records,read_only_reads,approval_clock_back,deletion_recovery,binding_key_hygiene,storage_error_text,payload_limits,grade_evidence,objective_status,idempotency_retention}.rs`, `apps/cli/tests/binding_key.rs`, and unit tests in `crates/g9-storage/src/migrations.rs`, `crates/g9-storage/src/restore.rs`, `crates/g9-storage/src/error.rs`, `crates/g9-storage/src/repos/assessment.rs`, `crates/g9-storage/src/repos/sessions.rs` and `crates/g9-storage/tests/gates.rs`.
 

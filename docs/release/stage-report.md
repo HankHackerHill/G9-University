@@ -17,7 +17,18 @@ Owner requests: "Start now" (the 20 no-decision steps of `docs/release/path-to-1
 | Raw-byte erasure probe (PRIV-3); data inventory of 81 tables (PRIV-7) | `apps/cli/tests/erasure_probe.rs`, `docs/data-model.md`, `scripts/check_data_inventory.py` | TESTED; PRIV-7 found gap G1 (fixed, see below) |
 | 12-month performance fixture, latency harness, query-plan gate (PERF-1 to PERF-3) | `apps/cli/src/perf/`, `apps/cli/examples/perf_ipc.rs`, `apps/cli/tests/query_plans.rs`, `docs/release/perf-sandbox-2026-11-16.json` | TESTED (gate); MEASURED once in the sandbox: `audit.recent` p95 284 ms and `session.list` without a date p95 125 ms exceed the provisional 100 ms (PERF-6) |
 | Content and document gates: tests for the six content gates (CLI-2; 7 gate defects found and fixed), error-code catalogue (OBS-5), document references and metrics (DOC-2), backlog ratchet (DOC-1), flake check (TEST-4) | `scripts/tests/`, `docs/runbooks/error-codes.md`, `scripts/check_doc_refs.py`, `docs/release/metrics.md`, `docs/release/backlog-map.json`, `scripts/flake_check.sh` | TESTED; DOC-1 "0 orphans" NOT MET (109 rows need plan steps or owner decisions) |
+| Final security review of everything changed since `2e0b344`: five lenses, each finding checked by an independent skeptic; 10 findings (5 LOW, 5 INFO), all confirmed; 9 fixed fail-first plus 4 hardening items; ipc-1 (the shell parses the IPC body before the byte cap) PROPOSED, needs the shell on the host | `docs/audit/security-audit-2026-11-17.md`; commit `a2e1378` | TESTED |
 | The 50 leads of the 2026-11-10 review re-assessed and the open ones fixed (PROC-7): 27 FIXED (17 by this round), 2 PARTIAL, 2 OWNER, 1 OPEN (PERF-6), 17 LATENT, 1 NOT A DEFECT | `docs/audit/review-2026-11-10-leads.md`; commits `0edcefc`, `f55077e`, `324161a` | TESTED: each fix fail-first or mutation-checked, each group independently reviewed |
+
+| Check | Command | Result | Label |
+|---|---|---|---|
+| CI preflight on a clean export of `a2e1378` | `scripts/ci_preflight.sh --offline --target <shared build directory>` | 20 passed, 0 failed, 5 SKIPPED (cargo-deny and cargo-cyclonedx not installed; no WebKit for the shell job; `--offline` skips npm). Rust in the export: **1152 passed, 0 failed, 1 ignored**; layering deny-target graph 1 passed; content gates and the gate tests (586) pass | TESTED |
+| Rust fmt, clippy, shell | `cargo fmt --all --check`; `cargo clippy --all-targets -- -D warnings`; `cargo clippy -p g9-mentor-desktop --all-targets -- -D warnings` with a stub `pkg-config` | clean; clean; clean (type-checked, not linked or run) | VERIFIED |
+| Frontend | `npx tsc --noEmit`, `npx eslint . --max-warnings 0`, `npx vitest run`, `npx vite build` | clean; **487 passed in 41 files**; built | TESTED |
+| Smoke | `scripts/smoke_test.sh` | SMOKE TEST PASS, 100 checks | TESTED |
+| The real interface against the real backend | `node scripts/e2e/personal.cjs`; `node scripts/e2e/tour.cjs --import --program-start 2026-11-16` | 29 passed, 0 failed; 16 screens, no console error, page error or CSP violation | TESTED |
+| Flake check (TEST-4) | `scripts/flake_check.sh --rust 2 --rust-single 1 --vitest 3 --e2e 2` | 0 failures, 0 tests whose outcome differs (counts reduced from the plan's 20 for time; stated) | TESTED |
+| Not run | the Tauri shell and WebKitGTK on a display; `cargo deny`; the SBOMs; CI (owner's decision) | | NOT RUN |
 
 **Owner decisions needed** (nothing below was decided by the build):
 
@@ -33,6 +44,7 @@ Owner requests: "Start now" (the 20 no-decision steps of `docs/release/path-to-1
 | STOR-4 | Confirm the free-space factor 2 (PROPOSED) | `docs/runbooks/backup-restore.md` |
 | DOC-1 | Map or close the 109 unmapped improvement-backlog rows | `docs/release/backlog-map.json` |
 | Skill contract | Does `$dynamicRef` count as the forbidden `$ref` in skill schemas? | `docs/skills/skill-package-contract.md` |
+| ipc-1 | Change the shell's IPC transport to raw bytes with a length check before parsing (must be tested with the shell running on the host) | `docs/audit/security-audit-2026-11-17.md` |
 
 ## Update 2026-11-14: the 12-week curriculum, its promotion route, its lesson sheets and the keyed ledger digests
 

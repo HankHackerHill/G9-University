@@ -60,7 +60,7 @@ Five independent reviewers, one per lens (IPC boundary and resource use; authori
 
 ## Verification of the fixes
 
-See the stage report, section "Update 2026-11-17", for the commands and counts of the final run.
+On `a2e1378` (the fixes) in this sandbox: the CI preflight on a clean export passed 20 steps with 0 failures and 5 SKIPPED (no cargo-deny, cargo-cyclonedx or WebKit; `--offline`), with the Rust suite at 1152 passed, 0 failed, 1 ignored; fmt, clippy and the shell clippy clean; vitest 487 passed; smoke 100 checks pass; `personal.cjs` 29/29; the 16-screen tour without a console, page or CSP problem; the flake check with 0 failures and 0 differing outcomes. Commands and labels: `docs/release/stage-report.md`, "Update 2026-11-17". NOT RUN: the shell on a display, `cargo deny`.
 
 ## Owner action
 
