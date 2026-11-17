@@ -180,6 +180,12 @@ class Mutations(GateTestCase):
             "See https:// for the terms.",
             "Read ftp://example.org/terms on the day.",
             "Read example.org/terms on the day.",
+            # A host whose labels are only hyphens, or that starts or ends with one, names no host.
+            "Read https://-.-/x on the day.",
+            "Read https://-example.org/terms on the day.",
+            "Read https://example-.org/terms on the day.",
+            # A port outside 0-65535 makes the URL unusable (urlparse(...).port raises ValueError).
+            "Read https://example.org:99999/terms on the day.",
         ):
             with self.subTest(evidence=evidence):
                 self.edit_entry(0, verification="VERIFIED", checked_on="2026-11-08", evidence=evidence)
@@ -191,6 +197,7 @@ class Mutations(GateTestCase):
             ("2026-11-08", "Read https://example.org/terms on the day: 'CC BY 4.0'."),
             ("2028-02-29", "Licence page (http://example.org/licence.html) read in full."),
             ("2026-01-31", "HTTPS://EXAMPLE.ORG/TERMS."),
+            ("2026-03-01", "Read https://docs.example-host.org:8443/terms on the day."),
         ):
             with self.subTest(checked_on=checked_on, evidence=evidence):
                 self.edit_entry(0, verification="VERIFIED", checked_on=checked_on, evidence=evidence)

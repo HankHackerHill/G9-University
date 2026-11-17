@@ -43,7 +43,9 @@ SCHEMA = ROOT / "schemas" / "sources" / "reference-source-register.schema.json"
 MARKDOWN = ROOT / "docs" / "research" / "reference-source-register.md"
 CLEAN_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 URL_IN_TEXT = re.compile(r"https?://\S+", re.IGNORECASE)
-HOST_NAME = re.compile(r"^[a-z0-9-]+(\.[a-z0-9-]+)+$")
+# Dotted host name; each label starts and ends with a letter or digit (no all-hyphen label).
+HOST_LABEL = r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
+HOST_NAME = re.compile(rf"^{HOST_LABEL}(\.{HOST_LABEL})+$")
 ENTITY = re.compile(r"&(amp|lt|gt|quot|#\d+);")
 TEXT_FIELDS = ("name", "publisher", "provides", "access", "license_or_terms", "update_cadence", "caveats", "evidence")
 
@@ -63,7 +65,9 @@ def names_http_url(text: str) -> bool:
     """True if `text` contains an absolute http(s) URL with a dotted host name, not just the word http."""
     for candidate in URL_IN_TEXT.findall(text):
         try:
-            host = urlparse(candidate.rstrip(".,;:!?)]}>'\"")).hostname or ""
+            parsed = urlparse(candidate.rstrip(".,;:!?)]}>'\""))
+            host = parsed.hostname or ""
+            parsed.port  # raises ValueError for a port outside 0-65535 or one that is not a number
         except ValueError:
             continue
         if HOST_NAME.match(host):

@@ -230,6 +230,8 @@ CASES: list[tuple[str, str, Callable[[Pkg], None], list[str], int]] = [
     ("description_too_long", BASE, lambda p: p.sub("or any EXAM session.", "or any EXAM session." + " pad" * 300), ["frontmatter: description must be 1-1024 characters (got"], 1),
     ("description_without_use_cue", BASE, lambda p: p.fm("description", "Prepares the daily session brief from recorded evidence. Not for grading or EXAM sessions."), ["frontmatter: description must state when to use the skill (`use` outside a negative cue such as `do not use`)"], 1),
     # The positive cue must not be the `use` inside a negative one (before the fix `\buse\b` matched it).
+    # "Not for use in" is a negative cue as well; its `use` is not the positive one.
+    ("description_only_not_for_use", BASE, lambda p: p.fm("description", "Prepares the daily session brief from recorded evidence. Not for use in grading or EXAM sessions."), ["frontmatter: description must state when to use the skill"], 1),
     ("description_only_do_not_use", BASE, lambda p: p.fm("description", "Prepares the daily session brief from recorded evidence. Do not use for grading or EXAM sessions."), ["frontmatter: description must state when to use the skill"], 1),
     ("description_only_never_use", BASE, lambda p: p.fm("description", "Prepares the daily session brief from recorded evidence. Never use it for grading or EXAM sessions."), ["frontmatter: description must state when to use the skill"], 1),
     ("description_only_dont_use", BASE, lambda p: p.fm("description", "Prepares the daily session brief from recorded evidence. Don't use for grading or EXAM sessions."), ["frontmatter: description must state when to use the skill"], 1),

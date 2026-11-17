@@ -157,7 +157,9 @@ USE_CUE_RE = re.compile(r"\buse\b", re.IGNORECASE)
 # phrases are removed before USE_CUE_RE looks for the positive cue, so "Do not use for X" alone does
 # not count as stating when to use the skill.
 NEGATED_USE_RE = re.compile(
-    r"\b(?:not|never|don['\u2019]?t|doesn['\u2019]?t|can['\u2019]?t|cannot)(?:\s+to)?\s+use\b",
+    r"\b(?:not|never|don['\u2019]?t|doesn['\u2019]?t|can['\u2019]?t|cannot)(?:\s+to)?\s+use\b"
+    # "Not for use in X", "never for the use of X": `for` (and `the`) between the negation and `use`.
+    r"|\b(?:not|never)\s+for\s+(?:the\s+)?use\b",
     re.IGNORECASE,
 )
 NEG_CUE_RE = re.compile(
