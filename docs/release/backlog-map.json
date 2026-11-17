@@ -1,0 +1,1265 @@
+{
+  "parsing_rules_version": "1.1.0",
+  "unmapped_baseline": 109,
+  "about": "DOC-1 backlog map: every open row of docs/audit/defect-register.md, docs/requirements/rtm.md and docs/audit/improvement-backlog.md, mapped to plan steps of docs/release/path-to-10.md or an ADR, or unmapped with what is missing. Checked by scripts/check_backlog.py; unmapped_baseline is a ratchet.",
+  "entries": {
+    "C20": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "mapped",
+      "steps": [
+        "PERF-1",
+        "PERF-5"
+      ],
+      "adr": null,
+      "note": "Fixture sizes and method now exist in docs/ui/performance-budgets.md; open part is building and running them. PERF-1: \"A fixture at the sizes the budget document requires\"; PERF-5: \"Execute the measurement method\""
+    },
+    "C22": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PROPOSED",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "No plan step covers diagnostic calibration or opt-in accelerated pathways for an expert learner (see LRN-24 for the missing diagnostic design)"
+    },
+    "CON-01": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "scripts/check_source_register.py checks a 48-entry register with SRC-AI/SRC-CYBER ids; missing: the SRC-01..SRC-20 numbering or a decision accepting the new ids, and docs/requirements/source-register.md; CONT-2 covers curriculum references only"
+    },
+    "CON-02": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "The numbering defect is in the external handoff DOCX; no repository document carries KP-01..KP-08 or D00-nn ids; no plan step"
+    },
+    "CON-04": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a test that each DDL state CHECK equals its Rust enum, and the v5.1-to-v6.0 state rename map in a repository document; no plan step"
+    },
+    "CON-05": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: the heartbeat-gap rule and the SIGSTOP fixture of TEC-07; CAL-4 tests one suspend on the host"
+    },
+    "CON-06": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: AVAILABLE and VOIDED removed from the attempts CHECK or justified, a glossary line finalized = APPROVED_FINAL, a DDL-equals-enum test; no plan step"
+    },
+    "CON-07": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: the recommendation-to-intervention rename map in a repository document; no plan step"
+    },
+    "CON-08": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Needs the original v5.1 file with the defective bytes, which only the owner can supply; no plan step"
+    },
+    "CON-09": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a glossary of skill package, skill invocation, competency state and REVIEW/REVIEWED/EVIDENCE_REVIEW; no plan step"
+    },
+    "CON-11": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "BUILD-5 covers R-018 and AI-6 part of R-011, but no step adds the exam/teaching leakage and offline-egress gates (A13, A14) to the RTM gate series"
+    },
+    "CON-12": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: the duplicate objective text disambiguated in the seed (0.1.1-seed) and operator acknowledgement of duplicates in the reconciliation diff; no plan step"
+    },
+    "CON-13": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "CUR-1 moves the manifest to schema 1.1.0 but does not name the evidence_artifact-to-deliverable rename or the X + Y title normalisation"
+    },
+    "CON-14": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "ARCH-2 fails a field renamed on one side; missing: a document stating that approval_id references an approval_decisions row bound to its request and operation hash"
+    },
+    "CON-16": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: an AGENTS.md rule or separate roots keeping the engineering agent off T/L/P/K packages, and a test that the runtime loader reads only T/L/P/K; no plan step"
+    },
+    "CON-17": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: KP-01..KP-08 ids in the registry table, a complete week-to-pack table (W5, W11, W12), a naming ADR for data/competency-packs; no plan step"
+    },
+    "CON-18": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: an EXECUTIVE VERIFIED label and a slice-to-label table in GOVERNANCE.md (owner edit); the executive slice waits on D7 (APP-1)"
+    },
+    "CON-19": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "mapped",
+      "steps": [
+        "AI-1"
+      ],
+      "adr": null,
+      "note": "Open: no consolidated host-profile table. AI-1: \"Host inventory (register row TEC-39): section 4.1 step 1 into `docs/evaluations/host-inventory.md`\""
+    },
+    "CON-21": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a source-register entry for the Tauri 2 prerequisites page with version and date checked; CONT-2 covers curriculum references only"
+    },
+    "CON-22": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "The literal-asterisk defect is in the external DOCX handoff; no repository pipeline produces DOCX-derived Markdown to lint; no plan step"
+    },
+    "CON-23": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "The wording is in the external v6.0 handoff; no repository document tracks it; no plan step"
+    },
+    "CON-25": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: the *_ms and *_at_ms naming rule as a lint over migrations and as a normative rule in ARCHITECTURE.md (owner edit); no plan step"
+    },
+    "CON-28": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "AI-5 and SUP-6 record the licence class; missing: an operator-approval gate for non-OSI licences and a stored redistribution/derivative-terms field"
+    },
+    "CON-34": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "A11Y-2 drives five keyboard flows and SHELL-6 ports the e2e to the real window; missing: docs/evaluations/e2e-flows.md and e2e coverage of the assessment lifecycle, backup/restore and model-down flows"
+    },
+    "CON-35": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a default-build test that competencies never use FSRS state (the FSRS test is feature-gated); LEARN-9 may never run the FSRS evaluation"
+    },
+    "CON-36": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: the v5.1 table rename map in a repository document, a test of the session state CHECK list, the single objective_id binding of sessions; no plan step"
+    },
+    "CON-37": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: the multi-party-as-extension-seam wording in ADR-0003; the binding limits are tracked under SEC-02 and SEC-03"
+    },
+    "CON-39": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: ADV-01..ADV-12 ids on the threat-model matrix rows and adv_NN fixtures, or a note that the repository ST ids are a new set; SECUR-2 names no ids"
+    },
+    "CON-40": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Concerns C06, C18 and C20 wording in the external handoff; a v5.1 location column in register section A would track it; no plan step"
+    },
+    "CON-42": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "SUP-1 runs cargo deny; missing: the LICENSES.md sentence that no AGPL dependency ships without explicit approval"
+    },
+    "CON-45": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "CONT-2 records terms of use, access and date checked for curriculum references; missing: a redistribution flag in source_registry and a K01 review gate"
+    },
+    "CON-46": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "A11Y-1 and A11Y-3 run axe and a WCAG 2.2 AA audit; missing: WCAG 2.2 AA in GOVERNANCE.md Stage 14 (owner edit) and in the A12 gate text"
+    },
+    "LRN-01": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: docs/evaluations/n-of-1-protocol.md with the AB/BA day-pair or objective-level design, allocation code, a predeclared Saturday item-to-objective map; no plan step"
+    },
+    "LRN-02": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a minimal-important-difference field in the preregistration record, an EVIDENCE_OF_HARM outcome, the L05 outcome enum and interval code; LEARN-6 pre-registers bands in a file only"
+    },
+    "LRN-04": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a versioned retention_scheduler_config row for FSRS weights and a pure retrievability function; FSRS stays optional and LEARN-9 decides whether it is evaluated at all"
+    },
+    "LRN-05": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "LEARN-3 adds the calibration report and the system forecast; missing: the fixed probability scale, the pre-task P(pass) with an 80% time interval, forecast_type/actor/arm fields, the 50/30/100 display gates"
+    },
+    "LRN-06": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: reliability_class, criterion_id, assessment_version_id and valid_until on observations, a DIAGNOSTIC mode, assistance tiers 0-3; no plan step"
+    },
+    "LRN-09": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: docs/evaluations/competency-state-rules.md and the Section D derivation rules (VALIDATED at least 14 days after first INDEPENDENT, different-day and fixture-family INDEPENDENT, DIAGNOSTIC, NOT_REQUIRED_BY_PATHWAY); ADR-0015 accepts only the unreachable VALIDATED"
+    },
+    "LRN-11": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: enforcement of the 60% machine-checkable rubric share (baseline rubric 45%); ADR-0015 accepts the SELF_ADJUDICATED cap; LEARN-7 is a one-off double grading, not an adjudication path"
+    },
+    "LRN-12": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a versioned assistance-tier table frozen at attempt start, the level-2 cap for procedural hints, attempts.hint_requested; AI-6 only refuses hints in EXAM mode"
+    },
+    "LRN-13": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "LEARN-4 wires exposure into the operations (\"check that the operations and the Assessments screen use it\"), which covers AI_CONTEXT exposure on the app path; missing: the bank-sizing rule and check (unexposed fixture families per competency at least planned blind attempts + 2 retakes + 1 diagnostic + delayed samples), which no plan step names"
+    },
+    "LRN-14": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: the Section D choice (sealed window over practical plus report, or report excluded from the blind score) recorded in assessment_versions; CONT-5 defines the practicals but not this rule"
+    },
+    "LRN-15": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a predeclared seeded blind sampling plan with delayed items per assessment version and the post-program RETEST_DUE rule; CONT-5 names none"
+    },
+    "LRN-16": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "AI-6 tightens steps and budget of the intervention schema only; missing: structured predicted_outcome (retest version, unexposed variant, retest and delayed-transfer windows), failure_class, hypothesis_ids, enforced retest scheduling"
+    },
+    "LRN-17": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "LEARN-1 computes the documented KPIs and AI-11 accepts or rejects hypotheses; missing: the SUPPORTED/CONTRADICTED/RESOLVED status set, the origin field and the two-observation and passing-retest rules"
+    },
+    "LRN-18": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "LEARN-5 tests the existing ladder; missing: docs/evaluations/retention-baseline.md, load-checked admission, at most 3 items per objective, weekend roll-forward, never-introduced reporting"
+    },
+    "LRN-19": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PROPOSED",
+      "state": "mapped",
+      "steps": [
+        "LEARN-2",
+        "LEARN-8"
+      ],
+      "adr": null,
+      "note": "Open: no probe column, no seeded sampler. LEARN-2: \"the probe sampling itself (seeded 10% sample, `review_attempts.probe`)\"; LEARN-8: \"probe recall at 7 and 21 days\""
+    },
+    "LRN-20": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PROPOSED",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "LEARN-9 runs fsrs-evaluation-protocol.md (6 weeks, then a 6-week crossover), the design the verified correction replaces with item-level seeded randomisation; no step builds item-to-arm assignment"
+    },
+    "LRN-21": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "LEARN-6 pre-registers outcomes and acceptance bands in a file only; missing: docs/evaluations/n-of-1-protocol.md, a preregistration schema, allocation and analysis code, the L05 outcome enum"
+    },
+    "LRN-24": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: the diagnostic design (per-cluster sealed transfer item plus 5-item probe, provisional INDEPENDENT, NOT_REQUIRED_BY_PATHWAY, module-start scheduling, bank sizing); no plan step"
+    },
+    "LRN-25": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: declared transfer dimensions per competency pack and a check that a TRANSFER task differs from every exposed task; no plan step"
+    },
+    "LRN-27": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "LEARN-4 wires blind eligibility into assessment.begin; missing: EXPIRED, DISPUTED and INVALIDATED states, timer-driven expiry, time_limit_exceeded, dispute and invalidation decision types"
+    },
+    "LRN-28": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "AI-9 adopts the 95% and 2% thresholds and AI-3 plans 200 prompts across 10 skills; missing: the minimum suite sizes and Wilson lower bounds the correction requires"
+    },
+    "LRN-29": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: the n-gram leakage criterion with a versioned threshold, parametrised in-house fixtures with seeded variation, review before sealing; CONT-5 seals briefs but names none of these"
+    },
+    "LRN-30": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a weekly remediation capacity ledger and interventions.scheduling_status (RESERVED, DEFERRED, UNSCHEDULABLE); no plan step"
+    },
+    "LRN-32": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a glossary of confidence calibration, diagnostic baseline, rubric/grader calibration and the section 13 level-adaptation cases (the last needs the owner's meaning)"
+    },
+    "LRN-33": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "LEARN-1 builds the KPI report; missing: time_per_validated_competency marked descriptive-only, and reliability_class plus observation counts in place of model uncertainty in the UI"
+    },
+    "LRN-34": {
+      "source": "docs/audit/defect-register.md",
+      "status": "OPEN",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a SAFETY message class delivered identically in every arm and mode and logged at tier 0; AI-6 only refuses hints in EXAM mode"
+    },
+    "SEC-01": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: window label and OS uid on the operator actor, an Importer actor, a per-window app ACL manifest; SHELL-5 and SHELL-7 narrow capabilities and commands only"
+    },
+    "SEC-02": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "ADR-0015 settles the 10-minute TTL only; missing: RuntimeEpoch wired into g9-app, a decision on approvals surviving a restart (a shell test asserts they do), RFC 8785 JCS hashing"
+    },
+    "SEC-03": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL (2026-11-13)",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Native dialog for grants exists (POL-3 verifies it on the host); missing: an approval-request rate limit, the Tauri isolation pattern and an app ACL manifest; no plan step"
+    },
+    "SEC-04": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "SHELL-7 fails on a plugin crate and SHELL-5 empties the capability list; missing: an app ACL manifest, a capability-file check, openat2 or cap-std path resolution, a decrypting attachment protocol"
+    },
+    "SEC-05": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "SHELL-4 checks that a link does not navigate and SECUR-3 fuzzes the sanitizer; missing: inert link rendering, CSP form-action and frame-ancestors, an egress negative test against webview beacons"
+    },
+    "SEC-06": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PROPOSED",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "AI-2 decides the transport, AI-4 builds the adapter, PRIV-9 checks sockets on the host; missing: the per-launch API key and the slot-save ban the correction requires"
+    },
+    "SEC-07": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PROPOSED",
+      "state": "mapped",
+      "steps": [
+        "PRIV-1"
+      ],
+      "adr": "ADR-0015",
+      "note": "The at-rest decision exists although the row still reads PROPOSED. ADR-0015: \"No application-level encryption; the G9 host must use full-disk encryption\"; PRIV-1: \"sits on a `crypt` device\""
+    },
+    "SEC-08": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "STOR-3 anchors a keyed audit head outside the database (D6); missing: content_sha256 of the domain record, tombstones as audit entries, the test-only violation hook"
+    },
+    "SEC-09": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "PRIV-3 scans raw bytes, PRIV-4 expires old snapshots, PRIV-6 settles study-session erasure; missing: the SSD and filesystem residue limit stated in docs/privacy"
+    },
+    "SEC-10": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a separate assessment_answer_keys table, envelope-key encryption, key release gated by attempt state, an output filter; no plan step"
+    },
+    "SEC-11": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: rejection of scripts/, executable bits and files over 256 KB in package.rs, the scripts/ rule in the contract, pinned loading in the CLI, declared-scope comparison; SECUR-3 only fuzzes the parser"
+    },
+    "SEC-12": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "AI-5 and SUP-6 record publisher, source, licence class, checksum and runtime version; missing: a gguf/safetensors format allow-list, a licence-text hash, re-verification on file change with an audit row"
+    },
+    "SEC-14": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "CONT-4 keeps lab targets outside the application; missing: the post-MVP lab-adapter ADR (broker user, socket, rootless runtime) or a recorded decision that no adapter will be built"
+    },
+    "SEC-15": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "OBS-1 probes the logs for seeded markers; missing: a prompt_manifest per invocation, opt-in encrypted debug capture, a Redacted<T> type, a check on #[instrument(skip_all)]"
+    },
+    "SEC-16": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: derived_from[] provenance, min-trust propagation, an OPERATOR_AUTHORED class, MODEL_INFERRED caps in the context assembler; no plan step"
+    },
+    "SEC-17": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "SECUR-4 packs the audit probes; missing: gate ids A13..A21 with a13_..a21_ tests in the RTM and the evidence collector"
+    },
+    "SEC-18": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "SUP-1 runs cargo deny, BUILD-2 signs SHA256SUMS, SHELL-7 bans plugin crates; missing: a separate cargo audit step and cargo fetch --locked"
+    },
+    "SEC-20": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Branch protection and required review are GitHub settings; the AGENTS.md statement and a hash manifest for AGENTS.md need the owner; PROC-3 covers five code units only"
+    },
+    "SEC-21": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PROPOSED",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "APP-1 (D7) decides whether research.* is built after week 6 or removed by ADR; if built, no step builds the fetch adapter"
+    },
+    "SEC-22": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a framed AI-proposal region that cannot host protected-action controls and a filter flagging badge vocabulary in model text; no plan step"
+    },
+    "SEC-25": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Capabilities come from a built-in rule set in code and Allow carries rule_id, not decision_id; no step changes this and no ADR accepts the deviation"
+    },
+    "SEC-28": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "CONT-4 keeps lab tools on isolated machines; missing: a lab-VM tool register under docs/curriculum, the Nmap and Wireshark licence corrections in LICENSES.md, the no-third-party-VPN rule"
+    },
+    "SEC-29": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "ADR-0015 declines application-level backup encryption (PRIV-2 may revisit); missing: a live-restore operation, which section 7 of the plan advises against (REL-1 instead) without a will-not-do ADR"
+    },
+    "SEC-31": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "CAL-4 tests suspend detection on the host; missing: a document defining automatic work monitoring and its prohibitions, and opt-in content-free idle detection"
+    },
+    "TEC-07": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "CAL-4 suspends the host once; missing: the session_heartbeats ledger, boot_id, the 2x-interval gap rule and a SIGSTOP fixture"
+    },
+    "TEC-09": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: verification comparing PRAGMA user_version with the manifest schema_version, and the one-grade-per-APPROVED_FINAL invariant check; STOR-2 adds attachment hashes only"
+    },
+    "TEC-10": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a backup-and-restore test from a DELETE-mode and a WAL-mode fixture, and the WAL/DELETE independence sentence in docs/runbooks/backup-restore.md; no plan step"
+    },
+    "TEC-11": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "The copy and its directory are synced (crates/g9-storage/src/backup.rs: sync_file before the rename, sync_dir after it); missing: SYNCED and FAILED{stage} manifest states and a single-writer mutex enforced in storage; no plan step"
+    },
+    "TEC-12": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "ADR-0015 sets synchronous=FULL; missing: PRAGMA journal_size_limit (REL-3 only observes that the WAL stays bounded)"
+    },
+    "TEC-14": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "REL-5 opens a database of every schema version; missing: PRAGMA user_version, min_app_version and backup_id in schema_migrations, a SCHEMA_TOO_NEW code, restore from backup_id after a failed migration"
+    },
+    "TEC-15": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: competency_version_id and assessment-version columns on observations and the corrected score shape; ADR-0015 accepts only the unreachable VALIDATED; no plan step"
+    },
+    "TEC-17": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: DISPUTED, ABANDONED and INVALIDATED attempt states, or an ADR recording the VOIDED and supersede-only deviation; no plan step"
+    },
+    "TEC-18": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: INCONCLUSIVE and WITHDRAWN intervention states, or an ADR recording the Retire-based deviation; no plan step"
+    },
+    "TEC-19": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a migration state machine, RECONCILING/DIFF_REVIEWED/SUPERSEDED/REJECTED curriculum states, the VALIDATION_FAILED skill state; no plan step"
+    },
+    "TEC-20": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "CAL-1 adds monthly recurrence; missing: a recurrence exception/override table, persisted skipped days, gap_policy and overlap_policy columns"
+    },
+    "TEC-21": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: day_index in place of day_of_week and a training_day_schedule so holidays and skips shift days; CAL-1 reschedule concerns blocks, not the day mapping"
+    },
+    "TEC-22": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "CUR-1 persists the competency links under manifest 1.1.0; missing: a deliverable {deliverable_id, title, acceptance_criteria} object and the warn-in-seed, fail-in-canonical rule for zero ids"
+    },
+    "TEC-23": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: the *_at_ms and *_duration_ms column naming, a schema test enforcing suffixes, mono_ns with boot_id; no plan step"
+    },
+    "TEC-24": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "STOR-3 keys and anchors the audit head and PRIV-8 signs the export manifest; missing: a keyed details hash, anchored checkpoint pruning, correlation_id and command_id columns"
+    },
+    "TEC-26": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: a task-level estimate table with P50/P90, dependencies and staffing; section 4 of the plan gives phase sizes only (ASSUMED)"
+    },
+    "TEC-27": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "TEST-6 runs the preflight on the host and SHELL-6 drives the real window; missing: a network-disabled no-egress job with a self-check and a pinned ubuntu:26.04 container (CI is manual by ADR-0015)"
+    },
+    "TEC-34": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PROPOSED",
+      "state": "mapped",
+      "steps": [
+        "PRIV-1"
+      ],
+      "adr": "ADR-0015",
+      "note": "The choice between SQLCipher and field encryption is made although the row still reads PROPOSED. ADR-0015: \"No application-level encryption; the G9 host must use full-disk encryption\"; PRIV-1: \"sits on a `crypt` device\""
+    },
+    "TEC-35": {
+      "source": "docs/audit/defect-register.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "SHELL-2 runs the shell tests on the host; missing: a per-package manifest.json, pinned loading in the CLI, skill_versions checksum verification at load, a decision on the .agents/skills location"
+    },
+    "R-001": {
+      "source": "docs/requirements/rtm.md",
+      "status": "IMPLEMENTED (runtime), BLOCKED (egress test on host NOT RUN)",
+      "state": "mapped",
+      "steps": [
+        "PRIV-9"
+      ],
+      "adr": null,
+      "note": "Open: the egress test on the host. PRIV-9: \"no socket other than the transport decided in D2 (`ss -tunap`, filtered on the process)\""
+    },
+    "R-002": {
+      "source": "docs/requirements/rtm.md",
+      "status": "IMPLEMENTED (adapter/UI), PARTIAL (E2E model-down regression NOT RUN)",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "No step keeps an end-to-end regression with the model runtime unavailable once AI-4 adds a runtime"
+    },
+    "R-004": {
+      "source": "docs/requirements/rtm.md",
+      "status": "IMPLEMENTED; canonical promotion BLOCKED pending original manifest",
+      "state": "mapped",
+      "steps": [
+        "CUR-4"
+      ],
+      "adr": null,
+      "note": "Open: canonical promotion. CUR-4: \"Promote on your data directory: `docs/curriculum/promotion.md` steps 0 to 6\""
+    },
+    "R-005": {
+      "source": "docs/requirements/rtm.md",
+      "status": "IMPLEMENTED (policy/storage), PARTIAL (`g9-app` wiring per command)",
+      "state": "mapped",
+      "steps": [
+        "POL-2"
+      ],
+      "adr": null,
+      "note": "POL-2: \"Registry completeness test over `crates/g9-app/src/ops.rs`\" and \"Closes RTM R-005\""
+    },
+    "R-006": {
+      "source": "docs/requirements/rtm.md",
+      "status": "IMPLEMENTED (migrations, backup, verification, restore-test, offline restore); PROPOSED (in-app restore operation with a `DataDelete`-class approval, restore into a running application, replay of the deletion ledger after the backup's checkpoint)",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "PRIV-5 covers replaying erasures recorded after the snapshot; missing: the in-app restore and restore into a running application, which section 7 advises against without a will-not-do ADR"
+    },
+    "R-007": {
+      "source": "docs/requirements/rtm.md",
+      "status": "IMPLEMENTED (rules), PROPOSED (model-in-the-loop leakage suite, Stage 07)",
+      "state": "mapped",
+      "steps": [
+        "AI-10",
+        "AI-12"
+      ],
+      "adr": null,
+      "note": "Open: the model-in-the-loop leakage suite. AI-10: \"The adversarial catalogue ST01 to ST12 with the model in the loop\"; AI-12: \"read SECRET content in EXAM mode\""
+    },
+    "R-010": {
+      "source": "docs/requirements/rtm.md",
+      "status": "IMPLEMENTED (derivation, exclusion, projection); PARTIAL (every decision reachable through IPC is `SELF_ADJUDICATED`, so no IPC path reaches `VALIDATED`; external reviewer and an adjudication command are PROPOSED)",
+      "state": "mapped",
+      "steps": [],
+      "adr": "ADR-0015",
+      "note": "The open part (no IPC path to VALIDATED, no adjudication command) is accepted by ADR-0015: \"Accepted that `VALIDATED` is unreachable while every grade is `SELF_ADJUDICATED`\""
+    },
+    "R-011": {
+      "source": "docs/requirements/rtm.md",
+      "status": "PARTIAL (lifecycle + contract; measurement Stage 08)",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "AI-6 tightens the L04 intervention schema; missing: the intervention measurement (gate B03), which no step runs"
+    },
+    "R-013": {
+      "source": "docs/requirements/rtm.md",
+      "status": "IMPLEMENTED (contracts), PROPOSED (benchmark-gated selection, Stage 06)",
+      "state": "mapped",
+      "steps": [
+        "AI-5",
+        "AI-8"
+      ],
+      "adr": null,
+      "note": "Open: benchmark-gated selection. AI-5: \"3 to 5 quantized candidates in the 7B to 14B range of the protocol\"; AI-8: \"Run the 13 measurements of the benchmark protocol for every candidate and apply its decision rule\""
+    },
+    "R-014": {
+      "source": "docs/requirements/rtm.md",
+      "status": "PARTIAL (UI; schema enforcement PROPOSED; analytics queries Stage 05)",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "LEARN-1 builds the analytics queries; missing: typed P02 kpis and trends items with required evidence_refs (schema enforcement)"
+    },
+    "R-015": {
+      "source": "docs/requirements/rtm.md",
+      "status": "PARTIAL",
+      "state": "mapped",
+      "steps": [
+        "A11Y-1"
+      ],
+      "adr": null,
+      "note": "A11Y-1: \"A runtime scanner in the e2e (gate A12 and RTM R-015, both NOT RUN)\""
+    },
+    "R-016": {
+      "source": "docs/requirements/rtm.md",
+      "status": "IMPLEMENTED (records), PROPOSED (ingestion adapter, Stage 12)",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "The ingestion adapter waits on D7 (APP-1: research.* after week 6 or removed by ADR); no step builds it"
+    },
+    "R-017": {
+      "source": "docs/requirements/rtm.md",
+      "status": "IMPLEMENTED (policy), PARTIAL (repository scope checks in `g9-app`)",
+      "state": "mapped",
+      "steps": [
+        "APP-4"
+      ],
+      "adr": null,
+      "note": "APP-4: \"a cross-domain test for every list and get operation\""
+    },
+    "R-018": {
+      "source": "docs/requirements/rtm.md",
+      "status": "PROPOSED",
+      "state": "mapped",
+      "steps": [
+        "BUILD-5"
+      ],
+      "adr": null,
+      "note": "BUILD-5: \"inspect `dpkg -c` for setuid files, services and policy files (RTM R-018)\""
+    },
+    "A02": {
+      "source": "docs/requirements/rtm.md",
+      "status": "NOT RUN by harness; `g9-calendar` crate tests (counts in `docs/release/wave2-integration-report.md` §2)",
+      "state": "mapped",
+      "steps": [
+        "CAL-2",
+        "TEST-5"
+      ],
+      "adr": null,
+      "note": "docs/release/gate-evidence.md already lists A02 PASS; the RTM row is not updated. CAL-2: \"Wire gate A02 into the harness\"; TEST-5: \"Gates: A02 into the harness (CAL-2)\""
+    },
+    "A08": {
+      "source": "docs/requirements/rtm.md",
+      "status": "harness PASS (ST10, A08-01); offline restore TESTED 2026-11-08 (this repository, not on the G9 host); in-app restore PROPOSED",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Open part is the in-app restore (PROPOSED); section 7 of the plan advises against it (REL-1 instead) without a will-not-do ADR"
+    },
+    "A10": {
+      "source": "docs/requirements/rtm.md",
+      "status": "PARTIAL",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "The row names export tests (Stage 03) as open; crates/g9-app/tests/feature_export.rs exists and gate-evidence.md lists A10 PASS; no step updates the RTM row"
+    },
+    "A12": {
+      "source": "docs/requirements/rtm.md",
+      "status": "PARTIAL (CI defined; not executed on a runner from this sandbox)",
+      "state": "mapped",
+      "steps": [
+        "SUP-1",
+        "SUP-2",
+        "A11Y-1",
+        "TEST-6"
+      ],
+      "adr": null,
+      "note": "Open: CI items never executed on a runner. TEST-6: \"`scripts/ci_preflight.sh` with all five jobs\"; SUP-1: \"`cargo deny --all-features --locked check` with a current advisory database\"; SUP-2: \"`npm audit` at every level (the preflight gates at high)\"; A11Y-1: \"A runtime scanner in the e2e (gate A12 and RTM R-015, both NOT RUN)\""
+    },
+    "B01": {
+      "source": "docs/requirements/rtm.md",
+      "status": "PARTIAL",
+      "state": "mapped",
+      "steps": [
+        "CONT-6",
+        "LEARN-7"
+      ],
+      "adr": null,
+      "note": "CONT-6: \"gate B01 (i) has 0 orphans\"; LEARN-7: \"Gate B01: the reviewer of D1 scores at least 5 of your 12 Saturday submissions without seeing your score\""
+    },
+    "B02": {
+      "source": "docs/requirements/rtm.md",
+      "status": "IMPLEMENTED (separation), measurement PROPOSED",
+      "state": "mapped",
+      "steps": [
+        "LEARN-2",
+        "LEARN-8"
+      ],
+      "adr": null,
+      "note": "Open: the measurement. LEARN-2: \"the probe sampling itself (seeded 10% sample, `review_attempts.probe`)\"; LEARN-8: \"Gates B02 and B06 from real data\""
+    },
+    "B03": {
+      "source": "docs/requirements/rtm.md",
+      "status": "PROPOSED",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Protocol only; no step measures intervention effect against the baseline (LEARN-8 covers B02 and B06)"
+    },
+    "B04": {
+      "source": "docs/requirements/rtm.md",
+      "status": "PROPOSED",
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "Missing: the L05 outcome enum of the three ADR-0007 outcomes and an effect-size report; no plan step"
+    },
+    "B05": {
+      "source": "docs/requirements/rtm.md",
+      "status": "IMPLEMENTED (ledger), UI flow Stage 05",
+      "state": "mapped",
+      "steps": [
+        "AI-11"
+      ],
+      "adr": null,
+      "note": "Open: the UI flow. AI-11: \"accept or reject a hypothesis; gate B05 (dependents are invalidated)\""
+    },
+    "B06": {
+      "source": "docs/requirements/rtm.md",
+      "status": "PROPOSED",
+      "state": "mapped",
+      "steps": [
+        "LEARN-8"
+      ],
+      "adr": null,
+      "note": "LEARN-8: \"planning overhead over 2 weeks (provisional target 0.15, yours to set)\""
+    },
+    "IMP-M01": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "ARCH-2",
+        "FE-2"
+      ],
+      "adr": null,
+      "note": "Drift check without generation; generating from Rust types is deferred to an ADR with no step. ARCH-2: \"IPC drift gate (IMP-M01, register row TEC-38)\"; FE-2: \"Contract parity between the mock and the backend\""
+    },
+    "IMP-M02": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "POL-3",
+        "SHELL-4"
+      ],
+      "adr": null,
+      "note": "Built without tauri-plugin-dialog (register SEC-03, section E); open: proof on the host. POL-3: \"the dialog names the record\""
+    },
+    "IMP-M03": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "LEARN-4"
+      ],
+      "adr": null,
+      "note": "LEARN-4: \"Confirm IMP-M03 and IMP-M04 end to end\""
+    },
+    "IMP-M04": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "LEARN-4"
+      ],
+      "adr": null,
+      "note": "LEARN-4: \"Confirm IMP-M03 and IMP-M04 end to end\""
+    },
+    "IMP-M05": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "ARCH-1"
+      ],
+      "adr": null,
+      "note": "ARCH-1: \"Write the layering test planned as IMP-M05\""
+    },
+    "IMP-M06": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "PRIV-2"
+      ],
+      "adr": "ADR-0015",
+      "note": "ADR-0015 declines it: \"No application-level encryption; the G9 host must use full-disk encryption\"; PRIV-2 revisits: \"SQLCipher (IMP-M06) only if the disk is shared\""
+    },
+    "IMP-M07": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "AI-4"
+      ],
+      "adr": null,
+      "note": "AI-4: \"schema-constrained decoding where the runtime has it (IMP-M07)\""
+    },
+    "IMP-M08": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "PRIV-2"
+      ],
+      "adr": "ADR-0015",
+      "note": "ADR-0015 declines encrypted backups while PRIV-2 recommends them: D5 must reconcile the two. ADR-0015: \"Encryption at rest (IMP-M06, IMP-M08)\" decided as \"No application-level encryption; the G9 host must use full-disk encryption\"; PRIV-2: \"encrypted backup sets (IMP-M08) for `g9 copy-backup`\""
+    },
+    "IMP-M09": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "BUILD-2",
+        "SUP-4"
+      ],
+      "adr": null,
+      "note": "BUILD-2: \"the two SBOMs of the preflight's sbom job\"; SUP-4: \"An SBOM per release (BUILD-2) and a diff against the previous release\""
+    },
+    "IMP-M10": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "AI-7",
+        "AI-9"
+      ],
+      "adr": null,
+      "note": "AI-7: \"Execute skill evaluations (IMP-M10; today `skills.eval.not_implemented`)\"; AI-9: \"Run AI-7 with the selected model\""
+    },
+    "LRN-31": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "LEARN-3"
+      ],
+      "adr": null,
+      "note": "LEARN-3: \"the system forecast before each blind practical (register row LRN-31)\""
+    },
+    "TEC-13": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "SUP-3"
+      ],
+      "adr": null,
+      "note": "bundled and backup features are present (root Cargo.toml, the rusqlite line of [workspace.dependencies]); open: the exact pin. SUP-3: \"Decide: exact pins in the root `Cargo.toml` (your edit), or the lock file as the pin\""
+    },
+    "TEC-36": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "SHELL-3",
+        "UX-3",
+        "AI-1"
+      ],
+      "adr": null,
+      "note": "SHELL-3: \"The window shows Mission Control\"; UX-3: \"record the WebKitGTK version\"; AI-1: \"section 4.1 step 1 into `docs/evaluations/host-inventory.md`\" (that step records the NVIDIA driver version with nvidia-smi)"
+    },
+    "CON-38": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "No plan step; Decision {Allow, Deny, ApprovalRequired} exists (crates/g9-domain/src/policy.rs, enum Decision) but Allow carries rule_id, not decision_id; the backlog has no status column to close it"
+    },
+    "CON-41": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "No plan step names a canonical skill field list or a skill-manifest schema used by E02 and the loader"
+    },
+    "CON-43": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "The seed still titles week 7 SOC, detection and threat hunting and week 8 DFIR, malware and hunting; no plan step renames them"
+    },
+    "SEC-19": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "SECUR-2",
+        "AI-10"
+      ],
+      "adr": null,
+      "note": "SECUR-2: \"the OWASP agentic column (register row SEC-19)\"; AI-10: \"instructions injected into notes, resources and skill descriptions (register row SEC-19)\""
+    },
+    "SEC-30": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "CUR-1"
+      ],
+      "adr": null,
+      "note": "CUR-1: \"manifest schema 1.1.0 (register row SEC-30 belongs here)\""
+    },
+    "TEC-37": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "unmapped",
+      "steps": [],
+      "adr": null,
+      "note": "every_table_is_strict exists (crates/g9-storage/tests/gates.rs::every_table_is_strict); missing: a test that every _ms column is INTEGER and the dependency-table naming; no plan step"
+    },
+    "TEC-38": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "ARCH-2",
+        "FE-2"
+      ],
+      "adr": null,
+      "note": "Drift check without generation; generation is deferred to an ADR. ARCH-2: \"IPC drift gate (IMP-M01, register row TEC-38)\"; FE-2: \"Contract parity between the mock and the backend\""
+    },
+    "TEC-39": {
+      "source": "docs/audit/improvement-backlog.md",
+      "status": null,
+      "state": "mapped",
+      "steps": [
+        "AI-1"
+      ],
+      "adr": null,
+      "note": "AI-1: \"Host inventory (register row TEC-39)\""
+    }
+  }
+}

@@ -170,6 +170,10 @@ if wanted content-gates; then
     step content-gates "curriculum build (generated files current)" . python3 -I scripts/build_curriculum.py
     step content-gates "competency packs" . python3 -I scripts/check_competency_packs.py data/competency-packs
     step content-gates "data inventory" . python3 -I scripts/check_data_inventory.py
+    step content-gates "error-code catalogue" . python3 -I scripts/gen_error_codes.py
+    step content-gates "document references" . python3 -I scripts/check_doc_refs.py
+    step content-gates "metrics" . python3 -I scripts/gen_metrics.py
+    step content-gates "backlog map" . python3 -I scripts/check_backlog.py
     step content-gates "gate tests" . env G9_REQUIRE_JSONSCHEMA=1 python3 -I -m unittest discover -s scripts/tests -p 'test_*.py'
   else
     skip content-gates "all steps" "python3 module jsonschema is not installed (CI pins jsonschema==4.26.0)"

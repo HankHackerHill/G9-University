@@ -10,7 +10,7 @@ Improvements beyond the source documents, ranked. Maintainer items (IMP-M*) come
 | IMP-M02 | HIGH | Native Rust-side confirmation dialog for protected operations (ADR-0014) using tauri-plugin-dialog with `dialog:allow-confirm` only | Stage 03 | `apps/desktop/src-tauri, crates/g9-app::pipeline` |
 | IMP-M03 | HIGH | Reliability class on grade decisions and per-criterion minimum in the pass rule (ADR-0012) | Wave 2 / Stage 04 | `crates/g9-assessment, crates/g9-competency::rules` |
 | IMP-M04 | HIGH | Exposure ledger + exam item variants + blind-eligibility rule (LRN-13) | Stage 04 | `crates/g9-assessment, g9-storage migrations 00xx_exam_items.sql` |
-| IMP-M05 | MEDIUM | Workspace layering test over `cargo metadata` (ADR-0010) | Wave 2 | `crates/g9-evaluation/tests/layering.rs` |
+| IMP-M05 | MEDIUM | Workspace layering test over `cargo metadata` (ADR-0010) | Wave 2 | `tests/integration/layering_gate.rs` |
 | IMP-M06 | MEDIUM | SQLCipher option behind `storage-encrypted` feature with OS keyring key (docs/privacy) | Stage 03 | `crates/g9-storage` |
 | IMP-M07 | MEDIUM | Grammar-constrained structured decoding (GBNF/JSON-schema) in the llama.cpp adapter to raise schema validity before validation | Stage 06 | `crates/g9-ai-adapter` |
 | IMP-M08 | MEDIUM | Encrypted backup sets (age/XChaCha20-Poly1305) with key id in the manifest | Stage 03 | `crates/g9-storage::backup` |

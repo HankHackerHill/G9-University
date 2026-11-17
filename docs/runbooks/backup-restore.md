@@ -56,7 +56,7 @@ Offline restore is IMPLEMENTED (`g9 restore` in `apps/cli`, on `g9_storage::rest
 5. One metadata-only line (timestamp, snapshot path, SHA-256, quarantined paths; never content or key material) is appended to `DIR/restore-log.jsonl`.
 6. The normal boot runs and its report is printed: recovery (open intervals become `UNCERTAIN`, the audit chain is verified) and, when the snapshot's schema is older than this build, migrations with their own verified pre-migration backup (the next section). Exit 0 on success, 2 with the serialized error, 1 on usage.
 
-When the live database cannot be read (so `--backup-id` cannot be resolved), use `g9 restore --snapshot DIR/backups/ID.sqlite --expect-sha256 HEX ...` with the checksum from the manifest as printed by an earlier `backup.*` call (`manifest_sha256`) or from your own record; a snapshot is verified in any case. `--snapshot` into a data directory that does not exist yet creates it (`0700`) and restores without quarantine.
+When the live database is missing (`restore.live_database_missing`) or cannot be read (so `--backup-id` cannot be resolved), use `g9 restore --snapshot DIR/backups/ID.sqlite --expect-sha256 HEX ...` with the checksum from the manifest as printed by an earlier `backup.*` call (`manifest_sha256`) or from your own record; a snapshot is verified in any case. `--snapshot` into a data directory that does not exist yet creates it (`0700`) and restores without quarantine.
 
 ### Refusal codes
 
@@ -104,7 +104,13 @@ This detects damage, a crashed writer and a naive edit. It does not detect a del
 
 ## Disk-full and power-fail
 
-SQLite transactions guarantee atomicity; WAL checkpoints are monitored (`PRAGMA wal_checkpoint(TRUNCATE)` on idle). On `SQLITE_FULL` the command returns `RETRYABLE_STORAGE`; backups refuse to start below a free-space threshold (proposed 2× database size).
+SQLite transactions guarantee atomicity; WAL checkpoints are monitored (`PRAGMA wal_checkpoint(TRUNCATE)` on idle). A full disk and too little room for a backup are refusals the operator can act on:
+
+| Code | Meaning | Do |
+|---|---|---|
+| `storage.disk_full` (`RETRYABLE_STORAGE`) | the disk that holds the data folder is full (`SQLITE_FULL`); the command was rolled back and nothing was written (TESTED: `crates/g9-app/tests/disk_full.rs`) | free space on that disk, then repeat the command |
+| `backup.insufficient_space` (`RETRYABLE_STORAGE`) | a backup refused to start: the disk of the backups folder has less free space than `BACKUP_FREE_SPACE_FACTOR` (2, a PROPOSED default) times the database size; the refusal gives the bytes needed and the bytes free, and nothing was written. The backup before a migration is refused the same way, and the migration then waits | free space on the disk of the backups folder, then create the backup again |
+| `backup.free_space_not_checked` (warning) | the free space of the backups folder could not be read on this platform; the backup started without the check | none; keep an eye on the free space yourself |
 
 ## Model-down and key-unavailable modes
 

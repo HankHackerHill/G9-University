@@ -1,0 +1,231 @@
+{
+  "$comment": "Input of scripts/gen_error_codes.py (OBS-5); the generated catalogue is docs/runbooks/error-codes.md. category_defaults: the action of every row without a code entry. codes.<code>.action: a quotation (string, or list of quotations) of the document named in 'source', which must also name the code; the check refuses anything that is not found verbatim there. codes.<code>.meaning: a sentence written after reading the call site named in 'basis', used where the message is built at run time. doc_reference_allow: dotted tokens of the checked documents that are not codes, each with the reason.",
+  "version": 1,
+  "category_defaults": {
+    "INVALID_INPUT": {
+      "action": "The backend refused a value, so nothing was saved. Correct it and send it again.",
+      "source": "docs/ui/ux-copy.md"
+    },
+    "UNAUTHORIZED": {
+      "action": "Policy does not allow this action here. Nothing was changed.",
+      "source": "docs/ui/ux-copy.md"
+    },
+    "APPROVAL_REQUIRED": {
+      "action": "This action changes a protected record, so it waits for you. Approve the request, then apply it. The approval covers exactly these values and nothing else.",
+      "source": "docs/ui/ux-copy.md"
+    },
+    "STALE_REVISION": {
+      "action": "It was changed after this window loaded it, so your change was not applied. Reload to see the current version, then make your change again.",
+      "source": "docs/ui/ux-copy.md"
+    },
+    "PRECONDITION_FAILED": {
+      "action": "The record is not in a state that allows this, or this part is not built yet. Nothing was changed.",
+      "source": "docs/ui/ux-copy.md"
+    },
+    "NOT_FOUND": {
+      "action": "That record does not exist or is not in the loaded data. Check the name or the code.",
+      "source": "docs/ui/ux-copy.md"
+    },
+    "CONFLICT": {
+      "action": "Another request used the same key, or the record was changed at the same moment. Look at the current record, then send your change again.",
+      "source": "docs/ui/ux-copy.md"
+    },
+    "RESOURCE_UNAVAILABLE": {
+      "action": [
+        "Something this needs is not available: storage, the model, or the link to the backend. Planning, notes and timers do not need a model.",
+        "Retryable categories show one button, \"Try again\"."
+      ],
+      "source": "docs/ui/ux-copy.md"
+    },
+    "TIMEOUT": {
+      "action": [
+        "The action was stopped at its time limit and nothing partial was kept.",
+        "Retryable categories show one button, \"Try again\"."
+      ],
+      "source": "docs/ui/ux-copy.md"
+    },
+    "CANCELLED": {
+      "action": "The action was cancelled before it finished. Nothing partial was kept.",
+      "source": "docs/ui/ux-copy.md"
+    },
+    "RETRYABLE_STORAGE": {
+      "action": [
+        "The local database was busy for a moment. Nothing was lost.",
+        "Retryable categories show one button, \"Try again\"."
+      ],
+      "source": "docs/ui/ux-copy.md"
+    },
+    "DATA_CORRUPTION": {
+      "action": "Stored data did not pass an integrity check. Stop here and verify a backup in Settings/Recovery before you continue.",
+      "source": "docs/ui/ux-copy.md"
+    },
+    "INTERNAL": {
+      "action": "The cause is written to the local log. Nothing sensitive is shown here.",
+      "source": "docs/ui/ux-copy.md"
+    }
+  },
+  "codes": {
+    "curriculum.invariant_violated": {
+      "action": "rebuild with `build_curriculum.py`",
+      "source": "docs/curriculum/promotion.md"
+    },
+    "reconcile.target_exists": {
+      "action": "choose a new name",
+      "source": "docs/curriculum/promotion.md"
+    },
+    "curriculum.version_exists": {
+      "action": "use a new `--candidate-version`",
+      "source": "docs/curriculum/promotion.md"
+    },
+    "curriculum.provenance_mismatch": {
+      "action": "use the payload `g9 reconcile` wrote",
+      "source": "docs/curriculum/promotion.md"
+    },
+    "curriculum.candidate_checksum_mismatch": {
+      "action": "use the `.promote.json` written with that `.json`",
+      "source": "docs/curriculum/promotion.md"
+    },
+    "curriculum.promotion_blocked": {
+      "action": "the candidate changed after the review: reconcile again and review the new diff",
+      "source": "docs/curriculum/promotion.md"
+    },
+    "curriculum.not_imported": {
+      "action": "Mission Control, steps 1 and 2",
+      "source": "docs/runbooks/first-run.md"
+    },
+    "curriculum.program_start_not_configured": {
+      "action": "Mission Control, steps 1 and 2",
+      "source": "docs/runbooks/first-run.md"
+    },
+    "curriculum.no_training_day": {
+      "action": "plan another date",
+      "source": "docs/runbooks/first-run.md"
+    },
+    "restore.database_in_use": {
+      "action": "Stop every process that has the data directory open (the desktop shell, any `g9` command).",
+      "source": "docs/runbooks/backup-restore.md",
+      "meaning": "Another connection holds or uses the live database; nothing was changed.",
+      "basis": "crates/g9-storage/src/error.rs"
+    },
+    "restore.backup_not_retained": {
+      "action": "Choose a `RETAINED` backup: `g9 status --data-dir DIR` names the newest (`last_backup.backup_id`); the id is also the `backup_id` returned by `backup.create`.",
+      "source": "docs/runbooks/backup-restore.md"
+    },
+    "restore.live_database_missing": {
+      "action": "use `g9 restore --snapshot DIR/backups/ID.sqlite --expect-sha256 HEX ...` with the checksum from the manifest as printed by an earlier `backup.*` call (`manifest_sha256`) or from your own record; a snapshot is verified in any case.",
+      "source": "docs/runbooks/backup-restore.md"
+    },
+    "recovery.integrity_failed": {
+      "action": "Do not edit the database. Take the newest backup that verifies (`g9 call backup.list`, `backup.verify`), restore it by the procedure above, and redo what was done after it.",
+      "source": "docs/runbooks/backup-restore.md"
+    },
+    "assessment.definition_invalid": {
+      "meaning": "`AssessmentDefinition::new` refused the definition built from the request (title, competency, kind); the message is the text of the rule that failed.",
+      "basis": "crates/g9-app/src/commands/authoring.rs"
+    },
+    "assessment.version_invalid": {
+      "meaning": "The first version of the new assessment could not be sealed with its checksum (`AssessmentVersion::with_checksum`); the message is the reason.",
+      "basis": "crates/g9-app/src/commands/authoring.rs"
+    },
+    "attachment.media_type_invalid": {
+      "meaning": "The declared media type of the attached file was refused by the evidence checks (`EvidenceError::MediaTypeInvalid`); the message is the reason.",
+      "basis": "crates/g9-app/src/commands/evidence.rs"
+    },
+    "competency.invalid": {
+      "meaning": "A competency built from the request or from a pack entry failed its validation (`validate()`); the message names the rule that failed.",
+      "basis": "crates/g9-app/src/commands/authoring.rs"
+    },
+    "curriculum.manifest.invalid": {
+      "meaning": "The manifest failed validation; the message counts the errors, invariant violations and warnings, and the details carry the validation report.",
+      "basis": "crates/g9-curriculum/src/error.rs"
+    },
+    "retention.plan_invalid": {
+      "meaning": "The review plan could not be computed from the due items, the budget and the time estimate (`plan_reviews`); the message is the reason.",
+      "basis": "crates/g9-app/src/commands/retention.rs"
+    },
+    "retention.schedule_invalid": {
+      "meaning": "The next review date of an item could not be computed from the recorded outcome (`BaselineSchedule::next_after`); the message is the reason.",
+      "basis": "crates/g9-app/src/commands/retention.rs"
+    },
+    "skills.envelope_invalid": {
+      "meaning": "The skill invocation envelope built from the request was refused when it was constructed; the message is the reason.",
+      "basis": "crates/g9-app/src/commands/skills.rs"
+    },
+    "policy.denied": {
+      "meaning": "A policy rule denied the action; the message is the rule's reason, and the details name the rule, the action and the resource kind.",
+      "basis": "crates/g9-policy/src/error.rs"
+    },
+    "policy.approval_required": {
+      "meaning": "A policy rule requires your approval for this action; the message is the rule's reason, and the details name the rule, the required capability, the action and the resource kind.",
+      "basis": "crates/g9-policy/src/error.rs"
+    },
+    "skills.policy_denied": {
+      "meaning": "Policy denied this skill invocation; the message is the reason of the policy decision.",
+      "basis": "crates/g9-skills/src/orchestrator.rs"
+    },
+    "skills.approval_required": {
+      "meaning": "Policy requires your approval for this skill invocation; the message is the reason of the policy decision.",
+      "basis": "crates/g9-skills/src/orchestrator.rs"
+    },
+    "ai.inference.budget": {
+      "meaning": "The inference request cannot be honoured (`InferenceRequest::check_budget`): no output tokens, no timeout, a temperature outside [0, 2], or a prompt and output that exceed the context window; the message says which.",
+      "basis": "crates/g9-ai-adapter/src/runtime.rs"
+    },
+    "skills.preflight_failed": {
+      "meaning": "The skill package failed the checks made before it runs (`Orchestrator::preflight`); the message is the reason.",
+      "basis": "crates/g9-skills/src/orchestrator.rs"
+    },
+    "skills.request_build_failed": {
+      "meaning": "The model request for the skill could not be built from its package and envelope (`Orchestrator::build_request`); the message is the reason.",
+      "basis": "crates/g9-skills/src/orchestrator.rs"
+    },
+    "skills.cancelled": {
+      "meaning": "The skill invocation was cancelled; the message says when: before or during the preflight, before the run, while running (the late response is discarded), or because the backend reported a cancellation.",
+      "basis": "crates/g9-skills/src/orchestrator.rs"
+    },
+    "{area}.not_implemented": {
+      "meaning": "The operation or option is PROPOSED and nothing was executed. `{area}` is the first segment of the operation name for the PROPOSED operations of `teaching`, `analytics`, `executive` and `research` (`PROPOSED_OPERATIONS` in `crates/g9-app/src`); the codes the storage layer spells out are rows of the `PRECONDITION_FAILED` table.",
+      "basis": "crates/g9-app/src/dispatch.rs"
+    },
+    "restore.checksum_mismatch": {
+      "meaning": "The snapshot's SHA-256 differs from the expected value, or the file changed while it was being copied; the live database was not changed.",
+      "basis": "crates/g9-storage/src/error.rs"
+    },
+    "restore.schema_too_new": {
+      "meaning": "The snapshot's schema version is newer than the newest migration this build knows (no downgrade); the live database was not changed.",
+      "basis": "crates/g9-storage/src/error.rs"
+    },
+    "restore.snapshot_invalid": {
+      "meaning": "The snapshot path is unusable (missing, not a regular file, not a self-contained snapshot) or the expected checksum is malformed; nothing was changed.",
+      "basis": "crates/g9-storage/src/error.rs"
+    },
+    "restore.snapshot_is_live": {
+      "meaning": "The snapshot and the live database are the same file; nothing was changed.",
+      "basis": "crates/g9-storage/src/error.rs"
+    },
+    "restore.live_path_invalid": {
+      "meaning": "The live database path is unusable (a missing parent directory, or a directory); nothing was changed.",
+      "basis": "crates/g9-storage/src/error.rs"
+    },
+    "restore.swap_failed": {
+      "meaning": "Moving the files failed; the live database was put back where possible, and the message says what happened.",
+      "basis": "crates/g9-storage/src/error.rs"
+    },
+    "storage.disk_full": {
+      "action": "free space on that disk, then repeat the command",
+      "source": "docs/runbooks/backup-restore.md"
+    },
+    "backup.insufficient_space": {
+      "action": "free space on the disk of the backups folder, then create the backup again",
+      "source": "docs/runbooks/backup-restore.md"
+    }
+  },
+  "doc_reference_allow": {
+    "goals.list": "an operation name the document marks as planned and not built; it is not in crates/g9-app/src/ops.rs and is not an error code",
+    "system.status.last_backup": "a field of the system.status result (crates/g9-app/src/status.rs), not an error code",
+    "last_backup.backup_id": "a field of the g9 status output, not an error code",
+    "attachments.copied": "a field of the g9 copy-backup and g9 restore output (apps/cli/src/commands/copy_backup.rs), not an error code",
+    "attachments.missing": "a field of the g9 copy-backup and g9 restore output (apps/cli/src/commands/copy_backup.rs), not an error code",
+    "recovery.restored": "a domain event the document marks as PROPOSED (not implemented), not an error code"
+  }
+}

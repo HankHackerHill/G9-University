@@ -26,7 +26,7 @@ Commands: `node .claude/skills/g9-ui-design/scripts/measure.cjs http://127.0.0.1
 
 ## Per-screen, before and after
 
-"Before" is MEASURED where a number is given, otherwise OBSERVED in the screenshots of 2026-11-13 (16 baseline images, regenerated with `scripts/shoot.cjs`). "Change" is the specification in `docs/ui/handoff.md` §11.
+"Before" is MEASURED where a number is given, otherwise OBSERVED in the screenshots of 2026-11-13 (16 baseline images, regenerated with `.claude/skills/g9-ui-design/scripts/shoot.cjs`). "Change" is the specification in `docs/ui/handoff.md` §11.
 
 | Screen | Before | Change | After |
 |---|---|---|---|

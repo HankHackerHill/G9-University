@@ -53,7 +53,7 @@ Rules: `name` matches the directory, is 1–64 chars of `[a-z0-9-]`, no leading/
 4. `## Procedure` — numbered expert steps. Steps that produce claims must say which evidence they cite. Steps may reference `references/<file>.md` for progressive loading.
 5. `## Non-goals` — explicit exclusions.
 6. `## Tool and data scopes` — table: resource kind | action | why. Read-only unless the skill is a proposal producer (then: `Propose`).
-7. `## Output contract` — describe `result` fields; must match `schemas/output.schema.json`.
+7. `## Output contract` — describe `result` fields; must match `.agents/skills/<name>/schemas/output.schema.json`.
 8. `## Confidence and abstention` — when to return `ABSTAINED`; how confidence limits are set.
 9. `## Escalation and stop conditions` — when to request operator decision; hard stop conditions.
 10. `## Failure recovery` — behaviour on timeout, invalid output, missing evidence.

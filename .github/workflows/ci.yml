@@ -130,6 +130,14 @@ jobs:
         run: $PY -I scripts/check_competency_packs.py data/competency-packs
       - name: data inventory (every table has a row in docs/data-model.md)
         run: $PY -I scripts/check_data_inventory.py
+      - name: error-code catalogue (docs/runbooks/error-codes.md is current; no dead code reference)
+        run: $PY -I scripts/gen_error_codes.py
+      - name: document references (every repository path a document names exists)
+        run: $PY -I scripts/check_doc_refs.py
+      - name: metrics (docs/release/metrics.md is current)
+        run: $PY -I scripts/gen_metrics.py
+      - name: backlog map (every open register and RTM row is mapped or counted; the unmapped count only goes down)
+        run: $PY -I scripts/check_backlog.py
       - name: tests of the gates themselves
         run: G9_REQUIRE_JSONSCHEMA=1 $PY -I -m unittest discover -s scripts/tests -p 'test_*.py'
 

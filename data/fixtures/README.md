@@ -4,8 +4,8 @@ Synthetic data for `crates/g9-evaluation`. No real names, no personal data, no s
 
 | File | Kind | Schema | Used by |
 |---|---|---|---|
-| `week03-learner-history.json` | `LEARNER_HISTORY` | `schemas/learner-history.schema.json` | `g9_evaluation::fixtures::seed` (gates A04, A05, A06, A09, A10; ST03, ST05, ST09; A08/A03 recovery drill) |
-| `adversarial-payloads.json` | `ADVERSARIAL_PAYLOADS` | `schemas/adversarial-payloads.schema.json` | `g9_evaluation::adversarial` (ST01–ST12) |
+| `week03-learner-history.json` | `LEARNER_HISTORY` | `data/fixtures/schemas/learner-history.schema.json` | `g9_evaluation::fixtures::seed` (gates A04, A05, A06, A09, A10; ST03, ST05, ST09; A08/A03 recovery drill) |
+| `adversarial-payloads.json` | `ADVERSARIAL_PAYLOADS` | `data/fixtures/schemas/adversarial-payloads.schema.json` | `g9_evaluation::adversarial` (ST01–ST12) |
 
 Rules enforced by the loader (`crates/g9-evaluation/src/fixtures.rs`):
 
