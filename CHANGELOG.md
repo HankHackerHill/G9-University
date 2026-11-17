@@ -22,6 +22,17 @@ All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 - **storage-core-4/5/6/8/11, storage-repos-10/11**: restore, snapshot and crash tests now exercise what they name; schema versions cannot wrap, a migration applied meanwhile by another connection is skipped, a gap in the recorded versions is corruption; reflection erasure clears the energy and focus levels; multi-statement repository writes are atomic; corrections and session events are listed in insertion order.
 - **Data-inventory gap G1**: deleting a calendar event removes its title from stored command results; idempotency records older than 30 days are purged at open.
 
+### Security (2026-11-17, final review of the changes since `2e0b344`; `docs/audit/security-audit-2026-11-17.md`)
+- **A backup report kept the content hash of a missing attachment file**, which survived the erasure of that file and left in SYSTEM exports. The report now holds a count; stored lists are rewritten at open and in every attachment erasure.
+- **The idempotency purge no longer trusts the clock alone**: it counts 30 days back from the earlier of the clock and the newest stored record, so an open with the clock weeks ahead cannot purge fresh records and let a retry run a command twice. A record can now be kept up to 30 days past the last recorded command.
+- **An unpinned skill package cannot block the shipped one**: only a pinned registry registers `<name>@<version>`; the CLI's unpinned packages register as `<name>@<version>+<hash prefix>`.
+- An approval's resource id is reused only for the same request (state and keyed parameters digest), so a plain create with other content cannot take it.
+- Deleting a calendar event truncates the write-ahead log, so the title is not left in the live `-wal` file.
+- The native confirmation is shown only after the request has passed the boundary checks; attachment copies check the source before creating directories and refuse a non-regular file on the open handle; the operations log records only the application's own events; `storage.row_decode` has a fixed message.
+- The layering gate sees renamed dependencies (`package = "..."`) and headers written with spaces; its deny-target graph test runs in the `rust` job.
+- The search for stored results quoting a deleted event is linear (it was quadratic in the size of one result).
+- Not fixed (PROPOSED): the shell parses the IPC body before the byte cap applies (ipc-1); the transport change needs the shell on the host.
+
 ### Changed (2026-11-17)
 - `curriculum.daily_plan` objective status: `PLANNED | IN_PROGRESS | COMPLETED` (was `PLANNED | IN_PROGRESS | VERIFIED`; VERIFIED was never emitted).
 - A replay of `calendar.create_event`, `update_event`, `propose` or `apply` after the event was deleted answers `NOT_FOUND calendar.event_deleted`; nothing is re-executed.
