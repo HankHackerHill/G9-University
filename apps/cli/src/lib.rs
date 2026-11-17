@@ -20,6 +20,7 @@
 //! | [`clock`] | stepping clock for deterministic runs |
 //! | [`seed`] | repository-path materialization for data that has no IPC path yet (labelled `SEEDED`, never through `dispatch`) |
 //! | [`commands`] | one function per subcommand; [`commands::simulate`] is the Stage 03 exit criterion script; [`commands::restore`] is the offline restore (`g9_storage::restore`, no SQL here) |
+//! | [`perf`] | performance tooling: `g9 perf-fixture` (PERF-1, behind `--scratch`), the fixture checksum, query-plan reading for the PERF-3 gate (`tests/query_plans.rs`); the latency harness is `examples/perf_ipc.rs` |
 //! | [`output`] | exit codes (0 ok, 2 `G9Error` or scenario `INCOMPLETE`/`FAIL`, 1 usage/IO or an unconfirmed `g9 restore`) and JSON/human rendering |
 
 pub mod bootstrap;
@@ -29,6 +30,7 @@ pub mod clock;
 pub mod commands;
 pub mod meta;
 pub mod output;
+pub mod perf;
 pub mod seed;
 
 pub use cli::Cli;

@@ -286,6 +286,17 @@ pub struct Booted {
 
 /// Open the backend exactly as the bridge does.
 pub fn open(opts: &BootOptions) -> Result<Booted, CliError> {
+    open_with(opts, &mut |_| Ok(()))
+}
+
+/// [`open`], with `before_context` run on the opened database before the
+/// context is built (and recovery runs). The performance tooling uses it to
+/// attach a statement capture (`g9_storage::diagnostics`) to the connection;
+/// [`open`] passes a no-op.
+pub fn open_with(
+    opts: &BootOptions,
+    before_context: &mut dyn FnMut(&mut Database) -> Result<(), CliError>,
+) -> Result<Booted, CliError> {
     let layout = DataLayout::prepare(&opts.data_dir)?;
     let mut warnings = Vec::new();
     let provisioned = keyfile::provision(&layout.root, &mut keyfile::os_random)?;
@@ -344,7 +355,8 @@ pub fn open(opts: &BootOptions) -> Result<Booted, CliError> {
         Some(clock) => g9_app::database_options(APP_VERSION).applied_at(clock.now()),
         None => g9_app::database_options(APP_VERSION),
     };
-    let db = Database::open(&layout.database, open_options).map_err(G9Error::from)?;
+    let mut db = Database::open(&layout.database, open_options).map_err(G9Error::from)?;
+    before_context(&mut db)?;
     let operator = ActorId::parse(&opts.operator_id).map_err(|_| {
         CliError::Usage(format!(
             "operator id {:?} is not a valid identifier ([A-Za-z0-9._:-]{{1,128}})",

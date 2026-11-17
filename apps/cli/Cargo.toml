@@ -43,6 +43,11 @@ clap = { version = "=4.6.1", features = ["derive"] }
 
 [dev-dependencies]
 tempfile = "=3.27.0"
+# The query-plan gate (tests/query_plans.rs) and examples/perf_plans.rs capture
+# the SQL a connection runs (`g9_storage::diagnostics::StatementCapture`, which
+# needs the `statement-trace` feature: rusqlite's `trace`, no new crate). Tests
+# and examples only; the `g9` binary is built without it.
+g9-storage = { path = "../../crates/g9-storage", features = ["statement-trace"] }
 
 # Keep the per-crate build directory small (no debuginfo, no incremental cache).
 [lints.rust]

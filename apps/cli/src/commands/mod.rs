@@ -56,7 +56,7 @@ pub fn parse_zone(zone: &str) -> Result<IanaZone, CliError> {
         .map_err(|_| CliError::Usage(format!("--zone {zone:?} is not an IANA time zone")))
 }
 
-/// The scratch guard (ADR-0010 addendum): `simulate-week` and `crash-drill` write
+/// The scratch guard (ADR-0010 addendum): `simulate-week`, `crash-drill` and `perf-fixture` write
 /// seed rows straight to storage and refuse to run without `--scratch`. The flag
 /// is an explicit acknowledgement that the data directory is disposable; the
 /// directory is not inspected (PROPOSED: refuse a directory that holds operator
@@ -116,6 +116,18 @@ pub fn run(cli: &Cli) -> Result<Completion, CliError> {
             require_scratch(args.scratch, cli.data_dir.is_some())?;
             crash_drill::run(&boot_options(cli)?)
         }
+        Command::PerfFixture(args) => {
+            require_scratch(args.scratch, cli.data_dir.is_some())?;
+            let data_dir = cli
+                .data_dir
+                .clone()
+                .ok_or_else(|| CliError::Usage(SCRATCH_NEEDS_DATA_DIR.to_string()))?;
+            let mut options = crate::perf::fixture::FixtureOptions::new(data_dir, args.divisor)?;
+            if let Some(manifest) = &args.manifest {
+                options.manifest = manifest.clone();
+            }
+            Ok(Completion::of(crate::perf::fixture::run(&options)?))
+        }
         Command::Restore(args) => Ok(Completion::of(restore::run(&boot_options(cli)?, args)?)),
         Command::CopyBackup(args) => {
             Ok(Completion::of(copy_backup::run(&boot_options(cli)?, args)?))
@@ -152,6 +164,7 @@ mod tests {
                 "--data-dir",
                 data_str,
             ],
+            vec!["g9", "perf-fixture", "--data-dir", data_str],
         ] {
             let message = refused(&args);
             assert!(message.contains("--scratch"), "{message}");
@@ -176,6 +189,7 @@ mod tests {
                 "--start-date",
                 "2026-11-16",
             ],
+            vec!["g9", "perf-fixture", "--scratch"],
         ] {
             let message = refused(&args);
             assert!(

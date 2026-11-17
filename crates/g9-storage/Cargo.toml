@@ -32,6 +32,12 @@ tracing = { workspace = true }
 [target.'cfg(unix)'.dependencies]
 rustix = { version = "=1.1.6", features = ["fs"] }
 
+[features]
+# Statement capture for the query-plan gate and the performance tooling
+# (`diagnostics::StatementCapture`): rusqlite's `trace` (no extra crate). Only
+# the CLI's tests and examples enable it; production builds never do.
+statement-trace = ["rusqlite/trace"]
+
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }

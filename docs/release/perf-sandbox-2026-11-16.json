@@ -1,0 +1,451 @@
+{
+  "harness": "perf_ipc",
+  "label": "SANDBOX NUMBERS: measured where the harness ran, not on the G9 host; not a verdict on docs/ui/performance-budgets.md",
+  "build": "release",
+  "host": {
+    "os": "linux",
+    "arch": "x86_64",
+    "available_parallelism": 4,
+    "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "mem_total": "16473764 kB",
+    "not_recorded": "CPU governor, storage device and filesystem, GPU state, power source and other load (docs/ui/performance-budgets.md 'Host state'): not available or not meaningful in a sandbox"
+  },
+  "fixture": {
+    "rows_at_start": {
+      "attempts": 500,
+      "audit_metadata": 50000,
+      "competency_observations": 20000,
+      "daily_objectives": 216,
+      "note_versions": 6000,
+      "notes": 2000,
+      "study_sessions": 1700,
+      "time_intervals": 5000,
+      "training_days": 72
+    },
+    "at_budget_size": true
+  },
+  "write_ranking": {
+    "source": "audit rows per operation in the fixture (one per mutating command)",
+    "top": [
+      {
+        "op": "retention.record_review",
+        "audit_rows": 26208
+      },
+      {
+        "op": "notes.revise",
+        "audit_rows": 4000
+      },
+      {
+        "op": "session.pause",
+        "audit_rows": 3300
+      },
+      {
+        "op": "session.resume",
+        "audit_rows": 3300
+      },
+      {
+        "op": "notes.create",
+        "audit_rows": 2000
+      }
+    ],
+    "first_ten": [
+      {
+        "op": "retention.record_review",
+        "audit_rows": 26208
+      },
+      {
+        "op": "notes.revise",
+        "audit_rows": 4000
+      },
+      {
+        "op": "session.pause",
+        "audit_rows": 3300
+      },
+      {
+        "op": "session.resume",
+        "audit_rows": 3300
+      },
+      {
+        "op": "notes.create",
+        "audit_rows": 2000
+      },
+      {
+        "op": "session.complete",
+        "audit_rows": 1700
+      },
+      {
+        "op": "session.prepare",
+        "audit_rows": 1700
+      },
+      {
+        "op": "session.start",
+        "audit_rows": 1700
+      },
+      {
+        "op": "session.create",
+        "audit_rows": 1292
+      },
+      {
+        "op": "assessment.approve_final",
+        "audit_rows": 1000
+      }
+    ]
+  },
+  "method": {
+    "clock": "std::time::Instant around g9_app::dispatch (metadata and payload built before the clock starts)",
+    "warmup_per_op": 10,
+    "samples_per_op": 200,
+    "percentile": "nearest rank",
+    "backend_clock": "stepping clock from the day after the fixture timeline, one minute per read call",
+    "composition": "bootstrap::open (production database options, synchronous FULL, operations log on), no skills, no model",
+    "order": "reads on the fixture as built, then the writes, then audit.recent again"
+  },
+  "backend_open_ms": 1439.36,
+  "results": [
+    {
+      "op": "session.list",
+      "variant": "date",
+      "kind": "read",
+      "warmup_ms": [
+        45.157,
+        11.935,
+        7.632,
+        8.671,
+        6.993,
+        6.928,
+        7.194,
+        7.093,
+        7.142,
+        7.311
+      ],
+      "samples": 200,
+      "p50_ms": 7.282,
+      "p95_ms": 9.141,
+      "max_ms": 131.787,
+      "result_items": 6,
+      "provisional_p95_budget_ms": 100
+    },
+    {
+      "op": "session.list",
+      "variant": "all",
+      "kind": "read",
+      "warmup_ms": [
+        89.798,
+        88.002,
+        88.795,
+        88.69,
+        88.825,
+        89.955,
+        87.804,
+        89.239,
+        90.194,
+        112.737
+      ],
+      "samples": 200,
+      "p50_ms": 109.035,
+      "p95_ms": 125.12,
+      "max_ms": 157.754,
+      "result_items": 1700,
+      "provisional_p95_budget_ms": 100
+    },
+    {
+      "op": "calendar.list",
+      "variant": "week",
+      "kind": "read",
+      "warmup_ms": [
+        1.322,
+        0.901,
+        0.647,
+        0.732,
+        0.597,
+        0.735,
+        0.779,
+        0.664,
+        0.68,
+        0.619
+      ],
+      "samples": 200,
+      "p50_ms": 0.679,
+      "p95_ms": 0.988,
+      "max_ms": 1.975,
+      "result_items": 36,
+      "provisional_p95_budget_ms": 100
+    },
+    {
+      "op": "retention.due",
+      "variant": "as_of",
+      "kind": "read",
+      "warmup_ms": [
+        37.648,
+        34.971,
+        34.349,
+        36.609,
+        37.085,
+        37.916,
+        35.67,
+        34.92,
+        35.146,
+        35.463
+      ],
+      "samples": 200,
+      "p50_ms": 34.64,
+      "p95_ms": 39.59,
+      "max_ms": 46.23,
+      "result_items": 5,
+      "provisional_p95_budget_ms": 100
+    },
+    {
+      "op": "approvals.list",
+      "variant": "all",
+      "kind": "read",
+      "warmup_ms": [
+        8.163,
+        8.707,
+        7.852,
+        8.244,
+        7.969,
+        8.125,
+        9.54,
+        8.247,
+        8.123,
+        8.337
+      ],
+      "samples": 200,
+      "p50_ms": 10.085,
+      "p95_ms": 14.149,
+      "max_ms": 22.297,
+      "result_items": 501,
+      "provisional_p95_budget_ms": 100
+    },
+    {
+      "op": "audit.recent",
+      "variant": "limit 50",
+      "kind": "read",
+      "warmup_ms": [
+        230.598,
+        238.105,
+        264.668,
+        260.657,
+        200.584,
+        225.646,
+        254.995,
+        286.042,
+        261.869,
+        295.385
+      ],
+      "samples": 200,
+      "p50_ms": 249.052,
+      "p95_ms": 283.645,
+      "max_ms": 329.794,
+      "result_items": 0,
+      "provisional_p95_budget_ms": 100
+    },
+    {
+      "op": "retention.record_review",
+      "variant": "-",
+      "kind": "write (most used)",
+      "warmup_ms": [
+        1.331,
+        1.161,
+        1.186,
+        1.149,
+        1.06,
+        1.053,
+        1.096,
+        1.189,
+        1.167,
+        1.21
+      ],
+      "samples": 200,
+      "p50_ms": 1.104,
+      "p95_ms": 1.601,
+      "max_ms": 5.954,
+      "fixture_audit_rows": 26208,
+      "fixture_rank": 1
+    },
+    {
+      "op": "notes.revise",
+      "variant": "-",
+      "kind": "write (most used)",
+      "warmup_ms": [
+        1.207,
+        0.957,
+        1.067,
+        1.322,
+        1.067,
+        1.094,
+        1.099,
+        1.036,
+        1.13,
+        1.081
+      ],
+      "samples": 200,
+      "p50_ms": 1.108,
+      "p95_ms": 1.518,
+      "max_ms": 5.466,
+      "fixture_audit_rows": 4000,
+      "fixture_rank": 2
+    },
+    {
+      "op": "notes.create",
+      "variant": "-",
+      "kind": "write (most used)",
+      "warmup_ms": [
+        2.001,
+        1.478,
+        1.329,
+        1.419,
+        1.491,
+        1.226,
+        2.322,
+        1.348,
+        1.032,
+        1.418
+      ],
+      "samples": 200,
+      "p50_ms": 1.008,
+      "p95_ms": 1.65,
+      "max_ms": 5.806,
+      "fixture_audit_rows": 2000,
+      "fixture_rank": 5
+    },
+    {
+      "op": "session.prepare",
+      "variant": "-",
+      "kind": "write (extra)",
+      "warmup_ms": [
+        1.435,
+        1.739,
+        1.342,
+        1.135,
+        1.125,
+        1.249,
+        1.335,
+        1.139,
+        1.01,
+        1.023
+      ],
+      "samples": 200,
+      "p50_ms": 1.08,
+      "p95_ms": 2.04,
+      "max_ms": 4.435,
+      "fixture_audit_rows": 1700,
+      "fixture_rank": 7
+    },
+    {
+      "op": "session.start",
+      "variant": "-",
+      "kind": "write (extra)",
+      "warmup_ms": [
+        1.297,
+        1.478,
+        1.385,
+        1.258,
+        1.311,
+        1.142,
+        1.25,
+        1.547,
+        1.262,
+        1.251
+      ],
+      "samples": 200,
+      "p50_ms": 1.201,
+      "p95_ms": 1.932,
+      "max_ms": 4.979,
+      "fixture_audit_rows": 1700,
+      "fixture_rank": 8
+    },
+    {
+      "op": "session.pause",
+      "variant": "-",
+      "kind": "write (most used)",
+      "warmup_ms": [
+        1.361,
+        1.432,
+        1.421,
+        1.471,
+        1.156,
+        1.29,
+        1.368,
+        1.23,
+        1.253,
+        1.272
+      ],
+      "samples": 200,
+      "p50_ms": 1.197,
+      "p95_ms": 2.275,
+      "max_ms": 5.72,
+      "fixture_audit_rows": 3300,
+      "fixture_rank": 3
+    },
+    {
+      "op": "session.resume",
+      "variant": "-",
+      "kind": "write (most used)",
+      "warmup_ms": [
+        1.596,
+        1.251,
+        1.41,
+        1.368,
+        1.363,
+        1.418,
+        1.501,
+        1.324,
+        1.476,
+        1.082
+      ],
+      "samples": 200,
+      "p50_ms": 1.236,
+      "p95_ms": 4.1,
+      "max_ms": 6.195,
+      "fixture_audit_rows": 3300,
+      "fixture_rank": 4
+    },
+    {
+      "op": "session.complete",
+      "variant": "-",
+      "kind": "write (extra)",
+      "warmup_ms": [
+        1.388,
+        1.449,
+        1.331,
+        1.244,
+        1.22,
+        5.332,
+        1.361,
+        1.235,
+        1.44,
+        1.175
+      ],
+      "samples": 200,
+      "p50_ms": 1.233,
+      "p95_ms": 2.276,
+      "max_ms": 4.439,
+      "fixture_audit_rows": 1700,
+      "fixture_rank": 6
+    },
+    {
+      "op": "audit.recent",
+      "variant": "limit 50, after the writes",
+      "kind": "read",
+      "warmup_ms": [
+        204.103,
+        197.33,
+        196.855,
+        195.422,
+        215.987,
+        203.952,
+        249.1,
+        230.146,
+        203.556,
+        221.212
+      ],
+      "samples": 200,
+      "p50_ms": 248.891,
+      "p95_ms": 303.002,
+      "max_ms": 374.344,
+      "result_items": 50,
+      "provisional_p95_budget_ms": 100
+    }
+  ]
+}

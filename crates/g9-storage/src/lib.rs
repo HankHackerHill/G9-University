@@ -33,6 +33,9 @@
 //! * [`approvals_store`] — persistence of approval requests/decisions and policy
 //!   decision records as generic rows; the authority decisions themselves live in
 //!   `g9-policy` and are applied by `g9-app`.
+//! * [`diagnostics`] — read-only tooling for the performance work: query plans,
+//!   table sizes, row dumps for a fixture checksum, and (feature
+//!   `statement-trace`) a capture of the SQL a connection runs.
 //!
 //! ## Boundaries
 //!
@@ -62,6 +65,7 @@ pub mod backup;
 pub mod connection;
 pub mod deletion;
 pub mod describe;
+pub mod diagnostics;
 pub mod error;
 pub mod events;
 pub mod export;

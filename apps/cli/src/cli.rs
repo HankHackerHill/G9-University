@@ -94,6 +94,8 @@ pub enum Command {
     CrashDrill(CrashDrillArgs),
     /// Offline restore: replace the live database with a verified backup snapshot; the old database is moved to <data dir>/quarantine, never deleted. Stop the application first. Prints the plan and exits 1 unless --confirm-replace-live-database is given.
     Restore(RestoreArgs),
+    /// Build the performance fixture (PERF-1): twelve months of use at the sizes of docs/ui/performance-budgets.md (72 days, 216 objectives, 1,700 sessions, 5,000 intervals, 2,000 notes with 3 revisions, 500 attempts, 20,000 observations, 50,000 audit rows) through the command pipeline where an operation exists, with a fixed clock, and print the counts and the checksum. Learning episodes and the observations no operation derives are SEEDED straight to storage: requires --scratch and a fresh --data-dir.
+    PerfFixture(PerfFixtureArgs),
     /// Copy a RETAINED backup to another directory (a USB drive, a NAS mount): the snapshot plus <id>.manifest.json, synced and re-hashed against the manifest. Reads only; the application may be running.
     CopyBackup(CopyBackupArgs),
 }
@@ -123,6 +125,21 @@ pub struct ReconcileArgs {
     /// When the diff was reviewed: `now` or UTC epoch milliseconds. Never defaulted.
     #[arg(long, value_name = "now|EPOCH_MS", requires = "write_candidate")]
     pub approved_at: Option<String>,
+}
+
+/// `g9 perf-fixture` arguments.
+#[derive(Debug, Args)]
+pub struct PerfFixtureArgs {
+    /// Divide every scaled count by N (rounded up) and keep every N-th day; 1 builds the budget sizes.
+    #[arg(long, default_value_t = 1, value_name = "N")]
+    pub divisor: u32,
+    /// Curriculum manifest (default: data/curriculum/g9-ct9-480.draft.v1.json).
+    #[arg(long, value_name = "PATH")]
+    pub manifest: Option<PathBuf>,
+    /// Acknowledge that `--data-dir` is a disposable directory: the fixture
+    /// writes seed rows directly to storage.
+    #[arg(long)]
+    pub scratch: bool,
 }
 
 /// `g9 copy-backup` arguments.
