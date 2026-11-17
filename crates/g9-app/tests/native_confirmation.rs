@@ -518,3 +518,39 @@ fn an_export_confirmation_says_which_areas_leave_and_whether_private_records_do(
         "an export of the areas learning, system as CSV; private records included, secret records never"
     );
 }
+
+#[test]
+fn a_request_the_boundary_refuses_is_never_shown_to_the_operator() {
+    // Final security review (ipc hardening): the native dialog was raised before
+    // the meta, the payload cap, the schema and the name checks, so the operator
+    // was asked about a request that was then refused (and the shell held the
+    // backend while the dialog waited).
+    let mut h = Harness::new();
+    let id = pending_approval(&mut h);
+    let mut shown = 0;
+
+    let mut extra = approve(&id);
+    extra["unexpected"] = json!(1);
+    let refused = h
+        .confirmed_with("approvals.decide", extra, &mut |_| {
+            shown += 1;
+            true
+        })
+        .unwrap_err();
+    assert_eq!(refused.category, ErrorCategory::InvalidInput, "{refused:?}");
+
+    let meta = h.meta("notes.list", &Opts::default());
+    let refused =
+        g9_app::dispatch_confirming(h.ctx(), "approvals.decide", meta, approve(&id), &mut |_| {
+            shown += 1;
+            true
+        })
+        .unwrap_err();
+    assert_eq!(refused.category, ErrorCategory::InvalidInput, "{refused:?}");
+
+    assert_eq!(
+        shown, 0,
+        "the dialog was shown for a request the boundary refuses"
+    );
+    assert_eq!(state_of(&h, &id), "PENDING");
+}

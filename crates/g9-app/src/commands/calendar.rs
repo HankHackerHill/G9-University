@@ -585,7 +585,7 @@ pub fn create_event(
 ) -> Result<CommandOutcome<Value>, G9Error> {
     let req: CreateEventRequest = decode(payload)?;
     let id: CalendarEventId = parse_id(
-        &super::creation_id(ctx, spec, meta, || new_id("ev"))?,
+        &super::creation_id(ctx, spec, meta, payload, || new_id("ev"))?,
         "event_id",
     )?;
     let resource = ResourceRef::new(ResourceKind::CalendarEvent, id.as_str());
@@ -747,9 +747,13 @@ pub fn delete_event(
             // The title must not outlive the event in stored results (G1).
             pipeline::forget_event_results(env.conn, &env.svc.binding_key, id.as_str())?;
             Ok(
-                Mutation::new(json!({ "event_id": id, "deleted": true }), None).with_event(
-                    EventSpec::learning("calendar.event_deleted", json!({ "event_id": id })),
-                ),
+                Mutation::new(json!({ "event_id": id, "deleted": true }), None)
+                    .with_event(EventSpec::learning(
+                        "calendar.event_deleted",
+                        json!({ "event_id": id }),
+                    ))
+                    // The deleted title must not stay in the live write-ahead log either.
+                    .truncating_wal(),
             )
         },
     )

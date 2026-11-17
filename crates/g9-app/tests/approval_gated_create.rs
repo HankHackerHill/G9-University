@@ -86,3 +86,35 @@ fn the_approval_cannot_create_a_note_with_other_content() {
         .unwrap();
     assert_eq!(after, before, "nothing was created");
 }
+
+#[test]
+fn an_approval_presented_on_other_content_does_not_take_the_approved_id() {
+    // Final security review authz-3: creation_id reused the approved id for any
+    // create of the same kind that presented the approval. A plain create with
+    // other content (policy allows it without approval) then took the id, the
+    // approved retry failed with storage.unique_violation, and the approval's
+    // confirmation described the decoy record.
+    let mut h = Harness::new();
+    let approved = sensitive_note("rotated the lab VPN credentials");
+    let approval = approved_request(&mut h, &approved);
+    let bound = g9_storage::approvals_store::get_request(h.conn(), &approval)
+        .unwrap()
+        .unwrap()
+        .operation
+        .resource
+        .id;
+
+    let decoy = json!({ "title": "decoy", "body_markdown": "x", "classification": "INTERNAL", "domain": "LEARNING" });
+    if let Ok(made) = h.call_with("notes.create", decoy, &with_approval(&approval)) {
+        assert_ne!(
+            made["result"]["note_id"],
+            json!(bound),
+            "the decoy took the approved id"
+        );
+    }
+
+    let created = h
+        .call_with("notes.create", approved, &with_approval(&approval))
+        .expect("the approved retry must still create the approved note");
+    assert_eq!(created["result"]["note_id"], json!(bound));
+}

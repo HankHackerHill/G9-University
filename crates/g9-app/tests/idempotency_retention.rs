@@ -104,7 +104,7 @@ fn records_older_than_thirty_days_are_purged_when_the_application_opens() {
         &Opts::key("old"),
     )
     .unwrap();
-    h.advance(29 * DAY);
+    h.advance(31 * DAY);
     h.call_with(
         "competency.create",
         json!({ "code": "NEW", "title": "Recent competency title" }),
@@ -144,4 +144,58 @@ fn nothing_is_purged_while_writes_are_refused() {
     );
     assert_eq!(idempotency_rows(&h), 1);
     assert_eq!(h.ctx().recovery_report().purged_idempotency_records, 0);
+}
+
+#[test]
+fn a_forward_clock_step_at_open_does_not_purge_recent_records() {
+    // Final security review authz-1: the cutoff was the wall clock alone, so an
+    // open with the clock 31 days ahead purged a fresh record, and a retry with
+    // the same key after the clock was corrected ran the command again.
+    let mut h = Harness::new();
+    let payload = json!({ "code": "KEEP", "title": "Kept competency" });
+    let first = h
+        .call_with("competency.create", payload.clone(), &Opts::key("k"))
+        .unwrap();
+    assert_eq!(first["replayed"], json!(false));
+
+    h.advance(31 * DAY);
+    h.restart();
+    assert_eq!(h.ctx().recovery_report().purged_idempotency_records, 0);
+    assert_eq!(idempotency_rows(&h), 1);
+
+    // The wall clock is corrected (it steps back; the monotonic clock does not).
+    h.clock
+        .fetch_sub(31 * DAY - 2 * 60_000, std::sync::atomic::Ordering::SeqCst);
+    h.restart();
+    let retry = h
+        .call_with("competency.create", payload, &Opts::key("k"))
+        .unwrap();
+    assert_eq!(retry["replayed"], json!(true), "{retry}");
+}
+
+#[test]
+fn retention_counts_from_the_newest_recorded_command() {
+    // A record is purged once a command recorded 30 days after it exists, and
+    // the wall clock is past that point too.
+    let mut h = Harness::new();
+    h.call_with(
+        "competency.create",
+        json!({ "code": "A", "title": "First" }),
+        &Opts::key("a"),
+    )
+    .unwrap();
+    h.advance(45 * DAY);
+    h.restart();
+    // No later command: the newest record is the old one, which is kept.
+    assert_eq!(h.ctx().recovery_report().purged_idempotency_records, 0);
+    h.call_with(
+        "competency.create",
+        json!({ "code": "B", "title": "Second" }),
+        &Opts::key("b"),
+    )
+    .unwrap();
+    h.advance(60_000);
+    h.restart();
+    assert_eq!(h.ctx().recovery_report().purged_idempotency_records, 1);
+    assert_eq!(idempotency_rows(&h), 1);
 }

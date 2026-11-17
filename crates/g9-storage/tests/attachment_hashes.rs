@@ -95,7 +95,7 @@ fn an_intact_store_verifies() {
     assert!(ok, "{errors:?}");
     assert_eq!(manifest["status"], "CHECKED");
     assert_eq!(manifest["expected"], 1);
-    assert_eq!(manifest["missing"], serde_json::json!([]));
+    assert_eq!(manifest["missing"], serde_json::json!(0));
     assert_eq!(manifest["damaged"], 0);
 }
 
@@ -106,7 +106,7 @@ fn one_flipped_byte_in_the_backup_attachment_store_fails_verification() {
     let (ok, manifest, errors) = verify(&s);
     assert!(!ok, "a damaged attachment copy passed verification");
     assert_eq!(manifest["damaged"], 1, "{manifest}");
-    assert_eq!(manifest["missing"], serde_json::json!([]), "{manifest}");
+    assert_eq!(manifest["missing"], serde_json::json!(0), "{manifest}");
     assert!(
         errors
             .iter()
@@ -123,7 +123,7 @@ fn a_missing_file_is_reported_by_code_and_count() {
     let (ok, manifest, errors) = verify(&s);
     assert!(!ok);
     assert_eq!(manifest["damaged"], 0, "{manifest}");
-    assert_eq!(manifest["missing"].as_array().unwrap().len(), 1);
+    assert_eq!(manifest["missing"], serde_json::json!(1));
     assert!(
         errors
             .iter()

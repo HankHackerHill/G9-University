@@ -241,7 +241,7 @@ pub fn create_item(
 ) -> Result<CommandOutcome<Value>, G9Error> {
     let req: CreateItemRequest = decode(payload)?;
     let id: g9_domain::ReviewItemId = super::parse_id(
-        &super::creation_id(ctx, spec, meta, || super::new_id("ri"))?,
+        &super::creation_id(ctx, spec, meta, payload, || super::new_id("ri"))?,
         "review_item_id",
     )?;
     let resource = ResourceRef::new(ResourceKind::ReviewItem, id.as_str());

@@ -460,6 +460,10 @@ impl Eraser<'_> {
              WHERE id = ?1",
             params![attachment_id, REDACTED, self.now.as_millis(), self.request_id, digest],
         )?;
+        // Backup reports stored by earlier builds list the storage ref (the
+        // content hash) of every file they found missing; rewrite such lists to
+        // their count, as reports are stored now (final security review ipc-2).
+        crate::backup::count_listed_missing_files(self.tx)?;
         // Paths are content-addressed, so identical bytes share one path: the path
         // is purged only when no other non-erased attachment still uses it (the
         // last erasure of those bytes lists it).

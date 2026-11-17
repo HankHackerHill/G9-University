@@ -215,21 +215,54 @@ fn existing_file(root: &Path, sha256: &str) -> StorageResult<PathBuf> {
     Ok(canonical)
 }
 
+/// Open `path` for reading only if it is a regular file, checked on the open
+/// handle: a FIFO or device swapped in after the path was inspected is refused
+/// instead of blocking the read (`O_NONBLOCK`, which a regular file ignores),
+/// and a final symlink is not followed (`O_NOFOLLOW`).
+fn open_regular(path: &Path) -> StorageResult<fs::File> {
+    let mut options = fs::OpenOptions::new();
+    options.read(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        let flags = rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::NONBLOCK;
+        options.custom_flags(i32::try_from(flags.bits()).unwrap_or(0));
+    }
+    let file = options
+        .open(path)
+        .map_err(|e| StorageError::io("open an attachment", &e))?;
+    let meta = file
+        .metadata()
+        .map_err(|e| StorageError::io("inspect an attachment", &e))?;
+    if !meta.is_file() {
+        return Err(StorageError::Conflict(
+            "a non-file occupies an attachment path".to_string(),
+        ));
+    }
+    Ok(file)
+}
+
 /// Copy the bytes of `sha256` from the store at `from` to the store at `to`,
 /// hashing while copying: a source whose bytes do not match is
 /// [`StorageError::Corrupt`] and nothing is placed at the destination.
 pub fn copy_between(from: &Path, to: &Path, sha256: &str) -> StorageResult<Stored> {
     relpath(sha256)?;
-    // The destination first: an intact file there needs no source.
+    // The destination first: an intact file there needs no source. Nothing is
+    // created at the destination until the source is known to exist (a hostile
+    // snapshot listing many digests must not leave empty directories behind).
     let to_root = canonical_root(to)?;
+    match existing_file(&to_root, sha256) {
+        Ok(path) if sha256_of_file(&path)? == sha256 => return Ok(Stored::AlreadyPresent),
+        Ok(_) | Err(StorageError::NotFound(_)) => {}
+        Err(e) => return Err(e),
+    }
+    let source = existing_file(from, sha256)?;
+    let mut input = open_regular(&source)?;
     let dir = shard_dir(&to_root, sha256)?;
     let target = dir.join(sha256);
     if present_and_intact(&target, sha256)? {
         return Ok(Stored::AlreadyPresent);
     }
-    let source = existing_file(from, sha256)?;
-    let mut input =
-        fs::File::open(&source).map_err(|e| StorageError::io("open an attachment", &e))?;
     let (partial, mut output) = open_partial(&dir, sha256)?;
     let copied = (|| {
         let mut hasher = Sha256::new();
@@ -487,6 +520,43 @@ mod tests {
 
     fn digest(bytes: &[u8]) -> String {
         hex::encode(Sha256::digest(bytes))
+    }
+
+    #[test]
+    fn a_copy_whose_source_is_missing_creates_nothing_at_the_destination() {
+        // Final security review (ipc hardening): the destination's shard
+        // directories were created before the source was looked up, so a hostile
+        // snapshot listing many digests created empty directories in the live
+        // store.
+        let from = tempfile::tempdir().unwrap();
+        let to = tempfile::tempdir().unwrap();
+        let sha = digest(b"never stored");
+        assert!(matches!(
+            copy_between(from.path(), to.path(), &sha),
+            Err(StorageError::NotFound(_))
+        ));
+        assert_eq!(fs::read_dir(to.path()).unwrap().count(), 0);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_copy_never_reads_a_source_that_is_not_a_regular_file() {
+        // A FIFO at the source address is refused, never opened for reading
+        // (which would block until a writer appears).
+        let from = tempfile::tempdir().unwrap();
+        let to = tempfile::tempdir().unwrap();
+        let sha = digest(b"fifo");
+        let path = from.path().join(relpath(&sha).unwrap());
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        rustix::fs::mknodat(
+            rustix::fs::CWD,
+            &path,
+            rustix::fs::FileType::Fifo,
+            rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+            0,
+        )
+        .unwrap();
+        assert!(copy_between(from.path(), to.path(), &sha).is_err());
     }
 
     #[test]

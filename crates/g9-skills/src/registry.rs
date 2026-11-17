@@ -161,6 +161,11 @@ pub struct HashMismatch {
 pub struct Registry {
     root: PathBuf,
     packages: BTreeMap<SkillId, SkillPackage>,
+    /// True only for a registry built by [`Registry::load_pinned`]: every
+    /// package matched its pin. The application registers a package's version
+    /// under its plain `<name>@<version>` id only from a pinned registry.
+    #[serde(default)]
+    pinned: bool,
 }
 
 /// Read one package directory once. A package directory that is itself a symlink is refused:
@@ -200,7 +205,10 @@ impl Registry {
         // the rule; it costs a string comparison per package.
         let mismatches = registry.verify_hashes(expected);
         if mismatches.is_empty() {
-            Ok(registry)
+            Ok(Self {
+                pinned: true,
+                ..registry
+            })
         } else {
             Err(RegistryError::HashMismatch(mismatches))
         }
@@ -296,7 +304,13 @@ impl Registry {
         Ok(Self {
             root: root.to_path_buf(),
             packages,
+            pinned: false,
         })
+    }
+
+    /// Whether every package was checked against a pin ([`Registry::load_pinned`]).
+    pub fn is_pinned(&self) -> bool {
+        self.pinned
     }
 
     /// Build a registry from already-validated packages (tests, in-memory use).
@@ -305,6 +319,7 @@ impl Registry {
         Self {
             root,
             packages: packages.into_iter().map(|p| (p.name.clone(), p)).collect(),
+            pinned: false,
         }
     }
 

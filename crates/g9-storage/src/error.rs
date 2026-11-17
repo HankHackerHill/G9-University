@@ -186,8 +186,10 @@ pub enum StorageError {
     /// Backup verification found problems; the list is metadata only.
     #[error("backup verification failed: {}", .0.join("; "))]
     Verification(Vec<String>),
-    /// Stored JSON/enum text could not be decoded into the expected type.
-    #[error("stored row could not be decoded: {0}")]
+    /// Stored JSON/enum text could not be decoded into the expected type. The
+    /// payload (the column, and sometimes the stored value) is kept for tests
+    /// and never displayed: messages never carry row content.
+    #[error("a stored record could not be read; its data does not have the expected form")]
     RowDecode(String),
     /// An offline restore was refused (`restore.*` code); the message is metadata only.
     #[error("restore refused: {message}")]
@@ -541,6 +543,18 @@ mod tests {
     /// app-6: what SQLite says about a refused statement names tables, columns
     /// and constraints. Each refusal keeps that text as its payload, and the
     /// error a caller receives carries a fixed sentence and the stable code.
+    #[test]
+    fn a_row_that_cannot_be_decoded_is_reported_without_its_column_or_value() {
+        // Final security review (privacy hardening): the message quoted the
+        // column name and, through serde and enum errors, the stored value.
+        let e = StorageError::RowDecode("column title: unexpected enum text \"SECRET-ROW\"".into());
+        let g: G9Error = e.into();
+        assert_eq!(g.code, "storage.row_decode");
+        assert_eq!(g.category, ErrorCategory::DataCorruption);
+        assert!(!g.message.contains("SECRET-ROW"), "{}", g.message);
+        assert!(!g.message.contains("title"), "{}", g.message);
+    }
+
     #[test]
     fn a_refused_statement_reaches_the_caller_without_schema_names() {
         let conn = rusqlite::Connection::open_in_memory().unwrap();

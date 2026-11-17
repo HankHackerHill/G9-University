@@ -11,8 +11,8 @@
 //! Only `std::fs` is used by the tests that run by default: no subprocess, no
 //! network. One test is `#[ignore]`d: it asks `cargo metadata` for the graph
 //! of the target that `deny.toml` checks, shell included, which needs the
-//! Tauri crates in the local registry. `scripts/ci_preflight.sh` runs it in
-//! the `desktop-shell` job.
+//! Tauri crates in the local registry (not WebKit). `scripts/ci_preflight.sh`
+//! and `.github/workflows/ci.yml` run it in the `rust` job.
 //!
 //! Registered as `[[test]] layering_gate` of `crates/g9-evaluation`.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
@@ -155,21 +155,39 @@ fn strip_comment(line: &str) -> &str {
     }
 }
 
+/// The `package = "..."` value of an inline dependency table, if any.
+fn renamed_package(value: &str) -> Option<String> {
+    let rest = &value[value.find("package")? + "package".len()..];
+    let rest = rest.trim_start().strip_prefix('=')?.trim_start();
+    let rest = rest.strip_prefix('"')?;
+    Some(rest[..rest.find('"')?].to_string())
+}
+
 fn parse_manifest(text: &str) -> Manifest {
     let mut m = Manifest::default();
     let mut section = String::new();
+    // Inside a `[dependencies.foo]` table: a `package = ".."` line names the real crate.
+    let mut in_dep_table = false;
     for raw in text.lines() {
         let line = strip_comment(raw).trim();
         if line.is_empty() {
             continue;
         }
         if line.starts_with('[') {
-            section = line.trim_matches(|c| c == '[' || c == ']').to_string();
+            // TOML allows spaces inside a header and around its dots (`[ dependencies ]`).
+            section = line
+                .trim_matches(|c| c == '[' || c == ']')
+                .split('.')
+                .map(str::trim)
+                .collect::<Vec<_>>()
+                .join(".");
+            in_dep_table = false;
             // `[dependencies.foo]` / `[dev-dependencies.foo]` form.
             for table in ["dependencies.", "dev-dependencies.", "build-dependencies."] {
                 if let Some(pos) = section.find(table) {
                     m.deps
                         .insert(section[pos + table.len()..].trim_matches('"').to_string());
+                    in_dep_table = true;
                 }
             }
             continue;
@@ -181,10 +199,14 @@ fn parse_manifest(text: &str) -> Manifest {
         if section == "package" && key == "name" {
             m.name = value.trim().trim_matches('"').to_string();
         }
+        if in_dep_table && key == "package" {
+            m.deps.insert(value.trim().trim_matches('"').to_string());
+        }
         if section.ends_with("dependencies") {
-            // `foo.workspace = true` → `foo`.
+            // `foo.workspace = true` → `foo`; `key = { package = "real" }` → `real`.
             let dep = key.split('.').next().unwrap_or(key);
-            m.deps.insert(dep.to_string());
+            m.deps
+                .insert(renamed_package(value).unwrap_or_else(|| dep.to_string()));
         }
     }
     m
@@ -395,6 +417,21 @@ fn layering_parser_reads_all_dependency_table_forms() {
         .map(String::from)
         .collect();
     assert_eq!(m.deps, want);
+}
+
+#[test]
+fn layering_parser_sees_renamed_dependencies_and_spaced_headers() {
+    // Final security review supply-1: a dependency renamed with `package =`
+    // was recorded under its key, and a header written `[ dependencies ]`
+    // (valid TOML) was not recognised, so a forbidden edge passed the gate.
+    let m = parse_manifest(
+        "[package]\nname = \"g9-policy\"\n[ dependencies ]\nrusqlite = \"0.41\"\n\
+         adapter = { package = \"g9-ai-adapter\", path = \"..\" }\n\
+         [ dev-dependencies . store ]\npackage = \"g9-storage\"\npath = \"..\"\n",
+    );
+    for dep in ["rusqlite", "g9-ai-adapter", "g9-storage"] {
+        assert!(m.deps.contains(dep), "{dep} missing from {:?}", m.deps);
+    }
 }
 
 // ---- What a manifest cannot show: everything a crate pulls in -------------

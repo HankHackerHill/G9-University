@@ -424,8 +424,10 @@ impl tracing::field::Visit for Fields {
 
 impl tracing::Subscriber for EventSubscriber {
     fn enabled(&self, metadata: &tracing::Metadata<'_>) -> bool {
-        // More verbose levels compare greater.
-        *metadata.level() <= tracing::Level::INFO
+        // More verbose levels compare greater. Only the application's own crates
+        // (module paths `g9_*`): their call sites are the register the source
+        // gate checks (`tests/log_call_sites.rs`); a dependency's event is not.
+        *metadata.level() <= tracing::Level::INFO && metadata.target().starts_with("g9_")
     }
 
     fn new_span(&self, _attributes: &tracing::span::Attributes<'_>) -> tracing::span::Id {
@@ -758,6 +760,23 @@ mod tests {
         assert_eq!(got[3]["fields"], json!({ "what": REDACTED }));
         assert_eq!(got[4]["fields"], json!({ "context": REDACTED }));
         assert_eq!(got[5]["message"], REDACTED);
+    }
+
+    #[test]
+    fn events_of_other_crates_are_not_recorded() {
+        // Final security review (privacy hardening): the subscriber is process-wide,
+        // so a dependency's INFO or WARN event (outside the call-site register)
+        // reached the log with its formatted message.
+        let (_root, log) = opened();
+        let clock: EventClock = Arc::new(|| at(1));
+        with_event_log(log.clone(), clock, || {
+            tracing::warn!(target: "softbuffer::backends::x11", "DEPENDENCY-MARKER");
+            tracing::info!(target: "hyper_util::client", "DEPENDENCY-MARKER");
+            tracing::warn!("own event");
+        });
+        let text = fs::read_to_string(log.dir().join(LOG_FILE_NAME)).unwrap();
+        assert!(!text.contains("DEPENDENCY-MARKER"), "{text}");
+        assert_eq!(lines(log.dir(), LOG_FILE_NAME).len(), 1, "{text}");
     }
 
     #[test]

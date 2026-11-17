@@ -540,3 +540,58 @@ fn the_live_wal_holds_no_erased_content_while_the_application_still_runs() {
     );
     drop(client);
 }
+
+/// Final security review privacy-2: `calendar.delete_event` removed the title from every table
+/// (G1) but not from the write-ahead log of the running process: unlike the erasure path it did
+/// not checkpoint with TRUNCATE after its commit.
+#[test]
+fn a_deleted_calendar_title_is_not_left_in_the_live_wal() {
+    const FIRST: &str = "ZZ-CAL-TITLE-first-q81x";
+    const SECOND: &str = "ZZ-CAL-TITLE-second-k27m";
+    let dir = tempfile::tempdir().unwrap();
+    let data = dir.path().join("data");
+    let mut boot = BootOptions::new(data.clone());
+    boot.skills_dir = None;
+    let booted = open(&boot).unwrap();
+    let mut client = Client::new(booted.ctx);
+
+    let start: i64 = 1_900_000_000_000;
+    let created = client
+        .call(
+            "calendar.create_event",
+            json!({ "title": FIRST, "kind": "APPOINTMENT", "start": start, "end": start + 3_600_000 }),
+        )
+        .unwrap();
+    let id = created["result"]["event_id"].as_str().unwrap().to_string();
+    let revision = created["revision"].as_u64().unwrap();
+    client
+        .call_with(
+            "calendar.update_event",
+            json!({ "event_id": id, "title": SECOND }),
+            &MetaOptions::revision(revision),
+        )
+        .unwrap();
+    let before = Snapshot::take(&data);
+    assert!(
+        before.hits(SECOND).contains("g9.sqlite-wal"),
+        "positive control: {:?}",
+        before.hits(SECOND)
+    );
+
+    client
+        .run_approved(
+            "calendar.delete_event",
+            json!({ "event_id": id }),
+            &MetaOptions::default(),
+        )
+        .unwrap();
+    let after = Snapshot::take(&data);
+    for title in [FIRST, SECOND] {
+        assert!(
+            after.hits(title).is_empty(),
+            "{title} still in {:?}",
+            after.hits(title)
+        );
+    }
+    drop(client);
+}

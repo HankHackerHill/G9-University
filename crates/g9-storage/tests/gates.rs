@@ -1427,7 +1427,7 @@ fn a08_snapshot_verify_restore_roundtrip() {
         report.attachment_manifest,
         AttachmentCheck::Checked {
             expected: 1,
-            missing: vec![],
+            missing: 0,
             damaged: 0
         }
     );
@@ -1472,7 +1472,7 @@ fn a08_snapshot_verify_restore_roundtrip() {
         report.attachment_manifest,
         AttachmentCheck::Checked {
             expected: 1,
-            missing: vec![fx.attachment_storage_ref.clone()],
+            missing: 1,
             damaged: 0
         }
     );

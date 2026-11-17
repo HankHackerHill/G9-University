@@ -395,7 +395,9 @@ pub fn begin(
         .map(|r| parse_id(r, "retake_of"))
         .transpose()?;
     let attempt_id: AttemptId = parse_id(
-        &creation_id(ctx, spec, meta, || AttemptId::new_v7().as_str().to_string())?,
+        &creation_id(ctx, spec, meta, payload, || {
+            AttemptId::new_v7().as_str().to_string()
+        })?,
         "attempt_id",
     )?;
     let resource = ResourceRef::new(ResourceKind::Attempt, attempt_id.as_str());

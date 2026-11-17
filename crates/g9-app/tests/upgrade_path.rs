@@ -392,7 +392,7 @@ fn check_pre_migration_backup(
         report.attachment_manifest,
         AttachmentCheck::Checked {
             expected: expected_attachments,
-            missing: Vec::new(),
+            missing: 0,
             damaged: 0
         },
         "{label}"

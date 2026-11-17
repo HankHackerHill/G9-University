@@ -77,8 +77,13 @@ pub enum AttachmentCheck {
     Checked {
         /// Number of attachment rows examined.
         expected: u64,
-        /// Storage refs whose file was missing or unreadable.
-        missing: Vec<String>,
+        /// Number of distinct files the rows reference that are missing or
+        /// unreadable. A count only, like `damaged`: a storage ref is the content
+        /// hash of the file, and the report is stored, exported (SYSTEM) and
+        /// kept after an erasure (final security review ipc-2). Reports stored by
+        /// earlier builds listed the refs; such a list reads as its length.
+        #[serde(deserialize_with = "count_or_list")]
+        missing: u64,
         /// Number of distinct files present under the root that are not a copy
         /// a restore can use: bytes that do not hash to the content address, or
         /// not a regular file inside the store. A count only: the report is
@@ -87,6 +92,36 @@ pub enum AttachmentCheck {
         #[serde(default)]
         damaged: u64,
     },
+}
+
+/// Rewrite every stored backup report that lists the storage refs of missing
+/// attachment files (earlier builds) to the count of that list. A storage ref
+/// is the content hash of the file; reports are stored, exported (SYSTEM) and
+/// outlive an erasure (final security review ipc-2 / privacy-1). Runs at open
+/// (recovery) and in every attachment erasure; returns the rows rewritten.
+pub fn count_listed_missing_files(conn: &Connection) -> StorageResult<usize> {
+    Ok(conn.execute(
+        "UPDATE backup_manifests
+            SET verification_json = json_set(verification_json, '$.attachment_manifest.missing',
+                json_array_length(verification_json, '$.attachment_manifest.missing'))
+          WHERE json_type(verification_json, '$.attachment_manifest.missing') = 'array'",
+        [],
+    )?)
+}
+
+/// `missing` as stored: a count, or the list of storage refs earlier builds
+/// stored (read as its length).
+fn count_or_list<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u64, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum CountOrList {
+        Count(u64),
+        List(Vec<serde::de::IgnoredAny>),
+    }
+    Ok(match CountOrList::deserialize(d)? {
+        CountOrList::Count(n) => n,
+        CountOrList::List(items) => u64::try_from(items.len()).unwrap_or(u64::MAX),
+    })
 }
 
 /// Result of [`verify_snapshot`].
@@ -122,7 +157,7 @@ impl VerificationReport {
             && self.audit_chain_ok
             && self.schema_ok != Some(false)
             && self.errors.is_empty()
-            && !matches!(&self.attachment_manifest, AttachmentCheck::Checked { missing, damaged, .. } if !missing.is_empty() || *damaged > 0)
+            && !matches!(&self.attachment_manifest, AttachmentCheck::Checked { missing, damaged, .. } if *missing > 0 || *damaged > 0)
     }
 }
 
@@ -576,10 +611,7 @@ pub fn verify_connection(
     {
         // Code and count only: a storage ref is derived from the content hash,
         // and neither belongs in an error.
-        let missing_files = missing
-            .iter()
-            .collect::<std::collections::BTreeSet<_>>()
-            .len();
+        let missing_files = *missing;
         if missing_files > 0 {
             errors.push(format!(
                 "backup.attachments_missing: {missing_files} attachment file(s) the snapshot references are not in the attachment store or cannot be read"
@@ -616,7 +648,7 @@ fn check_attachments(conn: &Connection, root: &Path) -> StorageResult<Attachment
     if !has_attachment_table(conn)? {
         return Ok(AttachmentCheck::Checked {
             expected: 0,
-            missing: Vec::new(),
+            missing: 0,
             damaged: 0,
         });
     }
@@ -625,7 +657,7 @@ fn check_attachments(conn: &Connection, root: &Path) -> StorageResult<Attachment
     )?;
     let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
     let mut expected = 0_u64;
-    let mut missing = Vec::new();
+    let mut missing = std::collections::BTreeSet::new();
     let mut states: BTreeMap<String, FileState> = BTreeMap::new();
     for row in rows {
         let (storage_ref, sha256) = row?;
@@ -634,7 +666,7 @@ fn check_attachments(conn: &Connection, root: &Path) -> StorageResult<Attachment
             .entry(sha256)
             .or_insert_with_key(|sha256| inspect(root, sha256));
         if state == FileState::Missing {
-            missing.push(storage_ref);
+            missing.insert(storage_ref);
         }
     }
     let damaged = states
@@ -643,7 +675,7 @@ fn check_attachments(conn: &Connection, root: &Path) -> StorageResult<Attachment
         .count() as u64;
     Ok(AttachmentCheck::Checked {
         expected,
-        missing,
+        missing: u64::try_from(missing.len()).unwrap_or(u64::MAX),
         damaged,
     })
 }
@@ -1126,7 +1158,7 @@ mod tests {
             .unwrap()
     }
 
-    fn report(missing: Vec<String>) -> VerificationReport {
+    fn report(missing: u64) -> VerificationReport {
         VerificationReport {
             integrity_check_ok: true,
             foreign_key_check_ok: true,
@@ -1160,7 +1192,7 @@ mod tests {
                 seq: 7,
                 row_hash: "cd".repeat(32),
             }),
-            verification: Some(report(vec!["missing/ref".to_string()])),
+            verification: Some(report(1)),
             restore_tested_at: Some(UtcMillis::from_millis(created_at + 5)),
             failure_reason: Some("reason.code".to_string()),
         }
@@ -1204,12 +1236,30 @@ mod tests {
         assert_eq!(stored.manifest.audit_anchor, None);
         assert_eq!(stored.manifest.verification, None);
 
-        let mut r = report(Vec::new());
+        let mut r = report(0);
         r.attachment_manifest = AttachmentCheck::NotChecked;
         m.verification = Some(r);
         record_manifest(db.conn(), &m, UtcMillis::from_millis(12)).unwrap();
         let stored = read_manifest(db.conn(), &m.backup_id).unwrap().unwrap();
         assert_eq!(stored.manifest, m);
+    }
+
+    #[test]
+    fn a_report_stored_with_a_list_of_missing_refs_reads_as_its_count() {
+        let legacy: AttachmentCheck = serde_json::from_value(serde_json::json!({
+            "status": "CHECKED", "expected": 3, "missing": ["ab/cd/x", "ef/01/y"], "damaged": 0
+        }))
+        .unwrap();
+        assert_eq!(
+            legacy,
+            AttachmentCheck::Checked {
+                expected: 3,
+                missing: 2,
+                damaged: 0
+            }
+        );
+        let stored = serde_json::to_value(&legacy).unwrap();
+        assert_eq!(stored["missing"], serde_json::json!(2));
     }
 
     #[test]

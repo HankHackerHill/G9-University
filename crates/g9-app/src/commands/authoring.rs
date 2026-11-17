@@ -47,7 +47,7 @@ pub fn competency_create(
 ) -> Result<CommandOutcome<Value>, G9Error> {
     let req: CompetencyRequest = decode(payload)?;
     let id: CompetencyId = parse_id(
-        &creation_id(ctx, spec, meta, || new_id("comp"))?,
+        &creation_id(ctx, spec, meta, payload, || new_id("comp"))?,
         "competency_id",
     )?;
     let resource = ResourceRef::new(ResourceKind::Competency, id.as_str());
@@ -146,7 +146,7 @@ pub fn assessment_define(
 ) -> Result<CommandOutcome<Value>, G9Error> {
     let req: DefineRequest = decode(payload)?;
     let id: AssessmentId = parse_id(
-        &creation_id(ctx, spec, meta, || new_id("ad"))?,
+        &creation_id(ctx, spec, meta, payload, || new_id("ad"))?,
         "assessment_id",
     )?;
     let resource = ResourceRef::new(ResourceKind::AssessmentDefinition, id.as_str());

@@ -672,7 +672,7 @@ pub fn create(
 ) -> Result<CommandOutcome<Value>, G9Error> {
     let req: CreateRequest = decode(payload)?;
     let session_id: SessionId = parse_id(
-        &super::creation_id(ctx, spec, meta, || new_id("session"))?,
+        &super::creation_id(ctx, spec, meta, payload, || new_id("session"))?,
         "session_id",
     )?;
     let resource = ResourceRef::new(ResourceKind::StudySession, session_id.as_str());

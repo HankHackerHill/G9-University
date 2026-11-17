@@ -373,6 +373,14 @@ fn confirm_then_route(
     payload_json: Value,
     confirm: &mut dyn FnMut(&ApprovalSummary) -> bool,
 ) -> Result<Value, G9Error> {
+    // The boundary checks `route` runs, first: the operator is never asked about
+    // a request the boundary refuses (final security review, ipc hardening).
+    let spec = ops::spec(op)
+        .ok_or_else(|| G9Error::invalid_input("ipc.unknown_operation", "unknown operation"))?;
+    ipc::parse_meta(op, &meta_json, ctx.operator())?;
+    refuse_oversized(spec.name, &payload_json)?;
+    schemas::validate_request(op, &payload_json)?;
+    refuse_unprintable_names(&payload_json)?;
     let id = payload_json
         .get("approval_id")
         .and_then(Value::as_str)

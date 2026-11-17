@@ -207,7 +207,9 @@ fn a_package_changed_without_a_version_bump_is_refused_and_not_recorded_against_
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path().join("skills");
     copy_dir(&skills_fixture_root(), &root);
-    let original = g9_skills::Registry::load(&root).unwrap();
+    // Pinned registries, as the desktop application loads them: a release
+    // whose pins changed while the package kept its version.
+    let original = pinned(&root);
     let mut h = Harness::with(|s| s.skills = Some(original.clone()));
     // The first invocation registers `g9-session-director@0.1.0` (no model: a committed failure).
     h.call_with("skills.invoke", t01_payload(), &Opts::key("before-edit"))
@@ -230,7 +232,7 @@ fn a_package_changed_without_a_version_bump_is_refused_and_not_recorded_against_
     assert!(text.contains("g9-version: \"0.1.0\""));
     text.push_str("\nAn added paragraph that changes what the model is told.\n");
     std::fs::write(&skill_md, text).unwrap();
-    let edited = g9_skills::Registry::load(&root).unwrap();
+    let edited = pinned(&root);
     let edited_pkg = edited.get(&name).unwrap();
     assert_eq!(edited_pkg.version, "0.1.0");
     assert_ne!(edited_pkg.package_sha256, stored_hash);
@@ -277,6 +279,69 @@ fn a_package_changed_without_a_version_bump_is_refused_and_not_recorded_against_
             .collect()
     };
     assert_eq!(rows, vec![(version.to_string(), stored_hash)]);
+}
+
+/// The registry under `root`, loaded against its own hashes as pins.
+fn pinned(root: &Path) -> g9_skills::Registry {
+    let pins = g9_skills::Registry::load(root).unwrap().hashes();
+    let registry = g9_skills::Registry::load_pinned(root, &pins).unwrap();
+    assert!(registry.is_pinned());
+    registry
+}
+
+#[test]
+fn an_unpinned_first_registration_does_not_block_the_pinned_package() {
+    // Final security review authz-2: the first invocation registered the
+    // version row from whatever registry was loaded. An edited package invoked
+    // once through the unpinned CLI became the immutable row
+    // `g9-session-director@0.1.0`, and the pinned package of the same version
+    // was refused with skills.version_hash_mismatch from then on.
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("skills");
+    copy_dir(&skills_fixture_root(), &root);
+    let skill_md = root.join("g9-session-director/SKILL.md");
+    let mut text = std::fs::read_to_string(&skill_md).unwrap();
+    text.push_str("\nAn edited paragraph.\n");
+    std::fs::write(&skill_md, text).unwrap();
+    let edited = g9_skills::Registry::load(&root).unwrap();
+    assert!(!edited.is_pinned());
+    let mut h = Harness::with(|s| s.skills = Some(edited));
+    h.call_with("skills.invoke", t01_payload(), &Opts::key("edited"))
+        .unwrap_err();
+
+    let db = h.ctx.take().unwrap().into_database();
+    let genuine = pinned(&skills_fixture_root());
+    let mut h = Harness::with_database(db, |s| s.skills = Some(genuine)).unwrap();
+    h.continue_ids_from(1_000);
+    let second = h
+        .call_with("skills.invoke", t01_payload(), &Opts::key("genuine"))
+        .unwrap_err();
+    assert_ne!(second.code, "skills.version_hash_mismatch", "{second:?}");
+    assert_eq!(
+        second.category,
+        ErrorCategory::ResourceUnavailable,
+        "{second:?}"
+    );
+    let ids: Vec<String> = {
+        let mut stmt = h
+            .conn()
+            .prepare("SELECT id FROM skill_versions ORDER BY id")
+            .unwrap();
+        stmt.query_map([], |r| r.get(0))
+            .unwrap()
+            .map(Result::unwrap)
+            .collect()
+    };
+    assert_eq!(ids.len(), 2, "{ids:?}");
+    assert!(
+        ids.contains(&"g9-session-director@0.1.0".to_string()),
+        "{ids:?}"
+    );
+    assert!(
+        ids.iter()
+            .any(|i| i.starts_with("g9-session-director@0.1.0+")),
+        "{ids:?}"
+    );
 }
 
 #[test]

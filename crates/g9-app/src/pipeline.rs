@@ -208,6 +208,11 @@ pub struct Mutation {
     pub replay_record: Option<Value>,
     /// In-memory service update applied after a successful commit.
     pub on_commit: Option<OnCommit>,
+    /// Checkpoint the write-ahead log with TRUNCATE right after the commit, so
+    /// content the command removed does not stay in the live `-wal` file
+    /// (`secure_delete` clears the database pages, not the log frames). The
+    /// erasure path does the same (`g9_storage::deletion`).
+    pub truncate_wal: bool,
 }
 
 impl std::fmt::Debug for Mutation {
@@ -220,6 +225,7 @@ impl std::fmt::Debug for Mutation {
             .field("post_commit", &self.post_commit.is_some())
             .field("replay_record", &self.replay_record.is_some())
             .field("on_commit", &self.on_commit.is_some())
+            .field("truncate_wal", &self.truncate_wal)
             .finish_non_exhaustive()
     }
 }
@@ -237,6 +243,7 @@ impl Mutation {
             commit_error: None,
             replay_record: None,
             on_commit: None,
+            truncate_wal: false,
         }
     }
 
@@ -259,6 +266,14 @@ impl Mutation {
     #[must_use]
     pub fn with_audit_resource(mut self, resource: ResourceRef) -> Self {
         self.audit_resource = Some(resource);
+        self
+    }
+
+    /// Checkpoint the write-ahead log with TRUNCATE after the commit (see
+    /// [`Mutation::truncate_wal`]).
+    #[must_use]
+    pub fn truncating_wal(mut self) -> Self {
+        self.truncate_wal = true;
         self
     }
 
@@ -1104,6 +1119,11 @@ where
     };
     if let Err(e) = tx.commit() {
         return Err(Refusal::after_allow(storage_err(e), record, touched));
+    }
+    if mutation.truncate_wal {
+        // Best effort, after the commit: a checkpoint another reader blocks
+        // leaves the frames until the next one, and never undoes the command.
+        let _ = g9_storage::connection::checkpoint_truncate(db.conn());
     }
     if let Some(update) = mutation.on_commit.take() {
         update(svc);

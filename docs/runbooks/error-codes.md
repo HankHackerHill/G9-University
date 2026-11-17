@@ -479,7 +479,7 @@ A row counts once for each way it is raised. **Meaning**: the call-site message,
 | `storage.backup_verification_failed` | "backup verification failed" | Stored data did not pass an integrity check. Stop here and verify a backup in Settings/Recovery before you continue. | `crates/g9-storage/src/error.rs` |
 | `storage.corrupt` | "stored data failed an integrity check" | Stored data did not pass an integrity check. Stop here and verify a backup in Settings/Recovery before you continue. | `crates/g9-storage/src/error.rs` |
 | `storage.migration_checksum_mismatch` | "migration {version} checksum mismatch (recorded {recorded}, embedded {embedded})" | Stored data did not pass an integrity check. Stop here and verify a backup in Settings/Recovery before you continue. | `crates/g9-storage/src/error.rs` |
-| `storage.row_decode` | "stored row could not be decoded: {0}" | Stored data did not pass an integrity check. Stop here and verify a backup in Settings/Recovery before you continue. | `crates/g9-storage/src/error.rs` |
+| `storage.row_decode` | "a stored record could not be read; its data does not have the expected form" | Stored data did not pass an integrity check. Stop here and verify a backup in Settings/Recovery before you continue. | `crates/g9-storage/src/error.rs` |
 
 ## `INTERNAL`
 

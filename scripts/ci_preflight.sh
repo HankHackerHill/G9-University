@@ -115,6 +115,9 @@ if wanted rust; then
   step rust "clippy" . cargo clippy --locked --all-targets -- -D warnings
   step rust "test" . cargo test --locked --all-targets
   step rust "doc tests" . cargo test --locked --doc
+  # The deny.toml target graph, shell included (needs the Tauri crates in the
+  # registry, not WebKit): the ignored test of the layering gate.
+  step rust "layering: deny-target graph" . cargo test --locked -p g9-evaluation --test layering_gate -- --ignored
   step rust "dependency tree" . sh -c 'cargo tree --locked -e normal --prefix none | sort -u | wc -l'
   if have cargo-deny; then
     # CI uses EmbarkStudios/cargo-deny-action, which fetches the advisory database.

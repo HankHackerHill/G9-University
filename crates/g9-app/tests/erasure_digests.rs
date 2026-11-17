@@ -582,3 +582,113 @@ fn an_erased_submission_note_leaves_no_digest_of_its_text_in_the_attempt() {
         );
     }
 }
+
+#[test]
+fn a_backup_report_that_found_a_file_missing_keeps_no_digest_of_it_after_the_erasure() {
+    // Final security review ipc-2: backup verification stored the storage ref
+    // (`ab/cd/<sha256 of the file>`) of every missing attachment file in
+    // `backup_manifests.verification_json`; the erasure did not touch it, and a
+    // SYSTEM export carried the erased SECRET file's digest out.
+    let (mut h, root) = harness();
+    let (note_id, digests) = note_with_everything(&mut h, "SECRET");
+    let created = h.call("backup.create", json!({})).unwrap();
+    let backup_id = created["result"]["backup_id"].as_str().unwrap().to_string();
+    let file_digest = sha256_hex(b"0042");
+    let copy = root
+        .join("backups/attachments")
+        .join(&file_digest[0..2])
+        .join(&file_digest[2..4])
+        .join(&file_digest);
+    std::fs::remove_file(&copy).unwrap();
+    let verified = h
+        .call("backup.verify", json!({ "backup_id": backup_id }))
+        .unwrap();
+    assert_eq!(verified["result"]["state"], "FAILED", "{verified}");
+    // The report counts the missing file and names none, before any erasure.
+    assert_eq!(
+        holders(h.conn(), &file_digest)
+            .iter()
+            .filter(|c| c.starts_with("backup_manifests"))
+            .count(),
+        0
+    );
+
+    erase(&mut h, &note_id);
+    for d in &digests {
+        assert_eq!(holders(h.conn(), d), Vec::<String>::new(), "digest {d}");
+    }
+    for format in ["JSON", "CSV"] {
+        let out = h.approved(
+            "export.request",
+            json!({ "domains": ["SYSTEM"], "format": format, "include_private": false }),
+            &Opts::default(),
+        );
+        assert_eq!(out["result"]["state"], "READY", "{out}");
+        let dir = PathBuf::from(out["result"]["location"].as_str().unwrap());
+        assert_eq!(
+            files_holding(&dir, &file_digest),
+            Vec::<String>::new(),
+            "{format}"
+        );
+    }
+}
+
+#[test]
+fn an_erasure_rewrites_a_report_stored_before_missing_files_were_counted() {
+    // Reports stored by earlier builds list the storage refs; the erasure
+    // rewrites any such list to its count.
+    let (mut h, _root) = harness();
+    let (note_id, _digests) = note_with_everything(&mut h, "SECRET");
+    let created = h.call("backup.create", json!({})).unwrap();
+    let backup_id = created["result"]["backup_id"].as_str().unwrap().to_string();
+    let file_digest = sha256_hex(b"0042");
+    let legacy = format!(
+        "{}/{}/{}",
+        &file_digest[0..2],
+        &file_digest[2..4],
+        file_digest
+    );
+    h.conn()
+        .execute(
+            "UPDATE backup_manifests SET verification_json = json_object('attachment_manifest', json_object('status', 'CHECKED', 'expected', 1, 'missing', json_array(?2), 'damaged', 0)) WHERE id = ?1",
+            rusqlite::params![backup_id, legacy],
+        )
+        .unwrap();
+    erase(&mut h, &note_id);
+    assert_eq!(holders(h.conn(), &file_digest), Vec::<String>::new());
+    let missing: i64 = h
+        .conn()
+        .query_row(
+            "SELECT json_extract(verification_json, '$.attachment_manifest.missing') FROM backup_manifests WHERE id = ?1",
+            [&backup_id],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(missing, 1);
+}
+
+#[test]
+fn a_report_stored_before_missing_files_were_counted_is_rewritten_at_open() {
+    // An export made before any erasure must not carry the refs either.
+    let (mut h, _root) = harness();
+    let created = h.call("backup.create", json!({})).unwrap();
+    let backup_id = created["result"]["backup_id"].as_str().unwrap().to_string();
+    let legacy = format!("ab/cd/{}", "e".repeat(64));
+    h.conn()
+        .execute(
+            "UPDATE backup_manifests SET verification_json = json_object('attachment_manifest', json_object('status', 'CHECKED', 'expected', 1, 'missing', json_array(?2), 'damaged', 0)) WHERE id = ?1",
+            rusqlite::params![backup_id, legacy],
+        )
+        .unwrap();
+    h.restart();
+    assert_eq!(holders(h.conn(), &"e".repeat(64)), Vec::<String>::new());
+    let missing: i64 = h
+        .conn()
+        .query_row(
+            "SELECT json_extract(verification_json, '$.attachment_manifest.missing') FROM backup_manifests WHERE id = ?1",
+            [&backup_id],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(missing, 1);
+}

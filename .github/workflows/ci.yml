@@ -47,7 +47,9 @@ jobs:
         run: cargo test --locked --all-targets
       - name: doc tests
         run: cargo test --locked --doc
-      - name: dependency graph has no cycles / tree
+      - name: layering gate over the deny.toml target graph (shell included)
+        run: cargo test --locked -p g9-evaluation --test layering_gate -- --ignored
+      - name: dependency tree (line count; a cycle already fails the build)
         run: cargo tree --locked -e normal --prefix none | sort -u > /tmp/tree.txt && wc -l /tmp/tree.txt
       - name: cargo-deny (licenses, advisories, bans)
         uses: EmbarkStudios/cargo-deny-action@c3bbe7e4e3f7baeee1a3dd9aec0a3b2aded580fb # v2.1.1

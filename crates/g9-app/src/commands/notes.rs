@@ -109,7 +109,9 @@ pub fn create(
 ) -> Result<CommandOutcome<Value>, G9Error> {
     let req: CreateRequest = decode(payload)?;
     let note_id: NoteId = parse_id(
-        &creation_id(ctx, spec, meta, || NoteId::new_v7().as_str().to_string())?,
+        &creation_id(ctx, spec, meta, payload, || {
+            NoteId::new_v7().as_str().to_string()
+        })?,
         "note_id",
     )?;
     let resource = ResourceRef::new(ResourceKind::Note, note_id.as_str());

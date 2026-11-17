@@ -26,7 +26,10 @@
 //!    expiry move to `EXPIRED` (audited).
 //! 5. **Idempotency retention.** `idempotency_records` older than
 //!    `g9_storage::idempotency::RETENTION_DAYS` (30 days,
-//!    `docs/privacy/data-lifecycle.md`) are deleted; when any were, one audit row
+//!    `docs/privacy/data-lifecycle.md`), counted back from the earlier of the
+//!    wall clock and the newest stored record (`purge_cutoff`: a clock that is
+//!    weeks ahead at one open must not purge fresh records and re-arm their
+//!    keys), are deleted; when any were, one audit row
 //!    records the count (data inventory gap G1: the documented retention was never
 //!    enforced, and the stored results repeat operator text). Like steps 3 and 4,
 //!    it runs only when writes are allowed, in the same transaction.
@@ -510,7 +513,10 @@ fn recover_intervals_and_approvals(
         svc.note_audit(audit.audit_ref);
         report.expired_approvals.push(id);
     }
-    let cutoff = idempotency::retention_cutoff(now);
+    // Backup reports of earlier builds list the content hashes of missing
+    // attachment files; keep only their count (final security review privacy-1).
+    g9_storage::backup::count_listed_missing_files(&tx)?;
+    let cutoff = idempotency::purge_cutoff(&tx, now)?;
     let purged = idempotency::purge_older_than(&tx, cutoff)?;
     if purged > 0 {
         let audit = AuditChain::append(

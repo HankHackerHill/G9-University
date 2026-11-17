@@ -140,7 +140,11 @@ pub struct QuotingRecord {
 /// Records whose stored `result` holds an object in which `id_key` is `id` and
 /// `content_key` is present: the view of that record, with its content, kept
 /// inside the result (a calendar event's `event_id` and `title`). Found by the
-/// JSON structure, not by searching for text.
+/// JSON structure, not by searching for text (the `instr` test only skips
+/// records that cannot match). One pass over each stored result: the sibling
+/// `content_key` is looked up by the path of the object that holds `id_key`
+/// (a self-join of two `json_tree` scans was quadratic in the size of one
+/// result). `content_key` is a key name chosen by the caller, never input.
 pub fn results_quoting(
     conn: &Connection,
     id_key: &str,
@@ -149,10 +153,11 @@ pub fn results_quoting(
 ) -> StorageResult<Vec<QuotingRecord>> {
     let mut stmt = conn.prepare(
         "SELECT r.actor_id, r.idempotency_key, r.outcome_json FROM idempotency_records r
-          WHERE EXISTS (
+          WHERE instr(r.outcome_json, ?2) > 0
+            AND EXISTS (
             SELECT 1 FROM json_tree(r.outcome_json, '$.result') a
-              JOIN json_tree(r.outcome_json, '$.result') b ON b.parent = a.parent
-             WHERE a.key = ?1 AND a.type = 'text' AND a.atom = ?2 AND b.key = ?3)
+             WHERE a.key = ?1 AND a.type = 'text' AND a.atom = ?2
+               AND json_type(r.outcome_json, a.path || '.\"' || ?3 || '\"') IS NOT NULL)
           ORDER BY r.created_at, r.actor_id, r.idempotency_key",
     )?;
     let rows = stmt.query_map(params![id_key, id, content_key], |r| {
@@ -192,6 +197,22 @@ pub fn replace_outcome(
     } else {
         Err(StorageError::NotFound("idempotency record"))
     }
+}
+
+/// The purge cutoff at `now`: [`RETENTION_DAYS`] before the earlier of `now` and
+/// the newest stored record. The wall clock alone cannot be trusted for elapsed
+/// time: an open with the clock weeks ahead would otherwise purge fresh records,
+/// and a retry with the same key after the clock was corrected would run the
+/// command a second time. A record is therefore purged only when a command was
+/// recorded at least [`RETENTION_DAYS`] after it (and the clock agrees), so it
+/// can be kept up to [`RETENTION_DAYS`] past the last recorded command.
+pub fn purge_cutoff(conn: &Connection, now: UtcMillis) -> StorageResult<UtcMillis> {
+    let newest: Option<i64> =
+        conn.query_row("SELECT MAX(created_at) FROM idempotency_records", [], |r| {
+            r.get(0)
+        })?;
+    let anchor = newest.map_or(now.as_millis(), |n| n.min(now.as_millis()));
+    Ok(retention_cutoff(UtcMillis::from_millis(anchor)))
 }
 
 /// Delete records created before `cutoff`; returns the number removed.
@@ -276,6 +297,30 @@ mod tests {
             replace_outcome(db.conn(), "operator-1", "k-missing", &json!({})),
             Err(StorageError::NotFound(_))
         ));
+    }
+
+    #[test]
+    fn results_quoting_is_linear_in_the_size_of_a_stored_outcome() {
+        // Final security review ipc-3: a self-join of two json_tree scans made
+        // the search quadratic in how often one outcome repeats the id (about
+        // 5 s at 4,000 repeats in a debug build). A restored snapshot can hold
+        // such a row; deleting the event then froze the window.
+        let db = db();
+        let repeats: Vec<serde_json::Value> =
+            (0..20_000).map(|_| json!({ "event_id": "ev-1" })).collect();
+        put(&db, "k-big", json!({ "items": repeats }), 1);
+        put(
+            &db,
+            "k-view",
+            json!({ "event_id": "ev-1", "title": "Dentist" }),
+            2,
+        );
+        let started = std::time::Instant::now();
+        let found = results_quoting(db.conn(), "event_id", "ev-1", "title").unwrap();
+        let took = started.elapsed();
+        let keys: Vec<&str> = found.iter().map(|r| r.idempotency_key.as_str()).collect();
+        assert_eq!(keys, ["k-view"]);
+        assert!(took < std::time::Duration::from_secs(5), "took {took:?}");
     }
 
     #[test]

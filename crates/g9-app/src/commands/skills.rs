@@ -203,9 +203,17 @@ fn find_package<'a>(svc: &'a Services, code: &str) -> Result<&'a SkillPackage, G
 
 /// Register the package's skill and version rows once (FK targets of `skill_invocations`), and
 /// refuse a package whose hashes differ from the version row registered under its version.
+///
+/// Only a package from a pinned registry (`Registry::load_pinned`, as the desktop application
+/// loads) is registered under the plain `<name>@<version>` id. A package from an unpinned
+/// registry (the CLI's `--skills-dir`) is registered under `<name>@<version>+<first 12 hex of
+/// its package hash>`: rows cannot be deleted, so an unpinned package registered first would
+/// otherwise block the pinned package of the same version for good (final security review
+/// authz-2), and two unpinned contents never share a row.
 fn ensure_registered(
     conn: &Connection,
     package: &SkillPackage,
+    pinned: bool,
     operator: &Actor,
     now: g9_domain::UtcMillis,
 ) -> Result<String, G9Error> {
@@ -231,11 +239,22 @@ fn ensure_registered(
             },
         )?;
     }
-    let version_id = format!("{}@{}", package.name.as_str(), package.version);
+    // An unpinned package's label carries its content as SemVer build metadata
+    // (`0.1.0+<12 hex>`), so its row is unique per content (UNIQUE skill_id, version_label).
+    let version_label = if pinned {
+        package.version.clone()
+    } else {
+        let short = package
+            .package_sha256
+            .get(..12)
+            .unwrap_or(&package.package_sha256);
+        format!("{}+{short}", package.version)
+    };
+    let version_id = format!("{}@{version_label}", package.name.as_str());
     let loaded = SkillVersionRow {
         id: version_id.clone(),
         skill_id: package.name.clone(),
-        version_label: package.version.clone(),
+        version_label,
         package_sha256: package.package_sha256.clone(),
         skill_md_sha256: sha256_hex(package.body.as_bytes()),
         input_schema_sha256: sha256_json(&package.input_schema),
@@ -352,7 +371,13 @@ pub fn invoke(
                     "state": recorded.state,
                 })));
             }
-            let version_id = ensure_registered(env.conn, &package, &env.meta.actor, env.now)?;
+            let pinned = env
+                .svc
+                .skills
+                .as_ref()
+                .is_some_and(g9_skills::Registry::is_pinned);
+            let version_id =
+                ensure_registered(env.conn, &package, pinned, &env.meta.actor, env.now)?;
             let granted: Vec<Capability> = [Capability::SkillInvoke, Capability::ModelInference]
                 .into_iter()
                 .filter(|c| package.requested_capabilities.contains(c))

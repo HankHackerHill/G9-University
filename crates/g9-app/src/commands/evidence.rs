@@ -201,7 +201,7 @@ pub fn attach_file(
     let filename = clean_filename(&req.filename)?;
     let bytes = decode_bytes(&req.content_base64)?;
     let attachment_id: AttachmentId = parse_id(
-        &creation_id(ctx, spec, meta, || {
+        &creation_id(ctx, spec, meta, payload, || {
             AttachmentId::new_v7().as_str().to_string()
         })?,
         "attachment_id",
@@ -324,7 +324,7 @@ pub fn from_note(
     let req: FromNoteRequest = decode(payload)?;
     let note_id: NoteId = parse_id(&req.note_id, "note_id")?;
     let evidence_id: EvidenceId = parse_id(
-        &creation_id(ctx, spec, meta, || {
+        &creation_id(ctx, spec, meta, payload, || {
             EvidenceId::new_v7().as_str().to_string()
         })?,
         "evidence_id",
