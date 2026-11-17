@@ -11,7 +11,9 @@
 //! * [`verify_snapshot`] opens the copy read-only and runs `PRAGMA integrity_check`,
 //!   `PRAGMA foreign_key_check`, migration checksum verification, audit chain
 //!   verification, table counts and (when an attachment root is given) the
-//!   attachment manifest check.
+//!   attachment check: the file of every referenced attachment is hashed at its
+//!   content address under the root; a missing or damaged file fails
+//!   verification and is reported by code and count (STOR-2).
 //! * [`restore_to_copy`] always restores into a *new* file; it never overwrites
 //!   the live database. Swapping the live file is an application decision that
 //!   needs an operator approval (runbook § Restore).
@@ -70,12 +72,20 @@ pub struct AuditAnchor {
 pub enum AttachmentCheck {
     /// No attachment root was supplied; the manifest was not checked.
     NotChecked,
-    /// Every non-erased `attachments.storage_ref` was resolved under the root.
+    /// Every non-erased attachment row's file was looked up at the content
+    /// address of its `content_sha256` under the root and hashed (STOR-2).
     Checked {
         /// Number of attachment rows examined.
         expected: u64,
-        /// Storage refs that were missing or unreadable.
+        /// Storage refs whose file was missing or unreadable.
         missing: Vec<String>,
+        /// Number of distinct files present under the root that are not a copy
+        /// a restore can use: bytes that do not hash to the content address, or
+        /// not a regular file inside the store. A count only: the report is
+        /// stored and shown, and names no file (0 in reports stored before
+        /// this check existed).
+        #[serde(default)]
+        damaged: u64,
     },
 }
 
@@ -112,15 +122,17 @@ impl VerificationReport {
             && self.audit_chain_ok
             && self.schema_ok != Some(false)
             && self.errors.is_empty()
-            && !matches!(&self.attachment_manifest, AttachmentCheck::Checked { missing, .. } if !missing.is_empty())
+            && !matches!(&self.attachment_manifest, AttachmentCheck::Checked { missing, damaged, .. } if !missing.is_empty() || *damaged > 0)
     }
 }
 
 /// Options for [`verify_snapshot`].
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VerifyOptions {
-    /// Root directory of the content-addressed attachment store; when set, every
-    /// non-erased attachment's `storage_ref` must exist under it.
+    /// Root directory of the content-addressed attachment store a restore would
+    /// copy the files from (the application passes `<backups>/attachments`);
+    /// when set, the file of every non-erased attachment must be there, at the
+    /// content address of its `content_sha256`, and hash to it.
     pub attachment_root: Option<PathBuf>,
 }
 
@@ -262,6 +274,106 @@ fn copy_with_backup_api(src: &Connection, dest: &Path) -> StorageResult<u64> {
     let page_count: i64 = dst.query_row("PRAGMA page_count", [], |r| r.get(0))?;
     dst.close().map_err(|(_, e)| StorageError::from(e))?;
     Ok(page_count.max(0) as u64)
+}
+
+/// Free space a backup needs before it starts, as a multiple of the database
+/// size ([`database_size_bytes`]) on the filesystem that holds the backup
+/// directory (runbook "Disk-full and power-fail": "backups refuse to start
+/// below a free-space threshold (proposed 2× database size)"; STOR-4).
+///
+/// PROPOSED default, the owner's to change. The attachment files copied with a
+/// backup are not counted (PROPOSED extension: add the bytes not yet in
+/// `<backups>/attachments`).
+pub const BACKUP_FREE_SPACE_FACTOR: u64 = 2;
+
+/// Bytes the database occupies: `page_count × page_size`, as the connection
+/// sees it (committed frames still in the WAL included). A snapshot copies
+/// every page, so this is the size of the snapshot it would write.
+pub fn database_size_bytes(conn: &Connection) -> StorageResult<u64> {
+    let pages: i64 = conn.query_row("PRAGMA page_count", [], |r| r.get(0))?;
+    let page_size: i64 = conn.query_row("PRAGMA page_size", [], |r| r.get(0))?;
+    Ok(u64::try_from(pages)
+        .unwrap_or(0)
+        .saturating_mul(u64::try_from(page_size).unwrap_or(0)))
+}
+
+/// Where the free space of the backup directory's filesystem is read from.
+/// Injectable so that a refusal is testable without filling a disk.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "source", content = "bytes", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum FreeSpaceSource {
+    /// `statvfs(2)` on the directory: blocks available to an unprivileged
+    /// writer × fragment size (unix). On other platforms the free space is
+    /// unknown and the check is skipped, which the caller reports.
+    #[default]
+    Filesystem,
+    /// A fixed reading in bytes (tests and drills).
+    Fixed(u64),
+}
+
+impl FreeSpaceSource {
+    /// Bytes available on the filesystem that holds `dir`; `None` when this
+    /// platform cannot tell. A directory that cannot be inspected is an I/O
+    /// error (only its kind is kept).
+    pub fn available_bytes(self, dir: &Path) -> StorageResult<Option<u64>> {
+        match self {
+            FreeSpaceSource::Fixed(bytes) => Ok(Some(bytes)),
+            FreeSpaceSource::Filesystem => filesystem_available_bytes(dir),
+        }
+    }
+}
+
+#[cfg(unix)]
+fn filesystem_available_bytes(dir: &Path) -> StorageResult<Option<u64>> {
+    let stat = rustix::fs::statvfs(dir).map_err(|e| {
+        StorageError::io(
+            "read the free space of the backup directory",
+            &std::io::Error::from(e),
+        )
+    })?;
+    Ok(Some(stat.f_bavail.saturating_mul(stat.f_frsize)))
+}
+
+/// No safe free-space call is wired for this platform: the reading is unknown.
+#[cfg(not(unix))]
+fn filesystem_available_bytes(_dir: &Path) -> StorageResult<Option<u64>> {
+    Ok(None)
+}
+
+/// The free-space reading a backup was allowed to start with.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FreeSpaceCheck {
+    /// [`BACKUP_FREE_SPACE_FACTOR`] × [`database_size_bytes`].
+    pub required_bytes: u64,
+    /// The reading; `None` when the platform cannot tell (not checked).
+    pub available_bytes: Option<u64>,
+}
+
+/// Refuse to start a backup of `conn` into `dir` when fewer than
+/// [`BACKUP_FREE_SPACE_FACTOR`] × the database size are available there
+/// ([`StorageError::InsufficientSpace`], `RETRYABLE_STORAGE
+/// backup.insufficient_space`: the category of `SQLITE_FULL`, retried once
+/// space is freed). Nothing is written. An unknown reading is not a refusal:
+/// the returned check says it was not made.
+pub fn check_free_space(
+    conn: &Connection,
+    dir: &Path,
+    source: FreeSpaceSource,
+) -> StorageResult<FreeSpaceCheck> {
+    let required_bytes = database_size_bytes(conn)?.saturating_mul(BACKUP_FREE_SPACE_FACTOR);
+    let available_bytes = source.available_bytes(dir)?;
+    if let Some(available) = available_bytes {
+        if available < required_bytes {
+            return Err(StorageError::InsufficientSpace {
+                required_bytes,
+                available_bytes: available,
+            });
+        }
+    }
+    Ok(FreeSpaceCheck {
+        required_bytes,
+        available_bytes,
+    })
 }
 
 /// Hex SHA-256 of a file's bytes.
@@ -457,6 +569,27 @@ pub fn verify_connection(
         None => AttachmentCheck::NotChecked,
         Some(root) => check_attachments(conn, root)?,
     };
+    if let AttachmentCheck::Checked {
+        missing, damaged, ..
+    } = &attachment_manifest
+    {
+        // Code and count only: a storage ref is derived from the content hash,
+        // and neither belongs in an error.
+        let missing_files = missing
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len();
+        if missing_files > 0 {
+            errors.push(format!(
+                "backup.attachments_missing: {missing_files} attachment file(s) the snapshot references are not in the attachment store or cannot be read"
+            ));
+        }
+        if *damaged > 0 {
+            errors.push(format!(
+                "backup.attachments_damaged: {damaged} attachment file(s) in the attachment store do not match their content hash"
+            ));
+        }
+    }
     Ok(VerificationReport {
         integrity_check_ok,
         foreign_key_check_ok,
@@ -469,25 +602,49 @@ pub fn verify_connection(
     })
 }
 
+/// Look up and hash the file of every non-erased attachment row under `root`.
+///
+/// The file is found by its digest, never by the stored `storage_ref`: a restore
+/// (`g9 restore`, `g9 copy-backup`) copies by digest out of a content-addressed
+/// store, so the content address is the file a restore would use. Each distinct
+/// digest is hashed once. A digest that is not lowercase hex cannot be resolved
+/// and counts as missing. A schema older than migration `0005` has no
+/// `attachments` table and references no file.
 fn check_attachments(conn: &Connection, root: &Path) -> StorageResult<AttachmentCheck> {
-    let mut stmt =
-        conn.prepare("SELECT storage_ref FROM attachments WHERE erased = 0 ORDER BY id")?;
-    let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
+    use crate::attachment_store::{has_attachment_table, inspect, FileState};
+    if !has_attachment_table(conn)? {
+        return Ok(AttachmentCheck::Checked {
+            expected: 0,
+            missing: Vec::new(),
+            damaged: 0,
+        });
+    }
+    let mut stmt = conn.prepare(
+        "SELECT storage_ref, content_sha256 FROM attachments WHERE erased = 0 ORDER BY id",
+    )?;
+    let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
     let mut expected = 0_u64;
     let mut missing = Vec::new();
+    let mut states: BTreeMap<String, FileState> = BTreeMap::new();
     for row in rows {
-        let storage_ref = row?;
+        let (storage_ref, sha256) = row?;
         expected += 1;
-        let rel = Path::new(&storage_ref);
-        let safe = !rel.is_absolute()
-            && rel
-                .components()
-                .all(|c| matches!(c, std::path::Component::Normal(_)));
-        if !safe || !root.join(rel).is_file() {
+        let state = *states
+            .entry(sha256)
+            .or_insert_with_key(|sha256| inspect(root, sha256));
+        if state == FileState::Missing {
             missing.push(storage_ref);
         }
     }
-    Ok(AttachmentCheck::Checked { expected, missing })
+    let damaged = states
+        .values()
+        .filter(|state| **state == FileState::Damaged)
+        .count() as u64;
+    Ok(AttachmentCheck::Checked {
+        expected,
+        missing,
+        damaged,
+    })
 }
 
 /// Verify the snapshot named in the manifest and advance SnapshotCreated → Checked
@@ -982,6 +1139,7 @@ mod tests {
             attachment_manifest: AttachmentCheck::Checked {
                 expected: 2,
                 missing,
+                damaged: 0,
             },
             errors: Vec::new(),
         }
@@ -1262,5 +1420,55 @@ mod tests {
             .unwrap()
             .unwrap();
         assert_eq!(stored.manifest, m);
+    }
+
+    #[test]
+    fn a_backup_needs_twice_the_database_size_free() {
+        let db = db();
+        let dir = tempfile::tempdir().unwrap();
+        let size = database_size_bytes(db.conn()).unwrap();
+        assert!(size > 0);
+        let required = size * BACKUP_FREE_SPACE_FACTOR;
+        let err = check_free_space(db.conn(), dir.path(), FreeSpaceSource::Fixed(required - 1))
+            .unwrap_err();
+        assert_eq!(
+            err,
+            StorageError::InsufficientSpace {
+                required_bytes: required,
+                available_bytes: required - 1
+            }
+        );
+        assert_eq!(err.code(), "backup.insufficient_space");
+        assert_eq!(
+            err.category(),
+            g9_domain::ErrorCategory::RetryableStorage,
+            "the category of SQLITE_FULL"
+        );
+        let g: g9_domain::G9Error = err.into();
+        assert_eq!(g.details.unwrap()["required_bytes"], required);
+        let ok = check_free_space(db.conn(), dir.path(), FreeSpaceSource::Fixed(required)).unwrap();
+        assert_eq!(
+            ok,
+            FreeSpaceCheck {
+                required_bytes: required,
+                available_bytes: Some(required)
+            }
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn the_filesystem_reading_comes_from_statvfs() {
+        let dir = tempfile::tempdir().unwrap();
+        let available = FreeSpaceSource::Filesystem
+            .available_bytes(dir.path())
+            .unwrap();
+        assert!(available.is_some_and(|b| b > 0), "{available:?}");
+        // A directory that does not exist cannot be read: an I/O error, kind only.
+        let err = FreeSpaceSource::Filesystem
+            .available_bytes(&dir.path().join("absent"))
+            .unwrap_err();
+        assert_eq!(err.code(), "storage.io");
+        assert!(!err.to_string().contains("absent"), "{err}");
     }
 }

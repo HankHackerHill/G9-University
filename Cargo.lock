@@ -1415,6 +1415,7 @@ dependencies = [
  "hex",
  "pretty_assertions",
  "rusqlite",
+ "rustix",
  "serde",
  "serde_json",
  "sha2",

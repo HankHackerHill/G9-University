@@ -12,13 +12,26 @@
 //! approved root. A failed verification or restore test is reported as the
 //! `FAILED` state (the command itself succeeded in establishing that).
 //!
-//! Attachment manifest (ADR-0001, runbook step 2): every verification and
-//! restore test checks attachments under `AppConfig::attachment_dir` (when it
-//! lies inside an approved root). A snapshot that holds attachment rows which
+//! Attachment check (ADR-0001, runbook step 2; STOR-2): every verification and
+//! restore test hashes the file of every attachment the snapshot references in
+//! `<backup_dir>/attachments`, the store `g9 restore` copies the files back
+//! from (`g9_storage::backup::VerifyOptions::attachment_root`). A missing or
+//! damaged file fails the backup (`FAILED`), reported by code and count in the
+//! stored verification report (`backup.attachments_missing`,
+//! `backup.attachments_damaged`). The live store (`AppConfig::attachment_dir`)
+//! is only the source the files are copied from: a restore never reads it and
+//! replaces a damaged file there, so it does not decide whether a backup
+//! restores and is not consulted. A snapshot that holds attachment rows which
 //! were not checked (no attachment directory configured) is never `CHECKED`:
 //! the manifest moves to `FAILED` with reason `backup.attachments_not_checked`.
-//! Hashing attachment bytes against `content_sha256` during verification is
-//! a `g9-storage` change (PROPOSED).
+//!
+//! Free space (STOR-4; runbook "Disk-full and power-fail"): `backup.create`
+//! refuses to start, before anything is written, when the backup directory's
+//! filesystem has less than `g9_storage::backup::BACKUP_FREE_SPACE_FACTOR` ×
+//! the database size free (`RETRYABLE_STORAGE backup.insufficient_space`, with
+//! `required_bytes` and `available_bytes` in the details). The reading comes
+//! from `AppConfig::free_space`. Where the platform cannot tell, the backup
+//! starts and says so (warning `backup.free_space_not_checked`).
 //!
 //! Attachment bytes: `backup.create` copies the bytes of every attachment the
 //! database references into `<backup_dir>/attachments/ab/cd/<sha256>`
@@ -107,16 +120,42 @@ fn approved_dir(svc: &Services, dir: Option<&PathBuf>, what: &str) -> Result<Pat
     Ok(dir.clone())
 }
 
-/// Verification options for every backup check: the attachment directory,
-/// when configured inside an approved root.
-pub(crate) fn verify_options(svc: &Services) -> VerifyOptions {
-    VerifyOptions {
-        attachment_root: svc.config.attachment_dir.clone().filter(|dir| {
-            svc.approved_roots
-                .as_ref()
-                .is_some_and(|roots| roots.contains_directory(dir))
-        }),
-    }
+/// Whether `dir` lies inside an approved root.
+fn approved(svc: &Services, dir: &std::path::Path) -> bool {
+    svc.approved_roots
+        .as_ref()
+        .is_some_and(|roots| roots.contains_directory(dir))
+}
+
+/// The live attachment store, when configured inside an approved root: the
+/// source the referenced files are copied from.
+fn live_attachment_root(svc: &Services) -> Option<PathBuf> {
+    svc.config
+        .attachment_dir
+        .clone()
+        .filter(|dir| approved(svc, dir))
+}
+
+/// Verification options for every backup check: the backup attachment store
+/// `<backup_dir>/attachments` (the store a restore copies the files from), when
+/// an attachment directory and the backup directory are configured inside
+/// approved roots. Without an attachment directory nothing was ever copied
+/// there, and the check is reported as not done (`NotChecked`).
+pub(crate) fn verify_options(svc: &Services, manifest: &BackupManifest) -> VerifyOptions {
+    // The store beside the snapshot is the one `g9 restore` copies from
+    // (`<snapshot dir>/attachments`), which is the configured backup directory
+    // only while the snapshot was written there. A snapshot without a path, or
+    // whose store is not inside an approved root, gets no store: its
+    // attachments are reported unchecked, never silently passed.
+    let attachment_root = live_attachment_root(svc).and_then(|_| {
+        manifest
+            .path
+            .as_ref()
+            .and_then(|snapshot| snapshot.parent())
+            .map(|dir| dir.join(BACKUP_ATTACHMENTS_DIR))
+            .filter(|store| approved(svc, store))
+    });
+    VerifyOptions { attachment_root }
 }
 
 /// Directory beside the snapshots that holds the attachment bytes every
@@ -131,7 +170,7 @@ pub(crate) fn copy_attachments(
     svc: &Services,
     backup_dir: &std::path::Path,
 ) -> Result<Option<attachment_store::CopyReport>, G9Error> {
-    let Some(root) = verify_options(svc).attachment_root else {
+    let Some(root) = live_attachment_root(svc) else {
         return Ok(None);
     };
     let digests = attachment_store::referenced_digests(conn)?;
@@ -188,6 +227,9 @@ pub fn create(
         },
         move |env| {
             let dir = approved_dir(env.svc, env.svc.config.backup_dir.as_ref(), "backup")?;
+            // Before anything is written: a refusal here rolls the command back
+            // and records it (STOR-4).
+            let space = backup::check_free_space(env.conn, &dir, env.svc.config.free_space)?;
             let label = req.label;
             let step: pipeline::PostCommit = Box::new(move |post| {
                 let request = SnapshotRequest {
@@ -234,6 +276,11 @@ pub fn create(
                         "backup.snapshot_created",
                         json!({ "backup_id": id, "attachments_copied": copied }),
                     ));
+                if space.available_bytes.is_none() {
+                    m = m.with_warning(
+                        "backup.free_space_not_checked: the free space of the backup directory cannot be read on this platform; the backup started without the free-space check",
+                    );
+                }
                 match attachments {
                     Ok(Some(r)) if !r.complete() => {
                         m = m.with_warning(format!(
@@ -372,7 +419,7 @@ fn advance(
                 None
             };
             let mut known = resolve_known(env.svc, env.conn, &id)?.ok_or_else(not_found)?;
-            let options = verify_options(env.svc);
+            let options = verify_options(env.svc, &known.manifest);
             let kind = match &scratch {
                 None => {
                     if known.manifest.state != BackupState::SnapshotCreated {

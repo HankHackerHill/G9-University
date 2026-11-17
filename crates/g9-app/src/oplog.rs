@@ -466,8 +466,39 @@ pub fn install_event_log(log: Arc<OpLog>) -> bool {
 
 /// Run `f` with the diagnostic events of the current thread going to `log`
 /// (tests, and tools that open more than one data directory in one process).
+///
+/// In a process with other threads, call [`keep_call_sites_interested`] first.
+/// While a scoped subscriber is the only one registered, `tracing` decides
+/// whether a call site is of interest from the default subscriber of whichever
+/// thread reaches it first: a thread without a subscriber caches the call site
+/// as never interesting for the whole process, and the scoped log then misses
+/// its events (observed in the multi-threaded test binaries).
 pub fn with_event_log<T>(log: Arc<OpLog>, clock: EventClock, f: impl FnOnce() -> T) -> T {
     tracing::subscriber::with_default(EventSubscriber::new(log, clock), f)
+}
+
+/// A process-wide subscriber that is interested in every call site and records
+/// nothing. Installed before [`with_event_log`] in a multi-threaded process, it
+/// keeps call sites from being cached as uninteresting (see there). Returns
+/// `false` when the process already has a global subscriber (which then plays
+/// this part). Never call it in the application: it would take the place of
+/// [`install_event_log`].
+pub fn keep_call_sites_interested() -> bool {
+    struct Interested;
+    impl tracing::Subscriber for Interested {
+        fn enabled(&self, _: &tracing::Metadata<'_>) -> bool {
+            true
+        }
+        fn new_span(&self, _: &tracing::span::Attributes<'_>) -> tracing::span::Id {
+            tracing::span::Id::from_u64(1)
+        }
+        fn record(&self, _: &tracing::span::Id, _: &tracing::span::Record<'_>) {}
+        fn record_follows_from(&self, _: &tracing::span::Id, _: &tracing::span::Id) {}
+        fn event(&self, _: &tracing::Event<'_>) {}
+        fn enter(&self, _: &tracing::span::Id) {}
+        fn exit(&self, _: &tracing::span::Id) {}
+    }
+    tracing::subscriber::set_global_default(Interested).is_ok()
 }
 
 #[cfg(unix)]

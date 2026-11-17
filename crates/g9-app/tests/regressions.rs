@@ -451,6 +451,13 @@ fn backup_rollback_keeps_the_in_memory_state_equal_to_the_database() {
 // backup.rs:220 — the attachment manifest is checked, NotChecked never passes
 // ---------------------------------------------------------------------------
 
+/// The content address of the bytes `insert_attachment` records (`b"pcap"`):
+/// the path the application stores them at and a backup copies them to.
+fn pcap_ref() -> String {
+    let sha = g9_domain::hashing::sha256_hex(b"pcap");
+    format!("{}/{}/{}", &sha[0..2], &sha[2..4], sha)
+}
+
 fn insert_attachment(h: &Harness, storage_ref: &str) {
     evidence_repo::insert_attachment(
         h.conn(),
@@ -481,7 +488,7 @@ fn insert_attachment(h: &Harness, storage_ref: &str) {
 fn backup_with_attachment_rows_is_never_checked_without_the_attachment_check() {
     // No attachment directory configured: the rows cannot be checked.
     let mut h = Harness::with_dirs();
-    insert_attachment(&h, "ab/cd/missing");
+    insert_attachment(&h, &pcap_ref());
     let created = h.call("backup.create", json!({})).unwrap();
     let id = created["result"]["backup_id"].as_str().unwrap().to_string();
     let verified = h.call("backup.verify", json!({ "backup_id": id })).unwrap();
@@ -491,7 +498,7 @@ fn backup_with_attachment_rows_is_never_checked_without_the_attachment_check() {
     // Configured attachment directory, file missing: FAILED.
     let dir = tempfile::Builder::new().prefix("g9att").tempdir().unwrap();
     let root = dir.path().to_path_buf();
-    for sub in ["backups", "scratch", "attachments/ab/cd"] {
+    for sub in ["backups", "scratch", "attachments"] {
         std::fs::create_dir_all(root.join(sub)).unwrap();
     }
     let r = root.clone();
@@ -501,14 +508,16 @@ fn backup_with_attachment_rows_is_never_checked_without_the_attachment_check() {
         s.config.scratch_dir = Some(r.join("scratch"));
         s.config.attachment_dir = Some(r.join("attachments"));
     });
-    insert_attachment(&h, "ab/cd/blob");
+    insert_attachment(&h, &pcap_ref());
     let created = h.call("backup.create", json!({})).unwrap();
     let id = created["result"]["backup_id"].as_str().unwrap().to_string();
     let verified = h.call("backup.verify", json!({ "backup_id": id })).unwrap();
     assert_eq!(verified["result"]["state"], "FAILED");
 
     // File present: CHECKED, then RETAINED.
-    std::fs::write(root.join("attachments/ab/cd/blob"), b"pcap").unwrap();
+    let file = root.join("attachments").join(pcap_ref());
+    std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+    std::fs::write(&file, b"pcap").unwrap();
     let created = h.call("backup.create", json!({})).unwrap();
     let id = created["result"]["backup_id"].as_str().unwrap().to_string();
     let verified = h.call("backup.verify", json!({ "backup_id": id })).unwrap();
@@ -536,7 +545,7 @@ fn backup_works_when_backup_scratch_and_attachment_dirs_are_themselves_the_roots
         .tempdir()
         .unwrap();
     let root = dir.path().to_path_buf();
-    for sub in ["backups", "scratch", "attachments/ab/cd"] {
+    for sub in ["backups", "scratch", "attachments"] {
         std::fs::create_dir_all(root.join(sub)).unwrap();
     }
     let r = root.clone();
@@ -548,7 +557,7 @@ fn backup_works_when_backup_scratch_and_attachment_dirs_are_themselves_the_roots
     });
 
     // Create is authorized (was UNAUTHORIZED backup.backup_outside_approved_roots).
-    insert_attachment(&h, "ab/cd/blob");
+    insert_attachment(&h, &pcap_ref());
     let created = h.call("backup.create", json!({})).unwrap();
     let id = created["result"]["backup_id"].as_str().unwrap().to_string();
 
@@ -558,7 +567,9 @@ fn backup_works_when_backup_scratch_and_attachment_dirs_are_themselves_the_roots
     assert_eq!(verified["result"]["state"], "FAILED");
 
     // With the file present the same layout reaches CHECKED, then RETAINED.
-    std::fs::write(root.join("attachments/ab/cd/blob"), b"pcap").unwrap();
+    let file = root.join("attachments").join(pcap_ref());
+    std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+    std::fs::write(&file, b"pcap").unwrap();
     let created = h.call("backup.create", json!({})).unwrap();
     let id = created["result"]["backup_id"].as_str().unwrap().to_string();
     let verified = h.call("backup.verify", json!({ "backup_id": id })).unwrap();

@@ -25,6 +25,13 @@ sha2 = { workspace = true }
 hex = { workspace = true }
 tracing = { workspace = true }
 
+# Free space on the backup directory's filesystem before a snapshot starts
+# (STOR-4, `backup::FreeSpaceSource`): a safe `statvfs` wrapper, since
+# `unsafe_code` is forbidden. Exact pin of the version already in Cargo.lock
+# (through tempfile); `fs` is the only API used. Other platforms skip the check.
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "=1.1.6", features = ["fs"] }
+
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }

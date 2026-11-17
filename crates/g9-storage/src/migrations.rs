@@ -837,6 +837,12 @@ mod tests {
     }
 
     fn applied_events(f: impl FnOnce()) -> Vec<String> {
+        // Other test threads reach the migrator's call sites without a
+        // subscriber; with only one scoped subscriber registered, tracing would
+        // cache those call sites as uninteresting for the whole process. A
+        // second, global subscriber (interested, recording nothing) prevents it
+        // (`g9_app::oplog::keep_call_sites_interested` explains the mechanism).
+        let _ = tracing::subscriber::set_global_default(Applied::default());
         let seen = Applied::default();
         tracing::subscriber::with_default(seen.clone(), f);
         let out = seen.0.lock().unwrap().clone();

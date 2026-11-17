@@ -7,7 +7,8 @@
 //!    an existing database with pending migrations *unmigrated*. Here, pending
 //!    migrations are applied only after a verified backup: Online Backup API
 //!    snapshot into the configured backup directory → verification on the copy
-//!    (attachment manifest included) → (file databases)
+//!    (attachment files copied to `<backup_dir>/attachments` and hashed
+//!    there) → (file databases)
 //!    `Migrator::dry_run_on_copy` in the scratch directory → `migrate_pending`.
 //!    Without a backup directory, without an approved scratch directory for a
 //!    file database (the dry run is mandatory, runbook Migration step 2), or
@@ -191,6 +192,13 @@ fn migrate_after_backup(
             Some(scratch)
         }
     };
+    // The backup refuses to start below the free-space threshold (STOR-4),
+    // before any file is written; the database stays unmigrated.
+    if let Err(e) = backup::check_free_space(db.conn(), &dir, svc.config.free_space) {
+        report.migration_blocked_reason =
+            Some(format!("pre-migration backup refused: {}", e.code()));
+        return Ok(());
+    }
     let now = svc.now();
     let backup_id = BackupId::new_v7();
     let dest = dir.join(format!("{}.pre-migration.sqlite", backup_id.as_str()));
@@ -210,10 +218,26 @@ fn migrate_after_backup(
             return Ok(());
         }
     };
-    let verified =
-        backup::verify_and_advance(&mut manifest, &crate::commands::backup::verify_options(svc));
+    // The attachment files travel with this backup as with `backup.create`:
+    // verification hashes them in `<backup_dir>/attachments`, the store a restore
+    // copies them from (STOR-2). A file that is neither intact in the live store
+    // nor already intact there fails the verification below.
+    // From here the snapshot exists. A pre-migration backup that is refused is
+    // not recorded, so its file would be an orphan copy of every note: it is
+    // removed on each refusal below.
+    if let Err(e) = crate::commands::backup::copy_attachments(db.conn(), svc, &dir) {
+        report.migration_blocked_reason = Some(format!(
+            "pre-migration backup could not copy the attachment files: {}",
+            e.code
+        ));
+        discard_unrecorded_snapshot(&dest);
+        return Ok(());
+    }
+    let options = crate::commands::backup::verify_options(svc, &manifest);
+    let verified = backup::verify_and_advance(&mut manifest, &options);
     if !matches!(&verified, Ok(r) if r.ok()) {
         report.migration_blocked_reason = Some("pre-migration backup failed verification".into());
+        discard_unrecorded_snapshot(&dest);
         return Ok(());
     }
     if matches!(&verified, Ok(r) if crate::commands::backup::attachments_unchecked(r)) {
@@ -221,6 +245,7 @@ fn migrate_after_backup(
             "pre-migration backup holds attachments that were not checked (no attachment directory is configured)"
                 .into(),
         );
+        discard_unrecorded_snapshot(&dest);
         return Ok(());
     }
     if let (Some(path), Some(scratch)) = (file_db, scratch) {
@@ -238,11 +263,13 @@ fn migrate_after_backup(
                     if dry.integrity_ok { "ok" } else { "failed" },
                     dry.foreign_key_violations
                 ));
+                discard_unrecorded_snapshot(&dest);
                 return Ok(());
             }
             Err(e) => {
                 report.migration_blocked_reason =
                     Some(format!("migration dry run on a copy failed: {}", e.code()));
+                discard_unrecorded_snapshot(&dest);
                 return Ok(());
             }
         }
@@ -451,6 +478,17 @@ fn recover_intervals_and_approvals(
 }
 
 /// Remove a migration rehearsal copy; a failure is logged, never fatal.
+/// Remove a pre-migration snapshot that was refused and never recorded (no
+/// manifest row names it, so nothing could restore from it).
+fn discard_unrecorded_snapshot(snapshot: &std::path::Path) {
+    if let Err(e) = g9_storage::migrations::remove_scratch_copy(snapshot) {
+        tracing::warn!(
+            code = e.code(),
+            "refused pre-migration snapshot was not removed"
+        );
+    }
+}
+
 fn discard_rehearsal_copy(copy: &std::path::Path) {
     if let Err(e) = g9_storage::migrations::remove_scratch_copy(copy) {
         tracing::warn!(code = e.code(), "migration dry-run copy was not removed");

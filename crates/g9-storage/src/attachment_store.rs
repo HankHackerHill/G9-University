@@ -279,6 +279,50 @@ pub fn holds_intact(root: &Path, sha256: &str) -> StorageResult<bool> {
     }
 }
 
+/// What verification found at a digest's content address ([`inspect`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FileState {
+    /// A regular file inside the store whose bytes hash to the digest.
+    Intact,
+    /// Nothing there, the store itself is absent, the digest is not a
+    /// lowercase hex SHA-256, or the file could not be read.
+    Missing,
+    /// Something is there but it is not a copy a restore can use: bytes that
+    /// hash to another digest, or not a regular file inside the store (a
+    /// link, a directory, a shard directory that resolves outside the store;
+    /// [`copy_between`] refuses each of these as a source).
+    Damaged,
+}
+
+/// Hash the file at the content address of `sha256` under `root` and say
+/// whether a restore could copy it from there. Never writes; a read failure is
+/// [`FileState::Missing`] (the file cannot be vouched for), never an error, so
+/// one unreadable file does not hide the state of the others.
+pub fn inspect(root: &Path, sha256: &str) -> FileState {
+    let Ok(rel) = relpath(sha256) else {
+        return FileState::Missing;
+    };
+    let Ok(root) = fs::canonicalize(root) else {
+        return FileState::Missing;
+    };
+    let path = root.join(rel);
+    match fs::symlink_metadata(&path) {
+        Ok(meta) if meta.file_type().is_file() => {}
+        Ok(_) => return FileState::Damaged,
+        Err(_) => return FileState::Missing,
+    }
+    match fs::canonicalize(&path) {
+        Ok(canonical) if canonical.starts_with(&root) => {}
+        Ok(_) => return FileState::Damaged,
+        Err(_) => return FileState::Missing,
+    }
+    match sha256_of_file(&path) {
+        Ok(actual) if actual == sha256 => FileState::Intact,
+        Ok(_) => FileState::Damaged,
+        Err(_) => FileState::Missing,
+    }
+}
+
 /// What [`copy_all`] did.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CopyReport {
@@ -330,8 +374,23 @@ pub fn copy_all(from: &Path, to: &Path, digests: &[String]) -> StorageResult<Cop
     Ok(report)
 }
 
-/// Distinct content digests of every non-erased attachment row, sorted.
+/// Whether the database has the `attachments` table: a schema older than
+/// migration `0005` has none, and so references no file (a pre-migration
+/// backup of such a database is verified before `0005` is applied; REL-5).
+pub fn has_attachment_table(conn: &rusqlite::Connection) -> StorageResult<bool> {
+    Ok(conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'attachments')",
+        [],
+        |r| r.get::<_, bool>(0),
+    )?)
+}
+
+/// Distinct content digests of every non-erased attachment row, sorted (none
+/// before migration `0005`).
 pub fn referenced_digests(conn: &rusqlite::Connection) -> StorageResult<Vec<String>> {
+    if !has_attachment_table(conn)? {
+        return Ok(Vec::new());
+    }
     let mut stmt = conn.prepare(
         "SELECT DISTINCT content_sha256 FROM attachments WHERE erased = 0 ORDER BY content_sha256",
     )?;

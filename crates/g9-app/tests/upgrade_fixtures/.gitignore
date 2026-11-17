@@ -1,0 +1,3 @@
+# The upgrade fixtures are SQLite files that the root rule `*.sqlite` would
+# ignore; they are committed on purpose (plan step REL-5).
+!schema-v*.sqlite

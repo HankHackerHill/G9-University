@@ -91,6 +91,16 @@ pub enum StorageError {
     /// The disk is full (`SQLITE_FULL`); the command may be retried after space is freed.
     #[error("disk full")]
     DiskFull,
+    /// A backup refused to start: the backup directory's filesystem has less
+    /// free space than the threshold (`backup::check_free_space`); nothing was
+    /// written, and the command may be retried after space is freed.
+    #[error("not enough free space to start a backup: {available_bytes} bytes available, {required_bytes} required")]
+    InsufficientSpace {
+        /// Threshold: `BACKUP_FREE_SPACE_FACTOR` × the database size.
+        required_bytes: u64,
+        /// Free space reported for the backup directory's filesystem.
+        available_bytes: u64,
+    },
     /// The file is not a readable SQLite database or `integrity_check` failed.
     #[error("database corrupt: {0}")]
     Corrupt(String),
@@ -185,6 +195,7 @@ impl StorageError {
             StorageError::UniqueViolation(_) => "storage.unique_violation",
             StorageError::Busy(_) => "storage.busy",
             StorageError::DiskFull => "storage.disk_full",
+            StorageError::InsufficientSpace { .. } => "backup.insufficient_space",
             StorageError::Corrupt(_) => "storage.corrupt",
             StorageError::ChecksumMismatch { .. } => "storage.migration_checksum_mismatch",
             StorageError::SchemaNewerThanApp { .. } => "storage.schema_newer_than_app",
@@ -218,7 +229,9 @@ impl StorageError {
                 ErrorCategory::InvalidInput
             }
             StorageError::UniqueViolation(_) | StorageError::Conflict(_) => ErrorCategory::Conflict,
-            StorageError::Busy(_) | StorageError::DiskFull => ErrorCategory::RetryableStorage,
+            StorageError::Busy(_)
+            | StorageError::DiskFull
+            | StorageError::InsufficientSpace { .. } => ErrorCategory::RetryableStorage,
             StorageError::Corrupt(_)
             | StorageError::ChecksumMismatch { .. }
             | StorageError::Verification(_)
@@ -265,6 +278,13 @@ impl From<StorageError> for G9Error {
                 G9Error::new(category, code, e.to_string())
                     .with_details(serde_json::json!({ "version": version }))
             }
+            StorageError::InsufficientSpace {
+                required_bytes,
+                available_bytes,
+            } => G9Error::new(category, code, e.to_string()).with_details(serde_json::json!({
+                "required_bytes": required_bytes,
+                "available_bytes": available_bytes,
+            })),
             StorageError::Verification(ref errors) => {
                 G9Error::new(category, code, "backup verification failed")
                     .with_details(serde_json::json!({ "errors": errors }))

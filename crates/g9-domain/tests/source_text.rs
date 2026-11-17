@@ -27,6 +27,8 @@ const ALLOWED: &[(&str, char, usize)] = &[
 
 const SKIPPED_DIRS: &[&str] = &[
     ".git",
+    // Agent sessions' temporary git worktrees: copies, not part of the repository.
+    ".claude",
     "target",
     "node_modules",
     "dist",

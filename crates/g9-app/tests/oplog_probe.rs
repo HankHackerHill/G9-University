@@ -104,6 +104,7 @@ struct Run {
 /// Every kind of call the probe needs, through the real pipeline, with the
 /// diagnostic events of this thread going to the same log.
 fn run() -> Run {
+    oplog::keep_call_sites_interested();
     let root = tempfile::Builder::new().prefix("g9log").tempdir().unwrap();
     let log = OpLog::open(&root.path().join(LOG_DIR_NAME)).unwrap();
     let clock: oplog::EventClock = Arc::new(|| UtcMillis::from_millis(T0));

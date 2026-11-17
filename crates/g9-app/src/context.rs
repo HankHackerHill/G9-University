@@ -58,15 +58,20 @@ pub struct AppConfig {
     /// inside `approved_roots`; a file database with pending migrations is not
     /// migrated without it).
     pub scratch_dir: Option<PathBuf>,
-    /// Root of the content-addressed attachment store, checked by every backup
-    /// verification (must lie inside `approved_roots`). Without it a snapshot
-    /// that holds attachment rows fails verification.
+    /// Root of the live content-addressed attachment store (must lie inside
+    /// `approved_roots`): the source every backup copies the referenced files
+    /// from into `<backup_dir>/attachments`, where verification hashes them.
+    /// Without it a snapshot that holds attachment rows fails verification.
     pub attachment_dir: Option<PathBuf>,
     /// Directory `export.request` writes exports to (must lie inside
     /// `approved_roots`); without it an approved export is refused.
     pub export_dir: Option<PathBuf>,
     /// Host directories the backend may write to.
     pub approved_roots: Vec<PathBuf>,
+    /// Where a backup reads the free space of the backup directory's
+    /// filesystem before it starts (STOR-4): `statvfs` by default; a fixed
+    /// reading in tests and drills.
+    pub free_space: g9_storage::backup::FreeSpaceSource,
     /// Reported `SystemStatus.transport`.
     pub transport: Transport,
     /// An approval is granted only through a confirmation the operator gives
@@ -91,6 +96,7 @@ impl AppConfig {
             attachment_dir: None,
             export_dir: None,
             approved_roots: Vec::new(),
+            free_space: g9_storage::backup::FreeSpaceSource::Filesystem,
             transport: Transport::Tauri,
             native_confirmation: true,
         })

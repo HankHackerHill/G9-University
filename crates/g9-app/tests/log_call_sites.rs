@@ -35,6 +35,7 @@ const REGISTER: &[&str] = &[
     "crates/g9-app/src/recovery.rs error: session = %session_id, \"policy refused recovery of an open interval\"",
     "crates/g9-app/src/recovery.rs error: version = schema.version, differences = report.schema_differences.len(), \"schema differs from the embedded migrations; mutations are refused\"",
     "crates/g9-app/src/recovery.rs warn: code = e.code(), \"migration dry-run copy was not removed\"",
+    "crates/g9-app/src/recovery.rs warn: code = e.code(), \"refused pre-migration snapshot was not removed\"",
     "crates/g9-app/src/schemas.rs error: operation = op, differences, \"handler result violates its response schema\"",
     "crates/g9-app/src/schemas.rs error: schema = name, \"embedded IPC schema failed to compile\"",
     "crates/g9-storage/src/backup.rs warn: code = e.code(), \"scratch copy was not removed\"",

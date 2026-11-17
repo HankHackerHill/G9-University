@@ -1342,7 +1342,8 @@ fn a08_snapshot_verify_restore_roundtrip() {
         report.attachment_manifest,
         AttachmentCheck::Checked {
             expected: 1,
-            missing: vec![]
+            missing: vec![],
+            damaged: 0
         }
     );
     assert_eq!(manifest.state, BackupState::Checked);
@@ -1386,7 +1387,8 @@ fn a08_snapshot_verify_restore_roundtrip() {
         report.attachment_manifest,
         AttachmentCheck::Checked {
             expected: 1,
-            missing: vec![fx.attachment_storage_ref.clone()]
+            missing: vec![fx.attachment_storage_ref.clone()],
+            damaged: 0
         }
     );
     // without an attachment root the manifest is explicitly NOT checked
