@@ -167,6 +167,10 @@ if wanted content-gates; then
     step content-gates "reference source register" . python3 -I scripts/check_source_register.py
     step content-gates "source verifier self-test" . python3 -I scripts/verify_source_register.py --selftest
     step content-gates "json schemas" . python3 -I scripts/check_schemas.py schemas .agents/skills
+    step content-gates "curriculum build (generated files current)" . python3 -I scripts/build_curriculum.py
+    step content-gates "competency packs" . python3 -I scripts/check_competency_packs.py data/competency-packs
+    step content-gates "data inventory" . python3 -I scripts/check_data_inventory.py
+    step content-gates "gate tests" . env G9_REQUIRE_JSONSCHEMA=1 python3 -I -m unittest discover -s scripts/tests -p 'test_*.py'
   else
     skip content-gates "all steps" "python3 module jsonschema is not installed (CI pins jsonschema==4.26.0)"
   fi

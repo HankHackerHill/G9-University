@@ -105,20 +105,33 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # A virtual environment, not `pip install --user`: the gates run as `python3 -I`, and
+      # -I ignores the user site directory, so a --user install is invisible to them.
       - name: python validator dependency (jsonschema, Draft 2020-12)
-        run: python3 -m pip install --user "jsonschema==4.26.0"
+        run: |
+          python3 -m venv "$RUNNER_TEMP/gates"
+          "$RUNNER_TEMP/gates/bin/python" -m pip install "jsonschema==4.26.0"
+          echo "PY=$RUNNER_TEMP/gates/bin/python" >> "$GITHUB_ENV"
       - name: curriculum seed invariants (A01 static)
-        run: python3 -I scripts/check_curriculum_seed.py data/curriculum/g9-ct9-480.seed.v0.json
+        run: $PY -I scripts/check_curriculum_seed.py data/curriculum/g9-ct9-480.seed.v0.json
       - name: skill package contract
-        run: python3 -I scripts/check_skill_packages.py .agents/skills
+        run: $PY -I scripts/check_skill_packages.py .agents/skills
       - name: skill package hashes (pins and registry agree with package_sha256)
-        run: python3 -I scripts/skill_hashes.py --check
+        run: $PY -I scripts/skill_hashes.py --check
       - name: reference source register (schema, honesty invariants, rendered table)
-        run: python3 -I scripts/check_source_register.py
+        run: $PY -I scripts/check_source_register.py
       - name: source register verifier helpers (offline self-test; performs no requests)
-        run: python3 -I scripts/verify_source_register.py --selftest
+        run: $PY -I scripts/verify_source_register.py --selftest
       - name: json schemas are valid 2020-12
-        run: python3 -I scripts/check_schemas.py schemas .agents/skills
+        run: $PY -I scripts/check_schemas.py schemas .agents/skills
+      - name: curriculum build (generated files are current)
+        run: $PY -I scripts/build_curriculum.py
+      - name: competency packs
+        run: $PY -I scripts/check_competency_packs.py data/competency-packs
+      - name: data inventory (every table has a row in docs/data-model.md)
+        run: $PY -I scripts/check_data_inventory.py
+      - name: tests of the gates themselves
+        run: G9_REQUIRE_JSONSCHEMA=1 $PY -I -m unittest discover -s scripts/tests -p 'test_*.py'
 
   sbom:
     name: SBOM (CycloneDX, Rust + npm)
