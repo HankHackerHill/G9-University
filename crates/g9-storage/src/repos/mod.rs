@@ -8,6 +8,10 @@
 //!
 //! * enforces `expected_revision` on every UPDATE (`revision.stale` →
 //!   `STALE_REVISION`), returning the new [`Revision`];
+//! * writes several statements as one unit (storage-repos-10): a SAVEPOINT
+//!   inside the caller's transaction, its own `BEGIN IMMEDIATE` transaction on
+//!   an autocommit connection, so a failure never leaves part of a rubric, a
+//!   note without its first version or a transition without its event;
 //! * never issues UPDATE or DELETE against append-only tables (the immutability
 //!   triggers in the migrations are the second line of defence; tests prove they
 //!   fire);
@@ -211,6 +215,38 @@ impl ReadScope {
 // ---------------------------------------------------------------------------
 // shared helpers (crate-private)
 // ---------------------------------------------------------------------------
+
+/// Run the statements of one multi-statement repository write as one unit, so
+/// that the write is all-or-nothing on any connection (storage-repos-10).
+/// Inside a caller's transaction (the command pipeline's `BEGIN IMMEDIATE`) it
+/// is a SAVEPOINT: a failure undoes only this write and leaves the caller's
+/// transaction usable. On an autocommit connection it is its own
+/// `BEGIN IMMEDIATE` transaction (the write lock is taken before the first read,
+/// as in the pipeline), committed when every statement succeeded.
+pub(crate) fn atomic<T>(conn: &Connection, write: impl FnOnce() -> RepoResult<T>) -> RepoResult<T> {
+    let outermost = conn.is_autocommit();
+    let (begin, end, undo) = if outermost {
+        ("BEGIN IMMEDIATE", "COMMIT", "ROLLBACK")
+    } else {
+        (
+            "SAVEPOINT g9_repo_write",
+            "RELEASE g9_repo_write",
+            "ROLLBACK TO g9_repo_write; RELEASE g9_repo_write",
+        )
+    };
+    conn.execute_batch(begin)?;
+    let result = write().and_then(|value| {
+        conn.execute_batch(end)?;
+        Ok(value)
+    });
+    // On failure undo this write; the first error is the one reported. When
+    // SQLite already rolled the whole transaction back (SQLITE_FULL, an I/O
+    // error) the connection is in autocommit and there is nothing to undo.
+    if result.is_err() && !conn.is_autocommit() {
+        let _ = conn.execute_batch(undo);
+    }
+    result
+}
 
 /// Run a query and map every row with `f`.
 pub(crate) fn query_all<T>(

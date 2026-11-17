@@ -71,3 +71,51 @@ fn complete_after_a_small_backward_step_closes_the_interval() {
     assert_eq!(open_intervals(&h), 0);
     assert_eq!(state_of(&h, "s-small"), "COMPLETED");
 }
+
+/// storage-repos-11: corrections were read back in `corrected_at` order. A
+/// second correction of the same interval, recorded after the wall clock was
+/// set back, carried the earlier stamp, was listed first, and the older
+/// correction stayed the effective one. They are read in insertion order now.
+#[test]
+fn a_correction_recorded_after_the_wall_clock_steps_back_supersedes_the_earlier_one() {
+    let mut h = Harness::new();
+    running(&mut h, "s-recorrect");
+    h.advance(40 * MIN);
+    h.restart(); // the open interval is closed UNCERTAIN; the session is INTERRUPTED
+    let interval = g9_storage::repos::sessions::list_intervals(
+        h.conn(),
+        &g9_domain::SessionId::parse("s-recorrect").unwrap(),
+    )
+    .unwrap()[0]
+        .id
+        .clone();
+    let first = h
+        .call(
+            "session.correct_time",
+            json!({ "session_id": "s-recorrect", "interval_id": interval, "credited_ms": 30 * MIN, "reason": "thirty minutes" }),
+        )
+        .unwrap();
+    assert_eq!(first["result"]["credited_ms"], 30 * MIN);
+
+    h.clock.fetch_sub(60 * MIN, Ordering::SeqCst); // wall clock only
+    let second = h
+        .call(
+            "session.correct_time",
+            json!({ "session_id": "s-recorrect", "interval_id": interval, "credited_ms": 10 * MIN, "reason": "ten minutes, revised" }),
+        )
+        .unwrap();
+    assert_eq!(
+        second["result"]["credited_ms"],
+        10 * MIN,
+        "the later correction is the effective one: {second}"
+    );
+    let stored: i64 = h
+        .conn()
+        .query_row(
+            "SELECT credited_ms FROM study_sessions WHERE id = 's-recorrect'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(stored, 10 * MIN);
+}

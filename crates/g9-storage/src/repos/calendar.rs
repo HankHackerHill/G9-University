@@ -460,6 +460,17 @@ pub fn delete_event(
     id: &CalendarEventId,
     expected_revision: Revision,
 ) -> RepoResult<()> {
+    super::atomic(conn, || {
+        delete_event_statements(conn, id, expected_revision)
+    })
+}
+
+/// The statements of [`delete_event`], which runs them as one unit (`super::atomic`).
+fn delete_event_statements(
+    conn: &Connection,
+    id: &CalendarEventId,
+    expected_revision: Revision,
+) -> RepoResult<()> {
     let current = required(
         "calendar_events",
         super::current_revision(conn, "calendar_events", "id", id.as_str())?,

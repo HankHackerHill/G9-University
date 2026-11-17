@@ -523,8 +523,9 @@ pub fn verify_connection(
         }
         Ok(report) => {
             errors.push(format!(
-                "migration checksums: {} mismatch(es), db version {}",
+                "migration checksums: {} mismatch(es), {} missing version(s), db version {}",
                 report.mismatches.len(),
+                report.missing.len(),
                 report.db_schema_version
             ));
             false

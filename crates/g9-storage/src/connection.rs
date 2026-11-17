@@ -271,6 +271,22 @@ impl Database {
             .transaction_with_behavior(TransactionBehavior::Immediate)?)
     }
 
+    /// Run `write` in one `BEGIN IMMEDIATE` transaction on this handle: committed
+    /// when it returns `Ok`, rolled back otherwise. For writers outside the
+    /// command pipeline whose rows span several repository calls (the CLI seed,
+    /// storage-repos-10), so that a failure part-way leaves none of them.
+    /// Fails if a transaction is already open on the handle.
+    pub fn write_transaction<T, E: From<StorageError>>(
+        &self,
+        write: impl FnOnce(&Connection) -> Result<T, E>,
+    ) -> Result<T, E> {
+        let tx = Transaction::new_unchecked(&self.conn, TransactionBehavior::Immediate)
+            .map_err(StorageError::from)?;
+        let value = write(&tx)?;
+        tx.commit().map_err(StorageError::from)?;
+        Ok(value)
+    }
+
     /// `PRAGMA wal_checkpoint(TRUNCATE)`; a no-op report for non-WAL databases.
     pub fn checkpoint_truncate(&self) -> StorageResult<CheckpointReport> {
         checkpoint_truncate(&self.conn)

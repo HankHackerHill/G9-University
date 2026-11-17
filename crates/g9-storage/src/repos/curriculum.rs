@@ -270,8 +270,17 @@ fn minutes_u32(v: i64, what: &str) -> StorageResult<u32> {
 
 /// Persist a manifest as a new immutable version with its structural tree.
 /// Refuses an invalid validation report (`PRECONDITION_FAILED`) and a duplicate
-/// `(curriculum_id, version)` (`CONFLICT`). Runs inside the caller's transaction.
+/// `(curriculum_id, version)` (`CONFLICT`). All or nothing: a SAVEPOINT inside
+/// the caller's transaction, its own transaction on an autocommit connection.
 pub fn insert_version(
+    conn: &Connection,
+    input: &NewCurriculumVersion<'_>,
+) -> RepoResult<CurriculumVersionId> {
+    super::atomic(conn, || insert_version_statements(conn, input))
+}
+
+/// The statements of [`insert_version`], which runs them as one unit (`super::atomic`).
+fn insert_version_statements(
     conn: &Connection,
     input: &NewCurriculumVersion<'_>,
 ) -> RepoResult<CurriculumVersionId> {
@@ -511,6 +520,20 @@ pub fn current_version(
 /// already checked `g9_curriculum::check_transition` with the reconciliation
 /// report and consumed the approval in the same transaction.
 pub fn set_provenance(
+    conn: &Connection,
+    id: &CurriculumVersionId,
+    expected_revision: Revision,
+    target: ManifestProvenance,
+    approval: Option<&ProvenanceApproval>,
+    now: UtcMillis,
+) -> RepoResult<Revision> {
+    super::atomic(conn, || {
+        set_provenance_statements(conn, id, expected_revision, target, approval, now)
+    })
+}
+
+/// The statements of [`set_provenance`], which runs them as one unit (`super::atomic`).
+fn set_provenance_statements(
     conn: &Connection,
     id: &CurriculumVersionId,
     expected_revision: Revision,

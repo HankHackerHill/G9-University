@@ -146,6 +146,18 @@ pub fn insert_note(
     author: &ActorId,
     version_row_id: &str,
 ) -> RepoResult<Revision> {
+    super::atomic(conn, || {
+        insert_note_statements(conn, row, author, version_row_id)
+    })
+}
+
+/// The statements of [`insert_note`], which runs them as one unit (`super::atomic`).
+fn insert_note_statements(
+    conn: &Connection,
+    row: &NoteRow,
+    author: &ActorId,
+    version_row_id: &str,
+) -> RepoResult<Revision> {
     let sha = sha256_hex(row.body_markdown.as_bytes());
     conn.execute(
         &format!(
@@ -304,6 +316,32 @@ pub fn list_note_summaries(
 /// revisions. Returns `(version_no, revision)`.
 #[allow(clippy::too_many_arguments)]
 pub fn revise_note(
+    conn: &Connection,
+    id: &NoteId,
+    expected_revision: Revision,
+    title: &str,
+    body_markdown: &str,
+    author: &ActorId,
+    version_row_id: &str,
+    now: UtcMillis,
+) -> RepoResult<(u32, Revision)> {
+    super::atomic(conn, || {
+        revise_note_statements(
+            conn,
+            id,
+            expected_revision,
+            title,
+            body_markdown,
+            author,
+            version_row_id,
+            now,
+        )
+    })
+}
+
+/// The statements of [`revise_note`], which runs them as one unit (`super::atomic`).
+#[allow(clippy::too_many_arguments)]
+fn revise_note_statements(
     conn: &Connection,
     id: &NoteId,
     expected_revision: Revision,
@@ -1242,6 +1280,18 @@ impl ClassifiedTable {
 /// Record a classification decision and update the cached columns of the record
 /// under a revision check. `row.record_table` must name `table`.
 pub fn reclassify(
+    conn: &Connection,
+    table: ClassifiedTable,
+    expected_revision: Revision,
+    row: &ContentClassificationRow,
+) -> RepoResult<Revision> {
+    super::atomic(conn, || {
+        reclassify_statements(conn, table, expected_revision, row)
+    })
+}
+
+/// The statements of [`reclassify`], which runs them as one unit (`super::atomic`).
+fn reclassify_statements(
     conn: &Connection,
     table: ClassifiedTable,
     expected_revision: Revision,

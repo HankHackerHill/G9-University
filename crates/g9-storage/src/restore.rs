@@ -1715,21 +1715,41 @@ mod tests {
         )
         .unwrap();
         drop(conn);
+        // A note with its first version, then the note deleted with foreign keys
+        // off: the version row is orphaned (storage-core-4: the fixture holds no
+        // note, so deleting notes alone orphaned nothing and this case never ran).
         let orphaned = f.dir.path().join("backups").join("orphaned.sqlite");
         fs::copy(&f.snapshot, &orphaned).unwrap();
         let conn = Connection::open(&orphaned).unwrap();
-        conn.execute_batch("PRAGMA foreign_keys = OFF; DELETE FROM notes;")
-            .ok();
+        let sha = "0".repeat(64);
+        conn.execute(
+            "INSERT INTO notes (id, title, body_markdown, body_sha256, kind, source_kind, trust, created_at, updated_at)
+             VALUES ('n-orphan', 't', 'b', ?1, 'JOURNAL', 'OPERATOR_INPUT', 'OPERATOR', 1, 1)",
+            rusqlite::params![sha],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO note_versions (id, note_id, version_no, title, body_markdown, body_sha256, author_id, created_at)
+             VALUES ('nv-orphan', 'n-orphan', 1, 't', 'b', ?1, 'operator-1', 1)",
+            rusqlite::params![sha],
+        )
+        .unwrap();
+        conn.execute_batch("PRAGMA foreign_keys = OFF; DELETE FROM notes WHERE id = 'n-orphan';")
+            .unwrap();
         let broken: i64 = conn
             .query_row("SELECT COUNT(*) FROM pragma_foreign_key_check", [], |r| {
                 r.get(0)
             })
             .unwrap();
         drop(conn);
+        assert_eq!(
+            broken, 1,
+            "the orphaned snapshot must violate a foreign key"
+        );
+        let report = verify_snapshot(&orphaned, &VerifyOptions::default()).unwrap();
+        assert!(!report.foreign_key_check_ok, "{report:?}");
+        assert!(!report.ok(), "{report:?}");
         for (name, path) in [("audit chain", &tampered), ("foreign keys", &orphaned)] {
-            if name == "foreign keys" && broken == 0 {
-                continue;
-            }
             let err = restore_over_live(path, &f.live, &f.quarantine(), &opts()).unwrap_err();
             assert_eq!(
                 err.code(),

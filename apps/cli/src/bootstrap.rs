@@ -298,6 +298,11 @@ pub fn open_with(
     before_context: &mut dyn FnMut(&mut Database) -> Result<(), CliError>,
 ) -> Result<Booted, CliError> {
     let layout = DataLayout::prepare(&opts.data_dir)?;
+    // One process at a time: the lock is taken before anything opens the data
+    // and handed to the context, which holds it for its lifetime. Taken after
+    // `Database::open`, a second process starting on a fresh directory
+    // migrated the file alongside the first (storage-core-8).
+    let data_lock = g9_app::lock::DataLock::acquire(&layout.database)?;
     let mut warnings = Vec::new();
     let provisioned = keyfile::provision(&layout.root, &mut keyfile::os_random)?;
     warnings.extend(provisioned.warnings);
@@ -363,7 +368,8 @@ pub fn open_with(
             opts.operator_id
         ))
     })?;
-    let mut builder = AppContext::builder(db, config, provisioned.key, operator);
+    let mut builder =
+        AppContext::builder(db, config, provisioned.key, operator).data_lock(data_lock);
     if let Some(clock) = &opts.clock {
         builder = builder.clock(clock.wall_fn()).monotonic(clock.mono_fn());
     }
@@ -591,5 +597,45 @@ mod tests {
             fs::metadata(&layout.database).unwrap().permissions().mode() & 0o777,
             0o600
         );
+    }
+
+    /// storage-core-8 (b): the data lock is taken before the database is
+    /// opened. It was taken after `Database::open`, so a second process
+    /// starting on a fresh data directory migrated the file alongside the first
+    /// one (and could fail half-way with `storage.internal`) before it was
+    /// refused.
+    #[test]
+    fn a_held_data_lock_refuses_the_open_before_the_database_is_touched() {
+        let dir = tempfile::tempdir().unwrap();
+        let data = dir.path().join("data");
+        let layout = DataLayout::prepare(&data).unwrap();
+        let mut opts = BootOptions::new(data);
+        opts.skills_dir = None;
+        opts.zone = Some(IanaZone::utc());
+        let held = g9_app::lock::DataLock::acquire(&layout.database).unwrap();
+        let err = open(&opts).unwrap_err();
+        assert!(
+            matches!(&err, CliError::Backend(e) if e.code == "app.data_in_use"),
+            "{err:?}"
+        );
+        assert_eq!(
+            fs::metadata(&layout.database).unwrap().len(),
+            0,
+            "the empty database file DataLayout::prepare made was not written"
+        );
+        let mut wal = layout.database.clone().into_os_string();
+        wal.push("-wal");
+        assert!(!PathBuf::from(wal).exists());
+        drop(held);
+
+        // Once the lock is free the backend opens and keeps holding it.
+        let booted = open(&opts).unwrap();
+        let err = open(&opts).unwrap_err();
+        assert!(
+            matches!(&err, CliError::Backend(e) if e.code == "app.data_in_use"),
+            "{err:?}"
+        );
+        drop(booted);
+        assert!(open(&opts).is_ok());
     }
 }

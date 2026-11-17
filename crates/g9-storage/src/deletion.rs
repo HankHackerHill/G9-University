@@ -507,8 +507,11 @@ impl Eraser<'_> {
             return Ok(());
         }
         let digest = self.tombstone("opt_in_reflections", id)?;
+        // The energy and focus levels are wellbeing scores: personal content of
+        // the reflection like its body (storage-core-11).
         self.tx.execute(
-            "UPDATE opt_in_reflections SET body = '', body_sha256 = ?4, erased = 1, erased_at = ?2,
+            "UPDATE opt_in_reflections SET body = '', body_sha256 = ?4, energy_level = NULL, focus_level = NULL,
+                erased = 1, erased_at = ?2,
                 erasure_request_id = ?3, revision = revision + 1, updated_at = ?2
              WHERE id = ?1",
             params![id, self.now.as_millis(), self.request_id, digest],

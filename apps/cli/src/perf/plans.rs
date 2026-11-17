@@ -795,22 +795,37 @@ fn normal_literal(src: &[char], mut i: usize) -> (String, usize) {
 }
 
 /// SQL statements written as string literals in `source` (a `.rs` file), up to
-/// its first `#[cfg(test)]` line (unit tests write SQL of their own that the
-/// application never runs). A literal is SQL when [`is_plannable`] says so.
+/// its unit-test module: the first `#[cfg(test)]` at the start of a line whose
+/// next line that is neither blank nor another attribute declares a `mod` (unit
+/// tests write SQL of their own that the application never runs). An indented
+/// `#[cfg(test)]` (a hook call inside a function) or one on a test-only item
+/// that is not a module does not end the scan: production SQL often follows
+/// it. A literal is SQL when [`is_plannable`] says so.
 /// Line comments are skipped; character literals and lifetimes are not
 /// confused with strings.
 pub fn sql_literals(source: &str) -> Vec<SqlLiteral> {
     // `split('\n')`, not `lines()`: the offsets must count every byte (a
     // `\r` included) so that the cut is a char boundary of `source`.
-    let cut = source
+    let lines: Vec<(usize, &str)> = source
         .split('\n')
         .scan(0usize, |offset, line| {
             let start = *offset;
             *offset += line.len() + 1;
-            Some((start, line))
+            Some((start, line.trim_end_matches('\r')))
         })
-        .find(|(_, line)| line.trim_start().starts_with("#[cfg(test)]"))
-        .map_or(source.len(), |(start, _)| start);
+        .collect();
+    let cut = lines
+        .iter()
+        .enumerate()
+        .find(|(k, (_, line))| {
+            *line == "#[cfg(test)]"
+                && lines[k + 1..]
+                    .iter()
+                    .map(|(_, next)| next.trim_start())
+                    .find(|next| !next.is_empty() && !next.starts_with("#["))
+                    .is_some_and(|next| next.starts_with("mod ") || next.starts_with("pub mod "))
+        })
+        .map_or(source.len(), |(_, (start, _))| *start);
     let src: Vec<char> = source.get(..cut).unwrap_or(source).chars().collect();
     let mut out = Vec::new();
     let mut line = 1;
@@ -1231,6 +1246,17 @@ mod tests { const T: &str = "DELETE FROM notes"; }
         assert_eq!(found.len(), 1, "{found:?}");
         assert_eq!(found[0].sql, "SELECT 1 FROM t");
         assert_eq!(found[0].line, 2);
+    }
+
+    #[test]
+    fn a_test_hook_before_the_module_does_not_hide_the_sql_after_it() {
+        // An indented `#[cfg(test)]` (a hook call inside a function) and a
+        // top-level `#[cfg(test)]` item that is not a module must not end the
+        // scan: g9-storage's migrations.rs and restore.rs have both, above
+        // production SQL.
+        let source = "fn a() {\n    #[cfg(test)]\n    hook();\n    q(\"SELECT 1 FROM t\");\n}\n#[cfg(test)]\nfn hook() {}\nfn b() { q(\"SELECT 2 FROM u\"); }\n#[cfg(test)]\n#[allow(clippy::unwrap_used)]\n\nmod tests { const T: &str = \"DELETE FROM t\"; }\n";
+        let sqls: Vec<String> = sql_literals(source).into_iter().map(|l| l.sql).collect();
+        assert_eq!(sqls, vec!["SELECT 1 FROM t", "SELECT 2 FROM u"]);
     }
 
     #[test]

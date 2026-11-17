@@ -609,6 +609,15 @@ pub fn insert_rubric(
     rubric: &RubricRow,
     criteria: &[RubricCriterionRow],
 ) -> RepoResult<()> {
+    super::atomic(conn, || insert_rubric_statements(conn, rubric, criteria))
+}
+
+/// The statements of [`insert_rubric`], which runs them as one unit (`super::atomic`).
+fn insert_rubric_statements(
+    conn: &Connection,
+    rubric: &RubricRow,
+    criteria: &[RubricCriterionRow],
+) -> RepoResult<()> {
     let (anchors_json, anchors_sha256) = match &rubric.anchors {
         Some(anchors) => {
             if anchors.scale != LevelScale::STANDARD {
@@ -2554,5 +2563,41 @@ mod tests {
             "UPDATE exposure_log SET reason = 'x' WHERE id = 'exp-1'",
         );
         assert_immutable(conn, "DELETE FROM exposure_log WHERE id = 'exp-1'");
+    }
+
+    /// storage-repos-10: a multi-statement write is all-or-nothing on any
+    /// connection. On an autocommit connection (the CLI seed) a rubric whose
+    /// second criterion fails used to leave the rubric row and its first
+    /// criterion behind; inside a caller's transaction the failure undoes only
+    /// this write and leaves the transaction usable.
+    #[test]
+    fn a_failed_rubric_insert_leaves_no_row_on_a_bare_connection_or_in_a_transaction() {
+        let mut db = db();
+        let (_def, ver, version_id) = seed(db.conn());
+        let (rubric, mut criteria) =
+            rubric_rows_from_domain(&ver.rubric, "rub-dup", &version_id, "Dup", "v2", t(1));
+        criteria[1].code = criteria[0].code.clone();
+        let rubrics_before = count(db.conn(), "rubrics");
+        let criteria_before = count(db.conn(), "rubric_criteria");
+        assert!(db.conn().is_autocommit());
+        assert!(matches!(
+            insert_rubric(db.conn(), &rubric, &criteria),
+            Err(RepoError::Storage(StorageError::UniqueViolation(_)))
+        ));
+        assert!(db.conn().is_autocommit(), "no transaction is left open");
+        assert_eq!(count(db.conn(), "rubrics"), rubrics_before);
+        assert_eq!(count(db.conn(), "rubric_criteria"), criteria_before);
+
+        let tx = db.begin_immediate().unwrap();
+        let (good, good_criteria) =
+            rubric_rows_from_domain(&ver.rubric, "rub-ok", &version_id, "Ok", "v3", t(2));
+        insert_rubric(&tx, &good, &good_criteria).unwrap();
+        assert!(insert_rubric(&tx, &rubric, &criteria).is_err());
+        tx.commit().unwrap();
+        assert_eq!(count(db.conn(), "rubrics"), rubrics_before + 1);
+        assert_eq!(
+            count(db.conn(), "rubric_criteria"),
+            criteria_before + i64::try_from(good_criteria.len()).unwrap()
+        );
     }
 }

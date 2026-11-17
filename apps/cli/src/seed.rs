@@ -121,7 +121,8 @@ pub fn session_id_for(week: u32, day_code: &str, ordinal: u32) -> String {
 }
 
 /// Materialize one `PLANNED` session per study block of `day` (blocks that
-/// already have a session are left alone).
+/// already have a session are left alone), in one transaction: a failure
+/// part-way leaves none of the day's new sessions (storage-repos-10).
 pub fn materialize_sessions(
     db: &Database,
     week: u32,
@@ -130,58 +131,59 @@ pub fn materialize_sessions(
     zone: &IanaZone,
     now: UtcMillis,
 ) -> Result<SeedReport, G9Error> {
-    let conn = db.conn();
-    let scope = ReadScope::domain(DataDomain::Learning);
-    let existing = sessions_repo::list_sessions_for_day(conn, &scope, &day.id)?;
-    let blocks = curriculum_repo::study_blocks(conn, &day.id)?;
-    let mut report = SeedReport::default();
-    let mut start = local_instant(date, DAY_START_HOUR, zone)?;
-    for block in &blocks {
-        let minutes = DurationMs::from_minutes_u32(block.minutes);
-        let end = start
-            .checked_add(minutes)
-            .map_err(|_| internal("cli.time_overflow"))?;
-        if let Some(found) = existing
-            .iter()
-            .find(|s| s.study_block_id.as_deref() == Some(block.id.as_str()))
-        {
-            report.existing += 1;
-            report.ids.push(found.id.as_str().to_string());
-        } else {
-            let id_text = session_id_for(week, day.day_code.as_str(), block.ordinal);
-            let id = SessionId::parse(&id_text).map_err(|_| internal("cli.session_id"))?;
-            let row = StudySessionRow {
-                id: id.clone(),
-                training_day_id: Some(day.id.clone()),
-                objective_id: block.objective_id.clone(),
-                study_block_id: Some(block.id.clone()),
-                calendar_event_id: None,
-                state: SessionState::Planned,
-                mode: block.mode,
-                zone: zone.clone(),
-                planned_start_utc: Some(start),
-                planned_end_utc: Some(end),
-                planned_minutes: block.minutes,
-                started_at: None,
-                ended_at: None,
-                credited_ms: DurationMs::ZERO,
-                uncertain_ms: DurationMs::ZERO,
-                data_domain: DataDomain::Learning,
-                classification: Classification::Internal,
-                revision: Revision::INITIAL,
-                created_at: now,
-                updated_at: now,
-            };
-            sessions_repo::insert_session(conn, &row)?;
-            report.created += 1;
-            report.ids.push(id_text);
+    db.write_transaction(|conn| {
+        let scope = ReadScope::domain(DataDomain::Learning);
+        let existing = sessions_repo::list_sessions_for_day(conn, &scope, &day.id)?;
+        let blocks = curriculum_repo::study_blocks(conn, &day.id)?;
+        let mut report = SeedReport::default();
+        let mut start = local_instant(date, DAY_START_HOUR, zone)?;
+        for block in &blocks {
+            let minutes = DurationMs::from_minutes_u32(block.minutes);
+            let end = start
+                .checked_add(minutes)
+                .map_err(|_| internal("cli.time_overflow"))?;
+            if let Some(found) = existing
+                .iter()
+                .find(|s| s.study_block_id.as_deref() == Some(block.id.as_str()))
+            {
+                report.existing += 1;
+                report.ids.push(found.id.as_str().to_string());
+            } else {
+                let id_text = session_id_for(week, day.day_code.as_str(), block.ordinal);
+                let id = SessionId::parse(&id_text).map_err(|_| internal("cli.session_id"))?;
+                let row = StudySessionRow {
+                    id: id.clone(),
+                    training_day_id: Some(day.id.clone()),
+                    objective_id: block.objective_id.clone(),
+                    study_block_id: Some(block.id.clone()),
+                    calendar_event_id: None,
+                    state: SessionState::Planned,
+                    mode: block.mode,
+                    zone: zone.clone(),
+                    planned_start_utc: Some(start),
+                    planned_end_utc: Some(end),
+                    planned_minutes: block.minutes,
+                    started_at: None,
+                    ended_at: None,
+                    credited_ms: DurationMs::ZERO,
+                    uncertain_ms: DurationMs::ZERO,
+                    data_domain: DataDomain::Learning,
+                    classification: Classification::Internal,
+                    revision: Revision::INITIAL,
+                    created_at: now,
+                    updated_at: now,
+                };
+                sessions_repo::insert_session(conn, &row)?;
+                report.created += 1;
+                report.ids.push(id_text);
+            }
+            // One minute between blocks.
+            start = end
+                .checked_add(DurationMs::from_minutes_u32(1))
+                .map_err(|_| internal("cli.time_overflow"))?;
         }
-        // One minute between blocks.
-        start = end
-            .checked_add(DurationMs::from_minutes_u32(1))
-            .map_err(|_| internal("cli.time_overflow"))?;
-    }
-    Ok(report)
+        Ok(report)
+    })
 }
 
 /// Materialize one standalone `PLANNED` session (crash drill), 45 minutes.
@@ -219,13 +221,9 @@ pub fn materialize_drill_session(
     Ok(id)
 }
 
-fn ensure_competency(db: &Database, now: UtcMillis) -> Result<(CompetencyId, bool), G9Error> {
-    let conn = db.conn();
+/// The shared competency the simulated assessments evidence (the row only).
+fn sim_competency(now: UtcMillis) -> Result<(CompetencyId, CompetencyRow), G9Error> {
     let id = CompetencyId::parse(SIM_COMPETENCY_ID).map_err(|_| internal("cli.competency_id"))?;
-    let scope = ReadScope::domain(DataDomain::Learning);
-    if competency_repo::get_competency(conn, &scope, &id)?.is_some() {
-        return Ok((id, false));
-    }
     let easiest = Difficulty::new(1).map_err(|_| internal("cli.difficulty"))?;
     let hardest = Difficulty::new(5).map_err(|_| internal("cli.difficulty"))?;
     let competency = Competency {
@@ -241,11 +239,8 @@ fn ensure_competency(db: &Database, now: UtcMillis) -> Result<(CompetencyId, boo
         nice_refs: Vec::new(),
     };
     competency.validate()?;
-    competency_repo::insert_competency(
-        conn,
-        &CompetencyRow::from_domain(&competency, "SIM-CORE", None, now),
-    )?;
-    Ok((id, true))
+    let row = CompetencyRow::from_domain(&competency, "SIM-CORE", None, now);
+    Ok((id, row))
 }
 
 /// Assessment definition id of the simulated week.
@@ -254,7 +249,10 @@ pub fn assessment_id_for(week: u32) -> String {
 }
 
 /// Materialize the Saturday blind practical of `week`: competency (shared),
-/// definition linked to `day`, version 1 with the baseline rubric.
+/// definition linked to `day`, version 1 with the baseline rubric. One
+/// transaction (storage-repos-10): a definition is never left without its
+/// version and rubric, which a rerun (it reuses an existing definition) could
+/// not repair.
 pub fn materialize_assessment(
     db: &Database,
     week: u32,
@@ -262,28 +260,13 @@ pub fn materialize_assessment(
     operator: &ActorId,
     now: UtcMillis,
 ) -> Result<SeedReport, G9Error> {
-    let conn = db.conn();
-    let mut report = SeedReport::default();
-    let (competency_id, created) = ensure_competency(db, now)?;
-    if created {
-        report.created += 1;
-    } else {
-        report.existing += 1;
-    }
-    report.ids.push(competency_id.as_str().to_string());
-
+    let (competency_id, competency_row) = sim_competency(now)?;
     let id_text = assessment_id_for(week);
     let id = AssessmentId::parse(&id_text).map_err(|_| internal("cli.assessment_id"))?;
-    let scope = ReadScope::domain(DataDomain::Learning);
-    if assessment_repo::get_definition(conn, &scope, &id)?.is_some() {
-        report.existing += 1;
-        report.ids.push(id_text);
-        return Ok(report);
-    }
     let definition = AssessmentDefinition::new(
         id.clone(),
         format!("Week {week} blind practical (simulated)"),
-        vec![competency_id],
+        vec![competency_id.clone()],
         AssessmentKind::BlindPractical,
         DataDomain::Learning,
     )?;
@@ -291,7 +274,6 @@ pub fn materialize_assessment(
         AssessmentDefinitionRow::from_domain(&definition, &format!("SIM-W{week:02}-BLIND"), now)
             .map_err(G9Error::from)?;
     row.training_day_id = Some(day.id.clone());
-    assessment_repo::insert_definition(conn, &row)?;
 
     // Difficulty 3 is a fixture value declared by this seed for the simulated
     // practical, not a measurement. It is persisted with the version
@@ -322,7 +304,6 @@ pub fn materialize_assessment(
         operator.clone(),
     )
     .map_err(G9Error::from)?;
-    assessment_repo::insert_version(conn, &version_row)?;
     let (rubric, criteria) = assessment_repo::rubric_rows_from_domain(
         &version.rubric,
         &format!("{id_text}:rubric"),
@@ -331,10 +312,29 @@ pub fn materialize_assessment(
         "v1",
         now,
     );
-    assessment_repo::insert_rubric(conn, &rubric, &criteria)?;
-    report.created += 1;
-    report.ids.push(id_text);
-    Ok(report)
+
+    db.write_transaction(|conn| {
+        let scope = ReadScope::domain(DataDomain::Learning);
+        let mut report = SeedReport::default();
+        if competency_repo::get_competency(conn, &scope, &competency_id)?.is_some() {
+            report.existing += 1;
+        } else {
+            competency_repo::insert_competency(conn, &competency_row)?;
+            report.created += 1;
+        }
+        report.ids.push(competency_id.as_str().to_string());
+        if assessment_repo::get_definition(conn, &scope, &id)?.is_some() {
+            report.existing += 1;
+            report.ids.push(id_text.clone());
+            return Ok(report);
+        }
+        assessment_repo::insert_definition(conn, &row)?;
+        assessment_repo::insert_version(conn, &version_row)?;
+        assessment_repo::insert_rubric(conn, &rubric, &criteria)?;
+        report.created += 1;
+        report.ids.push(id_text.clone());
+        Ok(report)
+    })
 }
 
 /// Criterion codes of the baseline rubric (for `assessment.grade_provisional`).
@@ -385,5 +385,68 @@ mod tests {
             Rubric::baseline().criteria().len()
         );
         assert!(baseline_criteria().contains(&"independent_execution".to_string()));
+    }
+
+    /// storage-repos-10: the definition, version and rubric of a simulated
+    /// assessment are written in one transaction. When the rubric insert failed
+    /// (here: its id is already taken), the definition and version stayed, a
+    /// rerun found the definition and returned early, and the week never got a
+    /// version or rubric (`assessment.no_version` at `assessment.begin`).
+    #[test]
+    fn a_failed_assessment_materialization_leaves_no_definition_or_version() {
+        use crate::commands::import_seed;
+        let dir = tempfile::tempdir().unwrap();
+        let mut boot = crate::bootstrap::BootOptions::new(dir.path().join("data"));
+        boot.skills_dir = None;
+        boot.zone = Some(IanaZone::utc());
+        boot.clock = Some(crate::clock::SimClock::new(UtcMillis::from_millis(
+            1_794_812_400_000,
+        )));
+        let booted = crate::bootstrap::open(&boot).unwrap();
+        let mut client = crate::client::Client::new(booted.ctx);
+        let manifest =
+            import_seed::load_manifest(&crate::bootstrap::default_seed_manifest()).unwrap();
+        import_seed::import(&mut client, &manifest, &mut |_, _| {}).unwrap();
+        let now = client.now();
+        let db = client.ctx.database();
+        let version = active_version(db).unwrap().unwrap();
+        let saturday = curriculum_repo::list_training_days(db.conn(), &version.id)
+            .unwrap()
+            .into_iter()
+            .find(|d| d.day_of_week.is_saturday())
+            .unwrap();
+        let operator = ActorId::parse("operator-1").unwrap();
+        // Week 2 materializes; its version then holds a rubric under the id week 1 uses.
+        materialize_assessment(db, 2, &saturday, &operator, now).unwrap();
+        let (rubric, criteria) = assessment_repo::rubric_rows_from_domain(
+            &Rubric::baseline(),
+            &format!("{}:rubric", assessment_id_for(1)),
+            &format!("{}:v1", assessment_id_for(2)),
+            "Taken",
+            "taken",
+            now,
+        );
+        assessment_repo::insert_rubric(db.conn(), &rubric, &criteria).unwrap();
+
+        let err = materialize_assessment(db, 1, &saturday, &operator, now).unwrap_err();
+        assert_eq!(err.code, "storage.unique_violation", "{err:?}");
+        let rows = |table: &str, id: String| -> i64 {
+            db.conn()
+                .query_row(
+                    &format!("SELECT COUNT(*) FROM {table} WHERE id = ?1"),
+                    [id],
+                    |r| r.get(0),
+                )
+                .unwrap()
+        };
+        assert_eq!(rows("assessment_definitions", assessment_id_for(1)), 0);
+        assert_eq!(
+            rows(
+                "assessment_versions",
+                format!("{}:v1", assessment_id_for(1))
+            ),
+            0
+        );
+        assert_eq!(rows("assessment_definitions", assessment_id_for(2)), 1);
     }
 }

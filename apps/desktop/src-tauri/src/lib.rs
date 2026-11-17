@@ -339,6 +339,11 @@ fn open_context(
 ) -> Result<AppContext, G9Error> {
     let layout = DataLayout::under(&options.data_dir)?;
     layout.prepare(warnings)?;
+    // One process at a time: the lock is taken before anything opens the data
+    // and handed to the context, which holds it for its lifetime. Taken after
+    // `Database::open`, a second process starting on a fresh directory
+    // migrated the file alongside the first (storage-core-8).
+    let data_lock = g9_app::lock::DataLock::acquire(&layout.database)?;
     let provisioned = keyring::provision(&layout.root, random)?;
     warnings.extend(provisioned.warnings);
     // The operations log (OBS-1): one line per command, and the backend's
@@ -380,7 +385,8 @@ fn open_context(
     let db = Database::open(&layout.database, g9_app::database_options(APP_VERSION))?;
     let operator = ActorId::parse(OPERATOR_ID)
         .map_err(|_| G9Error::internal_redacted("bridge.operator_id"))?;
-    let mut builder = AppContext::builder(db, config, provisioned.key, operator);
+    let mut builder =
+        AppContext::builder(db, config, provisioned.key, operator).data_lock(data_lock);
     if let Some(log) = log {
         builder = builder.oplog(log);
     }

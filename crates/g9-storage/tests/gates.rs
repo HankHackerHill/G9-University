@@ -930,6 +930,13 @@ fn a10_erasure_never_lists_bytes_a_live_attachment_still_uses() {
 fn a10_reflection_erasure_and_rejected_requests() {
     let mut db = open_mem();
     let fx = populate(db.conn());
+    // Wellbeing scores are personal content of the reflection (storage-core-11).
+    db.conn()
+        .execute(
+            "UPDATE opt_in_reflections SET energy_level = 1, focus_level = 2 WHERE id = ?1",
+            params![fx.reflection_id],
+        )
+        .unwrap();
     deletion::create_request(
         db.conn(),
         &NewDeletionRequest {
@@ -951,15 +958,15 @@ fn a10_reflection_erasure_and_rejected_requests() {
     )
     .unwrap();
     assert_eq!(report.tombstones.len(), 1);
-    let body: String = db
+    let erased: (String, Option<i64>, Option<i64>) = db
         .conn()
         .query_row(
-            "SELECT body FROM opt_in_reflections WHERE id = ?1",
+            "SELECT body, energy_level, focus_level FROM opt_in_reflections WHERE id = ?1",
             params![fx.reflection_id],
-            |r| r.get(0),
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
         )
         .unwrap();
-    assert_eq!(body, "");
+    assert_eq!(erased, (String::new(), None, None));
     // executing twice is refused
     let e = err_of(deletion::execute_erasure(
         db.conn_mut(),
@@ -1411,7 +1418,7 @@ fn a08_snapshot_refuses_overwrite_and_live_path() {
     let e = err_of(create_snapshot(db.conn(), &live_path, &request));
     assert!(matches!(e, StorageError::InvalidInput(_)), "{e:?}");
     let dest = dir.path().join("b2.sqlite");
-    create_snapshot(db.conn(), &dest, &request).unwrap();
+    let created = create_snapshot(db.conn(), &dest, &request).unwrap();
     let e = err_of(create_snapshot(db.conn(), &dest, &request));
     assert!(matches!(e, StorageError::Conflict(_)), "{e:?}");
     let e = err_of(restore_to_copy(&dest, &dest));
@@ -1419,20 +1426,30 @@ fn a08_snapshot_refuses_overwrite_and_live_path() {
         matches!(e, StorageError::Conflict(_) | StorageError::InvalidInput(_)),
         "{e:?}"
     );
-    // tampered snapshot is detected on verification
+    // storage-core-5: verified against the manifest create_snapshot returned
+    // (the hash of the file it wrote), the untampered snapshot reaches CHECKED.
+    let mut untampered = created.clone();
+    verify_and_advance(&mut untampered, &VerifyOptions::default()).unwrap();
+    assert_eq!(untampered.state, BackupState::Checked);
+    // One flipped byte that no SQLite check reads (the low byte of the header's
+    // user_version, offset 60..64): only the recorded hash can tell.
     let mut bytes = std::fs::read(&dest).unwrap();
-    let mid = bytes.len() / 2;
-    bytes[mid] ^= 0xFF;
+    bytes[63] ^= 0x01;
     std::fs::write(&dest, &bytes).unwrap();
-    let mut manifest = BackupManifest::requested(&request);
-    manifest.path = Some(dest.clone());
-    manifest.transition(BackupEvent::Snapshot).unwrap();
-    let e = err_of(verify_and_advance(&mut manifest, &VerifyOptions::default()));
     assert!(
-        matches!(e, StorageError::Verification(_) | StorageError::Corrupt(_)),
+        verify_snapshot(&dest, &VerifyOptions::default())
+            .unwrap()
+            .ok(),
+        "the flip is invisible to every check but the hash"
+    );
+    let mut tampered = created.clone();
+    let e = err_of(verify_and_advance(&mut tampered, &VerifyOptions::default()));
+    assert!(
+        matches!(&e, StorageError::Verification(errs)
+            if errs == &vec!["snapshot file hash differs from the manifest".to_string()]),
         "{e:?}"
     );
-    assert_eq!(manifest.state, BackupState::Failed);
+    assert_eq!(tampered.state, BackupState::Failed);
 }
 
 fn snapshot_request(id: &str) -> SnapshotRequest {
@@ -1550,31 +1567,86 @@ fn a08_vacuum_into_export_verifies() {
     assert!(matches!(e, StorageError::Conflict(_)));
 }
 
+/// `<path><suffix>` (SQLite's sidecar naming: `-wal`, `-shm`).
+fn sidecar(path: &std::path::Path, suffix: &str) -> std::path::PathBuf {
+    let mut name = path.as_os_str().to_owned();
+    name.push(suffix);
+    std::path::PathBuf::from(name)
+}
+
 #[test]
 fn a08_crash_mid_transaction_rolls_back() {
+    // storage-core-6: a crash image, not a clean close. Closing a connection
+    // rolls its transaction back, so the reopen never saw a WAL holding
+    // uncommitted frames. Here the database file and its -wal are copied while
+    // the transaction is open (the bytes a killed process leaves), the
+    // connection is never closed, and the copy is opened.
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("crash.sqlite");
-    {
-        let db = open_file(&path);
-        let conn = db.into_connection();
-        conn.execute_batch("BEGIN IMMEDIATE").unwrap();
-        conn.execute("INSERT INTO app_settings (key, value_json, created_at, updated_at) VALUES ('k', '1', 1, 1)", [])
-            .unwrap();
+    let image = dir.path().join("image").join("crash.sqlite");
+    std::fs::create_dir_all(image.parent().unwrap()).unwrap();
+    let conn = open_file(&path).into_connection();
+    // An empty WAL, then one committed row that exists only in the WAL.
+    conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()))
+        .unwrap();
+    assert_eq!(std::fs::metadata(sidecar(&path, "-wal")).unwrap().len(), 0);
+    conn.execute(
+        "INSERT INTO app_settings (key, value_json, created_at, updated_at) VALUES ('committed', '1', 1, 1)",
+        [],
+    )
+    .unwrap();
+    let committed_wal = std::fs::metadata(sidecar(&path, "-wal")).unwrap().len();
+    assert!(committed_wal > 0);
+    // A small page cache makes the open transaction spill its pages into the
+    // WAL as uncommitted frames.
+    conn.pragma_update(None, "cache_size", 10).unwrap();
+    conn.execute_batch("BEGIN IMMEDIATE").unwrap();
+    for i in 0..200 {
         conn.execute(
-            "INSERT INTO curricula (id, title, created_at, updated_at) VALUES ('c', 't', 1, 1)",
-            [],
+            "INSERT INTO app_settings (key, value_json, created_at, updated_at)
+             VALUES (?1, '\"' || hex(zeroblob(2000)) || '\"', 1, 1)",
+            params![format!("uncommitted-{i}")],
         )
         .unwrap();
-        assert!(!conn.is_autocommit());
-        // Simulated crash: the connection is abandoned without COMMIT; nothing reached the committed WAL.
-        drop(conn);
     }
-    let db = open_file(&path);
-    assert_count(db.conn(), "app_settings", 0);
+    conn.execute(
+        "INSERT INTO curricula (id, title, created_at, updated_at) VALUES ('c', 't', 1, 1)",
+        [],
+    )
+    .unwrap();
+    assert!(!conn.is_autocommit());
+    std::fs::copy(&path, &image).unwrap();
+    std::fs::copy(sidecar(&path, "-wal"), sidecar(&image, "-wal")).unwrap();
+    let image_wal = std::fs::metadata(sidecar(&image, "-wal")).unwrap().len();
+    assert!(
+        image_wal > committed_wal,
+        "the image holds uncommitted WAL frames ({image_wal} > {committed_wal} bytes)"
+    );
+    // The process dies: no COMMIT, no ROLLBACK, no close.
+    std::mem::forget(conn);
+
+    let db = open_file(&image);
+    let keys: Vec<String> = db
+        .conn()
+        .prepare("SELECT key FROM app_settings ORDER BY key")
+        .unwrap()
+        .query_map([], |r| r.get(0))
+        .unwrap()
+        .map(Result::unwrap)
+        .collect();
+    assert_eq!(
+        keys,
+        ["committed"],
+        "committed WAL frames replayed, the rest discarded"
+    );
     assert_count(db.conn(), "curricula", 0);
     assert_eq!(
         g9_storage::migrations::integrity_check(db.conn()).unwrap(),
         vec!["ok".to_string()]
+    );
+    assert_eq!(
+        g9_storage::migrations::foreign_key_check(db.conn()).unwrap(),
+        0
     );
     assert_eq!(Migrator::verify_checksums(db.conn()).unwrap().ok, true);
 }

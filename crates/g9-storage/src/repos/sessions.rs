@@ -328,6 +328,19 @@ pub fn transition_session(
     details: Option<&serde_json::Value>,
     expected_revision: Revision,
 ) -> RepoResult<Revision> {
+    super::atomic(conn, || {
+        transition_session_statements(conn, event_row_id, event, details, expected_revision)
+    })
+}
+
+/// The statements of [`transition_session`], which runs them as one unit (`super::atomic`).
+fn transition_session_statements(
+    conn: &Connection,
+    event_row_id: &str,
+    event: &SessionEventRow,
+    details: Option<&serde_json::Value>,
+    expected_revision: Revision,
+) -> RepoResult<Revision> {
     let scope = ReadScope::cross_domain(DataDomain::Learning);
     let current = required(
         "study_sessions",
@@ -403,7 +416,12 @@ pub fn transition_session(
     Ok(revision)
 }
 
-/// Transition history of a session in order (`seq` assigned by position).
+/// Transition history of a session in the order the transitions were written
+/// (`seq` assigned by position). Insertion order is the rowid order: the table
+/// is append-only (no UPDATE or DELETE), so SQLite assigns increasing rowids,
+/// and VACUUM, VACUUM INTO and the backup API keep them. `occurred_at` is wall
+/// time, which orders nothing: after the clock steps back, a later transition
+/// carries an earlier stamp (storage-repos-11).
 pub fn list_session_events(
     conn: &Connection,
     session_id: &SessionId,
@@ -412,7 +430,7 @@ pub fn list_session_events(
     query_all(
         conn,
         "SELECT id, session_id, event, from_state, to_state, occurred_at, actor_id, actor_kind, details_json
-         FROM session_events WHERE session_id = ?1 ORDER BY occurred_at, rowid",
+         FROM session_events WHERE session_id = ?1 ORDER BY rowid",
         &[&session_id.as_str()],
         |r| {
             let this_seq = seq;
@@ -737,7 +755,12 @@ pub fn append_manual_correction(
     Ok(())
 }
 
-/// Corrections of a session in time order.
+/// Corrections of a session in the order they were recorded, oldest first: the
+/// last listed correction of an interval is the effective one. Ordered by rowid
+/// (insertion order of this append-only table, kept by VACUUM, VACUUM INTO and
+/// the backup API), never by `corrected_at`: a correction recorded after the
+/// wall clock stepped back carries an earlier stamp than the one it
+/// supersedes (storage-repos-11).
 pub fn list_corrections(
     conn: &Connection,
     session_id: &SessionId,
@@ -746,7 +769,7 @@ pub fn list_corrections(
         conn,
         "SELECT id, session_id, interval_id, corrected_start_utc, corrected_end_utc, delta_ms, reason, corrected_by,
                 corrected_at, approval_id, created_at
-         FROM manual_time_corrections WHERE session_id = ?1 ORDER BY corrected_at, id",
+         FROM manual_time_corrections WHERE session_id = ?1 ORDER BY rowid",
         &[&session_id.as_str()],
         |r| {
             Ok(ManualTimeCorrectionRow {
@@ -1555,5 +1578,109 @@ mod tests {
     fn count_rows(conn: &Connection) -> i64 {
         conn.query_row("SELECT COUNT(*) FROM time_intervals", [], |r| r.get(0))
             .unwrap()
+    }
+
+    /// storage-repos-11: corrections and session events are append-only
+    /// ledgers whose order is the order they were written. After the wall clock
+    /// steps back, a later correction carries an earlier `corrected_at` than the
+    /// one it supersedes; it must still be listed last (the timer ledger takes
+    /// the last listed correction of an interval as the effective one). The
+    /// order survives VACUUM and a VACUUM INTO copy (the backup format).
+    #[test]
+    fn append_only_ledgers_are_listed_in_insertion_order_not_wall_clock_order() {
+        let db = db();
+        let conn = db.conn();
+        let row = session("sess-step", SessionState::Planned, DataDomain::Learning);
+        let sid = row.id.clone();
+        insert_session(conn, &row).unwrap();
+        let r2 = transition_session(
+            conn,
+            "se-z-prepare",
+            &edge(
+                "sess-step",
+                SessionEvent::Prepare,
+                SessionState::Planned,
+                SessionState::Ready,
+                t(5_000_000),
+            ),
+            None,
+            Revision::INITIAL,
+        )
+        .unwrap();
+        // the wall clock stepped back an hour before the start
+        transition_session(
+            conn,
+            "se-a-start",
+            &edge(
+                "sess-step",
+                SessionEvent::Start,
+                SessionState::Ready,
+                SessionState::Running,
+                t(5_000_000 - 3_600_000),
+            ),
+            None,
+            r2,
+        )
+        .unwrap();
+        open_interval(conn, "ti-step", &sid, t(0), 1_000, t(0)).unwrap();
+        close_interval(
+            conn,
+            "ti-step",
+            Revision::INITIAL,
+            t(3_600_000),
+            None,
+            Continuity::Uncertain,
+            ClosedBy::Recovery,
+            t(3_600_000),
+        )
+        .unwrap();
+        let correction = |id: &str, minutes: i64, at: i64| ManualTimeCorrectionRow {
+            id: id.into(),
+            session_id: sid.clone(),
+            interval_id: Some("ti-step".into()),
+            corrected_start_utc: None,
+            corrected_end_utc: None,
+            delta_ms: minutes * 60_000,
+            reason: format!("{minutes} minutes"),
+            corrected_by: operator_id(),
+            corrected_at: t(at),
+            approval_id: None,
+            created_at: t(at),
+        };
+        let first = correction("mtc-z-first", 30, 10_000_000);
+        // recorded later, stamped earlier: the clock was set back an hour
+        let second = correction("mtc-a-second", 10, 10_000_000 - 3_600_000);
+        append_manual_correction(conn, &first).unwrap();
+        append_manual_correction(conn, &second).unwrap();
+
+        let check = |conn: &Connection, what: &str| {
+            let ids: Vec<String> = list_corrections(conn, &sid)
+                .unwrap()
+                .into_iter()
+                .map(|c| c.id)
+                .collect();
+            assert_eq!(ids, ["mtc-z-first", "mtc-a-second"], "{what}");
+            let events: Vec<(String, u32)> = list_session_events(conn, &sid)
+                .unwrap()
+                .into_iter()
+                .map(|e| (e.id, e.row.seq))
+                .collect();
+            assert_eq!(
+                events,
+                [
+                    ("se-z-prepare".to_string(), 0),
+                    ("se-a-start".to_string(), 1)
+                ],
+                "{what}"
+            );
+        };
+        check(conn, "as written");
+        conn.execute_batch("VACUUM").unwrap();
+        check(conn, "after VACUUM");
+        let dir = tempfile::tempdir().unwrap();
+        let copy = dir.path().join("copy.sqlite");
+        conn.execute("VACUUM INTO ?1", rusqlite::params![copy.to_str().unwrap()])
+            .unwrap();
+        check(&Connection::open(&copy).unwrap(), "in a VACUUM INTO copy");
     }
 }

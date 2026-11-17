@@ -384,6 +384,7 @@ impl AppContext {
             clock: None,
             monotonic: None,
             oplog: None,
+            data_lock: None,
         }
     }
 
@@ -430,6 +431,7 @@ pub struct AppContextBuilder {
     clock: Option<WallClockFn>,
     monotonic: Option<MonotonicFn>,
     oplog: Option<Arc<crate::oplog::OpLog>>,
+    data_lock: Option<crate::lock::DataLock>,
 }
 
 impl fmt::Debug for AppContextBuilder {
@@ -483,6 +485,17 @@ impl AppContextBuilder {
         self
     }
 
+    /// Keep the data lock the host took before it opened the database, instead
+    /// of taking it in [`Self::open`] (a second, separately opened lock on the
+    /// same file would be refused). A host opening a file database takes the
+    /// lock first: `Database::open` migrates a fresh file, and two processes
+    /// starting together must not both migrate it (storage-core-8). The lock
+    /// must be the one of this builder's database file.
+    pub fn data_lock(mut self, lock: crate::lock::DataLock) -> Self {
+        self.data_lock = Some(lock);
+        self
+    }
+
     /// Run recovery (migrations, audit chain, open intervals, approval expiry)
     /// and return the ready context.
     pub fn open(self) -> Result<AppContext, G9Error> {
@@ -512,9 +525,13 @@ impl AppContextBuilder {
         };
         // Before recovery: a second process must not close the first one's
         // open intervals (app-4).
-        let data_lock = match self.db.path() {
-            Some(path) => Some(crate::lock::DataLock::acquire(path)?),
-            None => None,
+        let data_lock = match (self.db.path(), self.data_lock) {
+            (Some(path), Some(held)) if held.path() == crate::lock::lock_path(path) => Some(held),
+            (Some(_), Some(_)) => {
+                return Err(G9Error::internal_redacted("context.data_lock_mismatch"))
+            }
+            (Some(path), None) => Some(crate::lock::DataLock::acquire(path)?),
+            (None, held) => held,
         };
         let mut svc = Services {
             policy,

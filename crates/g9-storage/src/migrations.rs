@@ -187,7 +187,12 @@ pub struct ChecksumReport {
     pub mismatches: Vec<ChecksumMismatch>,
     /// Highest recorded version.
     pub db_schema_version: u32,
-    /// `true` when there are no mismatches.
+    /// Embedded versions below the highest recorded one that have no row:
+    /// migrations apply in order, so a gap means the bookkeeping was changed
+    /// (storage-core-8). Empty when the recorded versions are contiguous.
+    #[serde(default)]
+    pub missing: Vec<u32>,
+    /// `true` when there are no mismatches and no missing versions.
     pub ok: bool,
 }
 
@@ -257,7 +262,9 @@ impl Migrator {
             conn.prepare("SELECT version, name, sha256, applied_at, app_version FROM schema_migrations ORDER BY version")?;
         let rows = stmt.query_map([], |r| {
             Ok(AppliedMigration {
-                version: r.get::<_, i64>(0)? as u32,
+                // Out of u32 range is `IntegralValueOutOfRange` → `RowDecode`
+                // (DATA_CORRUPTION), never a wrapped version (storage-core-8).
+                version: r.get::<_, u32>(0)?,
                 name: r.get(1)?,
                 sha256: r.get(2)?,
                 applied_at: UtcMillis::from_millis(r.get(3)?),
@@ -284,13 +291,17 @@ impl Migrator {
             .collect())
     }
 
-    /// Highest recorded version (0 when none).
+    /// Highest recorded version (0 when none). A version outside `u32` is
+    /// `RowDecode` (DATA_CORRUPTION): read `as u32`, 2^32 + 5 became 5 and
+    /// passed the newer-schema refusal (storage-core-8).
     pub fn schema_version(conn: &Connection) -> StorageResult<u32> {
         let v: Option<i64> =
             conn.query_row("SELECT MAX(version) FROM schema_migrations", [], |r| {
                 r.get(0)
             })?;
-        Ok(v.unwrap_or(0).max(0) as u32)
+        u32::try_from(v.unwrap_or(0)).map_err(|_| {
+            StorageError::RowDecode("schema_migrations.version is out of range".to_string())
+        })
     }
 
     /// Compare every recorded checksum with the embedded SQL.
@@ -318,16 +329,32 @@ impl Migrator {
                 }),
             }
         }
-        let ok = mismatches.is_empty();
+        let recorded: std::collections::BTreeSet<u32> = verified
+            .iter()
+            .copied()
+            .chain(mismatches.iter().map(|m| m.version))
+            .collect();
+        // Bounded by the embedded versions: the recorded maximum comes from the
+        // file (a snapshot under verification may record any u32), and a
+        // version beyond this build is refused as newer anyway.
+        let missing: Vec<u32> = EMBEDDED_MIGRATIONS
+            .iter()
+            .map(|m| m.version)
+            .filter(|v| *v < db_schema_version && !recorded.contains(v))
+            .collect();
+        let ok = mismatches.is_empty() && missing.is_empty();
         Ok(ChecksumReport {
             verified,
             mismatches,
             db_schema_version,
+            missing,
             ok,
         })
     }
 
-    /// Verify checksums and refuse to proceed on mismatch or on a newer schema.
+    /// Verify checksums and refuse to proceed on mismatch, on a gap in the
+    /// recorded versions (`DATA_CORRUPTION`: reported as pending, the missing
+    /// version could never be applied, storage-core-8) or on a newer schema.
     pub fn ensure_checksums(&self, conn: &Connection) -> StorageResult<ChecksumReport> {
         let report = Self::verify_checksums(conn)?;
         if report.db_schema_version > CURRENT_SCHEMA_VERSION {
@@ -346,10 +373,18 @@ impl Migrator {
                     .unwrap_or_else(|| "<unknown version>".to_string()),
             });
         }
+        if let Some(first) = report.missing.first() {
+            return Err(StorageError::Corrupt(format!(
+                "schema_migrations records version {} but not version {first}",
+                report.db_schema_version
+            )));
+        }
         Ok(report)
     }
 
-    /// Apply every pending migration (each in its own `BEGIN IMMEDIATE` transaction).
+    /// Apply every pending migration (each in its own `BEGIN IMMEDIATE` transaction,
+    /// which re-reads the recorded version: another connection may have applied
+    /// it meanwhile).
     pub fn migrate(&self, conn: &mut Connection) -> StorageResult<MigrationReport> {
         self.migrate_up_to(conn, CURRENT_SCHEMA_VERSION)
     }
@@ -364,6 +399,8 @@ impl Migrator {
         Self::bootstrap(conn)?;
         self.ensure_checksums(conn)?;
         let before = Self::schema_version(conn)?;
+        #[cfg(test)]
+        after_version_read();
         let mut applied = Vec::new();
         let mut already_applied = 0;
         for m in EMBEDDED_MIGRATIONS.iter().filter(|m| m.version <= target) {
@@ -373,6 +410,14 @@ impl Migrator {
             }
             let sha = m.sha256();
             let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
+            // Re-read under the write lock: `before` was read outside it, and a
+            // second process opening the same fresh file may have applied this
+            // migration since (storage-core-8). The recorded versions are
+            // contiguous (`ensure_checksums`), so the maximum decides.
+            if m.version <= Self::schema_version(&tx)? {
+                already_applied += 1;
+                continue;
+            }
             tx.execute_batch(m.sql)?;
             tx.execute(
                 "INSERT INTO schema_migrations (version, name, sha256, applied_at, app_version) VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -470,6 +515,24 @@ impl Migrator {
             }
         }
         rehearsal
+    }
+}
+
+/// Test hook: runs once, right after [`Migrator::migrate_up_to`] read the
+/// recorded version (another process migrating the same file in between).
+#[cfg(test)]
+type AfterVersionRead = Box<dyn FnOnce()>;
+
+#[cfg(test)]
+thread_local! {
+    static AFTER_VERSION_READ: std::cell::RefCell<Option<AfterVersionRead>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+#[cfg(test)]
+fn after_version_read() {
+    if let Some(hook) = AFTER_VERSION_READ.with(|h| h.borrow_mut().take()) {
+        hook();
     }
 }
 
@@ -931,5 +994,136 @@ mod tests {
             matches!(err, StorageError::SchemaNewerThanApp { .. }),
             "{err:?}"
         );
+    }
+
+    fn file_migrated(path: &Path) -> Connection {
+        let mut conn = Connection::open(path).unwrap();
+        conn.pragma_update(None, "foreign_keys", true).unwrap();
+        Migrator::new("0.1.0-test", UtcMillis::from_millis(1))
+            .migrate(&mut conn)
+            .unwrap();
+        conn
+    }
+
+    fn open_options() -> crate::connection::OpenOptions {
+        crate::connection::OpenOptions::new("0.1.0-test").applied_at(UtcMillis::from_millis(1))
+    }
+
+    /// storage-core-8 (a): 4294967301 = 2^32 + 5 was read back `as u32` = 5, so a
+    /// version no build wrote passed the newer-schema refusal as migration 5.
+    #[test]
+    fn a_recorded_version_beyond_u32_is_refused_not_wrapped() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("wrap.sqlite");
+        let conn = file_migrated(&path);
+        conn.execute(
+            "INSERT INTO schema_migrations (version, name, sha256, applied_at, app_version) VALUES (?1, ?2, ?3, 1, '9.9.9')",
+            params![4_294_967_301_i64, EMBEDDED_MIGRATIONS[4].name, EMBEDDED_MIGRATIONS[4].sha256()],
+        )
+        .unwrap();
+        let err = Migrator::schema_version(&conn).unwrap_err();
+        assert_eq!(err.code(), "storage.row_decode", "{err:?}");
+        let err = Migrator::verify_checksums(&conn).unwrap_err();
+        assert_eq!(err.code(), "storage.row_decode", "{err:?}");
+        drop(conn);
+        for options in [open_options(), open_options().no_auto_migrate()] {
+            let err = crate::connection::Database::open(&path, options).unwrap_err();
+            assert_eq!(err.code(), "storage.row_decode", "{err:?}");
+            assert_eq!(err.category(), g9_domain::ErrorCategory::DataCorruption);
+        }
+    }
+
+    /// The gap check is bounded by the embedded versions: a file that records
+    /// u32::MAX is reported (newer than this build) without walking 2^32 versions.
+    #[test]
+    fn the_highest_u32_version_is_refused_as_newer_without_walking_the_gap() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        let m = Migrator::new("0.1.0-test", UtcMillis::from_millis(1));
+        m.migrate(&mut conn).unwrap();
+        conn.execute(
+            "INSERT INTO schema_migrations (version, name, sha256, applied_at, app_version) VALUES (?1, 'x', ?2, 1, '9.9.9')",
+            params![i64::from(u32::MAX), "0".repeat(64)],
+        )
+        .unwrap();
+        let report = Migrator::verify_checksums(&conn).unwrap();
+        assert_eq!(report.db_schema_version, u32::MAX);
+        assert!(report.missing.is_empty() && !report.ok, "{report:?}");
+        assert!(matches!(
+            m.ensure_checksums(&conn).unwrap_err(),
+            StorageError::SchemaNewerThanApp {
+                db_version: u32::MAX,
+                ..
+            }
+        ));
+    }
+
+    /// storage-core-8 (b): two processes opening a fresh file together. The
+    /// version was read once, before any migration transaction; the second
+    /// process re-ran 0001 (`CREATE TABLE` without IF NOT EXISTS) and failed
+    /// with `storage.internal`. It is now re-read inside each transaction.
+    #[test]
+    fn a_migration_another_connection_applied_meanwhile_is_not_applied_again() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("race.sqlite");
+        let other = path.clone();
+        AFTER_VERSION_READ.with(|h| {
+            *h.borrow_mut() = Some(Box::new(move || {
+                let mut conn = Connection::open(&other).unwrap();
+                conn.pragma_update(None, "foreign_keys", true).unwrap();
+                Migrator::new("0.1.0-other", UtcMillis::from_millis(2))
+                    .migrate(&mut conn)
+                    .unwrap();
+            }))
+        });
+        let mut conn = Connection::open(&path).unwrap();
+        conn.pragma_update(None, "foreign_keys", true).unwrap();
+        let report = Migrator::new("0.1.0-test", UtcMillis::from_millis(1))
+            .migrate(&mut conn)
+            .unwrap();
+        assert!(
+            AFTER_VERSION_READ.with(|h| h.borrow().is_none()),
+            "the other process ran"
+        );
+        assert_eq!(report.applied, Vec::<AppliedMigration>::new());
+        assert_eq!(report.schema_version_after, CURRENT_SCHEMA_VERSION);
+        let rows = Migrator::applied(&conn).unwrap();
+        assert_eq!(rows.len() as u32, CURRENT_SCHEMA_VERSION);
+        assert!(rows.iter().all(|r| r.app_version == "0.1.0-other"));
+        assert_eq!(integrity_check(&conn).unwrap(), vec!["ok".to_string()]);
+    }
+
+    /// storage-core-8 (c): a file whose `schema_migrations` lost row 4 reported
+    /// pending [4] forever (read-only, and a pre-migration backup on every
+    /// start) while nothing could apply it. A gap is corruption.
+    #[test]
+    fn a_gap_in_the_recorded_versions_is_corruption_not_a_pending_migration() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("gap.sqlite");
+        let conn = file_migrated(&path);
+        conn.execute("DELETE FROM schema_migrations WHERE version = 4", [])
+            .unwrap();
+        let report = Migrator::verify_checksums(&conn).unwrap();
+        assert!(!report.ok, "{report:?}");
+        assert_eq!(report.missing, vec![4]);
+        assert!(report.mismatches.is_empty());
+        drop(conn);
+        // A snapshot with the gap fails backup verification as well.
+        let verified =
+            crate::backup::verify_snapshot(&path, &crate::backup::VerifyOptions::default())
+                .unwrap();
+        assert!(
+            !verified.migration_checksums_ok && !verified.ok(),
+            "{verified:?}"
+        );
+        for options in [open_options(), open_options().no_auto_migrate()] {
+            let err = crate::connection::Database::open(&path, options).unwrap_err();
+            assert_eq!(err.code(), "storage.corrupt", "{err:?}");
+            assert_eq!(err.category(), g9_domain::ErrorCategory::DataCorruption);
+        }
+        let mut conn = Connection::open(&path).unwrap();
+        let err = Migrator::new("0.1.0-test", UtcMillis::from_millis(1))
+            .migrate(&mut conn)
+            .unwrap_err();
+        assert_eq!(err.code(), "storage.corrupt", "{err:?}");
     }
 }

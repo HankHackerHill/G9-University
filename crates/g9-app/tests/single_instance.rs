@@ -68,3 +68,41 @@ fn the_data_opens_again_once_the_first_context_is_gone() {
         "the lock is released with the context that held it"
     );
 }
+
+fn builder(path: &Path) -> g9_app::AppContextBuilder {
+    let db = Database::open(path, g9_app::database_options("0.1.0-test")).unwrap();
+    g9_app::AppContext::builder(
+        db,
+        g9_app::AppConfig::new("0.1.0-test").unwrap(),
+        key(),
+        operator_id(),
+    )
+}
+
+/// storage-core-8: a host takes the lock before `Database::open` (which
+/// migrates a fresh file) and hands it to the context, which keeps it instead
+/// of taking a second one on the same file (that one would be refused).
+#[test]
+fn a_context_keeps_the_lock_its_host_took_before_opening_the_database() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("g9.sqlite");
+    let held = g9_app::lock::DataLock::acquire(&path).unwrap();
+    let ctx = builder(&path).data_lock(held).open().unwrap();
+    let refused = open(&path)
+        .err()
+        .expect("the context holds the lock it was given");
+    assert_eq!(refused.code, "app.data_in_use", "{refused:?}");
+    drop(ctx);
+    assert!(open(&path).is_ok(), "released with the context");
+}
+
+#[test]
+fn a_lock_on_another_database_is_refused() {
+    let dir = tempfile::tempdir().unwrap();
+    let other = g9_app::lock::DataLock::acquire(&dir.path().join("other.sqlite")).unwrap();
+    let err = builder(&dir.path().join("g9.sqlite"))
+        .data_lock(other)
+        .open()
+        .expect_err("the lock must be the one of the database opened");
+    assert_eq!(err.code, "context.data_lock_mismatch", "{err:?}");
+}
