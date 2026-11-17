@@ -25,8 +25,11 @@ use std::sync::Arc;
 /// 2026-11-22T08:30:00Z (fixed test instant).
 pub const T0: i64 = 1_795_336_200_000;
 
+/// The bytes of the harness's install secret ([`key`]).
+pub const KEY_BYTES: [u8; 32] = [7u8; 32];
+
 pub fn key() -> BindingKey {
-    BindingKey::from_bytes([7u8; 32])
+    BindingKey::from_bytes(KEY_BYTES)
 }
 
 pub fn operator_id() -> ActorId {
@@ -93,8 +96,9 @@ pub struct Setup {
     pub config: AppConfig,
     pub runtime: Option<Arc<dyn InferenceRuntime>>,
     pub skills: Option<Registry>,
-    /// The install secret; `key()` unless a test needs another one.
-    pub key: BindingKey,
+    /// The bytes of the install secret; [`KEY_BYTES`] unless a test needs another one. Bytes,
+    /// not a `BindingKey` (which is not `Clone`): every (re)open builds its key from them.
+    pub key: [u8; 32],
     /// The operations log the context writes to (`None`: no log).
     pub oplog: Option<Arc<g9_app::oplog::OpLog>>,
 }
@@ -107,7 +111,7 @@ pub struct Harness {
     config: AppConfig,
     runtime: Option<Arc<dyn InferenceRuntime>>,
     skills: Option<Registry>,
-    key: BindingKey,
+    key: [u8; 32],
     oplog: Option<Arc<g9_app::oplog::OpLog>>,
     n: u64,
 }
@@ -146,7 +150,7 @@ impl Harness {
             config: AppConfig::new("0.1.0-test").unwrap(),
             runtime: None,
             skills: None,
-            key: key(),
+            key: KEY_BYTES,
             oplog: None,
         };
         f(&mut setup);
@@ -175,11 +179,16 @@ impl Harness {
     fn try_open(&mut self, db: Database) -> Result<(), G9Error> {
         let c = self.clock.clone();
         let m = self.mono.clone();
-        let mut b = AppContext::builder(db, self.config.clone(), self.key.clone(), operator_id())
-            .clock(Box::new(move || {
-                UtcMillis::from_millis(c.load(Ordering::SeqCst))
-            }))
-            .monotonic(Box::new(move || m.load(Ordering::SeqCst)));
+        let mut b = AppContext::builder(
+            db,
+            self.config.clone(),
+            BindingKey::from_bytes(self.key),
+            operator_id(),
+        )
+        .clock(Box::new(move || {
+            UtcMillis::from_millis(c.load(Ordering::SeqCst))
+        }))
+        .monotonic(Box::new(move || m.load(Ordering::SeqCst)));
         if let Some(rt) = &self.runtime {
             b = b.runtime(rt.clone());
         }

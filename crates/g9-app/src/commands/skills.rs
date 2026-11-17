@@ -22,7 +22,20 @@
 //!
 //! Model output is never kept in `idempotency_records`: the stored replay
 //! record has `output: null` and no recommended actions, and a replay says so
-//! with the warning `idempotency.content_not_retained`.
+//! with the warning `idempotency.content_not_retained`. A non-completed
+//! invocation stores its redacted error there (the pipeline's committed
+//! failure), so a retry with the same key answers that error and records no
+//! second row. A key that already names a recorded invocation without such a
+//! record (a database written before, or a purged record) is refused with
+//! `CONFLICT skills.invocation_already_recorded` before anything runs.
+//!
+//! Version integrity (ARCHITECTURE.md §10; migration 0008): the
+//! `skill_versions` row `<name>@<g9-version>` is immutable and records the
+//! package, `SKILL.md` and schema hashes. A loaded package whose hashes differ
+//! from the row registered under its version (its files changed and its
+//! `g9-version` did not) is refused before the model runs
+//! (`PRECONDITION_FAILED skills.version_hash_mismatch`), so no invocation is
+//! recorded against hashes of files that did not run.
 
 use super::{decode, rc};
 use crate::context::{AppContext, Services};
@@ -188,7 +201,8 @@ fn find_package<'a>(svc: &'a Services, code: &str) -> Result<&'a SkillPackage, G
         .ok_or_else(|| G9Error::not_found("skills.not_registered", "skill is not registered"))
 }
 
-/// Register the package's skill and version rows once (FK targets of `skill_invocations`).
+/// Register the package's skill and version rows once (FK targets of `skill_invocations`), and
+/// refuse a package whose hashes differ from the version row registered under its version.
 fn ensure_registered(
     conn: &Connection,
     package: &SkillPackage,
@@ -218,24 +232,35 @@ fn ensure_registered(
         )?;
     }
     let version_id = format!("{}@{}", package.name.as_str(), package.version);
-    if repo::get_skill_version(conn, &version_id)?.is_none() {
-        repo::insert_skill_version(
-            conn,
-            &SkillVersionRow {
-                id: version_id.clone(),
-                skill_id: package.name.clone(),
-                version_label: package.version.clone(),
-                package_sha256: package.package_sha256.clone(),
-                skill_md_sha256: sha256_hex(package.body.as_bytes()),
-                input_schema_sha256: sha256_json(&package.input_schema),
-                output_schema_sha256: sha256_json(&package.output_schema),
-                budget: package.budget,
-                allowed_tool_ids: Vec::new(),
-                registered_by: operator.id.clone(),
-                registered_at: now,
-                created_at: now,
-            },
-        )?;
+    let loaded = SkillVersionRow {
+        id: version_id.clone(),
+        skill_id: package.name.clone(),
+        version_label: package.version.clone(),
+        package_sha256: package.package_sha256.clone(),
+        skill_md_sha256: sha256_hex(package.body.as_bytes()),
+        input_schema_sha256: sha256_json(&package.input_schema),
+        output_schema_sha256: sha256_json(&package.output_schema),
+        budget: package.budget,
+        allowed_tool_ids: Vec::new(),
+        registered_by: operator.id.clone(),
+        registered_at: now,
+        created_at: now,
+    };
+    match repo::get_skill_version(conn, &version_id)? {
+        None => repo::insert_skill_version(conn, &loaded)?,
+        Some(stored) => {
+            let same = stored.package_sha256 == loaded.package_sha256
+                && stored.skill_md_sha256 == loaded.skill_md_sha256
+                && stored.input_schema_sha256 == loaded.input_schema_sha256
+                && stored.output_schema_sha256 == loaded.output_schema_sha256;
+            if !same {
+                return Err(G9Error::precondition_failed(
+                    "skills.version_hash_mismatch",
+                    "the loaded skill package differs from the package registered under the same version; a changed package needs a new g9-version",
+                )
+                .with_details(json!({ "skill_version_id": version_id })));
+            }
+        }
     }
     Ok(version_id)
 }
@@ -311,6 +336,23 @@ pub fn invoke(
             let registry = env.svc.skills.clone().ok_or_else(|| {
                 G9Error::resource_unavailable("skills.registry_unavailable", "no skill registry")
             })?;
+            // Before anything runs: the key must not name a recorded invocation, and the
+            // package must be the one registered under its version (module docs).
+            if let Some(recorded) = repo::find_invocation_by_idempotency(
+                env.conn,
+                &env.meta.actor.id,
+                &env.meta.idempotency_key,
+            )? {
+                return Err(G9Error::conflict(
+                    "skills.invocation_already_recorded",
+                    "a skill invocation is already recorded under this idempotency key; send a new idempotency key to invoke the skill again",
+                )
+                .with_details(json!({
+                    "invocation_id": recorded.id,
+                    "state": recorded.state,
+                })));
+            }
+            let version_id = ensure_registered(env.conn, &package, &env.meta.actor, env.now)?;
             let granted: Vec<Capability> = [Capability::SkillInvoke, Capability::ModelInference]
                 .into_iter()
                 .filter(|c| package.requested_capabilities.contains(c))
@@ -341,7 +383,6 @@ pub fn invoke(
             );
             let outcome = orchestrator.invoke(envelope.clone(), &CancelToken::new());
             let trace = &outcome.record;
-            let version_id = ensure_registered(env.conn, &package, &env.meta.actor, env.now)?;
             let completed = outcome.state == SkillInvocationState::Completed;
             let output_json = match (&outcome.output, completed) {
                 (Some(out), true) => Some(

@@ -33,7 +33,13 @@
 //!   warning; warnings name `<app data>` instead of the host path.
 //! * A key file that is group/other accessible or has the wrong length is
 //!   replaced (warning [`WARN_FILE_ROTATED`]); approvals bound to the old key then
-//!   fail verification, which is the fail-closed outcome. A path that is not a
+//!   fail verification, which is the fail-closed outcome.
+//! * A key file missing next to an existing database (deleted, or not restored
+//!   with the database: `g9 copy-backup` does not copy it, ADR-0021) is replaced
+//!   by a new key like on a first run, and the warning [`WARN_FILE_RECREATED`]
+//!   says so: the installation key changed, so approvals granted under the old
+//!   one are refused. A first run (no database yet, or the empty file both hosts
+//!   create before the first open) creates the key silently. A path that is not a
 //!   regular file (symlink, directory) is refused with `DATA_CORRUPTION` and is
 //!   never followed or deleted.
 //! * Randomness is injected (`random`), so tests are deterministic; production
@@ -56,6 +62,8 @@ pub const KEY_FILE_NAME: &str = "binding.key";
 pub const WARN_FILE_FALLBACK: &str = "binding_key.file_fallback";
 /// Warning code: an unusable key file was replaced by a new key.
 pub const WARN_FILE_ROTATED: &str = "binding_key.file_rotated";
+/// Warning code: the key file was missing next to an existing database and a new key was created.
+pub const WARN_FILE_RECREATED: &str = "binding_key.file_recreated";
 /// Warning code: a temporary key file could not be removed.
 pub const WARN_STALE_FILE: &str = "binding_key.stale_file_not_removed";
 
@@ -75,8 +83,8 @@ pub fn os_random(buf: &mut [u8]) -> Result<(), G9Error> {
 }
 
 /// The provisioned key and the warnings to report. `BindingKey`'s `Debug`
-/// output is redacted.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// output is redacted; it is not `Clone`, so neither is this.
+#[derive(Debug, PartialEq, Eq)]
 pub struct ProvisionedKey {
     /// The per-installation HMAC key.
     pub key: BindingKey,
@@ -87,9 +95,12 @@ pub struct ProvisionedKey {
 
 /// Provision the binding key from `<data_dir>/binding.key` (the directory must
 /// already exist): reuse a valid key file, replace an unusable one, or create
-/// one. See the module docs for the rules.
+/// one. `database` is the database file the key binds: when the key has to be
+/// created while that file holds data, the new key is reported
+/// ([`WARN_FILE_RECREATED`]). See the module docs for the rules.
 pub fn provision(
     data_dir: &Path,
+    database: &Path,
     random: &mut dyn FnMut(&mut [u8]) -> Result<(), G9Error>,
 ) -> Result<ProvisionedKey, G9Error> {
     let mut warnings = vec![warning(
@@ -100,8 +111,23 @@ pub fn provision(
              mode 0600"
         ),
     )];
-    let key = from_file(&data_dir.join(KEY_FILE_NAME), random, &mut warnings)?;
+    let key = from_file(
+        &data_dir.join(KEY_FILE_NAME),
+        database_holds_data(database),
+        random,
+        &mut warnings,
+    )?;
     Ok(ProvisionedKey { key, warnings })
+}
+
+/// Whether the database file holds data: it exists and is not empty (the CLI and
+/// the bridge create an empty file before the first open). A path that cannot be
+/// inspected counts as holding data: the warning is the safe side of not knowing.
+fn database_holds_data(path: &Path) -> bool {
+    match fs::metadata(path) {
+        Ok(meta) => !meta.is_file() || meta.len() > 0,
+        Err(e) => e.kind() != io::ErrorKind::NotFound,
+    }
 }
 
 fn fresh_key(
@@ -158,6 +184,7 @@ fn read_key_file(path: &Path) -> Result<Option<[u8; BINDING_KEY_LEN]>, KeyFilePr
 /// Reuse a valid key file, replace an unusable one, or create one.
 fn from_file(
     file: &Path,
+    database_exists: bool,
     random: &mut dyn FnMut(&mut [u8]) -> Result<(), G9Error>,
     warnings: &mut Vec<String>,
 ) -> Result<BindingKey, G9Error> {
@@ -169,6 +196,15 @@ fn from_file(
     }
     match read_key_file(file) {
         Ok(Some(bytes)) => return Ok(BindingKey::from_bytes(bytes)),
+        Ok(None) if database_exists => warnings.push(warning(
+            WARN_FILE_RECREATED,
+            &format!(
+                "<app data>/{KEY_FILE_NAME} was missing while the database already existed, so \
+                 a new key was created; approvals granted or requested under the old key are \
+                 refused and must be requested again, and digests keyed with it can no longer \
+                 be verified"
+            ),
+        )),
         Ok(None) => {}
         Err(KeyFileProblem::NotRegular) => {
             return Err(G9Error::data_corruption(
@@ -370,6 +406,11 @@ mod tests {
         dir.path().join(KEY_FILE_NAME)
     }
 
+    /// The database path of a data directory that has no database yet.
+    fn no_database(dir: &tempfile::TempDir) -> std::path::PathBuf {
+        dir.path().join("g9.sqlite")
+    }
+
     fn names(dir: &tempfile::TempDir) -> Vec<String> {
         let mut names: Vec<String> = fs::read_dir(dir.path())
             .unwrap()
@@ -383,7 +424,7 @@ mod tests {
     fn creates_0600_file_with_32_bytes_and_warns() {
         let dir = tempfile::tempdir().unwrap();
         let mut random = counter();
-        let p = provision(dir.path(), &mut random).unwrap();
+        let p = provision(dir.path(), &no_database(&dir), &mut random).unwrap();
         assert_eq!(p.key, BindingKey::from_bytes(first_key()));
         let path = key_file(&dir);
         assert_eq!(fs::read(&path).unwrap(), first_key().to_vec());
@@ -399,12 +440,54 @@ mod tests {
     fn existing_key_is_reused_unchanged_without_randomness() {
         let dir = tempfile::tempdir().unwrap();
         let mut random = counter();
-        let first = provision(dir.path(), &mut random).unwrap();
+        let first = provision(dir.path(), &no_database(&dir), &mut random).unwrap();
         let mut never = no_random();
-        let second = provision(dir.path(), &mut never).unwrap();
+        let second = provision(dir.path(), &no_database(&dir), &mut never).unwrap();
         assert_eq!(first.key, second.key);
         assert_eq!(second.warnings.len(), 1, "only the fallback warning");
         assert_eq!(fs::read(key_file(&dir)).unwrap(), first_key().to_vec());
+    }
+
+    #[test]
+    fn a_key_missing_next_to_an_existing_database_is_recreated_with_a_warning() {
+        let dir = tempfile::tempdir().unwrap();
+        let database = dir.path().join("g9.sqlite");
+        let recreated = |p: &ProvisionedKey| {
+            p.warnings
+                .iter()
+                .filter(|w| w.starts_with("WARNING binding_key.file_recreated:"))
+                .count()
+        };
+        // First run: no database, no key; nothing to report.
+        let first = provision(dir.path(), &database, &mut counter()).unwrap();
+        assert_eq!(recreated(&first), 0, "{:?}", first.warnings);
+        // The empty file the hosts create before the first open is not a database yet.
+        fs::write(&database, b"").unwrap();
+        fs::remove_file(key_file(&dir)).unwrap();
+        let first = provision(dir.path(), &database, &mut counter()).unwrap();
+        assert_eq!(recreated(&first), 0, "{:?}", first.warnings);
+        fs::write(&database, b"stands for the database").unwrap();
+        // The key is reused while it exists.
+        let again = provision(dir.path(), &database, &mut no_random()).unwrap();
+        assert_eq!(again.key, first.key);
+        assert_eq!(recreated(&again), 0);
+        // The key is lost: a new one is created and reported.
+        fs::remove_file(key_file(&dir)).unwrap();
+        let mut random = counter();
+        let mut skip = [0u8; 32 + 8];
+        random(&mut skip).unwrap();
+        let replaced = provision(dir.path(), &database, &mut random).unwrap();
+        assert_ne!(replaced.key, first.key, "a new key");
+        assert_eq!(recreated(&replaced), 1, "{:?}", replaced.warnings);
+        let dir_text = dir.path().to_string_lossy().to_string();
+        for w in &replaced.warnings {
+            assert!(!w.contains(&dir_text), "{w}");
+        }
+        assert_eq!(mode(&key_file(&dir)), 0o600);
+        // From then on the new key is the key.
+        let after = provision(dir.path(), &database, &mut no_random()).unwrap();
+        assert_eq!(after.key, replaced.key);
+        assert_eq!(recreated(&after), 0);
     }
 
     #[test]
@@ -414,7 +497,7 @@ mod tests {
         fs::write(&path, [9u8; 32]).unwrap();
         fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
         let mut random = counter();
-        let p = provision(dir.path(), &mut random).unwrap();
+        let p = provision(dir.path(), &no_database(&dir), &mut random).unwrap();
         assert_ne!(p.key, BindingKey::from_bytes([9u8; 32]));
         assert_eq!(p.key, BindingKey::from_bytes(first_key()));
         assert_eq!(mode(&path), 0o600);
@@ -434,7 +517,7 @@ mod tests {
             fs::write(&path, vec![5u8; len]).unwrap();
             fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
             let mut random = counter();
-            let p = provision(dir.path(), &mut random).unwrap();
+            let p = provision(dir.path(), &no_database(&dir), &mut random).unwrap();
             assert_eq!(p.key, BindingKey::from_bytes(first_key()), "len {len}");
             assert_eq!(fs::read(&path).unwrap(), first_key().to_vec());
             assert!(p
@@ -452,7 +535,7 @@ mod tests {
         fs::set_permissions(&target, fs::Permissions::from_mode(0o600)).unwrap();
         std::os::unix::fs::symlink(&target, key_file(&dir)).unwrap();
         let mut random = counter();
-        let err = provision(dir.path(), &mut random).unwrap_err();
+        let err = provision(dir.path(), &no_database(&dir), &mut random).unwrap_err();
         assert_eq!(err.category, ErrorCategory::DataCorruption);
         assert_eq!(err.code, "binding_key.file_not_regular");
         assert_eq!(
@@ -471,7 +554,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         fs::create_dir(key_file(&dir)).unwrap();
         let mut random = counter();
-        let err = provision(dir.path(), &mut random).unwrap_err();
+        let err = provision(dir.path(), &no_database(&dir), &mut random).unwrap_err();
         assert_eq!(err.category, ErrorCategory::DataCorruption);
         assert!(key_file(&dir).is_dir());
     }
@@ -506,7 +589,7 @@ mod tests {
     fn missing_randomness_is_resource_unavailable_and_creates_nothing() {
         let dir = tempfile::tempdir().unwrap();
         let mut never = no_random();
-        let err = provision(dir.path(), &mut never).unwrap_err();
+        let err = provision(dir.path(), &no_database(&dir), &mut never).unwrap_err();
         assert_eq!(err.category, ErrorCategory::ResourceUnavailable);
         assert_eq!(err.code, "binding_key.os_random_unavailable");
         assert!(names(&dir).is_empty());
@@ -550,7 +633,7 @@ mod tests {
         fs::write(&path, [0xabu8; 32]).unwrap();
         fs::set_permissions(&path, fs::Permissions::from_mode(0o640)).unwrap();
         let mut random = counter();
-        let p = provision(dir.path(), &mut random).unwrap();
+        let p = provision(dir.path(), &no_database(&dir), &mut random).unwrap();
         let dir_text = dir.path().to_string_lossy().to_string();
         for w in &p.warnings {
             assert!(!w.contains(&dir_text), "{w}");
@@ -562,7 +645,7 @@ mod tests {
         // Errors carry no host path either.
         fs::remove_file(&path).unwrap();
         fs::create_dir(&path).unwrap();
-        let err = provision(dir.path(), &mut counter()).unwrap_err();
+        let err = provision(dir.path(), &no_database(&dir), &mut counter()).unwrap_err();
         let text = serde_json::to_string(&err).unwrap();
         assert!(!text.contains(&dir_text), "{text}");
     }

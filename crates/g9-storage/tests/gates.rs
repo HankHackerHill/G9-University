@@ -927,6 +927,84 @@ fn a10_erasure_never_lists_bytes_a_live_attachment_still_uses() {
 }
 
 #[test]
+fn a10_approved_requests_whose_erasure_did_not_run_are_listed_until_the_subject_is_erased() {
+    let mut db = open_mem();
+    let fx = populate(db.conn());
+    let operator = ActorId::parse("operator-1").unwrap();
+    deletion::create_request(
+        db.conn(),
+        &NewDeletionRequest {
+            id: "del-1".into(),
+            subject_kind: DeletionSubjectKind::Note,
+            subject_id: fx.note_id.clone(),
+            requested_by: operator.clone(),
+            requested_at: t(10),
+            reason: None,
+            approval_id: Some(fx.approval_id.clone()),
+        },
+    )
+    .unwrap();
+    // A request without a spent approval is not listed (nothing was approved and spent yet).
+    deletion::create_request(
+        db.conn(),
+        &NewDeletionRequest {
+            id: "del-unapproved".into(),
+            subject_kind: DeletionSubjectKind::OptInReflection,
+            subject_id: fx.reflection_id.clone(),
+            requested_by: operator.clone(),
+            requested_at: t(11),
+            reason: None,
+            approval_id: None,
+        },
+    )
+    .unwrap();
+    assert!(deletion::list_approved_unexecuted(db.conn())
+        .unwrap()
+        .is_empty());
+    let approved = approvals_store::transition_request(
+        db.conn(),
+        &fx.approval_id,
+        Revision::new(1),
+        &ApprovalUpdate {
+            event: ApprovalEvent::Approve,
+            actor: Some(operator.clone()),
+            at: t(1),
+            binding_mac: Some(sha("mac")),
+        },
+    )
+    .unwrap();
+    assert!(
+        deletion::list_approved_unexecuted(db.conn())
+            .unwrap()
+            .is_empty(),
+        "approved but not consumed"
+    );
+    approvals_store::transition_request(
+        db.conn(),
+        &fx.approval_id,
+        approved.revision,
+        &ApprovalUpdate {
+            event: ApprovalEvent::Consume,
+            actor: Some(operator.clone()),
+            at: t(2),
+            binding_mac: None,
+        },
+    )
+    .unwrap();
+    let listed: Vec<String> = deletion::list_approved_unexecuted(db.conn())
+        .unwrap()
+        .into_iter()
+        .map(|r| r.id)
+        .collect();
+    assert_eq!(listed, vec!["del-1".to_string()]);
+
+    deletion::execute_erasure(db.conn_mut(), "del-1", &operator, t(20)).unwrap();
+    assert!(deletion::list_approved_unexecuted(db.conn())
+        .unwrap()
+        .is_empty());
+}
+
+#[test]
 fn a10_reflection_erasure_and_rejected_requests() {
     let mut db = open_mem();
     let fx = populate(db.conn());

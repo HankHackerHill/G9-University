@@ -331,7 +331,7 @@ fn skill_digests_under(key_byte: u8, input: &Value, out: &Value) -> (String, Str
     let mut h = Harness::with(|s| {
         s.runtime = Some(rt);
         s.skills = Some(registry);
-        s.key = g9_policy::BindingKey::from_bytes([key_byte; 32]);
+        s.key = [key_byte; 32];
     });
     h.call(
         "skills.invoke",

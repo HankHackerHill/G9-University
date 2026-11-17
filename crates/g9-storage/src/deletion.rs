@@ -263,6 +263,56 @@ pub fn get_request(conn: &Connection, id: &str) -> StorageResult<Option<Deletion
     }))
 }
 
+/// `REQUESTED` requests whose approval was consumed and whose subject is still stored (not
+/// erased), oldest first.
+///
+/// The approval of a deletion request is consumed in the transaction that records the request;
+/// the erasure commits in a transaction of its own. A request listed here is one whose erasure
+/// never ran (the process stopped between the two commits) or failed: the operator approved it,
+/// the approval is spent and the content is intact. A request whose subject was erased since
+/// (by a later request) is not listed.
+pub fn list_approved_unexecuted(conn: &Connection) -> StorageResult<Vec<DeletionRequestRow>> {
+    let ids: Vec<String> = {
+        let mut stmt = conn.prepare(
+            "SELECT d.id FROM deletion_requests d
+             JOIN approval_requests a ON a.id = d.approval_id
+             WHERE d.state = 'REQUESTED' AND a.state = 'CONSUMED'
+             ORDER BY d.requested_at, d.id",
+        )?;
+        let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
+        let mut v = Vec::new();
+        for row in rows {
+            v.push(row?);
+        }
+        v
+    };
+    let mut pending = Vec::new();
+    for id in ids {
+        let Some(request) = get_request(conn, &id)? else {
+            continue;
+        };
+        if !subject_erased(conn, request.subject_kind, &request.subject_id)? {
+            pending.push(request);
+        }
+    }
+    Ok(pending)
+}
+
+/// Whether the subject of a request is erased (`false` for a subject that is not erasable or no
+/// longer exists: the erasure did not happen).
+fn subject_erased(conn: &Connection, kind: DeletionSubjectKind, id: &str) -> StorageResult<bool> {
+    let sql = match kind {
+        DeletionSubjectKind::Note => "SELECT erased FROM notes WHERE id = ?1",
+        DeletionSubjectKind::Attachment => "SELECT erased FROM attachments WHERE id = ?1",
+        DeletionSubjectKind::OptInReflection => {
+            "SELECT erased FROM opt_in_reflections WHERE id = ?1"
+        }
+        DeletionSubjectKind::StudySession => return Ok(false),
+    };
+    let erased: Option<i64> = conn.query_row(sql, params![id], |r| r.get(0)).optional()?;
+    Ok(erased == Some(1))
+}
+
 /// Reject a pending request (terminal; the row becomes immutable).
 pub fn reject_request(
     conn: &Connection,

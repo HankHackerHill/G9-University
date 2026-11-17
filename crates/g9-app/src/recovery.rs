@@ -30,6 +30,17 @@
 //!    records the count (data inventory gap G1: the documented retention was never
 //!    enforced, and the stored results repeat operator text). Like steps 3 and 4,
 //!    it runs only when writes are allowed, in the same transaction.
+//! 6. **Unexecuted deletions** (read only). `deletion.request` spends its
+//!    approval and records the request in its command transaction; the erasure
+//!    commits in a second one. A request still `REQUESTED` with a consumed
+//!    approval and a subject that is not erased is one whose erasure never ran
+//!    (the process stopped between the two commits) or failed: it is listed in
+//!    [`RecoveryReport::pending_deletions`], and `system.status` warns about it
+//!    while it lasts. It is reported, not executed: an erasure needs a fresh
+//!    approval (fail closed, `commands/privacy.rs`). Listed whenever the schema
+//!    is the migrated one, also when writes are refused. A list that cannot be
+//!    read does not stop the open: its error code is reported in
+//!    [`RecoveryReport::pending_deletions_unreadable`].
 
 // Step 0 (before the steps above): the schema itself is compared with the
 // embedded migrations at the recorded version; a difference blocks every write,
@@ -79,6 +90,15 @@ pub struct RecoveryReport {
     pub closed_intervals: Vec<String>,
     /// Approvals moved to `EXPIRED`.
     pub expired_approvals: Vec<ApprovalId>,
+    /// Deletion requests approved (approval consumed) whose erasure did not complete: the
+    /// content they name is still stored (step 6 of the module docs). Ids only.
+    #[serde(default)]
+    pub pending_deletions: Vec<String>,
+    /// The storage error code when the deletion requests of step 6 could not be read: the open
+    /// goes on (the list is a report, not a precondition) and `pending_deletions` is then
+    /// unknown, not empty. `system.status` reads the list again live.
+    #[serde(default)]
+    pub pending_deletions_unreadable: Option<String>,
     /// Schema objects that differ from what the embedded migrations produce at the
     /// recorded version (`g9_storage::migrations::verify_schema`); empty when the
     /// schema matches. Mutations are refused while non-empty.
@@ -143,6 +163,14 @@ pub fn run(db: &mut Database, svc: &mut Services) -> Result<RecoveryReport, G9Er
             first_bad_seq = ?chain.first_bad_seq,
             "audit chain verification failed; mutations are refused"
         );
+    }
+    if report.pending_migrations.is_empty() {
+        // A read; an unmigrated schema may not have the tables it reads. A failure is reported,
+        // never fatal: the open does not depend on it.
+        match g9_storage::deletion::list_approved_unexecuted(db.conn()) {
+            Ok(pending) => report.pending_deletions = pending.into_iter().map(|r| r.id).collect(),
+            Err(e) => report.pending_deletions_unreadable = Some(e.code().to_string()),
+        }
     }
     if report.write_block_reason().is_some() {
         // Nothing may be written over a broken chain or an unmigrated schema.

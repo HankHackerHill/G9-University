@@ -29,12 +29,21 @@
 //!   (e.g. from the OS CSPRNG at install time) and passes them to
 //!   [`BindingKey::from_bytes`].
 //! * Verification is constant-time (`subtle::ConstantTimeEq`).
+//! * Every `BindingKey` wipes its bytes when it is dropped (`zeroize`: volatile
+//!   writes the compiler does not remove), and so does the digest subkey derived
+//!   in [`BindingKey::digest_json`]. `BindingKey` is not `Clone` and exposes no
+//!   accessor to its bytes: a caller borrows the one key it holds, and a second
+//!   copy can only be made from the caller's own bytes. Not wiped: the caller's
+//!   own copies of the bytes passed to [`BindingKey::from_bytes`], the
+//!   key-derived HMAC states inside `hmac`/`sha2` (no zeroize support in the
+//!   versions used), and copies the compiler makes when a value is moved.
 
 use g9_domain::hashing::canonical_json;
 use g9_domain::{ApprovalId, OperationDescriptor, Revision};
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
 use subtle::ConstantTimeEq;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -55,9 +64,23 @@ pub enum BindingError {
     KeyRejected,
 }
 
-/// Per-installation HMAC key. Backend-process only; see the module docs.
-#[derive(Clone)]
+/// Per-installation HMAC key. Backend-process only; see the module docs. Its bytes are wiped
+/// when it is dropped, and it is deliberately not `Clone` (borrow it).
 pub struct BindingKey([u8; BINDING_KEY_LEN]);
+
+impl Zeroize for BindingKey {
+    fn zeroize(&mut self) {
+        self.0.zeroize();
+    }
+}
+
+impl Drop for BindingKey {
+    fn drop(&mut self) {
+        self.zeroize();
+    }
+}
+
+impl ZeroizeOnDrop for BindingKey {}
 
 impl BindingKey {
     /// Wrap caller-supplied key material.
@@ -131,8 +154,11 @@ impl BindingKey {
     ) -> Result<String, BindingError> {
         let mut derive = self.mac()?;
         derive.update(DIGEST_KEY_LABEL);
-        let subkey = derive.finalize().into_bytes();
-        let mut mac = HmacSha256::new_from_slice(&subkey).map_err(|_| BindingError::KeyRejected)?;
+        let mut subkey = derive.finalize().into_bytes();
+        let mac = HmacSha256::new_from_slice(&subkey).map_err(|_| BindingError::KeyRejected);
+        // The subkey is key material too: wiped as soon as the MAC holds it.
+        subkey.as_mut_slice().zeroize();
+        let mut mac = mac?;
         let label = domain.label().as_bytes();
         // One length byte frames the label (every label is shorter than 256 bytes).
         mac.update(&[u8::try_from(label.len()).unwrap_or(u8::MAX)]);
@@ -277,6 +303,38 @@ mod tests {
         assert!(BindingKey::try_from_slice(&[0u8; 32]).is_ok());
         assert_eq!(key(1), key(1));
         assert_ne!(key(1), key(2));
+    }
+
+    #[test]
+    fn key_bytes_are_wiped_when_a_key_is_dropped() {
+        // core-11: a dropped copy of the installation secret must not stay in freed memory.
+        assert!(
+            std::mem::needs_drop::<BindingKey>(),
+            "BindingKey implements Drop (wipes its bytes)"
+        );
+        fn wiped_on_drop<T: ZeroizeOnDrop>() {}
+        wiped_on_drop::<BindingKey>();
+        // Not `Clone`: this line is ambiguous (does not compile) if `BindingKey: Clone`.
+        trait AmbiguousIfClone<A> {
+            fn some_item() {}
+        }
+        impl<T: ?Sized> AmbiguousIfClone<()> for T {}
+        struct IsClone;
+        impl<T: Clone> AmbiguousIfClone<IsClone> for T {}
+        <BindingKey as AmbiguousIfClone<_>>::some_item();
+        // What the drop runs: every byte becomes zero (another key is not touched).
+        let mut key = key(9);
+        let copy = BindingKey::from_bytes([9u8; BINDING_KEY_LEN]);
+        key.zeroize();
+        assert_eq!(key, BindingKey::from_bytes([0u8; BINDING_KEY_LEN]));
+        assert_eq!(copy, BindingKey::from_bytes([9u8; BINDING_KEY_LEN]));
+        // Wiping the derived subkey does not change a digest.
+        assert_eq!(
+            copy.digest_json(DigestDomain::Request, &serde_json::json!({ "a": 1 }))
+                .unwrap(),
+            copy.digest_json(DigestDomain::Request, &serde_json::json!({ "a": 1 }))
+                .unwrap()
+        );
     }
 
     #[test]

@@ -30,7 +30,11 @@
 //!    output) is never stored: the handler supplies a content-free
 //!    [`Mutation::replay_record`] (ids only) and a replay rebuilds the result
 //!    from current storage (`commands::rebuild_replay`), so an approved
-//!    erasure (A10, ADR-0002) leaves no copy in `idempotency_records`.
+//!    erasure (A10, ADR-0002) leaves no copy in `idempotency_records`. A
+//!    committed failure ([`Mutation::failed`]) stores its redacted error
+//!    (category, code, details, approval id; not the message, which can name
+//!    parts of the request), and a retry with the same key and request answers
+//!    that error again without running anything.
 //! 9. **Return** `CommandOutcome { result, revision, audit_ref, replayed }`.
 //!
 //! In-memory service state that mirrors a row the handler wrote (the backup
@@ -42,7 +46,13 @@
 //! request (step 3), an expired approval's terminal state, and an audit row
 //! whose outcome is the error category. Read-only queries run step 3 only;
 //! every read evaluation (allowed or refused) is persisted as a
-//! metadata-only `policy_decisions` row (ARCHITECTURE.md §11, ADR-0003).
+//! metadata-only `policy_decisions` row (ARCHITECTURE.md §11, ADR-0003),
+//! except while recovery refuses writes (`READ_ONLY`: broken audit chain,
+//! schema drift, unapplied migrations). Then the read is evaluated exactly as
+//! before and its decision is not written: nothing may be written over a
+//! broken chain or an unmigrated or drifted schema (`crate::recovery`), and a
+//! drifted schema may carry a trigger on `policy_decisions`. The operations
+//! log line of the command still records its outcome (`crate::oplog`).
 //!
 //! Approval binding (ADR-0003, SEC-02): an approval request is bound to the
 //! revision the resource has when it is requested — the stored revision read in
@@ -163,6 +173,13 @@ pub type OnCommit = Box<dyn FnOnce(&mut Services)>;
 /// a content-bearing result (see [`Mutation::replay_record`]).
 pub const REPLAY_RECORD_KEY: &str = "g9_replay_record";
 
+/// Key of the redacted error stored in `idempotency_records` for a committed
+/// failure (see [`Mutation::commit_error`]).
+pub const COMMITTED_ERROR_KEY: &str = "g9_committed_error";
+
+/// Message of a replayed committed failure: the original message is not kept.
+const REPLAYED_FAILURE_MESSAGE: &str = "this request already failed under this idempotency key and its recorded outcome is returned (the original message is not retained); send a new idempotency key to run it again";
+
 /// What a handler produced.
 pub struct Mutation {
     /// Operation result (validated against the response schema before commit).
@@ -180,7 +197,10 @@ pub struct Mutation {
     pub post_commit: Option<PostCommit>,
     /// Commit the transaction (metadata that must survive, e.g. a skill
     /// invocation record) but report this error to the caller. The audit row
-    /// carries the error category and no idempotency outcome is stored.
+    /// carries the error category, and the idempotency outcome is the redacted
+    /// error (category, code, details, approval id; never the message), so a
+    /// retry with the same key answers it again. Its details must be
+    /// content-free (ids, states, codes).
     pub commit_error: Option<G9Error>,
     /// Content-free replacement for `result` in the idempotency record (ids
     /// only). Set by handlers whose result carries personal or model content;
@@ -331,6 +351,46 @@ pub(crate) fn forget_event_results(
         idempotency::replace_outcome(conn, &record.actor_id, &record.idempotency_key, &value)?;
     }
     Ok(found.len())
+}
+
+/// The outcome of a committed failure as stored in `idempotency_records`. The
+/// message is left out: it can name parts of the request (a skill preflight
+/// lists the input properties it refused), and the ledger keeps no text derived
+/// from operator content (ADR-0021).
+fn stored_failure(error: &G9Error) -> Value {
+    json!({
+        COMMITTED_ERROR_KEY: {
+            "category": error.category,
+            "code": error.code,
+            "details": error.details,
+            "approval_id": error.approval_id,
+        }
+    })
+}
+
+/// The error a retry of a committed failure answers (see [`stored_failure`]).
+fn replayed_failure(stored: &Value) -> Result<G9Error, G9Error> {
+    #[derive(serde::Deserialize)]
+    struct StoredFailure {
+        category: g9_domain::ErrorCategory,
+        code: String,
+        #[serde(default)]
+        details: Option<Value>,
+        #[serde(default)]
+        approval_id: Option<ApprovalId>,
+    }
+    let failure: StoredFailure = serde_json::from_value(stored.clone()).map_err(|_| {
+        G9Error::data_corruption(
+            "idempotency.outcome_unreadable",
+            "the stored outcome for this idempotency key cannot be read",
+        )
+    })?;
+    // Built through the constructor with the stored code passed on (the code was
+    // raised, and catalogued, where the failure first happened).
+    let mut error = G9Error::new(failure.category, failure.code, REPLAYED_FAILURE_MESSAGE);
+    error.details = failure.details;
+    error.approval_id = failure.approval_id;
+    Ok(error)
 }
 
 /// What a handler sees: the transaction connection and the services.
@@ -538,13 +598,18 @@ where
     let found = facts(db.conn(), svc)?;
     let op = descriptor(&svc.binding_key, meta, &cmd)?;
     let evaluation = svc.policy.evaluate(&meta.actor, &op, &found.context);
+    // ARCHITECTURE.md §11 / ADR-0003: every evaluation is persisted, allowed
+    // reads included (metadata only, before the read runs), except while
+    // recovery refuses writes: a READ_ONLY database is not written at all
+    // (module docs).
+    let persist = svc.recovery.write_block_reason().is_none();
     match &evaluation.decision {
         Decision::Allow { .. } => {
-            // ARCHITECTURE.md §11 / ADR-0003: every evaluation is persisted,
-            // allowed reads included (metadata only, before the read runs).
-            let tx = db.begin_immediate()?;
-            insert_decision(&tx, &evaluation.record, meta, None)?;
-            tx.commit().map_err(storage_err)?;
+            if persist {
+                let tx = db.begin_immediate()?;
+                insert_decision(&tx, &evaluation.record, meta, None)?;
+                tx.commit().map_err(storage_err)?;
+            }
         }
         Decision::Deny { .. } | Decision::ApprovalRequired { .. } => {
             let error: G9Error = match evaluation.decision.clone() {
@@ -561,9 +626,11 @@ where
                 }
                 .into(),
             };
-            let tx = db.begin_immediate()?;
-            insert_decision(&tx, &evaluation.record, meta, None)?;
-            tx.commit().map_err(storage_err)?;
+            if persist {
+                let tx = db.begin_immediate()?;
+                insert_decision(&tx, &evaluation.record, meta, None)?;
+                tx.commit().map_err(storage_err)?;
+            }
             return Err(error);
         }
     }
@@ -706,6 +773,12 @@ where
         .map_err(|e| Refusal::not_evaluated(e.into()))?
     {
         IdempotencyCheck::Replay(stored) => {
+            if let Some(failure) = stored.outcome_json.get(COMMITTED_ERROR_KEY) {
+                // A committed failure: the same redacted error again; nothing is written.
+                let error = replayed_failure(failure).map_err(Refusal::not_evaluated)?;
+                drop(tx);
+                return Ok(Step::CommittedFailure(Box::new(error)));
+            }
             let mut outcome: CommandOutcome<Value> = serde_json::from_value(stored.outcome_json)
                 .map_err(|_| {
                     Refusal::not_evaluated(G9Error::data_corruption(
@@ -946,6 +1019,15 @@ where
                 ),
             )?;
             svc.note_audit(audit.audit_ref);
+            // Step 8 for a committed failure: a retry with this key answers the same error.
+            idempotency::store(
+                &tx,
+                &meta.actor.id,
+                &meta.idempotency_key,
+                request_hash,
+                &stored_failure(&error),
+                now,
+            )?;
             Ok(())
         })();
         if let Err(e) = committed {
@@ -1137,6 +1219,9 @@ fn record_refusal(
         let tx = db.begin_immediate()?;
         if refusal.expire_approvals {
             approvals_store::expire_due(&tx, now)?;
+            if let Some(id) = &refusal.touched_approval {
+                expire_presented(&tx, id, now)?;
+            }
         }
         if let Some(request) = &refusal.new_approval {
             approvals_store::insert_request(
@@ -1217,6 +1302,41 @@ fn record_refusal(
             }
         }
     }
+}
+
+/// Persist the expiry of the approval a refusal found expired. The ledger also
+/// expires an approval whose request or decision lies in the future of the wall
+/// clock (the clock went backwards: SEC-02, fail closed), which the time-window
+/// sweep (`expires_at <= now`) does not match; without this the row stayed
+/// `PENDING`/`APPROVED` and the approval was decided or consumed once the clock
+/// was corrected. Used by the failure transaction of a consumption refused as
+/// expired and by `approvals.decide` (`crate::commands::approvals`). A row that
+/// is already terminal is left as it is.
+pub(crate) fn expire_presented(
+    conn: &Connection,
+    id: &ApprovalId,
+    now: UtcMillis,
+) -> Result<(), G9Error> {
+    let Some(row) = approvals_store::get_request(conn, id)? else {
+        return Ok(());
+    };
+    if matches!(
+        row.state,
+        g9_domain::ApprovalState::Pending | g9_domain::ApprovalState::Approved
+    ) {
+        approvals_store::transition_request(
+            conn,
+            id,
+            row.revision,
+            &ApprovalUpdate {
+                event: g9_domain::state::ApprovalEvent::Expire,
+                actor: None,
+                at: now,
+                binding_mac: None,
+            },
+        )?;
+    }
+    Ok(())
 }
 
 /// The second, smaller failure transaction: the decision and the audit row of a refusal whose

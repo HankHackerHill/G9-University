@@ -7,6 +7,13 @@
 //! `approval_decisions` row are written in the command transaction. The native
 //! confirmation dialog raised from Rust (ADR-0014, SEC-03) is PROPOSED for
 //! Stage 03 and is not part of this handler.
+//!
+//! A decision refused because the request expired (its window has passed, or
+//! the wall clock reads earlier than the request instant: SEC-02, fail closed)
+//! moves the request to `EXPIRED` and commits that with the refusal
+//! ([`Mutation::failed`]): the caller gets the same `approval.expired` error,
+//! and a wall clock corrected or stepped back afterwards cannot revive the
+//! request.
 
 use super::{decode, rc, to_value};
 use crate::context::AppContext;
@@ -14,9 +21,10 @@ use crate::ops::{self, OpSpec};
 use crate::pipeline::{self, Command, EventSpec, Facts, Mutation};
 use g9_domain::state::ApprovalEvent;
 use g9_domain::{
-    ApprovalId, ApprovalState, Classification, CommandMeta, CommandOutcome, DataDomain, G9Error,
-    ResourceKind, ResourceRef, Revision, UtcMillis,
+    Actor, ApprovalId, ApprovalState, Classification, CommandMeta, CommandOutcome, DataDomain,
+    G9Error, ResourceKind, ResourceRef, Revision, UtcMillis,
 };
+use g9_policy::ApprovalError;
 use g9_storage::approvals_store::{
     self, ApprovalDecisionKind, ApprovalDecisionRow, ApprovalRequestRow, ApprovalUpdate,
 };
@@ -174,24 +182,40 @@ pub fn decide(
             let row = approvals_store::get_request(env.conn, &id)?
                 .ok_or_else(|| G9Error::not_found("approval.not_found", "approval not found"))?;
             if effective_state(&row, env.now) == ApprovalState::Expired {
-                return Err(G9Error::precondition_failed(
-                    "approval.expired",
-                    "the approval request expired before a decision was made",
-                ));
+                return refuse_expired(
+                    env,
+                    &id,
+                    &operator,
+                    G9Error::precondition_failed(
+                        "approval.expired",
+                        "the approval request expired before a decision was made",
+                    ),
+                );
             }
             let (event, kind, mac) = match req.decision {
                 Verdict::Approve => {
-                    let key = env.svc.binding_key.clone();
-                    let record = env
-                        .svc
+                    // The key is borrowed, never copied (core-11): the ledger and the key are
+                    // separate fields of the services.
+                    let svc = &mut *env.svc;
+                    let approved = svc
                         .approvals
                         .ledger_mut()
-                        .approve(&id, &operator, env.now, &key)?;
-                    (
-                        ApprovalEvent::Approve,
-                        ApprovalDecisionKind::Approved,
-                        record.binding_mac.clone(),
-                    )
+                        .approve(&id, &operator, env.now, &svc.binding_key)
+                        .map(|record| record.binding_mac.clone());
+                    let mac = match approved {
+                        Ok(mac) => mac,
+                        // The wall clock reads earlier than the request instant (SEC-02).
+                        Err(ApprovalError::Expired) => {
+                            return refuse_expired(
+                                env,
+                                &id,
+                                &operator,
+                                ApprovalError::Expired.into(),
+                            );
+                        }
+                        Err(e) => return Err(e.into()),
+                    };
+                    (ApprovalEvent::Approve, ApprovalDecisionKind::Approved, mac)
                 }
                 Verdict::Reject => {
                     env.svc.approvals.ledger_mut().reject(
@@ -236,4 +260,19 @@ pub fn decide(
                 )))
         },
     )
+}
+
+/// Refuse a decision on an expired request and persist the expiry with the
+/// refusal (core-7, SEC-02): the row moves to `EXPIRED` in the command
+/// transaction, which commits with the decision and audit rows of the refusal
+/// and answers `error` (module docs). The ledger is reloaded from the row.
+fn refuse_expired(
+    env: &mut pipeline::Env<'_>,
+    id: &ApprovalId,
+    operator: &Actor,
+    error: G9Error,
+) -> Result<Mutation, G9Error> {
+    pipeline::expire_presented(env.conn, id, env.now)?;
+    env.svc.approvals.refresh(env.conn, id, operator)?;
+    Ok(Mutation::failed(error))
 }

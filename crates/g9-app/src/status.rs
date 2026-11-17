@@ -14,6 +14,15 @@
 //! `null` and the outcome carries the warning
 //! `system.status.last_backup_unreadable` with the storage error code, so an
 //! unreadable ledger is never reported as "no backup".
+//!
+//! An approved deletion whose erasure did not complete (the process stopped
+//! between `deletion.request`'s two commits, or the erasure failed) is reported
+//! with the warning `deletion.erasure_incomplete` and the request ids while the
+//! content is still stored (`crate::recovery` step 5); it disappears once the
+//! content is erased by a fresh approved request. It is read live, except over
+//! an unmigrated or drifted schema, where the tables may not be the ones the
+//! query reads; a failed read is the warning
+//! `deletion.erasure_incomplete_unreadable`, never "nothing pending".
 
 use crate::commands::{rc, to_value};
 use crate::context::AppContext;
@@ -24,7 +33,7 @@ use g9_domain::{
     ResourceKind, ResourceRef, Revision, SchemaVersion,
 };
 use g9_storage::approvals_store;
-use g9_storage::{backup, Migrator};
+use g9_storage::{backup, deletion, Migrator};
 use serde_json::{json, Value};
 
 /// Handle `system.status`.
@@ -111,7 +120,34 @@ pub fn handle(
             if let Some(warning) = backup_warning {
                 mutation = mutation.with_warning(warning);
             }
+            if let Some(warning) = deletion_warning(env.conn, svc) {
+                mutation = mutation.with_warning(warning);
+            }
             Ok(mutation)
         },
     )
+}
+
+/// The `deletion.erasure_incomplete` warning (module docs), or `None` when nothing is pending.
+fn deletion_warning(conn: &rusqlite::Connection, svc: &crate::context::Services) -> Option<String> {
+    let schema_known =
+        svc.recovery.pending_migrations.is_empty() && svc.recovery.schema_differences.is_empty();
+    if !schema_known {
+        return None;
+    }
+    match deletion::list_approved_unexecuted(conn) {
+        Ok(pending) if pending.is_empty() => None,
+        Ok(pending) => {
+            let ids: Vec<String> = pending.into_iter().map(|r| r.id).collect();
+            Some(format!(
+                "deletion.erasure_incomplete: {} approved deletion request(s) were recorded but their erasure did not complete, so the content is still stored ({}); request the deletion again to erase it (a new approval is needed)",
+                ids.len(),
+                ids.join(", ")
+            ))
+        }
+        Err(e) => Some(format!(
+            "deletion.erasure_incomplete_unreadable: pending deletion requests could not be read ({}); whether an approved erasure is incomplete is not known",
+            e.code()
+        )),
+    }
 }

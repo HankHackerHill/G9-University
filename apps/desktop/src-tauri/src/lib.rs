@@ -344,7 +344,7 @@ fn open_context(
     // `Database::open`, a second process starting on a fresh directory
     // migrated the file alongside the first (storage-core-8).
     let data_lock = g9_app::lock::DataLock::acquire(&layout.database)?;
-    let provisioned = keyring::provision(&layout.root, random)?;
+    let provisioned = keyring::provision(&layout.root, &layout.database, random)?;
     warnings.extend(provisioned.warnings);
     // The operations log (OBS-1): one line per command, and the backend's
     // diagnostic events. It never decides whether the backend opens.
@@ -1042,6 +1042,14 @@ mod tests {
             .as_str()
             .unwrap()
             .starts_with("WARNING binding_key.file_fallback:")));
+        // app-11: a first run creates the key silently.
+        assert!(
+            !warnings.iter().any(|w| w
+                .as_str()
+                .unwrap()
+                .starts_with("WARNING binding_key.file_recreated:")),
+            "{status}"
+        );
         assert_eq!(status["replayed"], false);
     }
 
@@ -1148,6 +1156,19 @@ mod tests {
         g9_app::schemas::validate_error(&refused).unwrap();
         assert_eq!(refused["category"], "UNAUTHORIZED", "{refused}");
         assert!(approvals_in(&state, "4", "CONSUMED").is_empty());
+        // app-11: the key was recreated next to a database that holds data, and the operator is
+        // told so once, without a host path.
+        let status = call(&state, "system.status", "5", json!({})).unwrap();
+        let recreated: Vec<&str> = status["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|w| w.as_str())
+            .filter(|w| w.starts_with("WARNING binding_key.file_recreated:"))
+            .collect();
+        assert_eq!(recreated.len(), 1, "{status}");
+        let host_dir = dir.path().to_string_lossy().to_string();
+        assert!(!recreated[0].contains(&host_dir), "{}", recreated[0]);
     }
 
     #[test]

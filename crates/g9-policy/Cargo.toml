@@ -17,6 +17,9 @@ sha2 = { workspace = true }
 hex = { workspace = true }
 hmac = { workspace = true }
 subtle = { workspace = true }
+# Wipes the binding key (and the digest subkey derived from it) when it is dropped (core-11).
+# Not a workspace dependency: only this crate holds key material. Apache-2.0 OR MIT.
+zeroize = { version = "=1.9.1", default-features = false }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }

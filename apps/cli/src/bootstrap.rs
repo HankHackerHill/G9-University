@@ -304,7 +304,7 @@ pub fn open_with(
     // migrated the file alongside the first (storage-core-8).
     let data_lock = g9_app::lock::DataLock::acquire(&layout.database)?;
     let mut warnings = Vec::new();
-    let provisioned = keyfile::provision(&layout.root, &mut keyfile::os_random)?;
+    let provisioned = keyfile::provision(&layout.root, &layout.database, &mut keyfile::os_random)?;
     warnings.extend(provisioned.warnings);
     // The log never decides whether the backend opens: without it the
     // commands run and the warning says why there is no record.
