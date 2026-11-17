@@ -67,6 +67,7 @@ import type {
   ManifestProvenance,
   NoteSummary,
   NoteView,
+  ObjectiveStatus,
   OperatorEventKind,
   PackImportResult,
   ProgramCurriculum,
@@ -107,7 +108,7 @@ import type {
   SessionEvent,
   UtcMillis,
 } from '../types';
-import { CLASSIFICATIONS, DATA_DOMAINS, INTERACTION_MODES, RESOURCE_KINDS, SCHEMA_V1, schemaAccepts } from '../types';
+import { CLASSIFICATIONS, DATA_DOMAINS, INTERACTION_MODES, IPC_LIMITS, RESOURCE_KINDS, SCHEMA_V1, payloadCap, schemaAccepts } from '../types';
 import { cleanFilename, consistentWith, decodeContent, refusedSignature, rustTrim } from './mock-attachments';
 
 // ---------------------------------------------------------------------------
@@ -294,6 +295,37 @@ function strArray(rec: Rec, key: string, op: string, optional = false): string[]
   return v;
 }
 
+/** JSON Schema `maxItems` (app-9). */
+function boundedArray<T>(items: T[], key: string, op: string, max: number): T[] {
+  if (items.length > max) {
+    throw schemaViolation(key, `${op}: '${key}' must have at most ${max} items`);
+  }
+  return items;
+}
+
+/** JSON Schema `uniqueItems` (an evidence id listed twice would be linked twice). */
+function uniqueArray(items: string[], key: string, op: string): string[] {
+  if (new Set(items).size !== items.length) {
+    throw schemaViolation(key, `${op}: '${key}' must not repeat an item`);
+  }
+  return items;
+}
+
+/** The stored result holds an object with this `event_id` next to a `title` (G1). */
+function quotesEvent(value: unknown, eventId: Id): boolean {
+  if (Array.isArray(value)) {
+    return value.some((v) => quotesEvent(v, eventId));
+  }
+  if (typeof value === 'object' && value !== null) {
+    const rec = value as Rec;
+    if (rec.event_id === eventId && 'title' in rec) {
+      return true;
+    }
+    return Object.values(rec).some((v) => quotesEvent(v, eventId));
+  }
+  return false;
+}
+
 function isJsonValue(v: unknown): v is JsonValue {
   if (v === null || typeof v === 'string' || typeof v === 'boolean') {
     return true;
@@ -324,11 +356,19 @@ function json(rec: Rec, key: string, op: string): JsonValue {
 
 interface SessionRecord extends SessionView {
   date: string;
+  /** Objective code `session.create` linked the session to (g9-app `study_sessions.objective_id`). */
+  objective_id?: Id;
 }
 
 interface IdempotencyRecord {
   request_sha256: string;
   outcome: CommandOutcome<unknown>;
+  /**
+   * The stored result held the view of this calendar event, deleted since: g9-app replaces the
+   * result with a content-free record and a replay answers `NOT_FOUND calendar.event_deleted`
+   * (data inventory gap G1).
+   */
+  deleted_event_id?: Id;
 }
 
 interface AssessmentDefinition {
@@ -486,6 +526,8 @@ class MockState {
   private readonly definitionCompetency = new Map<Id, Id>();
   private readonly attachments = new Map<Id, AttachmentRecord>();
   private readonly evidence = new Map<Id, EvidenceRecord>();
+  /** `attempt_evidence`: the evidence each submission linked to its attempt. */
+  private readonly attemptEvidence = new Map<Id, Id[]>();
   /** Notes erased by an approved `deletion.request` (their domain, for the scope check). */
   private readonly erasedNotes = new Map<Id, DataDomain>();
   private evidenceSeq = 0;
@@ -847,6 +889,13 @@ class MockState {
     }
     const meta: CommandMeta = { ...clientMeta, actor: OPERATOR };
 
+    // g9-app `dispatch::refuse_oversized`: the serialized payload is measured against the
+    // operation's byte cap before its schema is checked (app-9).
+    const cap = payloadCap(opName);
+    if (new TextEncoder().encode(JSON.stringify(payload ?? null)).length > cap) {
+      return fail('INVALID_INPUT', 'ipc.payload_too_large', 'the request is larger than this operation accepts', { limit_bytes: cap }).error;
+    }
+
     // Step 2: idempotency (mutating commands only).
     const requestHash = sha256Hex(canonicalJson({ op: opName, payload: payload ?? null }));
     const idemKey = `${meta.actor.id}:${meta.idempotency_key}`;
@@ -855,6 +904,11 @@ class MockState {
       if (hit !== undefined) {
         if (hit.request_sha256 !== requestHash) {
           return fail('CONFLICT', 'idempotency.key_reused', 'idempotency key was used with a different request').error;
+        }
+        if (hit.deleted_event_id !== undefined) {
+          return fail('NOT_FOUND', 'calendar.event_deleted', 'the calendar event this request named was deleted; its stored result is no longer kept', {
+            event_id: hit.deleted_event_id,
+          }).error;
         }
         return this.replay(opName, hit.outcome);
       }
@@ -1413,7 +1467,7 @@ class MockState {
       is_assessment_day: day.is_assessment_day,
       planned_minutes: day.planned_minutes,
       evidence_artifact: day.evidence_artifact,
-      objectives: day.objectives.map((o) => ({ objective_id: o.objective_id, seq: o.seq, text: o.text, status: 'PLANNED' })),
+      objectives: day.objectives.map((o) => ({ objective_id: o.objective_id, seq: o.seq, text: o.text, status: this.objectiveStatus(o.objective_id) })),
       blocks: day.blocks.map((b) => ({
         seq: b.seq,
         block: b.block,
@@ -1592,13 +1646,27 @@ class MockState {
     return affected;
   }
 
+  /**
+   * g9-app `curriculum::objective_status` (app-7): what the sessions linked to the objective show.
+   * PLANNED while none has started, IN_PROGRESS once one has, COMPLETED when every linked session
+   * that was not cancelled is completed. Block sessions of `session.plan_day` are not linked to an
+   * objective; nothing derives VERIFIED.
+   */
+  private objectiveStatus(objective: Id): ObjectiveStatus {
+    const counted = [...this.sessions.values()].filter((s) => s.objective_id === objective && s.state !== 'CANCELLED').map((s) => s.state);
+    if (counted.length > 0 && counted.every((s) => s === 'COMPLETED' || s === 'REVIEWED' || s === 'CLOSED')) {
+      return 'COMPLETED';
+    }
+    return counted.some((s) => s !== 'PLANNED' && s !== 'READY') ? 'IN_PROGRESS' : 'PLANNED';
+  }
+
   private sessionCorrectTime(payload: unknown, meta: CommandMeta): Handled<SessionView> {
     const op = 'session.correct_time';
     const rec = asRecord(payload, op);
     const session = this.findSession(rec, op);
     const intervalId = str(rec, 'interval_id', op);
     const credited = int(rec, 'credited_ms', op, 0);
-    const reason = str(rec, 'reason', op);
+    const reason = boundedStr(rec, 'reason', op, IPC_LIMITS.correctionReasonChars);
     this.checkRevision(meta, session.revision);
     const interval = session.intervals.find((i) => i.interval_id === intervalId);
     if (interval === undefined) {
@@ -1634,7 +1702,7 @@ class MockState {
   private notesCreate(payload: unknown, meta: CommandMeta): Handled<NoteView> {
     const op = 'notes.create';
     const rec = asRecord(payload, op);
-    const title = str(rec, 'title', op);
+    const title = boundedStr(rec, 'title', op, IPC_LIMITS.noteTitleChars);
     const body = typeof rec.body_markdown === 'string' ? rec.body_markdown : null;
     if (body === null) {
       throw schemaViolation('body_markdown', `${op}: 'body_markdown' must be a string`);
@@ -1642,7 +1710,7 @@ class MockState {
     const classification = oneOf(rec, 'classification', CLASSIFICATIONS, op);
     const domain = oneOf(rec, 'domain', DATA_DOMAINS, op);
     const objective = optStr(rec, 'objective_id', op) ?? null;
-    const evidence = strArray(rec, 'evidence_refs', op, true);
+    const evidence = boundedArray(strArray(rec, 'evidence_refs', op, true), 'evidence_refs', op, IPC_LIMITS.evidenceRefs);
     const noteId = this.creationId(meta, op, 'note');
     this.requireSensitiveWriteApproval(op, domain, asJson(payload), { kind: 'NOTE', id: noteId }, meta);
     const now = this.now();
@@ -1681,7 +1749,7 @@ class MockState {
     if (body === null) {
       throw schemaViolation('body_markdown', `${op}: 'body_markdown' must be a string`);
     }
-    const title = optStr(rec, 'title', op);
+    const title = rec.title === undefined ? undefined : boundedStr(rec, 'title', op, IPC_LIMITS.noteTitleChars);
     note.body_markdown = body;
     note.content_sha256 = sha256Hex(body);
     if (title !== undefined) {
@@ -1749,14 +1817,16 @@ class MockState {
     const op = 'assessment.submit';
     const rec = asRecord(payload, op);
     const attempt = this.findAttempt(rec, op);
-    const refs = strArray(rec, 'evidence_refs', op);
+    const refs = uniqueArray(boundedArray(strArray(rec, 'evidence_refs', op), 'evidence_refs', op, IPC_LIMITS.evidenceRefs), 'evidence_refs', op);
     this.checkRevision(meta, attempt.revision);
     const next = applyMachine(ASSESSMENT_MACHINE, attempt.state, 'SUBMIT', 'assessment_attempt');
-    // g9-app links every item as SUBMISSION evidence (`attempt_evidence` → `evidence_items`
-    // FOREIGN KEY): an id that names no evidence item fails the whole command.
-    if (refs.some((r) => !this.evidence.has(r))) {
-      throw fail('PRECONDITION_FAILED', 'storage.foreign_key', 'foreign key constraint failed: FOREIGN KEY constraint failed');
+    // g9-app `require_domain_evidence` (app-6): every item must exist in the attempt's domain
+    // (LEARNING); anything else is NOT_FOUND, before anything is linked.
+    const missing = refs.find((r) => this.evidence.get(r)?.domain !== 'LEARNING');
+    if (missing !== undefined) {
+      throw fail('NOT_FOUND', 'evidence.not_found', 'evidence item not found', { evidence_id: missing });
     }
+    this.attemptEvidence.set(attempt.attempt_id, [...(this.attemptEvidence.get(attempt.attempt_id) ?? []), ...refs]);
     attempt.state = next;
     attempt.submitted_at = this.now();
     attempt.revision += 1;
@@ -1781,16 +1851,28 @@ class MockState {
     if (!Array.isArray(rawCriteria)) {
       throw schemaViolation('criteria', `${op}: 'criteria' must be an array`);
     }
+    boundedArray(rawCriteria, 'criteria', op, IPC_LIMITS.gradeCriteria);
     const raw: Rec[] = rawCriteria.map((r): Rec => {
       if (typeof r !== 'object' || r === null || Array.isArray(r)) {
         throw schemaViolation('criteria', `${op}: 'criteria[]' must be objects`);
       }
       return r as Rec;
     });
-    // Same checks and order as g9-app commands/assessment.rs grade_provisional:
-    // unknown code → level range → every rubric criterion present → source/actor provenance.
+    // Same checks and order as g9-app commands/assessment.rs grade_provisional: evidence of
+    // this attempt → unknown code → level range → every rubric criterion present →
+    // source/actor provenance.
+    const linked = this.attemptEvidence.get(attempt.attempt_id) ?? [];
     for (const e of raw) {
-      const code = str(e, 'criterion_code', op);
+      const code = boundedStr(e, 'criterion_code', op, IPC_LIMITS.criterionCodeChars);
+      const refs = uniqueArray(boundedArray(strArray(e, 'evidence_refs', op, true), 'evidence_refs', op, IPC_LIMITS.evidenceRefs), 'evidence_refs', op);
+      // app-8: a criterion cites only evidence submitted for this attempt, in its domain.
+      const unknown = refs.find((r) => !linked.includes(r) || this.evidence.get(r)?.domain !== 'LEARNING');
+      if (unknown !== undefined) {
+        throw fail('INVALID_INPUT', 'grade.evidence_unknown', 'a criterion cites evidence that was not submitted for this attempt', {
+          criterion_code: code,
+          evidence_id: unknown,
+        });
+      }
       if (!BASELINE_CRITERIA.some((c) => c.code === code)) {
         throw fail('INVALID_INPUT', 'grade.criterion_unknown', 'criterion is not part of this rubric', { criterion_code: code });
       }
@@ -2005,7 +2087,7 @@ class MockState {
   private backupCreate(payload: unknown): Handled<BackupView> {
     const op = 'backup.create';
     const rec = asRecord(payload, op);
-    const label = optStr(rec, 'label', op) ?? null;
+    const label = rec.label === undefined ? null : boundedStr(rec, 'label', op, IPC_LIMITS.backupLabelChars);
     // Requested → SnapshotCreated inside one command (Online Backup API run to completion).
     let state = applyMachine(BACKUP_MACHINE, 'REQUESTED', 'SNAPSHOT', 'backup');
     state = state === 'SNAPSHOT_CREATED' ? state : 'FAILED';
@@ -2046,7 +2128,7 @@ class MockState {
   private skillsInvoke(payload: unknown, meta: CommandMeta): Handled<SkillOutputEnvelope> {
     const op = 'skills.invoke';
     const rec = asRecord(payload, op);
-    const code = str(rec, 'skill_code', op);
+    const code = boundedStr(rec, 'skill_code', op, IPC_LIMITS.skillCodeChars);
     json(rec, 'input', op);
     const mode = optOneOf(rec, 'mode', INTERACTION_MODES, op) ?? meta.scope.mode;
     if (!/^(?:[ETLPK]\d{2}|g9-[a-z0-9-]+)$/.test(code)) {
@@ -2305,6 +2387,7 @@ class MockState {
       corrections: [],
       revision: 1,
       date: formatIsoDate(civilDateOf(start, this.zone)),
+      ...(objective === undefined ? {} : { objective_id: objective }),
     };
     this.sessions.set(session.session_id, session);
     return { result: stripSession(session), revision: 1, resource: { kind: 'STUDY_SESSION', id: session.session_id } };
@@ -2626,6 +2709,14 @@ class MockState {
     this.checkRevision(meta, revision);
     this.events = this.events.filter((e) => e.event_id !== id);
     this.eventRevisions.delete(id);
+    // g9-app `pipeline::forget_event_results` (G1): a stored result that holds the event's view
+    // (its id next to its title) no longer keeps it; a replay says the event was deleted.
+    for (const record of this.idempotency.values()) {
+      if (quotesEvent(record.outcome.result, id)) {
+        record.outcome = { ...record.outcome, result: null };
+        record.deleted_event_id = id;
+      }
+    }
     return { result: { event_id: id, deleted: true }, resource };
   }
 
@@ -2753,7 +2844,7 @@ class MockState {
       throw fail('INVALID_INPUT', 'competency.invalid', 'invalid competency definition: name must not be empty');
     }
     if (this.authoredCompetencies.some((c) => c.code === code)) {
-      throw fail('CONFLICT', 'storage.unique_violation', 'unique constraint failed: UNIQUE constraint failed: competencies.code');
+      throw fail('CONFLICT', 'competency.code_exists', 'a competency with this code already exists');
     }
     const id = this.nextId('competency');
     this.authoredCompetencies.push({ competency_id: id, code, name, description, validity_days: validity });
@@ -2782,7 +2873,7 @@ class MockState {
       throw fail('INVALID_INPUT', 'assessment.definition_invalid', 'assessment title is empty');
     }
     if ([...this.definitionCompetency.keys()].some((defId) => this.definitions.find((d) => d.assessment_id === defId)?.day_id === code)) {
-      throw fail('CONFLICT', 'storage.unique_violation', 'unique constraint failed: UNIQUE constraint failed: assessment_definitions.code');
+      throw fail('CONFLICT', 'assessment.code_exists', 'an assessment with this code already exists');
     }
     const id = this.nextId('assessment');
     // assessment.rs `list`: a definition without a training day is listed under its code.

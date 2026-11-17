@@ -744,6 +744,8 @@ pub fn delete_event(
             let row = load_event(env.conn, &id)?;
             editable(&row)?;
             repo::delete_event(env.conn, &id, row.revision)?;
+            // The title must not outlive the event in stored results (G1).
+            pipeline::forget_event_results(env.conn, &env.svc.binding_key, id.as_str())?;
             Ok(
                 Mutation::new(json!({ "event_id": id, "deleted": true }), None).with_event(
                     EventSpec::learning("calendar.event_deleted", json!({ "event_id": id })),

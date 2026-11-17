@@ -76,7 +76,7 @@ describe('Competency Graph: add a competency', () => {
     await user.click(within(form).getByRole('button', { name: 'Add competency' }));
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveAttribute('data-category', 'CONFLICT');
-    expect(alert).toHaveTextContent('storage.unique_violation');
+    expect(alert).toHaveTextContent('competency.code_exists');
     expect(screen.queryByTestId('competency-created')).toBeNull();
     expect(within(screen.getByRole('form', { name: 'Add a competency' })).getByLabelText('Title')).toHaveValue('Second');
   });

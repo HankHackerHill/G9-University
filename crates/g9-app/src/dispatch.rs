@@ -4,9 +4,11 @@
 //! Order: unknown operation → `INVALID_INPUT ipc.unknown_operation` (later-stage
 //! areas answer `PRECONDITION_FAILED <area>.not_implemented`); metadata decoded
 //! without an actor and assigned the backend operator (`ipc::parse_meta`); the
-//! payload validated against `schemas/ipc/<op>.request.schema.json` **before**
-//! it is deserialized into a typed DTO; then the handler runs through the
-//! pipeline. The success value is the serialized `CommandOutcome`.
+//! payload's serialized size checked against the operation's byte cap
+//! ([`payload_cap`], `INVALID_INPUT ipc.payload_too_large`); the payload
+//! validated against `schemas/ipc/<op>.request.schema.json` **before** it is
+//! deserialized into a typed DTO; then the handler runs through the pipeline.
+//! The success value is the serialized `CommandOutcome`.
 
 use crate::context::AppContext;
 use crate::{analytics, commands, executive, ipc, ops, research, schemas, teaching};
@@ -108,12 +110,82 @@ fn route(
     let handler = commands::handler_for(spec.name)
         .ok_or_else(|| G9Error::internal_redacted("ipc.handler_missing"))?;
     let meta = ipc::parse_meta(op, &meta_json, ctx.operator())?;
+    refuse_oversized(spec.name, &payload_json)?;
     schemas::validate_request(op, &payload_json)?;
     refuse_unprintable_names(&payload_json)?;
     // The mode a handler evaluates is the backend's, derived here once for every operation.
     let meta = commands::effective_meta(ctx, spec, &meta)?;
     let outcome = handler(ctx, spec, &meta, &payload_json)?;
     serde_json::to_value(&outcome).map_err(|_| G9Error::internal_redacted("ipc.serialize"))
+}
+
+/// Byte cap of a serialized payload for every operation not named below (app-9).
+/// The largest request of such an operation is a few tens of kilobytes (a 20,000
+/// character task statement or review answer); operations that carry a file, a
+/// note body or a curriculum manifest have their own caps.
+pub const MAX_PAYLOAD_BYTES: usize = 1024 * 1024;
+
+/// Byte cap for `evidence.attach_file`: the request schema's `content_base64`
+/// limit (22,369,624 characters, a 16 MiB file) plus the file name, media type
+/// and note id, with room to spare.
+pub const MAX_ATTACHMENT_PAYLOAD_BYTES: usize = 23 * 1024 * 1024;
+
+/// Byte cap for the operations that carry a note body (`notes.create`,
+/// `notes.revise`, `assessment.submit` notes). The body may hold
+/// `g9_evidence::MAX_NOTE_BYTES` (4 MiB) of UTF-8, and JSON writes a control
+/// character as six bytes (`\u0001`): six times the body limit plus 1 MiB for the
+/// other fields.
+pub const MAX_NOTE_PAYLOAD_BYTES: usize = 6 * (g9_evidence::MAX_NOTE_BYTES as usize) + 1024 * 1024;
+
+/// Byte cap per manifest for `curriculum.import` and `curriculum.validate`
+/// (the manifest travels in the payload; the shipped draft is about 240 kB).
+/// `curriculum.promote` carries two manifests and gets twice this.
+pub const MAX_MANIFEST_PAYLOAD_BYTES: usize = 8 * 1024 * 1024;
+
+/// The largest serialized payload `op` accepts, in bytes (app-9).
+pub fn payload_cap(op: &str) -> usize {
+    match op {
+        "evidence.attach_file" => MAX_ATTACHMENT_PAYLOAD_BYTES,
+        "notes.create" | "notes.revise" | "assessment.submit" => MAX_NOTE_PAYLOAD_BYTES,
+        "curriculum.import" | "curriculum.validate" => MAX_MANIFEST_PAYLOAD_BYTES,
+        "curriculum.promote" => 2 * MAX_MANIFEST_PAYLOAD_BYTES,
+        _ => MAX_PAYLOAD_BYTES,
+    }
+}
+
+/// A writer that accepts at most `left` bytes and then fails: measures a
+/// serialized payload without building it.
+struct Budget {
+    left: usize,
+}
+
+impl std::io::Write for Budget {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.left = self
+            .left
+            .checked_sub(buf.len())
+            .ok_or(std::io::ErrorKind::FileTooLarge)?;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+/// Refuse a payload whose serialized JSON exceeds the operation's byte cap,
+/// before schema validation reads it (app-9). The refusal names the limit, never
+/// the content.
+fn refuse_oversized(op: &str, payload: &Value) -> Result<(), G9Error> {
+    let cap = payload_cap(op);
+    if serde_json::to_writer(&mut Budget { left: cap }, payload).is_err() {
+        return Err(G9Error::invalid_input(
+            "ipc.payload_too_large",
+            "the request is larger than this operation accepts",
+        )
+        .with_details(serde_json::json!({ "limit_bytes": cap })));
+    }
+    Ok(())
 }
 
 /// Keys of a request whose value is a name: one line that lists, the native
@@ -319,4 +391,81 @@ fn confirm_then_route(
     let result = route(ctx, op, meta_json, payload_json);
     ctx.svc.native_confirmed = None;
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn the_largest_attachment_the_schema_accepts_fits_under_its_cap() {
+        let payload = json!({
+            "filename": "f".repeat(255),
+            "media_type": "application/pdf",
+            "note_id": "n".repeat(128),
+            "content_base64": "A".repeat(22_369_624),
+        });
+        assert!(refuse_oversized("evidence.attach_file", &payload).is_ok());
+        let refused = refuse_oversized("notes.list", &payload).unwrap_err();
+        assert_eq!(refused.code, "ipc.payload_too_large");
+        assert_eq!(
+            refused.details,
+            Some(json!({ "limit_bytes": MAX_PAYLOAD_BYTES }))
+        );
+    }
+
+    #[test]
+    fn a_note_body_of_control_characters_at_its_byte_limit_fits_under_the_note_cap() {
+        // Each U+0001 is one byte of UTF-8 and six bytes of JSON.
+        let body = "\u{1}".repeat(usize::try_from(g9_evidence::MAX_NOTE_BYTES).unwrap());
+        for op in ["notes.create", "notes.revise", "assessment.submit"] {
+            let payload = json!({
+                "title": "t".repeat(200),
+                "body_markdown": body,
+                "notes": "",
+                "note_id": "n".repeat(128),
+                "classification": "INTERNAL",
+                "domain": "LEARNING",
+                "evidence_refs": vec!["e".repeat(128); 100],
+            });
+            assert!(refuse_oversized(op, &payload).is_ok(), "{op}");
+        }
+    }
+
+    #[test]
+    fn the_shipped_curriculum_fits_under_the_manifest_cap() {
+        let manifest: Value = serde_json::from_str(include_str!(
+            "../../../data/curriculum/g9-ct9-480.draft.v1.json"
+        ))
+        .unwrap();
+        let payload = json!({ "manifest": manifest, "provenance": "RECONCILED_CANDIDATE" });
+        assert!(refuse_oversized("curriculum.import", &payload).is_ok());
+    }
+
+    #[test]
+    fn every_operation_that_carries_a_manifest_gets_the_manifest_cap() {
+        // curriculum.validate carries one manifest, curriculum.promote two
+        // (candidate and original); neither may fall to the 1 MiB default.
+        let manifest = "x".repeat(2 * MAX_PAYLOAD_BYTES);
+        let one = json!({ "manifest": manifest });
+        let two = json!({ "candidate_manifest": manifest, "original_manifest": manifest });
+        for op in ["curriculum.import", "curriculum.validate"] {
+            assert!(refuse_oversized(op, &one).is_ok(), "{op}");
+        }
+        assert!(refuse_oversized("curriculum.promote", &two).is_ok());
+        assert_eq!(
+            payload_cap("curriculum.promote"),
+            2 * MAX_MANIFEST_PAYLOAD_BYTES
+        );
+    }
+
+    #[test]
+    fn the_cap_counts_serialized_bytes_exactly() {
+        // `{"s":"…"}` is the string plus eight bytes.
+        let at = json!({ "s": "x".repeat(MAX_PAYLOAD_BYTES - 8) });
+        let over = json!({ "s": "x".repeat(MAX_PAYLOAD_BYTES - 7) });
+        assert!(refuse_oversized("calendar.list", &at).is_ok());
+        assert!(refuse_oversized("calendar.list", &over).is_err());
+    }
 }

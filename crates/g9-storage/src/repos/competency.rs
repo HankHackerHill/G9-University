@@ -168,6 +168,17 @@ fn map_competency(r: &Row<'_>) -> StorageResult<CompetencyRow> {
     })
 }
 
+/// Whether a competency already uses `code` (codes are unique across domains).
+/// Lets a caller refuse a duplicate with its own answer before the UNIQUE
+/// constraint does (app-6).
+pub fn code_in_use(conn: &Connection, code: &str) -> RepoResult<bool> {
+    Ok(conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM competencies WHERE code = ?1)",
+        params![code],
+        |r| r.get::<_, bool>(0),
+    )?)
+}
+
 /// Insert a competency.
 pub fn insert_competency(conn: &Connection, row: &CompetencyRow) -> RepoResult<Revision> {
     conn.execute(

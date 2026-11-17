@@ -80,8 +80,9 @@
             "enum": [
               "PLANNED",
               "IN_PROGRESS",
-              "VERIFIED"
-            ]
+              "COMPLETED"
+            ],
+            "description": "Derived from the study sessions linked to the objective (session.create with objective_id): PLANNED while none has started, IN_PROGRESS once one has, COMPLETED when every linked session that was not cancelled is completed. Sessions planned for the day's blocks (session.plan_day) are not linked to an objective. Nothing derives VERIFIED: what verifies an objective is an owner decision."
           }
         },
         "required": [

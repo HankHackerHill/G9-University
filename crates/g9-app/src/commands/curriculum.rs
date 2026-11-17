@@ -10,6 +10,8 @@
 //!   unless the report allows promotion (`check_transition`), and requires an
 //!   operator approval (`Capability::CurriculumPromote`).
 //! * `curriculum.daily_plan` reads the stored structure of the active version.
+//!   An objective's `status` is derived from the study sessions linked to it
+//!   (`objective_status`; app-7), never a constant and never `VERIFIED`.
 
 use super::{decode, parse_id, rc, tail, to_value};
 use crate::context::{AppContext, Services};
@@ -21,7 +23,7 @@ use g9_curriculum::{
 };
 use g9_domain::{
     Classification, CommandMeta, CommandOutcome, CurriculumVersionId, DataDomain, G9Error,
-    ManifestProvenance, ResourceKind, ResourceRef,
+    ManifestProvenance, ResourceKind, ResourceRef, SessionState,
 };
 use g9_storage::repos::curriculum::{
     self as repo, CurriculumVersionRow, NewCurriculumVersion, ProvenanceApproval, TrainingDayRow,
@@ -619,6 +621,36 @@ pub(crate) fn parse_date(s: &str) -> Result<CivilDate, G9Error> {
     CivilDate::new(year, month, day).map_err(|_| bad())
 }
 
+/// What the study sessions linked to an objective show (app-7): `PLANNED`
+/// while none has started, `IN_PROGRESS` once one has, `COMPLETED` when every
+/// linked session is completed (or reviewed, or closed). Cancelled sessions do
+/// not count. Only sessions linked to the objective itself count
+/// (`session.create` with `objective_id`): the sessions `session.plan_day`
+/// makes are linked to the day's blocks, and no manifest says which block
+/// serves which objective. `VERIFIED` is never derived: what verifies an
+/// objective (a passing final decision, an observation) is an owner decision.
+fn objective_status(linked: &[sessions_repo::StudySessionRow]) -> &'static str {
+    let counted: Vec<SessionState> = linked
+        .iter()
+        .map(|s| s.state)
+        .filter(|s| *s != SessionState::Cancelled)
+        .collect();
+    let done = |s: &SessionState| {
+        matches!(
+            s,
+            SessionState::Completed | SessionState::Reviewed | SessionState::Closed
+        )
+    };
+    let started = |s: &SessionState| !matches!(s, SessionState::Planned | SessionState::Ready);
+    if !counted.is_empty() && counted.iter().all(done) {
+        "COMPLETED"
+    } else if counted.iter().any(started) {
+        "IN_PROGRESS"
+    } else {
+        "PLANNED"
+    }
+}
+
 /// `curriculum.daily_plan` (read-only).
 pub fn daily_plan(
     ctx: &mut AppContext,
@@ -695,17 +727,20 @@ pub fn daily_plan(
                 m.result = empty(Some(week), Some(week_row.title.clone()));
                 return Ok(m);
             };
+            let learning = ReadScope::domain(DataDomain::Learning);
             let objectives: Vec<Value> = repo::objectives_for_day(env.conn, &day.id)?
                 .into_iter()
                 .map(|o| {
-                    json!({
+                    let linked =
+                        sessions_repo::list_sessions_for_objective(env.conn, &learning, &o.id)?;
+                    Ok(json!({
                         "objective_id": o.objective_code,
                         "seq": o.ordinal,
                         "text": o.statement,
-                        "status": "PLANNED",
-                    })
+                        "status": objective_status(&linked),
+                    }))
                 })
-                .collect();
+                .collect::<Result<_, G9Error>>()?;
             let sessions = sessions_repo::list_sessions_for_day(
                 env.conn,
                 &ReadScope::domain(DataDomain::Learning),

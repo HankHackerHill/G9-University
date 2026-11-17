@@ -7,8 +7,8 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 | Metric | Value | Counted from |
 |---|---|---|
 | Workspace members (crates) | 15 (13 under `crates/`; 14 default members) | `Cargo.toml` |
-| Rust lines | 126,036 (src 92,933, tests 32,379, other 724) | the members' `.rs` files and `[[test]]` paths |
-| `#[test]` attributes | 1,112 | the same files |
+| Rust lines | 127,607 (src 93,612, tests 33,271, other 724) | the members' `.rs` files and `[[test]]` paths |
+| `#[test]` attributes | 1,140 | the same files |
 | Routed IPC operations | 53 | `OPERATIONS` in `crates/g9-app/src/ops.rs` |
 | PROPOSED IPC operations | 15 (analytics 3, executive 4, research 4, teaching 4) | `PROPOSED_OPERATIONS` of the modules `crates/g9-app/src/dispatch.rs` names |
 | Migrations | 15 (0001 to 0015) | `crates/g9-storage/src/migrations/` |
@@ -18,7 +18,7 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 | JSON schemas | 115 (109 in `schemas/ipc/`, 6 elsewhere) | `schemas/` |
 | Skill packages | 37 | `.agents/skills/` |
 | Competency packs | 8 | `data/competency-packs/` |
-| Frontend TS/TSX | 124 files, 24,842 lines; 40 test files | `apps/desktop/` |
+| Frontend TS/TSX | 125 files, 25,143 lines; 41 test files | `apps/desktop/` |
 | CSS | 16 files, 4,224 lines | `apps/desktop/` |
 | Scripts | 21 in `scripts/`, 3 in `scripts/e2e/`, 11 test modules in `scripts/tests/` | `scripts/` |
 
@@ -28,7 +28,7 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 |---|---|---|---|---|---|---|---|
 | g9-domain | `crates/g9-domain` | yes | 19 | 2,782 | 145 | 0 | 37 |
 | g9-policy | `crates/g9-policy` | yes | 11 | 4,834 | 3,211 | 0 | 86 |
-| g9-storage | `crates/g9-storage` | yes | 33 | 28,076 | 3,200 | 0 | 203 |
+| g9-storage | `crates/g9-storage` | yes | 33 | 28,420 | 3,200 | 0 | 206 |
 | g9-curriculum | `crates/g9-curriculum` | yes | 10 | 2,546 | 1,266 | 0 | 32 |
 | g9-calendar | `crates/g9-calendar` | yes | 10 | 3,951 | 916 | 0 | 56 |
 | g9-evidence | `crates/g9-evidence` | yes | 9 | 3,756 | 369 | 0 | 40 |
@@ -37,11 +37,11 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 | g9-retention | `crates/g9-retention` | yes | 7 | 952 | 0 | 0 | 11 |
 | g9-ai-adapter | `crates/g9-ai-adapter` | yes | 11 | 2,613 | 614 | 0 | 40 |
 | g9-skills | `crates/g9-skills` | yes | 15 | 4,484 | 1,423 | 0 | 63 |
-| g9-app | `crates/g9-app` | yes | 70 | 13,812 | 13,828 | 46 | 256 |
+| g9-app | `crates/g9-app` | yes | 75 | 14,147 | 14,708 | 46 | 281 |
 | g9-evaluation | `crates/g9-evaluation` | yes | 18 | 6,714 | 1,873 | 0 | 60 |
-| g9-cli | `apps/cli` | yes | 37 | 9,181 | 3,483 | 660 | 113 |
+| g9-cli | `apps/cli` | yes | 37 | 9,181 | 3,495 | 660 | 113 |
 | g9-mentor-desktop | `apps/desktop/src-tauri` | no | 4 | 1,571 | 0 | 18 | 23 |
-| Total | | | 277 | 92,933 | 32,379 | 724 | 1,112 |
+| Total | | | 282 | 93,612 | 33,271 | 724 | 1,140 |
 
 Rust files that no member builds: none.
 
@@ -90,8 +90,8 @@ Cross-checks passed: operations.parse, operations.unique, operations.disjoint, o
 
 | Group | Files | Lines |
 |---|---|---|
-| Application source (`apps/desktop/src/`, .ts/.tsx) | 79 | 17,745 |
-| Test files (`*.test.ts`, `*.test.tsx`) | 40 | 6,936 |
+| Application source (`apps/desktop/src/`, .ts/.tsx) | 79 | 17,891 |
+| Test files (`*.test.ts`, `*.test.tsx`) | 41 | 7,091 |
 | Test support (`apps/desktop/src/test/`) | 4 | 135 |
 | Build configuration (.ts outside `apps/desktop/src/`) | 1 | 26 |
 | CSS | 16 | 4,224 |

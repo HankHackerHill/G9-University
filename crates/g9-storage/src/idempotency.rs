@@ -3,8 +3,11 @@
 //! Key: `(actor_id, idempotency_key)`. A hit with the same `request_sha256`
 //! returns the stored outcome (the caller sets `CommandOutcome::replayed`);
 //! a hit with a different hash is a `CONFLICT` (same key reused for a different
-//! request). Records are purged by retention (`purge_older_than`, 30 days by
-//! default per `docs/privacy/data-lifecycle.md`).
+//! request). Records are kept for [`RETENTION_DAYS`] (30 days,
+//! `docs/privacy/data-lifecycle.md`): `g9-app` recovery purges older ones at
+//! open ([`purge_older_than`] with [`retention_cutoff`]). A stored result that
+//! repeats a record which no longer exists is found with [`results_quoting`]
+//! and replaced with [`replace_outcome`] (data inventory gap G1).
 
 use crate::error::{StorageError, StorageResult};
 use crate::sql::{json_from_text, require_sha256};
@@ -112,10 +115,188 @@ pub fn store(
     Ok(())
 }
 
+/// Days an idempotency record is kept (`docs/privacy/data-lifecycle.md`).
+pub const RETENTION_DAYS: i64 = 30;
+
+/// The instant before which records are past retention at `now`.
+pub fn retention_cutoff(now: UtcMillis) -> UtcMillis {
+    UtcMillis::from_millis(
+        now.as_millis()
+            .saturating_sub(RETENTION_DAYS.saturating_mul(86_400_000)),
+    )
+}
+
+/// A stored outcome found by [`results_quoting`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QuotingRecord {
+    /// Actor of the record.
+    pub actor_id: String,
+    /// Idempotency key of the record.
+    pub idempotency_key: String,
+    /// The stored outcome.
+    pub outcome_json: serde_json::Value,
+}
+
+/// Records whose stored `result` holds an object in which `id_key` is `id` and
+/// `content_key` is present: the view of that record, with its content, kept
+/// inside the result (a calendar event's `event_id` and `title`). Found by the
+/// JSON structure, not by searching for text.
+pub fn results_quoting(
+    conn: &Connection,
+    id_key: &str,
+    id: &str,
+    content_key: &str,
+) -> StorageResult<Vec<QuotingRecord>> {
+    let mut stmt = conn.prepare(
+        "SELECT r.actor_id, r.idempotency_key, r.outcome_json FROM idempotency_records r
+          WHERE EXISTS (
+            SELECT 1 FROM json_tree(r.outcome_json, '$.result') a
+              JOIN json_tree(r.outcome_json, '$.result') b ON b.parent = a.parent
+             WHERE a.key = ?1 AND a.type = 'text' AND a.atom = ?2 AND b.key = ?3)
+          ORDER BY r.created_at, r.actor_id, r.idempotency_key",
+    )?;
+    let rows = stmt.query_map(params![id_key, id, content_key], |r| {
+        Ok((
+            r.get::<_, String>(0)?,
+            r.get::<_, String>(1)?,
+            r.get::<_, String>(2)?,
+        ))
+    })?;
+    let mut out = Vec::new();
+    for row in rows {
+        let (actor_id, idempotency_key, outcome) = row?;
+        out.push(QuotingRecord {
+            actor_id,
+            idempotency_key,
+            outcome_json: json_from_text(&outcome)?,
+        });
+    }
+    Ok(out)
+}
+
+/// Replace the stored outcome of one record (same request hash, same time).
+pub fn replace_outcome(
+    conn: &Connection,
+    actor_id: &str,
+    idempotency_key: &str,
+    outcome: &serde_json::Value,
+) -> StorageResult<()> {
+    let outcome_json =
+        serde_json::to_string(outcome).map_err(|_| StorageError::Internal("outcome json"))?;
+    let changed = conn.execute(
+        "UPDATE idempotency_records SET outcome_json = ?3 WHERE actor_id = ?1 AND idempotency_key = ?2",
+        params![actor_id, idempotency_key, outcome_json],
+    )?;
+    if changed == 1 {
+        Ok(())
+    } else {
+        Err(StorageError::NotFound("idempotency record"))
+    }
+}
+
 /// Delete records created before `cutoff`; returns the number removed.
 pub fn purge_older_than(conn: &Connection, cutoff: UtcMillis) -> StorageResult<usize> {
     Ok(conn.execute(
         "DELETE FROM idempotency_records WHERE created_at < ?1",
         params![cutoff.as_millis()],
     )?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Database, OpenOptions};
+    use serde_json::json;
+
+    fn db() -> Database {
+        Database::open_in_memory(OpenOptions::new("test").applied_at(UtcMillis::from_millis(1)))
+            .unwrap()
+    }
+
+    fn put(db: &Database, key: &str, result: serde_json::Value, at: i64) {
+        store(
+            db.conn(),
+            &ActorId::parse("operator-1").unwrap(),
+            &IdempotencyKey::parse(key).unwrap(),
+            &"a".repeat(64),
+            &json!({ "result": result, "replayed": false }),
+            UtcMillis::from_millis(at),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn results_quoting_finds_the_view_of_a_record_by_structure_only() {
+        let db = db();
+        put(
+            &db,
+            "k-create",
+            json!({ "event_id": "ev-1", "title": "Dentist" }),
+            1,
+        );
+        put(
+            &db,
+            "k-apply",
+            json!({ "events": [{ "event_id": "ev-2" , "title": "Other" }, { "event_id": "ev-1", "title": "Dentist" }] }),
+            2,
+        );
+        // Named but no content next to it; content of another event; the id as text elsewhere.
+        put(
+            &db,
+            "k-delete",
+            json!({ "event_id": "ev-1", "deleted": true }),
+            3,
+        );
+        put(
+            &db,
+            "k-other",
+            json!({ "event_id": "ev-2", "title": "ev-1" }),
+            4,
+        );
+        put(&db, "k-text", json!({ "note": "ev-1", "title": "x" }), 5);
+
+        let found = results_quoting(db.conn(), "event_id", "ev-1", "title").unwrap();
+        let keys: Vec<&str> = found.iter().map(|r| r.idempotency_key.as_str()).collect();
+        assert_eq!(keys, ["k-create", "k-apply"]);
+
+        replace_outcome(
+            db.conn(),
+            "operator-1",
+            "k-create",
+            &json!({ "result": { "replaced": true }, "replayed": false }),
+        )
+        .unwrap();
+        let keys: Vec<String> = results_quoting(db.conn(), "event_id", "ev-1", "title")
+            .unwrap()
+            .into_iter()
+            .map(|r| r.idempotency_key)
+            .collect();
+        assert_eq!(keys, ["k-apply"]);
+        assert!(matches!(
+            replace_outcome(db.conn(), "operator-1", "k-missing", &json!({})),
+            Err(StorageError::NotFound(_))
+        ));
+    }
+
+    #[test]
+    fn retention_is_thirty_days_and_purge_removes_only_older_records() {
+        let db = db();
+        let day = 86_400_000;
+        let now = UtcMillis::from_millis(40 * day);
+        let cutoff = retention_cutoff(now);
+        assert_eq!(cutoff.as_millis(), 10 * day);
+        put(&db, "old", json!({}), 10 * day - 1);
+        put(&db, "edge", json!({}), 10 * day);
+        put(&db, "new", json!({}), 39 * day);
+        assert_eq!(purge_older_than(db.conn(), cutoff).unwrap(), 1);
+        let left: i64 = db
+            .conn()
+            .query_row("SELECT COUNT(*) FROM idempotency_records", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(left, 2);
+        assert_eq!(
+            retention_cutoff(UtcMillis::from_millis(i64::MIN)).as_millis(),
+            i64::MIN
+        );
+    }
 }

@@ -24,6 +24,12 @@
 //!    system actor after a policy evaluation that is persisted.
 //! 4. **Approval expiry sweep.** `PENDING`/`APPROVED` requests past their
 //!    expiry move to `EXPIRED` (audited).
+//! 5. **Idempotency retention.** `idempotency_records` older than
+//!    `g9_storage::idempotency::RETENTION_DAYS` (30 days,
+//!    `docs/privacy/data-lifecycle.md`) are deleted; when any were, one audit row
+//!    records the count (data inventory gap G1: the documented retention was never
+//!    enforced, and the stored results repeat operator text). Like steps 3 and 4,
+//!    it runs only when writes are allowed, in the same transaction.
 
 // Step 0 (before the steps above): the schema itself is compared with the
 // embedded migrations at the recorded version; a difference blocks every write,
@@ -43,6 +49,7 @@ use g9_storage::approvals_store;
 use g9_storage::audit::{AuditChain, AuditDecision, AuditOutcome};
 use g9_storage::backup::{self, SnapshotRequest};
 use g9_storage::events::{self, DomainEvent};
+use g9_storage::idempotency;
 use g9_storage::repos::sessions::{self, ClosedBy};
 use g9_storage::repos::ReadScope;
 use g9_storage::{Database, Migrator};
@@ -77,6 +84,9 @@ pub struct RecoveryReport {
     /// schema matches. Mutations are refused while non-empty.
     #[serde(default)]
     pub schema_differences: Vec<String>,
+    /// Idempotency records deleted at open because they were past retention.
+    #[serde(default)]
+    pub purged_idempotency_records: u64,
 }
 
 impl RecoveryReport {
@@ -471,6 +481,24 @@ fn recover_intervals_and_approvals(
         )?;
         svc.note_audit(audit.audit_ref);
         report.expired_approvals.push(id);
+    }
+    let cutoff = idempotency::retention_cutoff(now);
+    let purged = idempotency::purge_older_than(&tx, cutoff)?;
+    if purged > 0 {
+        let audit = AuditChain::append(
+            &tx,
+            &audit_entry(
+                &meta,
+                now,
+                "recovery.idempotency_purged",
+                None,
+                AuditDecision::NotEvaluated,
+                AuditOutcome::Success,
+                &json!({ "purged": purged, "cutoff": cutoff }),
+            ),
+        )?;
+        svc.note_audit(audit.audit_ref);
+        report.purged_idempotency_records = u64::try_from(purged).unwrap_or(u64::MAX);
     }
     tx.commit()
         .map_err(|e| G9Error::from(g9_storage::StorageError::from(e)))?;

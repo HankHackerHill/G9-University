@@ -74,7 +74,12 @@ export interface Violation {
   message: string;
 }
 
-export type ObjectiveStatus = 'PLANNED' | 'IN_PROGRESS' | 'VERIFIED';
+/**
+ * What the study sessions linked to the objective show (`session.create` with `objective_id`):
+ * PLANNED while none has started, IN_PROGRESS once one has, COMPLETED when every linked session
+ * that was not cancelled is completed. Nothing derives VERIFIED (an owner decision).
+ */
+export type ObjectiveStatus = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED';
 
 export interface PlannedObjective {
   objective_id: Id;

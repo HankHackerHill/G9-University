@@ -14,7 +14,8 @@
       "description": "Typed identifier `[A-Za-z0-9._:-]{1,128}`."
     },
     "title": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 200
     },
     "body_markdown": {
       "type": "string"

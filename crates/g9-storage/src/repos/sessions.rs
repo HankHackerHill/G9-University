@@ -201,6 +201,25 @@ pub fn list_sessions_for_day(
     )
 }
 
+/// Sessions linked to a `daily_objectives` row (`session.create` with an
+/// objective), domain-filtered in SQL, planned start order.
+pub fn list_sessions_for_objective(
+    conn: &Connection,
+    scope: &ReadScope,
+    objective_id: &str,
+) -> RepoResult<Vec<StudySessionRow>> {
+    query_all(
+        conn,
+        &format!(
+            "SELECT {SESSION_COLUMNS} FROM study_sessions
+             WHERE objective_id = ?1 AND (?2 = 1 OR data_domain = ?3)
+             ORDER BY planned_start_utc, created_at, id"
+        ),
+        &[&objective_id, &scope.sql_flag(), &scope.sql_domain()?],
+        map_session,
+    )
+}
+
 /// Planning fields that may change before a session is closed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SessionPlanPatch {

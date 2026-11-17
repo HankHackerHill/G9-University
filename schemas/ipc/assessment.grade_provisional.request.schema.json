@@ -15,12 +15,14 @@
     },
     "criteria": {
       "type": "array",
+      "maxItems": 64,
       "items": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "criterion_code": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 64
           },
           "score": {
             "type": "integer",
@@ -37,6 +39,8 @@
           },
           "evidence_refs": {
             "type": "array",
+            "maxItems": 100,
+            "uniqueItems": true,
             "items": {
               "type": "string",
               "minLength": 1,

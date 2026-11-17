@@ -1,9 +1,12 @@
 //! Crate error type and its mapping to the closed `G9Error` category set.
 //!
-//! Messages never carry row content, prompts or secrets: SQLite constraint
-//! messages name tables/columns only, and I/O errors are reduced to their
-//! `ErrorKind`. Internal causes are logged locally through `tracing` at the
-//! point of conversion and redacted from the returned error.
+//! Messages never carry row content, prompts or secrets, and I/O errors are
+//! reduced to their `ErrorKind`. SQLite's own text for a refused statement names
+//! tables, columns and constraints: a variant that holds it keeps it as its
+//! payload (for tests) and displays a fixed sentence, so the text never reaches a
+//! caller through `G9Error` (app-6). Internal causes are logged locally through
+//! `tracing` at the point of conversion (codes only) and redacted from the
+//! returned error.
 
 use g9_domain::state::TransitionError;
 use g9_domain::{ErrorCategory, G9Error, Revision};
@@ -72,21 +75,33 @@ impl RestoreCode {
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum StorageError {
     /// An immutability trigger refused an UPDATE/DELETE (A04 at storage level).
-    #[error("immutable record: {0}")]
+    /// The payload (the trigger's text after `IMMUTABLE:`, or the repository's
+    /// reason) names the table; it is not displayed (app-6).
+    #[error("the record is final and cannot be changed; a correction is a new record")]
     Immutable(String),
     /// A foreign-key constraint refused the statement (RESTRICT deletion semantics).
-    #[error("foreign key constraint failed: {0}")]
+    /// The payload is SQLite's text or the repository's reason (tables and
+    /// columns); it is not displayed (app-6).
+    #[error("a record this one refers to is missing, or a record still refers to it")]
     ForeignKey(String),
     /// A CHECK constraint refused the statement (enum/range/json mirror of g9-domain). The payload
     /// is SQLite's own text (table, column, expression): it is for logs and tests, and is not part
     /// of the displayed message that reaches a caller (security audit 2026-11-12).
-    #[error("a value was refused by a storage constraint")]
+    #[error("a value is outside what storage accepts for this record")]
     CheckViolation(String),
-    /// A UNIQUE/PRIMARY KEY constraint refused the statement.
-    #[error("unique constraint failed: {0}")]
+    /// A UNIQUE/PRIMARY KEY constraint refused the statement. The payload is
+    /// SQLite's text (table and columns); it is not displayed (app-6).
+    #[error("a record with the same identity already exists")]
     UniqueViolation(String),
-    /// The database is busy or locked (bounded writers; retry).
-    #[error("database busy: {0}")]
+    /// A trigger refused the statement with its own reason (`RAISE(ABORT, ...)`
+    /// without the `IMMUTABLE:` prefix). The payload is the trigger's text, which
+    /// names tables and columns; it is not displayed (app-6). Same code and
+    /// category as [`StorageError::Precondition`].
+    #[error("a storage rule refused the change")]
+    TriggerRefused(String),
+    /// The database is busy or locked (bounded writers; retry). The payload is
+    /// SQLite's text or the caller's reason; it is not displayed (app-6).
+    #[error("the database is busy; retry the command")]
     Busy(String),
     /// The disk is full (`SQLITE_FULL`); the command may be retried after space is freed.
     #[error("disk full")]
@@ -101,8 +116,10 @@ pub enum StorageError {
         /// Free space reported for the backup directory's filesystem.
         available_bytes: u64,
     },
-    /// The file is not a readable SQLite database or `integrity_check` failed.
-    #[error("database corrupt: {0}")]
+    /// The file is not a readable SQLite database, `integrity_check` failed, or
+    /// stored bytes do not match their digest. The payload (SQLite's text, which
+    /// can quote schema names, or the repository's reason) is not displayed (app-6).
+    #[error("stored data failed an integrity check")]
     Corrupt(String),
     /// An applied migration's recorded checksum does not match the embedded SQL.
     #[error("migration {version} checksum mismatch (recorded {recorded}, embedded {embedded})")]
@@ -193,6 +210,7 @@ impl StorageError {
             StorageError::ForeignKey(_) => "storage.foreign_key",
             StorageError::CheckViolation(_) => "storage.check_violation",
             StorageError::UniqueViolation(_) => "storage.unique_violation",
+            StorageError::TriggerRefused(_) => "storage.precondition_failed",
             StorageError::Busy(_) => "storage.busy",
             StorageError::DiskFull => "storage.disk_full",
             StorageError::InsufficientSpace { .. } => "backup.insufficient_space",
@@ -224,6 +242,7 @@ impl StorageError {
             | StorageError::PragmaNotApplied { .. }
             | StorageError::InvalidTransition(_)
             | StorageError::Precondition(_)
+            | StorageError::TriggerRefused(_)
             | StorageError::NotImplemented(_) => ErrorCategory::PreconditionFailed,
             StorageError::CheckViolation(_) | StorageError::InvalidInput(_) => {
                 ErrorCategory::InvalidInput
@@ -361,7 +380,7 @@ impl From<rusqlite::Error> for StorageError {
                                     StorageError::UniqueViolation(message)
                                 }
                                 ffi::SQLITE_CONSTRAINT_TRIGGER => {
-                                    StorageError::Precondition(message)
+                                    StorageError::TriggerRefused(message)
                                 }
                                 _ => StorageError::CheckViolation(message),
                             }
@@ -426,6 +445,7 @@ mod tests {
             StorageError::ForeignKey("x".into()),
             StorageError::CheckViolation("x".into()),
             StorageError::UniqueViolation("x".into()),
+            StorageError::TriggerRefused("x".into()),
             StorageError::Busy("x".into()),
             StorageError::DiskFull,
             StorageError::Corrupt("x".into()),
@@ -515,6 +535,108 @@ mod tests {
             let g: G9Error = e.into();
             assert_eq!(g.code, text);
             assert_eq!(g.category, category);
+        }
+    }
+
+    /// app-6: what SQLite says about a refused statement names tables, columns
+    /// and constraints. Each refusal keeps that text as its payload, and the
+    /// error a caller receives carries a fixed sentence and the stable code.
+    #[test]
+    fn a_refused_statement_reaches_the_caller_without_schema_names() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            "PRAGMA foreign_keys = ON;
+             CREATE TABLE parent_rows (id TEXT PRIMARY KEY, ref_label TEXT NOT NULL UNIQUE);
+             CREATE TABLE child_rows (id TEXT PRIMARY KEY,
+                 parent_ref TEXT NOT NULL REFERENCES parent_rows (id),
+                 grade_pct INTEGER NOT NULL CHECK (grade_pct BETWEEN 0 AND 100));
+             CREATE TABLE ledger_rows (id TEXT PRIMARY KEY, ledger_amount INTEGER NOT NULL);
+             CREATE TRIGGER trg_ledger_rows_no_update BEFORE UPDATE ON ledger_rows
+             BEGIN SELECT RAISE(ABORT, 'IMMUTABLE: ledger_rows rows cannot be updated'); END;
+             CREATE TRIGGER trg_ledger_rows_amount BEFORE INSERT ON ledger_rows WHEN NEW.ledger_amount < 0
+             BEGIN SELECT RAISE(ABORT, 'ledger_rows.ledger_amount and parent_rows.ref_label are written together'); END;
+             INSERT INTO parent_rows VALUES ('p1', 'C1');
+             INSERT INTO ledger_rows VALUES ('l1', 5);",
+        )
+        .unwrap();
+        let refusals = [
+            (
+                "INSERT INTO parent_rows VALUES ('p2', 'C1')",
+                "storage.unique_violation",
+            ),
+            (
+                "INSERT INTO child_rows VALUES ('c1', 'missing', 1)",
+                "storage.foreign_key",
+            ),
+            (
+                "INSERT INTO child_rows VALUES ('c2', 'p1', 500)",
+                "storage.check_violation",
+            ),
+            (
+                "UPDATE ledger_rows SET ledger_amount = 6",
+                "storage.immutable",
+            ),
+            (
+                "INSERT INTO ledger_rows VALUES ('l2', -1)",
+                "storage.precondition_failed",
+            ),
+        ];
+        let schema = [
+            "parent_rows",
+            "child_rows",
+            "ledger_rows",
+            "ref_label",
+            "parent_ref",
+            "grade_pct",
+            "ledger_amount",
+        ];
+        for (sql, code) in refusals {
+            let raw = conn.execute(sql, []).unwrap_err();
+            let raw_text = raw.to_string();
+            let e = StorageError::from(raw);
+            assert_eq!(e.code(), code, "{sql}: {e:?}");
+            // The payload keeps what SQLite said (tests and local diagnosis).
+            assert!(
+                format!("{e:?}").contains(raw_text.trim_start_matches("IMMUTABLE:").trim()),
+                "{sql}: {e:?}"
+            );
+            let g: G9Error = e.into();
+            assert_eq!(g.code, code);
+            let wire = serde_json::to_string(&g).unwrap();
+            for name in schema {
+                assert!(!wire.contains(name), "{sql}: {name} in {wire}");
+            }
+            assert!(!wire.to_lowercase().contains("constraint"), "{sql}: {wire}");
+            assert!(!wire.contains("UNIQUE"), "{sql}: {wire}");
+        }
+        // Busy and corrupt: SQLite's text is not repeated either.
+        for (code, text, expected) in [
+            (
+                ffi::ErrorCode::DatabaseBusy,
+                "database is locked: parent_rows",
+                "storage.busy",
+            ),
+            (
+                ffi::ErrorCode::DatabaseCorrupt,
+                "malformed database schema (parent_rows) - near \"ref_label\"",
+                "storage.corrupt",
+            ),
+        ] {
+            let raw = rusqlite::Error::SqliteFailure(
+                ffi::Error {
+                    code,
+                    extended_code: 0,
+                },
+                Some(text.to_string()),
+            );
+            let g: G9Error = StorageError::from(raw).into();
+            assert_eq!(g.code, expected);
+            let wire = serde_json::to_string(&g).unwrap();
+            assert!(!wire.contains("parent_rows"), "{wire}");
+            assert!(
+                !wire.contains("ref_label") && !wire.contains("near"),
+                "{wire}"
+            );
         }
     }
 

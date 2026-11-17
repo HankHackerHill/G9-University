@@ -33,7 +33,7 @@ use g9_storage::repos::ReadScope;
 use rusqlite::Connection;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 /// Signature shared by every operation handler.
 pub type Handler = fn(
@@ -112,6 +112,14 @@ pub(crate) fn rebuild_replay(
     svc: &Services,
     record: &Value,
 ) -> Result<(Value, Vec<String>), G9Error> {
+    // A result that held the view of a calendar event deleted since (G1).
+    if let Some(event_id) = record.get(crate::pipeline::DELETED_EVENT_KEY) {
+        return Err(G9Error::not_found(
+            "calendar.event_deleted",
+            "the calendar event this request named was deleted; its stored result is no longer kept",
+        )
+        .with_details(json!({ "event_id": event_id })));
+    }
     match op {
         "notes.create" | "notes.revise" => notes::replay_view(conn, svc, record),
         "skills.invoke" => Ok(skills::replay_view(record)),

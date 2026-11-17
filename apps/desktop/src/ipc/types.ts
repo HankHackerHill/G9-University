@@ -122,6 +122,56 @@ export function schemaAccepts(reader: SchemaVersion, payload: SchemaVersion): bo
 }
 
 /**
+ * Size limits the backend enforces at the IPC boundary (app-9): the `maxLength` (characters) and
+ * `maxItems` of `schemas/ipc/*.request.schema.json`, and the serialized-payload byte caps of
+ * `crates/g9-app/src/dispatch.rs` (`payload_cap`, checked before the schema).
+ */
+export const IPC_LIMITS = {
+  /** `notes.create` / `notes.revise` `title`. */
+  noteTitleChars: 200,
+  /** `session.correct_time` `reason`. */
+  correctionReasonChars: 500,
+  /** `backup.create` `label`. */
+  backupLabelChars: 200,
+  /** `skills.invoke` `skill_code`. */
+  skillCodeChars: 128,
+  /** `assessment.grade_provisional` `criteria[].criterion_code`. */
+  criterionCodeChars: 64,
+  /** `evidence_refs` of `notes.create`, `assessment.submit` and each graded criterion. */
+  evidenceRefs: 100,
+  /** `assessment.grade_provisional` `criteria`. */
+  gradeCriteria: 64,
+  /** Serialized payload of any operation not listed below (`MAX_PAYLOAD_BYTES`). */
+  payloadBytes: 1024 * 1024,
+  /** `evidence.attach_file` (`MAX_ATTACHMENT_PAYLOAD_BYTES`): a 16 MiB file in base64. */
+  attachmentPayloadBytes: 23 * 1024 * 1024,
+  /** `notes.create`, `notes.revise`, `assessment.submit` (`MAX_NOTE_PAYLOAD_BYTES`). */
+  notePayloadBytes: 6 * 4 * 1024 * 1024 + 1024 * 1024,
+  /** `curriculum.import` (`MAX_MANIFEST_PAYLOAD_BYTES`). */
+  manifestPayloadBytes: 8 * 1024 * 1024,
+} as const;
+
+/** The largest serialized payload, in bytes, the backend accepts for `op` (`dispatch::payload_cap`). */
+export function payloadCap(op: string): number {
+  switch (op) {
+    case 'evidence.attach_file':
+      return IPC_LIMITS.attachmentPayloadBytes;
+    case 'notes.create':
+    case 'notes.revise':
+    case 'assessment.submit':
+      return IPC_LIMITS.notePayloadBytes;
+    case 'curriculum.import':
+    case 'curriculum.validate':
+      return IPC_LIMITS.manifestPayloadBytes;
+    case 'curriculum.promote':
+      // Two manifests: the candidate and the original.
+      return 2 * IPC_LIMITS.manifestPayloadBytes;
+    default:
+      return IPC_LIMITS.payloadBytes;
+  }
+}
+
+/**
  * Metadata the UI sends with every command (handoff §6, ADR-0013, ARCHITECTURE Addendum A.8).
  *
  * The wire shape deliberately has NO `actor`: incoming IPC meta never sets identity. The

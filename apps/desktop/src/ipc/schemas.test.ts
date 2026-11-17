@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildMeta, createClient, isG9Error, type InvokeOptions } from './client';
 import { OPERATION_NAMES, type OperationName } from './operations';
-import type { JsonValue } from './types';
+import { IPC_LIMITS, payloadCap, type JsonValue } from './types';
 import { createMockClock, createMockTransport } from './transports/mock';
 import { encodeBase64 } from './transports/mock-attachments';
 
@@ -130,6 +130,35 @@ describe('schemas/ipc house rules', () => {
     expect(validate({ category: 'APPROVAL_REQUIRED', code: 'a.b', message: 'm', approval_id: 'ap-1', details: { x: 1 } })).toBe(true);
     expect(validate({ category: 'FATAL', code: 'a.b', message: 'm' })).toBe(false);
     expect(validate({ category: 'INTERNAL', code: 'a', message: 'm', backtrace: '...' })).toBe(false);
+  });
+
+  it('IPC_LIMITS (types.ts) states the limits the request schemas enforce (app-9)', () => {
+    const prop = (op: string, ...path: string[]): Record<string, unknown> => {
+      let node: unknown = schemas.get(`${op}.request.schema.json`);
+      for (const key of path) {
+        node = (node as Record<string, unknown>)[key];
+      }
+      return node as Record<string, unknown>;
+    };
+    expect(prop('notes.create', 'properties', 'title').maxLength).toBe(IPC_LIMITS.noteTitleChars);
+    expect(prop('notes.revise', 'properties', 'title').maxLength).toBe(IPC_LIMITS.noteTitleChars);
+    expect(prop('session.correct_time', 'properties', 'reason').maxLength).toBe(IPC_LIMITS.correctionReasonChars);
+    expect(prop('backup.create', 'properties', 'label').maxLength).toBe(IPC_LIMITS.backupLabelChars);
+    expect(prop('skills.invoke', 'properties', 'skill_code').maxLength).toBe(IPC_LIMITS.skillCodeChars);
+    const criteria = prop('assessment.grade_provisional', 'properties', 'criteria');
+    expect(criteria.maxItems).toBe(IPC_LIMITS.gradeCriteria);
+    const criterion = (criteria.items as { properties: Record<string, Record<string, unknown>> }).properties;
+    expect(criterion.criterion_code?.maxLength).toBe(IPC_LIMITS.criterionCodeChars);
+    expect(criterion.evidence_refs).toMatchObject({ maxItems: IPC_LIMITS.evidenceRefs, uniqueItems: true });
+    expect(prop('assessment.submit', 'properties', 'evidence_refs')).toMatchObject({ maxItems: IPC_LIMITS.evidenceRefs, uniqueItems: true });
+    expect(prop('notes.create', 'properties', 'evidence_refs').maxItems).toBe(IPC_LIMITS.evidenceRefs);
+    // The largest attachment the schema accepts fits under its operation's byte cap.
+    const content = prop('evidence.attach_file', 'properties', 'content_base64').maxLength as number;
+    expect(content).toBeLessThan(payloadCap('evidence.attach_file'));
+    expect(content).toBeGreaterThan(payloadCap('notes.list'));
+    // Every operation that carries a manifest gets the manifest cap (promote carries two).
+    expect(payloadCap('curriculum.validate')).toBe(IPC_LIMITS.manifestPayloadBytes);
+    expect(payloadCap('curriculum.promote')).toBe(2 * IPC_LIMITS.manifestPayloadBytes);
   });
 });
 

@@ -473,3 +473,33 @@ pub fn insert_planned_session(h: &Harness, id: &str) {
     )
     .unwrap();
 }
+
+/// An evidence item of the PERSONAL domain (an external reference), stored
+/// directly: no command creates evidence outside the caller's domain. Returns
+/// its id.
+pub fn personal_evidence(h: &Harness, id: &str) -> String {
+    use g9_domain::{Classification, Provenance, SourceKind, TrustClass};
+    let item = g9_evidence::EvidenceItem::new(
+        EvidenceId::parse(id).unwrap(),
+        g9_evidence::EvidenceKind::ExternalReference,
+        "src-personal",
+        DataDomain::Personal,
+        Classification::Private,
+        Provenance {
+            source_kind: SourceKind::ReferenceDocument,
+            source_ref: "src-personal".into(),
+            trust: TrustClass::Operator,
+            content_sha256: None,
+            recorded_at: h.now(),
+            recorded_by: operator_id(),
+            version: None,
+        },
+        "Personal reference",
+        h.now(),
+    )
+    .unwrap();
+    let row =
+        g9_storage::repos::evidence::EvidenceItemRow::from_domain(&item, &"0".repeat(64)).unwrap();
+    g9_storage::repos::evidence::insert_evidence_item(h.conn(), &row).unwrap();
+    id.to_string()
+}

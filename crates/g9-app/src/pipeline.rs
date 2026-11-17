@@ -293,6 +293,46 @@ fn stored_outcome(
     serde_json::to_value(&stored).map_err(|_| G9Error::internal_redacted("idempotency.serialize"))
 }
 
+/// Key, inside a replay record, of the id of a calendar event that was deleted
+/// after the result was stored (see [`forget_event_results`]).
+pub const DELETED_EVENT_KEY: &str = "deleted_event_id";
+
+/// Data inventory gap G1: a calendar event's title must not outlive the event in
+/// `idempotency_records`. Every stored result that holds the event's view (its
+/// `event_id` next to its `title`: the results of `calendar.create_event`,
+/// `calendar.update_event`, `calendar.propose` and `calendar.apply`) is replaced,
+/// in the deleting transaction, by a content-free replay record naming the
+/// deleted event plus the keyed digest of the old result (ADR-0021), as
+/// [`stored_outcome`] does for content-bearing results. A replay of such a
+/// command answers `NOT_FOUND calendar.event_deleted` and executes nothing
+/// (`commands::rebuild_replay`). Returns how many records were replaced.
+pub(crate) fn forget_event_results(
+    conn: &Connection,
+    key: &BindingKey,
+    event_id: &str,
+) -> Result<usize, G9Error> {
+    let found = idempotency::results_quoting(conn, "event_id", event_id, "title")?;
+    for record in &found {
+        let mut outcome: CommandOutcome<Value> =
+            serde_json::from_value(record.outcome_json.clone()).map_err(|_| {
+                G9Error::data_corruption(
+                    "idempotency.outcome_unreadable",
+                    "a stored outcome cannot be read",
+                )
+            })?;
+        outcome.result = json!({
+            REPLAY_RECORD_KEY: { DELETED_EVENT_KEY: event_id },
+            "result_sha256": key
+                .digest_json(DigestDomain::Result, &outcome.result)
+                .map_err(|_| digest_error())?,
+        });
+        let value = serde_json::to_value(&outcome)
+            .map_err(|_| G9Error::internal_redacted("idempotency.serialize"))?;
+        idempotency::replace_outcome(conn, &record.actor_id, &record.idempotency_key, &value)?;
+    }
+    Ok(found.len())
+}
+
 /// What a handler sees: the transaction connection and the services.
 pub struct Env<'a> {
     /// The command transaction (or the plain connection for reads).

@@ -7,7 +7,8 @@
   "additionalProperties": false,
   "properties": {
     "skill_code": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 128
     },
     "input": {
       "description": "Any JSON value (serde_json::Value).",

@@ -2122,7 +2122,7 @@ mod tests {
         assert!(matches!(
             err_of(conn, "INSERT INTO interventions (id, kind, description, state, proposed_by, proposed_at, origin_trust, trust, created_at, updated_at)
                           VALUES ('int-forged', 'k', 'd', 'PROPOSED', 'model-1', 1, 'MODEL_OUTPUT', 'OPERATOR', 1, 1)"),
-            StorageError::Precondition(_)
+            StorageError::TriggerRefused(_)
         ));
 
         // Review only through review_intervention, only by the operator, with the current revision
@@ -2170,7 +2170,7 @@ mod tests {
         // a raw UPDATE past PROPOSED without elevation is refused by the 0010 trigger ...
         assert!(matches!(
             err_of(conn, "UPDATE interventions SET state = 'REVIEWED', reviewed_by = 'operator-1', reviewed_at = 5 WHERE id = 'int-1'"),
-            StorageError::Precondition(_)
+            StorageError::TriggerRefused(_)
         ));
         // ... and the 0007 CHECK still refuses a MODEL_OUTPUT row past PROPOSED (not weakened)
         assert!(matches!(
@@ -2245,7 +2245,7 @@ mod tests {
         .unwrap();
         assert!(matches!(
             err_of(conn, "UPDATE interventions SET state = 'REVIEWED', reviewed_by = 'operator-1', reviewed_at = 5 WHERE id = 'int-skill'"),
-            StorageError::Precondition(_)
+            StorageError::TriggerRefused(_)
         ));
         assert_eq!(
             get_intervention(

@@ -27,6 +27,15 @@
 //!   terminal attempt is recorded as a retake of the latest terminal attempt
 //!   (warning `assessment.retake_inferred`; Addendum A.3: retakes are linked
 //!   and reported separately, never counted as first attempts).
+//! * Evidence references are checked against storage, not only parsed
+//!   (app-6, app-8): `assessment.submit` links only evidence items that exist in
+//!   the attempt's domain (anything else is `NOT_FOUND evidence.not_found`, as
+//!   seen from the attempt's scope), and every `evidence_refs` entry of
+//!   `assessment.grade_provisional` must be evidence linked to the attempt being
+//!   graded (`attempt_evidence`) in its domain, else `INVALID_INPUT
+//!   grade.evidence_unknown` and no criterion result is appended: a result is
+//!   append-only and hashed into the final decision, so it never cites evidence
+//!   that cannot be produced.
 //! * `assessment.grade_provisional` records the backend-assigned operator as
 //!   `scored_by`; the operator may not claim `DETERMINISTIC_CHECKER`
 //!   provenance (`CriterionResult::new`: only a `System` checker writes it →
@@ -708,6 +717,9 @@ pub fn submit(
         AssessmentEvent::Submit,
         move |env, loaded| {
             for e in &evidence {
+                require_domain_evidence(env.conn, &loaded.attempt, e)?;
+            }
+            for e in &evidence {
                 repo::link_attempt_evidence(
                     env.conn,
                     &AttemptEvidenceRow {
@@ -729,6 +741,34 @@ pub fn submit(
             }
             Ok(Some(digest))
         },
+    )
+}
+
+/// The evidence item `id` as seen from the attempt: it exists and lives in the
+/// attempt's domain. Anything else is `NOT_FOUND evidence.not_found`, so an item
+/// of another domain is indistinguishable from a missing one (app-6: the
+/// foreign key used to refuse a missing id with SQLite's text, and nothing
+/// refused another domain's item).
+fn require_domain_evidence(
+    conn: &Connection,
+    attempt: &AttemptRow,
+    id: &EvidenceId,
+) -> Result<EvidenceItemRow, G9Error> {
+    domain_evidence(conn, attempt, id)?.ok_or_else(|| {
+        G9Error::not_found("evidence.not_found", "evidence item not found")
+            .with_details(json!({ "evidence_id": id }))
+    })
+}
+
+/// The evidence item `id` when it exists in the attempt's domain.
+fn domain_evidence(
+    conn: &Connection,
+    attempt: &AttemptRow,
+    id: &EvidenceId,
+) -> Result<Option<EvidenceItemRow>, G9Error> {
+    Ok(
+        evidence_repo::get_evidence_item(conn, &ReadScope::cross_domain(attempt.data_domain), id)?
+            .filter(|item| item.data_domain == attempt.data_domain),
     )
 }
 
@@ -867,7 +907,24 @@ pub fn grade_provisional(
                 })?;
             // Anchored level -> score through the rubric's explicit scale (ADR-0012).
             let scale = rubric(&loaded.criteria)?;
+            let linked = repo::list_attempt_evidence(env.conn, &loaded.attempt.id)?;
             for input in &req.criteria {
+                for reference in &input.evidence_refs {
+                    let id: EvidenceId = parse_id(reference, "evidence_refs[]")?;
+                    // app-8: only evidence submitted for this attempt, in its domain.
+                    let submitted = linked.iter().any(|l| l.evidence_item_id == id)
+                        && domain_evidence(env.conn, &loaded.attempt, &id)?.is_some();
+                    if !submitted {
+                        return Err(G9Error::invalid_input(
+                            "grade.evidence_unknown",
+                            "a criterion cites evidence that was not submitted for this attempt",
+                        )
+                        .with_details(json!({
+                            "criterion_code": input.criterion_code,
+                            "evidence_id": id,
+                        })));
+                    }
+                }
                 if !loaded
                     .criteria
                     .iter()

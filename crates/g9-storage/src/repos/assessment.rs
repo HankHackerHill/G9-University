@@ -203,6 +203,17 @@ fn map_definition(r: &Row<'_>) -> StorageResult<AssessmentDefinitionRow> {
     })
 }
 
+/// Whether an assessment definition already uses `code` (codes are unique
+/// across domains). Lets a caller refuse a duplicate with its own answer before
+/// the UNIQUE constraint does (app-6).
+pub fn definition_code_in_use(conn: &Connection, code: &str) -> RepoResult<bool> {
+    Ok(conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM assessment_definitions WHERE code = ?1)",
+        params![code],
+        |r| r.get::<_, bool>(0),
+    )?)
+}
+
 /// Insert a definition.
 pub fn insert_definition(conn: &Connection, row: &AssessmentDefinitionRow) -> RepoResult<Revision> {
     conn.execute(
@@ -2442,7 +2453,7 @@ mod tests {
             .expect_err("unpaired anchors must be refused")
             .into();
         assert!(
-            matches!(&unpaired, StorageError::Precondition(m) if m.contains("written together")),
+            matches!(&unpaired, StorageError::TriggerRefused(m) if m.contains("written together")),
             "{unpaired:?}"
         );
     }

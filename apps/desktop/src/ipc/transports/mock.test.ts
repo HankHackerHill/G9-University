@@ -862,7 +862,10 @@ describe('mock transport: authoring (competency.create, assessment.define)', () 
     const { client } = harness();
     const comp = ok(await client.invoke('competency.create', { code: 'WCP', title: ' Web cache poisoning ', validity_days: 120 })).result;
     expect(comp).toMatchObject({ code: 'WCP', title: 'Web cache poisoning', validity_days: 120 });
-    expect(err(await client.invoke('competency.create', { code: 'WCP', title: 'again' }))).toMatchObject({ category: 'CONFLICT', code: 'storage.unique_violation' });
+    // A typed conflict, answered before storage: no table or constraint text (app-6).
+    const duplicate = err(await client.invoke('competency.create', { code: 'WCP', title: 'again' }));
+    expect(duplicate).toMatchObject({ category: 'CONFLICT', code: 'competency.code_exists' });
+    expect(JSON.stringify(duplicate)).not.toMatch(/constraint|UNIQUE|competencies/);
     // A blank title is a name that is not storable: refused at the boundary, before the handler.
     expect(err(await client.invoke('competency.create', { code: 'BLANK', title: '   ' }))).toMatchObject({ code: 'input.name_not_printable', details: { field: 'title' } });
     expect(err(await client.invoke('competency.create', { code: 'lower', title: 'x' })).category).toBe('INVALID_INPUT');
@@ -886,7 +889,7 @@ describe('mock transport: authoring (competency.create, assessment.define)', () 
     expect(defined).toMatchObject({ code: 'WCP-01', title: 'Poison a cache key', kind: 'BLIND_PRACTICAL', competency_id: comp.competency_id, difficulty: 4 });
     expect(defined.version_id).toBe(`${defined.assessment_id}:v1`);
     expect(defined.criteria).toEqual(BASELINE_CRITERIA.map((c) => c.code));
-    expect(err(await client.invoke('assessment.define', definition)).code).toBe('storage.unique_violation');
+    expect(err(await client.invoke('assessment.define', definition))).toMatchObject({ category: 'CONFLICT', code: 'assessment.code_exists' });
     const listed = ok(await client.invoke('assessment.list', {})).result.definitions.find((d) => d.assessment_id === defined.assessment_id);
     expect(listed).toEqual({ assessment_id: defined.assessment_id, title: 'Poison a cache key', day_id: 'WCP-01', mode: 'EXAM' });
 
@@ -933,9 +936,13 @@ describe('mock transport: evidence (attach_file, from_note, list)', () => {
     expect(ok(await client.invoke('evidence.list', {}, { domain: 'BUSINESS' })).result.items).toHaveLength(0);
     expect(ok(await client.invoke('evidence.list', { note_id: 'mock-note-missing' })).result.items).toHaveLength(0);
 
-    // The evidence goes into a submission; an id that names no evidence item is refused (foreign key).
+    // The evidence goes into a submission; an id that names no evidence item is NOT_FOUND (app-6).
     const attempt = ok(await client.invoke('assessment.begin', { assessment_id: 'mock-assessment-D18' })).result.attempt_id;
-    expect(err(await client.invoke('assessment.submit', { attempt_id: attempt, evidence_refs: ['mock-evidence-missing'] })).code).toBe('storage.foreign_key');
+    expect(err(await client.invoke('assessment.submit', { attempt_id: attempt, evidence_refs: ['mock-evidence-missing'] }))).toMatchObject({
+      category: 'NOT_FOUND',
+      code: 'evidence.not_found',
+      details: { evidence_id: 'mock-evidence-missing' },
+    });
     expect(ok(await client.invoke('assessment.submit', { attempt_id: attempt, evidence_refs: [first.evidence_id, fromNote.evidence_id] })).result.state).toBe('SUBMITTED');
   });
 
@@ -1159,5 +1166,81 @@ describe('mock transport: export.request writes the export after approval', () =
     const approvalId = await approvalFor(client, await client.invoke('export.request', payload));
     expect(err(await client.invoke('export.request', payload, { approvalId }))).toMatchObject({ category: 'PRECONDITION_FAILED', code: 'export.dir_not_configured' });
     expect((await approvalState(client, approvalId))?.state).toBe('APPROVED');
+  });
+});
+
+describe('mock transport: boundary limits, evidence references, objective status, deleted events (mirrors g9-app)', () => {
+  const invalid = (r: InvokeResult<OperationName>) => {
+    expect(err(r)).toMatchObject({ category: 'INVALID_INPUT', code: 'ipc.payload_invalid' });
+  };
+
+  it('refuses titles, reasons, labels, codes and lists over their limits (app-9)', async () => {
+    const { client } = harness();
+    const note = { body_markdown: 'Body.', classification: 'INTERNAL' as const, domain: 'LEARNING' as const };
+    invalid(await client.invoke('notes.create', { ...note, title: 't'.repeat(201) }));
+    const kept = ok(await client.invoke('notes.create', { ...note, title: 'é'.repeat(200) })).result;
+    invalid(await client.invoke('notes.revise', { note_id: kept.note_id, title: 't'.repeat(201), body_markdown: 'x' }));
+    invalid(await client.invoke('notes.create', { ...note, title: 'T', evidence_refs: Array.from({ length: 101 }, (_, i) => `e-${i}`) }));
+    invalid(await client.invoke('backup.create', { label: 'l'.repeat(201) }));
+    invalid(await client.invoke('skills.invoke', { skill_code: 's'.repeat(129), input: {} }));
+    const session = ok(await client.invoke('session.create', { planned_minutes: 30 })).result.session_id;
+    invalid(await client.invoke('session.correct_time', { session_id: session, interval_id: 'i-1', credited_ms: 0, reason: 'r'.repeat(501) }));
+    const attempt = ok(await client.invoke('assessment.begin', { assessment_id: 'mock-assessment-D18' })).result.attempt_id;
+    invalid(await client.invoke('assessment.submit', { attempt_id: attempt, evidence_refs: Array.from({ length: 101 }, (_, i) => `e-${i}`) }));
+    invalid(await client.invoke('assessment.submit', { attempt_id: attempt, evidence_refs: ['e-1', 'e-1'] }));
+    const criteria = Array.from({ length: 65 }, (_, i) => ({ criterion_code: `c${i}`, score: 1 as const, source: 'HUMAN_REVIEWER' as const, evidence_refs: [] }));
+    invalid(await client.invoke('assessment.grade_provisional', { attempt_id: attempt, criteria }));
+    // The byte cap is checked before anything else reads the payload.
+    expect(err(await client.invoke('calendar.list', { from: 0, to: 1, zone: 'z'.repeat(2 * 1024 * 1024) }))).toMatchObject({
+      category: 'INVALID_INPUT',
+      code: 'ipc.payload_too_large',
+      details: { limit_bytes: 1024 * 1024 },
+    });
+  });
+
+  it('grades only with evidence submitted for the attempt (app-8)', async () => {
+    const { client } = harness();
+    const note = ok(await client.invoke('notes.create', { title: 'Write-up', body_markdown: 'Body.', classification: 'INTERNAL', domain: 'LEARNING' })).result;
+    const own = ok(await client.invoke('evidence.from_note', { note_id: note.note_id })).result.evidence_id;
+    const attempt = ok(await client.invoke('assessment.begin', { assessment_id: 'mock-assessment-D18' })).result.attempt_id;
+    ok(await client.invoke('assessment.submit', { attempt_id: attempt, evidence_refs: [own] }));
+    ok(await client.invoke('assessment.review_evidence', { attempt_id: attempt }));
+    const grade = (refs: string[]) =>
+      client.invoke('assessment.grade_provisional', {
+        attempt_id: attempt,
+        criteria: BASELINE_CRITERIA.map((c, i) => ({ criterion_code: c.code, score: 3 as const, source: 'HUMAN_REVIEWER' as const, evidence_refs: i === 0 ? refs : [] })),
+      });
+    expect(err(await grade(['evi-does-not-exist']))).toMatchObject({ category: 'INVALID_INPUT', code: 'grade.evidence_unknown', details: { evidence_id: 'evi-does-not-exist' } });
+    expect(ok(await grade([own])).result.state).toBe('GRADED_PROVISIONAL');
+  });
+
+  it('derives an objective status from the sessions linked to it (app-7)', async () => {
+    const { client } = harness();
+    const status = async (objective: string) =>
+      ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-18' })).result.objectives.find((o) => o.objective_id === objective)?.status;
+    expect(await status('D15-O1')).toBe('PLANNED');
+    const session = ok(await client.invoke('session.create', { planned_minutes: 30, objective_id: 'D15-O1' })).result.session_id;
+    expect(await status('D15-O1')).toBe('PLANNED');
+    ok(await client.invoke('session.prepare', { session_id: session }));
+    ok(await client.invoke('session.start', { session_id: session }));
+    expect(await status('D15-O1')).toBe('IN_PROGRESS');
+    expect(await status('D15-O2')).toBe('PLANNED');
+    ok(await client.invoke('session.complete', { session_id: session }));
+    expect(await status('D15-O1')).toBe('COMPLETED');
+  });
+
+  it('a deleted event leaves no title in a stored result; a replay says it was deleted (G1)', async () => {
+    const { client } = harness();
+    const start = Date.UTC(2026, 10, 20, 9, 0);
+    const payload = { title: 'Dentist with Dr Example', kind: 'APPOINTMENT' as const, start, end: start + 3_600_000 };
+    const id = ok(await client.invoke('calendar.create_event', payload, { idempotencyKey: 'ev-create' })).result.event_id;
+    expect(ok(await client.invoke('calendar.create_event', payload, { idempotencyKey: 'ev-create' })).replayed).toBe(true);
+    const approvalId = await approvalFor(client, await client.invoke('calendar.delete_event', { event_id: id }));
+    ok(await client.invoke('calendar.delete_event', { event_id: id }, { approvalId }));
+    expect(err(await client.invoke('calendar.create_event', payload, { idempotencyKey: 'ev-create' }))).toMatchObject({
+      category: 'NOT_FOUND',
+      code: 'calendar.event_deleted',
+      details: { event_id: id },
+    });
   });
 });

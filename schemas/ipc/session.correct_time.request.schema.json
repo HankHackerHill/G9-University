@@ -26,7 +26,8 @@
       "description": "Non-negative duration in integer milliseconds."
     },
     "reason": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 500
     }
   },
   "required": [

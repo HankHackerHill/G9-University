@@ -235,6 +235,18 @@ const ALLOWED: &[Allowed] = &[
         shape: None,
     },
     Allowed {
+        table: "idempotency_records",
+        sql: concat!(
+            "SELECT r.actor_id, r.idempotency_key, r.outcome_json FROM idempotency_records r ",
+            "WHERE EXISTS ( SELECT 1 FROM json_tree(r.outcome_json, '$.result') a ",
+            "JOIN json_tree(r.outcome_json, '$.result') b ON b.parent = a.parent ",
+            "WHERE a.key = ?1 AND a.type = 'text' AND a.atom = ?2 AND b.key = ?3) ",
+            "ORDER BY r.created_at, r.actor_id, r.idempotency_key",
+        ),
+        reason: "g9_storage::idempotency::results_quoting (data-inventory gap G1): deleting a calendar event must redact its title from every stored outcome that quotes it, found by JSON structure so no copy is missed whichever operation stored it; it runs once per deletion, and the table holds at most RETENTION_DAYS (30) of records because recovery purges older ones at open. An indexed resource column would need a migration and could miss copies quoted by other operations",
+        shape: None,
+    },
+    Allowed {
         table: ANY_TABLE,
         sql: "SELECT * FROM {name} WHERE {clause} ORDER BY rowid",
         reason: "g9_storage::export::collect: export.request (approval-gated, operator-initiated, one consistent read inside the command transaction) reads every row of the selected domains by design, including the parent rows its domain filters select through; not an interactive read. Shape::ExportSelect admits only export's own filter forms",

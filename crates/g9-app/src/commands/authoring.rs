@@ -2,13 +2,17 @@
 //! Before, they existed only through the CLI seed.
 //!
 //! * `competency.create` validates through `g9_competency::Competency` and
-//!   stores the row (difficulty band 1–5, no NICE references).
+//!   stores the row (difficulty band 1–5, no NICE references). A code another
+//!   competency uses is `CONFLICT competency.code_exists`, answered before the
+//!   UNIQUE constraint would refuse the insert (app-6: SQLite's text named the
+//!   table and column).
 //! * `assessment.define` writes, in one transaction, the definition, version 1
 //!   (task statement, declared difficulty, checksum) and its rubric. The rubric
 //!   is the baseline rubric: grading maps criterion codes to competency
 //!   dimensions through `Rubric::baseline_dimension`, and `rubric_criteria` has
 //!   no dimension column, so custom criteria could not be graded (PROPOSED: a
-//!   dimension column and a criteria editor).
+//!   dimension column and a criteria editor). A code another definition uses
+//!   is `CONFLICT assessment.code_exists` (app-6).
 
 use super::{creation_id, decode, new_id, parse_id, rc};
 use crate::context::AppContext;
@@ -63,6 +67,13 @@ pub fn competency_create(
             )))
         },
         |env| {
+            let code = req.code.trim().to_string();
+            if competency_repo::code_in_use(env.conn, &code)? {
+                return Err(G9Error::conflict(
+                    "competency.code_exists",
+                    "a competency with this code already exists",
+                ));
+            }
             let band = |d: u8| {
                 Difficulty::new(d).map_err(|_| G9Error::internal_redacted("authoring.difficulty"))
             };
@@ -79,7 +90,6 @@ pub fn competency_create(
             competency
                 .validate()
                 .map_err(|e| G9Error::invalid_input("competency.invalid", e.to_string()))?;
-            let code = req.code.trim().to_string();
             let revision = competency_repo::insert_competency(
                 env.conn,
                 &CompetencyRow::from_domain(&competency, &code, None, env.now),
@@ -156,6 +166,13 @@ pub fn assessment_define(
             )))
         },
         |env| {
+            let code = req.code.trim().to_string();
+            if assessment_repo::definition_code_in_use(env.conn, &code)? {
+                return Err(G9Error::conflict(
+                    "assessment.code_exists",
+                    "an assessment with this code already exists",
+                ));
+            }
             let competency_id: CompetencyId = parse_id(&req.competency_id, "competency_id")?;
             competency_repo::get_competency(
                 env.conn,
@@ -167,7 +184,6 @@ pub fn assessment_define(
             let difficulty = Difficulty::new(req.difficulty).map_err(|_| {
                 G9Error::invalid_input("assessment.difficulty_invalid", "difficulty is 1 to 5")
             })?;
-            let code = req.code.trim().to_string();
             let definition = AssessmentDefinition::new(
                 id.clone(),
                 req.title.trim().to_string(),
