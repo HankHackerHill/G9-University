@@ -32,6 +32,14 @@ Retention is enforced by a deterministic maintenance command (`system.retention_
 6. Rows erased before migration 0014 keep their old digests (PROPOSED: a data migration to scrub them; no such database is known), and backup snapshots keep everything they held.
 7. The immutable ledgers (`policy_decisions`, `approval_requests`, `approval_decisions`, `idempotency_records`, `skill_invocations`, the audit details) hold the hash of a whole request only as an HMAC-SHA-256 under a subkey of the binding key, which is not in the database, a snapshot or an export (ADR-0021): the database alone cannot confirm a guess at a request. Requests made before that change keep their plain digests in the rows and snapshots that already hold them.
 
+8. The request's `reason` is kept verbatim in `deletion_requests` (SYSTEM domain), in the database and in every snapshot taken after the request; it is never exported or logged. Do not repeat the erased content in it.
+9. Attachment copies under `<data>/backups/attachments/` are shared by all backups and are not removed by an erasure: they belong to the snapshots taken before it and leave only with backup retention (PROPOSED: retention must also remove copies no retained snapshot references).
+10. Verified on raw bytes (TESTED 2026-11-16, `apps/cli/tests/erasure_probe.rs`, plan step PRIV-3): after an approved erasure, no file of the data directory holds the erased title, body, file name, file bytes, their base64 or their SHA-256, except the snapshot taken before the erasure and the attachment copy only it references. Both `secure_delete` and the TRUNCATE checkpoint after the erasure are needed: with either removed, the probe finds the content.
+
+## Operations log
+
+`<data>/logs/g9.log` (`crates/g9-app/src/oplog.rs`, plan step OBS-1): one JSON line per command (registry operation name, request id, outcome category, error code, duration) and the backend's diagnostic events with allow-listed fields only. It holds no payload, title, file name, path or free text (TESTED: `crates/g9-app/tests/oplog_probe.rs`; every logging call site is literal, allow-listed and registered: `crates/g9-app/tests/log_call_sites.rs`). Directory `0700`, files `0600`; at most four files of 1 MiB (rotated). It is not part of a backup or an export, and an erasure has nothing to remove from it. It is metadata about activity (which operation, when, how long): it stays on the machine like the database.
+
 ## Encryption and key management (decision: layered, operator-chosen)
 
 | Layer | Option | Status |

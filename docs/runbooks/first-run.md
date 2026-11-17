@@ -14,7 +14,7 @@ Scope: one person using the desktop window on one machine, from an empty install
 | Item | Detail |
 |---|---|
 | Build | `cd apps/desktop && npm ci && npm run tauri:build`. Never `cargo build --release` for the shell: it would be a development build that loads its page from `http://localhost:5173` (`apps/desktop/README.md`). NOT RUN here |
-| Data folder | `~/.local/share/com.g9.mentor` (Tauri `app_data_dir`): `g9.sqlite`, `binding.key` (0600), `attachments/`, `backups/`, `exports/`. Created `0700` on the first start. Keep it on an encrypted disk (`docs/privacy/data-lifecycle.md`) |
+| Data folder | `~/.local/share/com.g9.mentor` (Tauri `app_data_dir`): `g9.sqlite`, `binding.key` (0600), `attachments/`, `backups/`, `exports/`, `logs/` (the operations log: one line per command, no content; at most 4 MiB, `docs/privacy/data-lifecycle.md`). Created `0700` on the first start. Keep it on an encrypted disk (`docs/privacy/data-lifecycle.md`) |
 | Time zone | the host's zone, read at start; the window shows it next to the clock. Planned times and "today" follow it |
 | Model | none is configured by choice. Planning, notes, timers, reviews and grading checks work without one |
 | Network | off. The window offers no network action |

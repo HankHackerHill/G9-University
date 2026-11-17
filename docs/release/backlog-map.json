@@ -851,16 +851,6 @@
       "adr": null,
       "note": "Open: canonical promotion. CUR-4: \"Promote on your data directory: `docs/curriculum/promotion.md` steps 0 to 6\""
     },
-    "R-005": {
-      "source": "docs/requirements/rtm.md",
-      "status": "IMPLEMENTED (policy/storage), PARTIAL (`g9-app` wiring per command)",
-      "state": "mapped",
-      "steps": [
-        "POL-2"
-      ],
-      "adr": null,
-      "note": "POL-2: \"Registry completeness test over `crates/g9-app/src/ops.rs`\" and \"Closes RTM R-005\""
-    },
     "R-006": {
       "source": "docs/requirements/rtm.md",
       "status": "IMPLEMENTED (migrations, backup, verification, restore-test, offline restore); PROPOSED (in-app restore operation with a `DataDelete`-class approval, restore into a running application, replay of the deletion ledger after the backup's checkpoint)",
