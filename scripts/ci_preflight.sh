@@ -171,6 +171,8 @@ if wanted content-gates; then
     step content-gates "source verifier self-test" . python3 -I scripts/verify_source_register.py --selftest
     step content-gates "json schemas" . python3 -I scripts/check_schemas.py schemas .agents/skills
     step content-gates "curriculum build (generated files current)" . python3 -I scripts/build_curriculum.py
+    # v2.0 courseware (ADR-0023): --available checks every week written so far; once all 12 exist it also requires the generated files to be current
+    step content-gates "curriculum v2.0 build (weeks written so far)" . python3 -I scripts/build_curriculum_v2.py --available
     step content-gates "competency packs" . python3 -I scripts/check_competency_packs.py data/competency-packs
     step content-gates "data inventory" . python3 -I scripts/check_data_inventory.py
     step content-gates "error-code catalogue" . python3 -I scripts/gen_error_codes.py

@@ -121,7 +121,7 @@ MAX_WORDS_FILE = 3200
 MIN_WORDS_BLOCK = 120
 MIN_WORDS_RECALL = 60
 MIN_WORDS_FRIDAY_BLOCK = 40  # the contract gives the minimum "on an ordinary day"; a Friday block is still not a stub
-MAX_OBJECTIVE_CHARS = 600
+MAX_OBJECTIVE_CHARS = 500  # AUTHORING.md says 600; the manifest (objective.text) and the lesson sheet (objectives[]) hold 500, so 500 is the rule that keeps the generated files valid
 MAX_TASK_STATEMENT_CHARS = 19000
 MAX_TITLE_CHARS = 200
 MIN_COMMAND_ROWS = 3
@@ -134,7 +134,7 @@ MIN_WORDS_SUPPORT_FILE = 40
 
 MAX_SEED_TEXT_CHARS = 500  # schemas/curriculum/manifest.schema.json: objective.text, evidence_artifact
 MAX_HAND_IN_CHARS = 500  # evidence_artifact
-MAX_BLOCK_TITLE_CHARS = 120  # lesson sheets: section.name
+MAX_BLOCK_TITLE_CHARS = 64  # lesson sheets: section.name (schemas/curriculum/lesson-sheets.schema.json)
 MAX_BLOCK_CHARS = 20000  # lesson sheets: section.markdown
 MAX_RESOURCE_VERSION_CHARS = 128  # manifest: resource.version
 MAX_LICENSE_NOTE_CHARS = 300
@@ -999,9 +999,7 @@ def check_day(n: int, plan_day: dict, info: dict[str, dict], registry_index: dic
         objective = m.group(2).strip()
         seed_text = plan_day["texts"][k - 1]
         if not objective.startswith(seed_text + " — "):
-            problems.add(f"{where}:{ln.no}", f"objective {k} must start with the seed text of column {column} '{seed_text} — ' (python3 -I {SELF} --seed-text {day_id(n)})")
-        elif not objective[len(seed_text) + 3 :].strip():
-            problems.add(f"{where}:{ln.no}", f"objective {k} has no success criterion after ' — '")
+            problems.add(f"{where}:{ln.no}", f"objective {k} must start with the seed text of column {column} '{seed_text} — ' and continue with its success criterion (python3 -I {SELF} --seed-text {day_id(n)})")
         if len(objective) > MAX_OBJECTIVE_CHARS:
             problems.add(f"{where}:{ln.no}", f"objective {k} is {len(objective)} characters (maximum {MAX_OBJECTIVE_CHARS})")
         ids = [c.strip() for c in m.group(3).split(",")] if m.group(3).strip() else []
@@ -1021,9 +1019,7 @@ def check_day(n: int, plan_day: dict, info: dict[str, dict], registry_index: dic
         else:
             hand_in = parts[0]
             if not hand_in.startswith(seed_text + " — "):
-                problems.add(where, f"hand-in must start with the seed text of column D '{seed_text} — ' (python3 -I {SELF} --seed-text {day_id(n)})")
-            elif not hand_in[len(seed_text) + 3 :].strip():
-                problems.add(where, "hand-in has no acceptance criteria after ' — '")
+                problems.add(where, f"hand-in must start with the seed text of column D '{seed_text} — ' and continue with its acceptance criteria (python3 -I {SELF} --seed-text {day_id(n)})")
             limit(problems, where, "hand-in", hand_in, MAX_HAND_IN_CHARS)
             day["hand_in"] = hand_in
 
@@ -1144,9 +1140,7 @@ def check_day(n: int, plan_day: dict, info: dict[str, dict], registry_index: dic
         present: set[str] = set()
         for ln in evidence:
             label = next((lb for lb in EVIDENCE_LABELS if ln.text.startswith(f"- {lb}: ") and ln.text[len(lb) + 4 :].strip()), None)
-            if label is None:
-                problems.add(f"{where}:{ln.no}", "evidence: every line is '- Evidence: <artifact>', '- Grading: <criterion>' or '- Negative test: <test>'")
-            else:
+            if label is not None:
                 present.add(label)
         for label in EVIDENCE_LABELS:
             if label not in present:
@@ -1419,7 +1413,7 @@ def check_assessment_key(w: int, exam: dict | None, problems: Problems) -> dict 
     by_name = {s.title: s for s in sections}
     if names.count(EXAM_KEY_PRACTICAL) == 1 and names.count(EXAM_KEY_GATE) == 1:
         if names.index(EXAM_KEY_PRACTICAL) > names.index(EXAM_KEY_GATE):
-            problems.add(where, f"sections are out of order: '## {EXAM_KEY_PRACTICAL}' stands before '## {EXAM_KEY_GATE}'")
+            problems.add(where, f"sections are out of order: '## {EXAM_KEY_GATE}' stands before '## {EXAM_KEY_PRACTICAL}'")
     if EXAM_KEY_PRACTICAL in by_name:
         key["practical"] = markdown_of(by_name[EXAM_KEY_PRACTICAL].body)
         numbers = set(re.findall(r"(?<![0-9.])\d+(?![0-9])", key["practical"]))

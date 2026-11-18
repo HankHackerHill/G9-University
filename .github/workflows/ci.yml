@@ -128,6 +128,9 @@ jobs:
         run: $PY -I scripts/check_schemas.py schemas .agents/skills
       - name: curriculum build (generated files are current)
         run: $PY -I scripts/build_curriculum.py
+      # v2.0 courseware (ADR-0023): --available checks every week written so far; once all 12 exist it also requires the generated files to be current
+      - name: curriculum v2.0 build (weeks written so far; generated files current once all 12 exist)
+        run: $PY -I scripts/build_curriculum_v2.py --available
       - name: competency packs
         run: $PY -I scripts/check_competency_packs.py data/competency-packs
       - name: data inventory (every table has a row in docs/data-model.md)
