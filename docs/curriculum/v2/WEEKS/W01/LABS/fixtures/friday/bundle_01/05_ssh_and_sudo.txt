@@ -1,0 +1,35 @@
+Part 1: captured by labanalyst, 2099-01-05T08:51:00Z to 08:53:00Z.
+
+$ ls /etc/ssh/sshd_config.d/
+10-g9-lab.conf
+
+$ cat /etc/ssh/sshd_config.d/10-g9-lab.conf
+# Synthetic lab file.
+PasswordAuthentication no
+PermitRootLogin no
+StrictModes yes
+AllowUsers labanalyst labuser6 labuser7 labadmin
+
+$ sshd -T
+sshd: no hostkeys available -- exiting.
+
+$ ls /etc/sudoers.d/
+ls: cannot open directory '/etc/sudoers.d/': Permission denied
+
+Part 2: labadmin extract, run by labadmin, 2099-01-05T09:10:00Z to 09:12:00Z.
+
+$ sudo sshd -T | grep -E '^(passwordauthentication|permitrootlogin|strictmodes|allowusers|listenaddress|pubkeyauthentication) '
+pubkeyauthentication yes
+passwordauthentication no
+permitrootlogin no
+strictmodes yes
+allowusers labanalyst
+allowusers labuser6
+allowusers labuser7
+allowusers labadmin
+
+$ sudo ls /etc/sudoers.d/
+README
+
+$ sudo grep -c . /etc/sudoers.d/README
+12

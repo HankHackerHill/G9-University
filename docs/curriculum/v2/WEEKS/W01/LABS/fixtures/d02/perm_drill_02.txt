@@ -1,0 +1,63 @@
+Sample (synthetic): an invented tree with ACLs, a read-only mount, a login session and one confined program. Not an observation of any host.
+Capture time (invented): 2099-01-02T10:00:00Z. Accounts and their groups are given by the id lines. No path has the sticky bit.
+
+$ ls -ld /srv/drill2 /srv/drill2/exports /srv/drill2/exports/report.csv /srv/drill2/archive /srv/drill2/archive/old.csv
+drwxr-xr-x   root      root  /srv/drill2
+drwxr-s---+  labuser4  ops   /srv/drill2/exports
+-rw-r-----+  labuser4  ops   /srv/drill2/exports/report.csv
+drwxr-xr-x   root      root  /srv/drill2/archive
+-rw-rw-rw-   root      root  /srv/drill2/archive/old.csv
+
+$ getfacl /srv/drill2/exports
+# file: srv/drill2/exports
+# owner: labuser4
+# group: ops
+# flags: -s-
+user::rwx
+user:labuser5:r-x
+group::rwx		#effective:r-x
+mask::r-x
+other::---
+
+$ getfacl /srv/drill2/exports/report.csv
+# file: srv/drill2/exports/report.csv
+# owner: labuser4
+# group: ops
+user::rw-
+user:labuser5:rw-		#effective:r--
+group::r--
+mask::r--
+other::---
+
+$ findmnt -no TARGET,OPTIONS /srv/drill2/archive
+/srv/drill2/archive ro,relatime
+
+$ id labuser4
+uid=1004(labuser4) gid=1004(labuser4) groups=1004(labuser4),4001(ops)
+$ id labuser5
+uid=1005(labuser5) gid=1005(labuser5) groups=1005(labuser5)
+$ id labuser6
+uid=1006(labuser6) gid=1006(labuser6) groups=1006(labuser6),4001(ops)
+$ id labuser7
+uid=1007(labuser7) gid=1007(labuser7) groups=1007(labuser7)
+
+The group database was changed at 2099-01-02T09:30:00Z, when labuser6 was added to ops.
+labuser6 opened a login session at 2099-01-02T08:45:00Z and has not logged in again. In that session:
+$ id
+uid=1006(labuser6) gid=1006(labuser6) groups=1006(labuser6)
+
+$ sudo dmesg | grep -i apparmor     (excerpt)
+[ 5120.331904] audit: type=1400 audit(4071031200.321:211): apparmor="DENIED" operation="open" class="file" profile="/usr/bin/g9tool" name="/srv/drill2/exports/report.csv" pid=4410 comm="g9tool" requested_mask="r" denied_mask="r" fsuid=1004 ouid=1004
+$ sudo aa-status | grep g9tool
+   /usr/bin/g9tool
+
+Requests: for each, say whether the kernel allows it, and name the one element of the evidence that decides it.
+ 1. labuser5 reads /srv/drill2/exports/report.csv
+ 2. labuser5 writes to /srv/drill2/exports/report.csv
+ 3. labuser4 writes to /srv/drill2/exports/report.csv
+ 4. labuser6, in the login session of 08:45, reads /srv/drill2/exports/report.csv
+ 5. labuser6, in a session opened at 10:00, reads /srv/drill2/exports/report.csv
+ 6. labuser6, in a session opened at 10:00, creates a new file in /srv/drill2/exports
+ 7. labuser7 reads /srv/drill2/exports/report.csv
+ 8. root writes to /srv/drill2/archive/old.csv
+ 9. labuser4 runs /usr/bin/g9tool, which opens /srv/drill2/exports/report.csv for reading

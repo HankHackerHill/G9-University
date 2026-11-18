@@ -5,7 +5,7 @@ import { isG9Error } from '../../ipc/client';
 import type { DailyPlan } from '../../ipc/operations';
 import type { G9Error } from '../../ipc/types';
 import { addDays, formatIsoDate, isoWeekday, parseIsoDate, startOfIsoWeek } from '../../lib/civil-time';
-import { formatCivilDate, formatMinutes, sentenceCase } from '../../lib/format';
+import { blockName, formatCivilDate, formatMinutes } from '../../lib/format';
 import { DAYS_PER_WEEK, PROGRAM_WEEKS, SETUP_CODES } from '../../lib/program';
 import { NON_CANONICAL_WARNING, hasWarning, mergeWarnings, warningsOf } from '../../lib/warnings';
 import { Badge, ProvenanceBadge, StateBadge } from '../components/Badge';
@@ -261,7 +261,7 @@ export function CurriculumNavigator() {
                             <dl className="facts">
                               {plan.blocks.map((b) => (
                                 <div key={b.seq}>
-                                  <dt>{sentenceCase(b.block)}</dt>
+                                  <dt>{blockName(b)}</dt>
                                   <dd>{formatMinutes(b.minutes)}</dd>
                                 </div>
                               ))}

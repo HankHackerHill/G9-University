@@ -110,7 +110,7 @@
           "label": {
             "type": "string",
             "minLength": 1,
-            "description": "Always sent by the backend, not required of an interface that predates it. What the structure profile of the active version calls this block on this kind of day (ADR-0023): the block code with spaces in the Appendix A profile CT9_480 (`guided lab`); `Core lesson`, `Knowledge exam`, `Scored practical` ... in MASTERY_V2. A lesson sheet that names the block overrides it in the interface."
+            "description": "What the structure profile of the active version calls this block on this kind of day (ADR-0023): the block code with spaces in the Appendix A profile CT9_480 (`guided lab`); `Core lesson`, `Knowledge exam`, `Scored practical` ... in MASTERY_V2. A lesson sheet that names the block overrides it in the interface."
           },
           "minutes": {
             "type": "integer",
@@ -130,6 +130,7 @@
         "required": [
           "seq",
           "block",
+          "label",
           "minutes",
           "session_id"
         ]

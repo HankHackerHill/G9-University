@@ -1,0 +1,83 @@
+Sample (synthetic): an invented evidence package for a second stack. Not an observation of any lab.
+Stack label: stack-02. Guests: g9-atk-01 (RED) behind a router port at 10.77.10.1, g9-tgt-01 (DMZ). Package time (invented): 2099-01-02T15:40:00Z.
+The designated LAN address of the owner's probe is written 203.0.113.10 here, a documentation address standing in for the real one.
+The address range of the network named default is a documentation range chosen for this file; a real default network commonly uses another private range.
+Host interfaces (invented): enp7s0 (uplink), vpn0 (tunnel), docker0, virbr0, virbr91, virbr92, vnet3, vnet4, vnet5.
+
+== E1 host, domain interfaces ==
+$ virsh -c qemu:///system domiflist g9-atk-01
+ Interface   Type      Source       Model    MAC
+-------------------------------------------------------------------
+ vnet3       network   g9-lab-red   virtio   52:54:00:77:10:0a
+
+$ virsh -c qemu:///system domiflist g9-tgt-01
+ Interface   Type      Source       Model    MAC
+-------------------------------------------------------------------
+ vnet4       network   g9-lab-dmz   virtio   52:54:00:77:20:14
+ vnet5       network   default      virtio   52:54:00:9a:3c:5d
+
+== E2 host, live against persistent definition of g9-tgt-01 ==
+$ virsh -c qemu:///system dumpxml --xpath '//interface/mac | //interface/source' g9-tgt-01
+<mac address="52:54:00:77:20:14"/>
+<source network="g9-lab-dmz" bridge="virbr92"/>
+<mac address="52:54:00:9a:3c:5d"/>
+<source network="default" bridge="virbr0"/>
+
+$ virsh -c qemu:///system dumpxml --inactive --xpath '//interface/mac | //interface/source' g9-tgt-01
+<mac address="52:54:00:77:20:14"/>
+<source network="g9-lab-dmz"/>
+
+== E3 host, networks ==
+$ virsh -c qemu:///system net-list --all
+ Name         State    Autostart   Persistent
+----------------------------------------------
+ default      active   yes         yes
+ g9-lab-dmz   active   no          yes
+ g9-lab-red   active   no          yes
+
+== E4 guest g9-atk-01 ==
+$ ip -br addr
+lo       UNKNOWN  127.0.0.1/8
+enp1s0   UP       10.77.10.10/24
+$ ip route
+default via 10.77.10.1 dev enp1s0 proto static
+10.77.10.0/24 dev enp1s0 proto kernel scope link src 10.77.10.10
+$ ip route get 192.0.2.1
+192.0.2.1 via 10.77.10.1 dev enp1s0 src 10.77.10.10 uid 1000
+    cache
+$ ip -6 route
+(no output)
+
+== E5 guest g9-tgt-01 ==
+$ ip -br addr
+lo       UNKNOWN  127.0.0.1/8
+enp1s0   UP       10.77.20.20/24
+enp2s0   UP       198.51.100.77/24
+$ ip route
+default via 198.51.100.1 dev enp2s0 proto dhcp src 198.51.100.77 metric 100
+10.77.20.0/24 dev enp1s0 proto kernel scope link src 10.77.20.20
+198.51.100.0/24 dev enp2s0 proto kernel scope link src 198.51.100.77 metric 100
+$ sysctl net.ipv6.conf.all.disable_ipv6
+net.ipv6.conf.all.disable_ipv6 = 0
+$ ip -6 addr
+1: lo: <LOOPBACK,UP,LOWER_UP> state UNKNOWN qlen 1000
+    inet6 ::1/128 scope host
+2: enp1s0: <BROADCAST,MULTICAST,UP,LOWER_UP> state UP qlen 1000
+    inet6 fe80::5054:ff:fe77:2014/64 scope link
+3: enp2s0: <BROADCAST,MULTICAST,UP,LOWER_UP> state UP qlen 1000
+    inet6 fe80::5054:ff:fe9a:3c5d/64 scope link
+$ ip -6 route
+fe80::/64 dev enp1s0 proto kernel metric 256 pref medium
+fe80::/64 dev enp2s0 proto kernel metric 256 pref medium
+
+== E6 host IPv6 on a lab bridge ==
+$ ip -6 addr show dev virbr92
+    inet6 fe80::5054:ff:fe5e:9201/64 scope link
+$ sysctl net.ipv6.conf.virbr92.disable_ipv6
+net.ipv6.conf.virbr92.disable_ipv6 = 0
+
+== E7 host captures ==
+$ sudo tcpdump -i enp7s0 -nn -p 'net 10.77.0.0/16'      (host, started 2099-01-02T15:20:00Z, stopped 15:35:00Z)
+enp7s0: 0 packets captured, 0 packets received by filter, 0 packets dropped by kernel
+$ sudo tcpdump -i vpn0 -nn -p 'net 10.77.0.0/16'        (host, started 2099-01-02T15:20:00Z, stopped 15:35:00Z)
+vpn0: 0 packets captured, 0 packets received by filter, 0 packets dropped by kernel

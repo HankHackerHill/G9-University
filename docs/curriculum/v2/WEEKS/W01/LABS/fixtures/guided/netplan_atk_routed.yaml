@@ -1,0 +1,18 @@
+# G9-ATK-01 static addressing, RED zone, behind G9-RTR-01 (stack B). Synthetic lab file.
+# No default route: only the two zone prefixes the exercise may address, so that the router decides.
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp1s0:
+      dhcp4: false
+      dhcp6: false
+      accept-ra: false
+      link-local: []
+      addresses:
+        - 10.77.10.10/24
+      routes:
+        - to: 10.77.20.0/24
+          via: 10.77.10.1
+        - to: 10.77.30.0/24
+          via: 10.77.10.1

@@ -14,13 +14,13 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 | Migrations | 15 (0001 to 0015) | `crates/g9-storage/src/migrations/` |
 | `CREATE TABLE` statements in the migrations | 81 | the same files |
 | Tables after the last migration | 81 (0 `DROP TABLE`, 0 renames) | the same files |
-| ADRs | 22 | `docs/adr/` |
-| JSON schemas | 115 (109 in `schemas/ipc/`, 6 elsewhere) | `schemas/` |
+| ADRs | 23 | `docs/adr/` |
+| JSON schemas | 117 (109 in `schemas/ipc/`, 8 elsewhere) | `schemas/` |
 | Skill packages | 37 | `.agents/skills/` |
 | Competency packs | 8 | `data/competency-packs/` |
-| Frontend TS/TSX | 125 files, 25,143 lines; 41 test files | `apps/desktop/` |
+| Frontend TS/TSX | 127 files, 26,921 lines; 41 test files | `apps/desktop/` |
 | CSS | 16 files, 4,224 lines | `apps/desktop/` |
-| Scripts | 21 in `scripts/`, 3 in `scripts/e2e/`, 11 test modules in `scripts/tests/` | `scripts/` |
+| Scripts | 22 in `scripts/`, 3 in `scripts/e2e/`, 12 test modules in `scripts/tests/` | `scripts/` |
 
 ## Rust per workspace member
 
@@ -90,9 +90,9 @@ Cross-checks passed: operations.parse, operations.unique, operations.disjoint, o
 
 | Group | Files | Lines |
 |---|---|---|
-| Application source (`apps/desktop/src/`, .ts/.tsx) | 79 | 17,891 |
-| Test files (`*.test.ts`, `*.test.tsx`) | 41 | 7,091 |
-| Test support (`apps/desktop/src/test/`) | 4 | 135 |
+| Application source (`apps/desktop/src/`, .ts/.tsx) | 80 | 18,830 |
+| Test files (`*.test.ts`, `*.test.tsx`) | 41 | 7,773 |
+| Test support (`apps/desktop/src/test/`) | 5 | 292 |
 | Build configuration (.ts outside `apps/desktop/src/`) | 1 | 26 |
 | CSS | 16 | 4,224 |
 
@@ -100,11 +100,11 @@ Cross-checks passed: operations.parse, operations.unique, operations.disjoint, o
 
 | Metric | Value |
 |---|---|
-| ADRs (`docs/adr/`) | 22 |
+| ADRs (`docs/adr/`) | 23 |
 | JSON schemas in `schemas/ipc/` | 109 |
-| JSON schemas elsewhere in `schemas/` | 6 |
+| JSON schemas elsewhere in `schemas/` | 8 |
 | Skill packages (`.agents/skills/`) | 37 |
 | Competency packs (`data/competency-packs/`) | 8 |
-| Files in `scripts/` | 21 (.json 1, .py 17, .sh 3) |
+| Files in `scripts/` | 22 (.json 1, .py 18, .sh 3) |
 | Files in `scripts/e2e/` | 3 |
-| Test modules `scripts/tests/test_*.py` | 11 |
+| Test modules `scripts/tests/test_*.py` | 12 |

@@ -1,0 +1,3 @@
+Synthetic private ledger. Owner root only. No real data.
+entry=0001 value=synthetic
+entry=0002 value=synthetic

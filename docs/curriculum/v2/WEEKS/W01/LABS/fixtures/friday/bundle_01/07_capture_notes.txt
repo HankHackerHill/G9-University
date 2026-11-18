@@ -1,0 +1,8 @@
+Capture notes (lab file). Written by the person who collected the bundle.
+
+- Every command of parts marked labanalyst was run by labanalyst in one login session.
+- Every command of parts marked labadmin extract was run by labadmin on request, with sudo, after the request was logged.
+- Commands that failed are shown with their output. A command that is not shown was not run.
+- ss -p shows a process only for sockets the caller may inspect; the column is empty for sockets of other accounts when run without administrative rights.
+- journalctl as labanalyst printed the notice that messages of other users and the system are not visible, so the journal lines come from labadmin.
+- The listed times come from the host clock, set to UTC. No clock skew was measured.

@@ -4,8 +4,10 @@ import { sha256HexBytes } from '../../lib/sha256';
 import { createClient, isG9Error, type InvokeResult } from '../client';
 import { OPERATIONS, type CriterionResult, type GradeSource, type OperationName, type RequestOf } from '../operations';
 import type { ClientCommandMeta } from '../types';
-import { BASELINE_CRITERIA, MOCK_DEFAULT_NOW, MOCK_EXPORT_DIR, computeGrade, createMockClock, createMockTransport, evidenceSummary, type MockOptions } from './mock';
+import { BASELINE_CRITERIA, MOCK_DEFAULT_NOW, MOCK_EXPORT_DIR, computeGrade, createMockClock, createMockTransport, evidenceSummary, validateManifest, type MockOptions } from './mock';
 import { encodeBase64 } from './mock-attachments';
+import { MASTERY_V2 } from './mock-curriculum';
+import { V2_CURRICULUM_ID, V2_VERSION, asJson, at, dayOf, v2Manifest, type V2Manifest } from '../../test/v2-manifest';
 
 function harness(options: Omit<MockOptions, 'clock'> = {}) {
   const clock = createMockClock();
@@ -1242,5 +1244,425 @@ describe('mock transport: boundary limits, evidence references, objective status
       code: 'calendar.event_deleted',
       details: { event_id: id },
     });
+  });
+});
+
+
+// ---------------------------------------------------------------------------
+// The two curriculum shapes (ADR-0023): Appendix A (CT9_480) and the v2 plan (MASTERY_V2)
+// ---------------------------------------------------------------------------
+
+/** The codes of a violation list, and the codes inside the `details` of an INVALID_INPUT refusal. */
+function codesIn(violations: readonly { code: string }[]): string[] {
+  return violations.map((v) => v.code);
+}
+
+function detailViolations(details: unknown): { code: string; path: string }[] {
+  const list = (details as { violations?: { code: string; path: string }[] } | undefined)?.violations;
+  return list ?? [];
+}
+
+/** Import `manifest` the way the setup does: ask, approve (the mock confirms natively), import. */
+async function importManifest(client: ReturnType<typeof harness>['client'], manifest: V2Manifest) {
+  const payload = { manifest: asJson(manifest), provenance: 'PROPOSED_SEED' as const };
+  const asked = err(await client.invoke('curriculum.import', payload));
+  expect(asked.category).toBe('APPROVAL_REQUIRED');
+  const approvalId = asked.approval_id ?? '';
+  ok(await client.invoke('approvals.decide', { approval_id: approvalId, decision: 'APPROVE' }));
+  return ok(await client.invoke('curriculum.import', payload, { approvalId }));
+}
+
+async function v2Program(dayStart?: string) {
+  const h = harness({ fresh: true });
+  await importManifest(h.client, v2Manifest());
+  ok(await h.client.invoke('curriculum.set_program_start', { date: '2026-11-02', ...(dayStart === undefined ? {} : { day_start: dayStart }) }));
+  return h;
+}
+
+const V2_ORDINARY_LABELS = ['Active recall', 'Core lesson', 'Tool practice', 'Independent challenge', 'Defense and documentation'];
+const V2_FRIDAY_LABELS = ['Active recall', 'Knowledge exam', 'Review and planning', 'Scored practical', 'Scoring and report'];
+
+describe('mock transport: the Appendix A shape keeps its profile, its six days and its labels (ADR-0023)', () => {
+  it('reports profile CT9_480 and six days a week for the fixture program', async () => {
+    const { client } = harness();
+    const curriculum = ok(await client.invoke('curriculum.program', {})).result.curriculum;
+    expect(curriculum).toMatchObject({ profile: 'CT9_480', days_per_week: 6, weeks: 1, days: 6 });
+  });
+
+  it('labels the blocks of a weekday and of the Saturday with the block code and spaces', async () => {
+    const { client } = harness();
+    const wednesday = ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-18' })).result;
+    expect(wednesday.blocks.map((b) => [b.block, b.label, b.minutes])).toEqual([
+      ['recall', 'recall', 15],
+      ['theory', 'theory', 45],
+      ['guided_lab', 'guided lab', 120],
+      ['independent_lab', 'independent lab', 120],
+      ['defense_verification', 'defense verification', 60],
+      ['evidence_reporting', 'evidence reporting', 60],
+    ]);
+    expect(wednesday).toMatchObject({ day_id: 'D15', unscheduled: false, is_assessment_day: false, planned_minutes: 420 });
+    const saturday = ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-21' })).result;
+    expect(saturday.blocks.map((b) => [b.block, b.label, b.minutes])).toEqual([
+      ['blind_practical', 'blind practical', 120],
+      ['remediation', 'remediation', 60],
+      ['report', 'report', 60],
+      ['performance_review', 'performance review', 60],
+    ]);
+    expect(saturday).toMatchObject({ day_id: 'D18', is_assessment_day: true, planned_minutes: 300 });
+  });
+
+  it('keeps a Sunday of the fixture week unscheduled, with the week it falls in', async () => {
+    const { client } = harness();
+    expect(ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-22' })).result).toMatchObject({
+      unscheduled: true,
+      day_id: null,
+      week_number: 3,
+      blocks: [],
+    });
+  });
+
+  it('lays the fixture day out back to back, with no pause, and titles each block with its code and spaces', async () => {
+    const { client } = harness();
+    const events = ok(await client.invoke('calendar.list', { from: Date.UTC(2026, 10, 18), to: Date.UTC(2026, 10, 19) })).result.events.filter((e) => e.day_id === 'D15');
+    expect(events.map((e) => e.title)).toEqual([
+      'D15 recall',
+      'D15 theory',
+      'D15 guided lab',
+      'D15 independent lab',
+      'D15 defense verification',
+      'D15 evidence reporting',
+    ]);
+    for (let i = 1; i < events.length; i += 1) {
+      expect(at(events, i).start).toBe(at(events, i - 1).end);
+    }
+  });
+});
+
+describe('mock transport: importing a manifest of the second shape (format 1.1.0, MASTERY_V2)', () => {
+  it('accepts a valid 60-day manifest, reports it under profile MASTERY_V2 and five days a week', async () => {
+    const { client } = harness({ fresh: true });
+    const checked = ok(await client.invoke('curriculum.validate', { manifest: asJson(v2Manifest()) })).result;
+    expect(checked).toMatchObject({ valid: true, violations: [], provenance: 'PROPOSED_SEED' });
+    expect(checked.checksum_sha256).toMatch(/^[0-9a-f]{64}$/);
+
+    const imported = await importManifest(client, v2Manifest());
+    expect(imported.result).toMatchObject({ curriculum_version_id: `${V2_CURRICULUM_ID}:${V2_VERSION}`, provenance: 'PROPOSED_SEED', weeks: 12, days: 60, objectives: 180 });
+    expect(ok(await client.invoke('curriculum.program', {})).result.curriculum).toMatchObject({
+      version_id: `${V2_CURRICULUM_ID}:${V2_VERSION}`,
+      provenance: 'PROPOSED_SEED',
+      profile: 'MASTERY_V2',
+      days_per_week: 5,
+      weeks: 12,
+      days: 60,
+      objectives: 180,
+      planned_minutes: 28_800,
+    });
+    // The plan belongs to the curriculum of the active version.
+    expect(ok(await client.invoke('curriculum.set_program_start', { date: '2026-11-02' })).result.curriculum_id).toBe(V2_CURRICULUM_ID);
+  });
+
+  it('is the profile table of the backend: 12 x 5 x 3, 480 minutes a day, a 08:00 to 17:15 day', () => {
+    expect(MASTERY_V2).toMatchObject({ weeks: 12, days_per_week: 5, objectives_per_day: 3, weekday_minutes: 480, saturday_minutes: 480, total_days: 60, total_objectives: 180, assessment_day_of_week: 5 });
+    expect(MASTERY_V2.ordinary_blocks.map((b) => b.minutes)).toEqual([30, 120, 120, 150, 60]);
+    expect(MASTERY_V2.assessment_blocks.map((b) => b.minutes)).toEqual([30, 120, 120, 150, 60]);
+    expect(MASTERY_V2.pauses).toEqual([
+      { after_block: 2, minutes: 15 },
+      { after_block: 3, minutes: 60 },
+    ]);
+  });
+
+  /** One mutation per rule of g9-curriculum `validate`: what is broken, the code it must report, and the JSON pointer it is reported at. */
+  const refusals: readonly [string, string, string | null, (m: V2Manifest) => void][] = [
+    ['an unsupported format', 'manifest.schema_version.unsupported', '/manifest_schema_version', (m) => (m.manifest_schema_version = '1.2.0')],
+    ['assessment_day_of_week in a 1.0.0 manifest', 'structure.assessment_day_of_week.requires_format_1_1', '/structure/assessment_day_of_week', (m) => (m.manifest_schema_version = '1.0.0')],
+    ['a curriculum id with a space', 'manifest.curriculum_id.invalid', '/curriculum_id', (m) => (m.curriculum_id = 'not valid')],
+    ['a blank name', 'manifest.name.empty', '/name', (m) => (m.name = '  ')],
+    ['a blank version', 'manifest.version.empty', '/version', (m) => (m.version = '')],
+    ['11 weeks declared', 'structure.mismatch', '/structure/weeks', (m) => (m.structure.weeks = 11)],
+    ['6 days a week declared', 'structure.mismatch', '/structure/days_per_week', (m) => (m.structure.days_per_week = 6)],
+    ['4 objectives a day declared', 'structure.mismatch', '/structure/objectives_per_day', (m) => (m.structure.objectives_per_day = 4)],
+    ['420 minutes declared for an ordinary day', 'structure.mismatch', '/structure/weekday_minutes', (m) => (m.structure.weekday_minutes = 420)],
+    ['300 minutes declared for the assessment day', 'structure.mismatch', '/structure/saturday_minutes', (m) => (m.structure.saturday_minutes = 300)],
+    ['a weekly total of 2,520', 'structure.mismatch', '/structure/weekly_minutes', (m) => (m.structure.weekly_minutes = 2_520)],
+    ['a program total of 30,240', 'structure.mismatch', '/structure/total_minutes', (m) => (m.structure.total_minutes = 30_240)],
+    ['Thursday declared as the assessment day', 'structure.mismatch', '/structure/assessment_day_of_week', (m) => (m.structure.assessment_day_of_week = 4)],
+    ['a Sunday that is not unscheduled', 'structure.sunday.not_unscheduled', '/structure/sunday', (m) => (m.structure.sunday = 'rest')],
+    ['an ordinary-day block list with other minutes', 'blocks.weekday.canonical_mismatch', '/weekday_blocks', (m) => (at(m.weekday_blocks, 1).minutes = 150)],
+    ['an assessment-day block list that is one short', 'blocks.saturday.canonical_mismatch', '/saturday_blocks', (m) => m.saturday_blocks.pop()],
+    ['a block list with a non-positive block', 'duration.non_positive', '/weekday_blocks/0/minutes', (m) => (at(m.weekday_blocks, 0).minutes = 0)],
+    ['11 weeks', 'week.count', '/weeks', (m) => m.weeks.pop()],
+    ['a week out of sequence', 'week.number.out_of_sequence', '/weeks/2/week_number', (m) => (at(m.weeks, 2).week_number = 7)],
+    ['a week of four days', 'week.days.count', '/weeks/0/days', (m) => at(m.weeks, 0).days.pop()],
+    ['a Saturday among the days', 'day.day_of_week.out_of_range', '/weeks/0/days/4/day_of_week', (m) => (dayOf(m, 5).day_of_week = 6)],
+    ['a Sunday among the days', 'day.sunday_present', '/weeks/0/days/4/day_of_week', (m) => (dayOf(m, 5).day_of_week = 7)],
+    ['days that do not follow each other', 'day.day_of_week.not_increasing', '/weeks/0/days/1/day_of_week', (m) => (dayOf(m, 2).day_of_week = 1)],
+    ['a day id out of position', 'day.id.mismatch', '/weeks/0/days/0/day_id', (m) => (dayOf(m, 1).day_id = 'D99')],
+    ['a day id used twice', 'day.id.duplicate', '/weeks/0/days/1/day_id', (m) => (dayOf(m, 2).day_id = 'D01')],
+    ['420 planned minutes on a v2 day', 'day.planned_minutes.mismatch', '/weeks/0/days/0/planned_minutes', (m) => (dayOf(m, 1).planned_minutes = 420)],
+    ['a day with no planned minutes', 'duration.non_positive', '/weeks/0/days/0/planned_minutes', (m) => (dayOf(m, 1).planned_minutes = 0)],
+    ['two objectives on a day', 'day.objectives.count', '/weeks/0/days/0/objectives', (m) => dayOf(m, 1).objectives.pop()],
+    ['no evidence artifact', 'day.evidence_artifact.empty', '/weeks/0/days/0/evidence_artifact', (m) => (dayOf(m, 1).evidence_artifact = '')],
+    ['blocks that do not sum to the day', 'day.blocks.sum_mismatch', '/weeks/0/days/0/blocks', (m) => (at(dayOf(m, 1).blocks, 4).minutes = 30)],
+    ['blocks in the wrong order', 'day.blocks.canonical_mismatch', '/weeks/0/days/0/blocks', (m) => {
+      at(dayOf(m, 1).blocks, 2).block = 'independent_lab';
+      at(dayOf(m, 1).blocks, 3).block = 'guided_lab';
+    }],
+    ['a Friday that is not flagged as the assessment day', 'day.assessment_flag.mismatch', '/weeks/0/days/4/is_assessment_day', (m) => (dayOf(m, 5).is_assessment_day = false)],
+    ['a Monday flagged as the assessment day', 'day.assessment_flag.mismatch', '/weeks/0/days/0/is_assessment_day', (m) => (dayOf(m, 1).is_assessment_day = true)],
+    ['an objective out of sequence', 'objective.seq.mismatch', '/weeks/0/days/0/objectives/1/seq', (m) => (at(dayOf(m, 1).objectives, 1).seq = 3)],
+    ['an objective id out of position', 'objective.id.mismatch', '/weeks/0/days/0/objectives/0/objective_id', (m) => (at(dayOf(m, 1).objectives, 0).objective_id = 'D01-O9')],
+    ['an objective id used twice', 'objective.id.duplicate', '/weeks/0/days/0/objectives/1/objective_id', (m) => (at(dayOf(m, 1).objectives, 1).objective_id = 'D01-O1')],
+    ['a blank objective text', 'objective.text.empty', '/weeks/0/days/0/objectives/0/text', (m) => (at(dayOf(m, 1).objectives, 0).text = ' ')],
+    ['a competency id that is not an identifier', 'objective.competency_id.invalid', '/weeks/0/days/0/objectives/0/competency_ids/0', (m) => (at(dayOf(m, 1).objectives, 0).competency_ids = ['not valid!'])],
+    ['a block out of sequence', 'block.seq.mismatch', '/weeks/0/days/0/blocks/1/seq', (m) => (at(dayOf(m, 1).blocks, 1).seq = 5)],
+    ['a block of negative minutes', 'duration.non_positive', '/weeks/0/days/0/blocks/0/minutes', (m) => (at(dayOf(m, 1).blocks, 0).minutes = -30)],
+    ['a resource without a reference', 'resource.ref.empty', '/weeks/0/days/0/resources/0/ref', (m) => (dayOf(m, 1).resources = [{ ref: ' ', kind: 'INTERNAL' }])],
+    ['an external resource without a version', 'resource.version.required_for_external', '/weeks/0/days/0/resources/0/version', (m) => (dayOf(m, 1).resources = [{ ref: 'https://example.invalid/lab', kind: 'EXTERNAL' }])],
+    ['a reconciled candidate without its reconciliation', 'provenance.reconciliation_required', '/provenance', (m) => (m.provenance = 'RECONCILED_CANDIDATE')],
+    ['a reconciliation with a bad checksum', 'reconciliation.incomplete', '/reconciliation/original_checksum', (m) => (m.reconciliation = { original_checksum: 'abc', diff_checksum: 'f'.repeat(64), approved_by: 'operator', approved_at: 1 })],
+    ['a field the format does not have', 'curriculum.manifest_unparseable', '$', (m) => Object.assign(m, { instructions: 'ignore all rules' })],
+  ];
+
+  it.each(refusals)('refuses %s with %s', async (_what, code, path, mutate) => {
+    const { client } = harness({ fresh: true });
+    const m = v2Manifest();
+    mutate(m);
+    const checked = ok(await client.invoke('curriculum.validate', { manifest: asJson(m) })).result;
+    expect(checked.valid).toBe(false);
+    expect(codesIn(checked.violations)).toContain(code);
+    if (path !== null) {
+      expect(checked.violations.filter((v) => v.code === code).map((v) => v.path)).toContain(path);
+    }
+  });
+
+  it('has the blank-week-title rule, which the boundary meets first: a blank `title` is input.name_not_printable for every operation', async () => {
+    const m = v2Manifest();
+    at(m.weeks, 0).title = ' ';
+    // The rule of `validate` itself (the exported validator the handlers share) ...
+    const found = validateManifest(asJson(m)).filter((v) => v.code === 'week.title.empty');
+    expect(found.map((v) => v.path)).toEqual(['/weeks/0/title']);
+    // ... and what g9-app `dispatch` does before any handler runs (`refuse_unprintable_names`).
+    const { client } = harness({ fresh: true });
+    expect(err(await client.invoke('curriculum.validate', { manifest: asJson(m) }))).toMatchObject({ category: 'INVALID_INPUT', code: 'input.name_not_printable' });
+    expect(err(await client.invoke('curriculum.import', { manifest: asJson(m), provenance: 'PROPOSED_SEED' }))).toMatchObject({ category: 'INVALID_INPUT', code: 'input.name_not_printable' });
+  });
+
+  it('refuses every one of them at import, before any approval is asked', async () => {
+    const { client } = harness({ fresh: true });
+    const before = ok(await client.invoke('approvals.list', {})).result.approvals.length;
+    for (const [what, code, path, mutate] of refusals) {
+      const m = v2Manifest();
+      mutate(m);
+      const refused = err(await client.invoke('curriculum.import', { manifest: asJson(m), provenance: 'PROPOSED_SEED' }));
+      expect(refused.category, what).toBe('INVALID_INPUT');
+      if (code === 'curriculum.manifest_unparseable') {
+        expect(refused.code, what).toBe(code);
+      } else {
+        expect(refused.code, what).toBe('curriculum.invariant_violated');
+        const found = detailViolations(refused.details).filter((v) => v.code === code);
+        expect(found.length, what).toBeGreaterThan(0);
+        if (path !== null) {
+          expect(found.map((v) => v.path), what).toContain(path);
+        }
+      }
+    }
+    expect(ok(await client.invoke('approvals.list', {})).result.approvals).toHaveLength(before);
+    expect(ok(await client.invoke('curriculum.program', {})).result.curriculum).toBeNull();
+  });
+
+  it('reports the arithmetic of the profile when the counts are off: a missing day is 59 days, 177 objectives', async () => {
+    const { client } = harness({ fresh: true });
+    const m = v2Manifest();
+    at(m.weeks, 0).days.shift();
+    const { violations } = ok(await client.invoke('curriculum.validate', { manifest: asJson(m) })).result;
+    const arithmetic = violations.filter((v) => v.path === '$.structure');
+    expect(arithmetic.map((v) => v.code)).toEqual(['curriculum.days', 'curriculum.objectives', 'curriculum.total_minutes', 'curriculum.weekday_days']);
+    expect(at(arithmetic, 0)).toMatchObject({ message: 'expected 60, found 59' });
+    expect(at(arithmetic, 1)).toMatchObject({ message: 'expected 180, found 177' });
+  });
+
+  it('keeps checking a manifest that declares no assessment day by the Appendix A rules of the mock', async () => {
+    const { client } = harness({ fresh: true });
+    const m = v2Manifest();
+    delete m.structure.assessment_day_of_week;
+    const { violations } = ok(await client.invoke('curriculum.validate', { manifest: asJson(m) })).result;
+    expect(violations.some((v) => v.code === 'INVARIANT' && v.path === '$.structure.days_per_week')).toBe(true);
+  });
+
+  it('an import replaces the active version and its profile, also over the preloaded Appendix A fixture', async () => {
+    const { client } = harness();
+    expect(ok(await client.invoke('curriculum.program', {})).result.curriculum).toMatchObject({ profile: 'CT9_480', days_per_week: 6 });
+    await importManifest(client, v2Manifest());
+    expect(ok(await client.invoke('curriculum.program', {})).result.curriculum).toMatchObject({ profile: 'MASTERY_V2', days_per_week: 5 });
+  });
+});
+
+describe('mock transport: curriculum.daily_plan of a v2 program (mirrors g9-app, ADR-0023)', () => {
+  it('names the five blocks of a Monday with the profile labels, minutes and codes', async () => {
+    const { client } = await v2Program();
+    const r = ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-02' }));
+    expect(r.warnings).toEqual(['curriculum.non_canonical: plan derived from a version that is not APPROVED_CANONICAL']);
+    const plan = r.result;
+    expect(plan).toMatchObject({
+      date: '2026-11-02',
+      day_id: 'D01',
+      week_number: 1,
+      week_title: 'Week 1 of the v2 test plan',
+      unscheduled: false,
+      is_assessment_day: false,
+      planned_minutes: 480,
+      evidence_artifact: 'Evidence of D01',
+    });
+    expect(plan.blocks.map((b) => b.label)).toEqual(V2_ORDINARY_LABELS);
+    expect(plan.blocks.map((b) => b.block)).toEqual(['recall', 'theory', 'guided_lab', 'independent_lab', 'defense_verification']);
+    expect(plan.blocks.map((b) => b.minutes)).toEqual([30, 120, 120, 150, 60]);
+    expect(plan.blocks.map((b) => b.session_id)).toEqual([null, null, null, null, null]);
+    expect(plan.objectives.map((o) => [o.objective_id, o.seq, o.status])).toEqual([
+      ['D01-O1', 1, 'PLANNED'],
+      ['D01-O2', 2, 'PLANNED'],
+      ['D01-O3', 3, 'PLANNED'],
+    ]);
+  });
+
+  it('names the blocks of the Friday with its own labels: the same code has another name that day', async () => {
+    const { client } = await v2Program();
+    const plan = ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-06' })).result;
+    expect(plan).toMatchObject({ day_id: 'D05', week_number: 1, unscheduled: false, is_assessment_day: true, planned_minutes: 480 });
+    expect(plan.blocks.map((b) => b.label)).toEqual(V2_FRIDAY_LABELS);
+    expect(plan.blocks.map((b) => b.block)).toEqual(['recall', 'theory', 'performance_review', 'blind_practical', 'report']);
+    expect(plan.blocks.map((b) => b.minutes)).toEqual([30, 120, 120, 150, 60]);
+    // `theory` is "Core lesson" on a Monday and "Knowledge exam" on the Friday.
+    const monday = ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-02' })).result;
+    expect(at(monday.blocks, 1)).toMatchObject({ block: 'theory', label: 'Core lesson' });
+    expect(at(plan.blocks, 1)).toMatchObject({ block: 'theory', label: 'Knowledge exam' });
+  });
+
+  it('answers a Saturday and a Sunday of a v2 program as rest days, with the week they fall in', async () => {
+    const { client } = await v2Program();
+    for (const date of ['2026-11-07', '2026-11-08', '2026-11-14']) {
+      const week = date === '2026-11-14' ? 2 : 1;
+      expect(ok(await client.invoke('curriculum.daily_plan', { date })).result, date).toEqual({
+        date,
+        zone: 'Europe/Berlin',
+        day_id: null,
+        week_number: week,
+        week_title: `Week ${week} of the v2 test plan`,
+        unscheduled: true,
+        is_assessment_day: false,
+        planned_minutes: 0,
+        evidence_artifact: null,
+        objectives: [],
+        blocks: [],
+      });
+    }
+  });
+
+  it('reaches every week of the program: Monday of week 2, Friday of week 12, then nothing', async () => {
+    const { client } = await v2Program();
+    expect(ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-09' })).result).toMatchObject({ day_id: 'D06', week_number: 2 });
+    expect(ok(await client.invoke('curriculum.daily_plan', { date: '2027-01-22' })).result).toMatchObject({ day_id: 'D60', week_number: 12, is_assessment_day: true });
+    // The Saturday after the last week is week 12's rest day; the Monday after it is outside the program.
+    expect(ok(await client.invoke('curriculum.daily_plan', { date: '2027-01-23' })).result).toMatchObject({ unscheduled: true, week_number: 12 });
+    const after = ok(await client.invoke('curriculum.daily_plan', { date: '2027-01-25' })).result;
+    expect(after).toMatchObject({ unscheduled: true, day_id: null, week_number: null, week_title: null });
+    const before = ok(await client.invoke('curriculum.daily_plan', { date: '2026-10-30' })).result;
+    expect(before).toMatchObject({ unscheduled: true, week_number: null });
+  });
+
+  it('links an objective of any week to a session of your own, and refuses one the program does not hold', async () => {
+    const { client } = await v2Program();
+    expect(ok(await client.invoke('session.create', { planned_minutes: 30, objective_id: 'D41-O2' })).result.block).toBe('UNLINKED');
+    expect(err(await client.invoke('session.create', { planned_minutes: 30, objective_id: 'D61-O1' })).code).toBe('objective.not_found');
+  });
+});
+
+describe('mock transport: session.plan_day of a v2 program lays the day out with the profile pauses (mirrors g9-app)', () => {
+  /** A local time of 2026-11-02 in Europe/Berlin (CET, UTC+1) as an instant. */
+  const berlin = (hour: number, minute: number) => Date.UTC(2026, 10, 2, hour - 1, minute);
+  const day = (date: string) => ({ from: Date.parse(`${date}T00:00:00Z`) - 86_400_000, to: Date.parse(`${date}T00:00:00Z`) + 2 * 86_400_000 });
+
+  it('plans a Monday from 08:00 as 08:00-08:30, 08:30-10:30, 10:45-12:45, 13:45-16:15, 16:15-17:15', async () => {
+    const { client } = await v2Program('08:00');
+    const planned = ok(await client.invoke('session.plan_day', { date: '2026-11-02' })).result;
+    expect(planned).toMatchObject({ date: '2026-11-02', day_id: 'D01', already_planned: [] });
+    expect(planned.created.map((s) => [s.block, s.block_seq, s.planned_ms / 60_000, s.state, s.day_id])).toEqual([
+      ['recall', 1, 30, 'PLANNED', 'D01'],
+      ['theory', 2, 120, 'PLANNED', 'D01'],
+      ['guided_lab', 3, 120, 'PLANNED', 'D01'],
+      ['independent_lab', 4, 150, 'PLANNED', 'D01'],
+      ['defense_verification', 5, 60, 'PLANNED', 'D01'],
+    ]);
+    const events = ok(await client.invoke('calendar.list', day('2026-11-02'))).result.events.filter((e) => e.day_id === 'D01');
+    expect(events.map((e) => [e.title, e.kind, e.start, e.end])).toEqual([
+      ['D01 Active recall', 'STUDY_BLOCK', berlin(8, 0), berlin(8, 30)],
+      ['D01 Core lesson', 'STUDY_BLOCK', berlin(8, 30), berlin(10, 30)],
+      ['D01 Tool practice', 'STUDY_BLOCK', berlin(10, 45), berlin(12, 45)],
+      ['D01 Independent challenge', 'STUDY_BLOCK', berlin(13, 45), berlin(16, 15)],
+      ['D01 Defense and documentation', 'STUDY_BLOCK', berlin(16, 15), berlin(17, 15)],
+    ]);
+    // The pauses are gaps between blocks and nothing else: 15 minutes after block 2, 60 after block 3.
+    const gaps = events.slice(1).map((e, i) => (e.start - at(events, i).end) / 60_000);
+    expect(gaps).toEqual([0, 15, 60, 0]);
+  });
+
+  it('starts the day at the time the operator set (the default is 09:00): the same layout shifted', async () => {
+    const { client } = await v2Program();
+    ok(await client.invoke('session.plan_day', { date: '2026-11-02' }));
+    const events = ok(await client.invoke('calendar.list', day('2026-11-02'))).result.events.filter((e) => e.day_id === 'D01');
+    expect(events.map((e) => [e.start, e.end])).toEqual([
+      [berlin(9, 0), berlin(9, 30)],
+      [berlin(9, 30), berlin(11, 30)],
+      [berlin(11, 45), berlin(13, 45)],
+      [berlin(14, 45), berlin(17, 15)],
+      [berlin(17, 15), berlin(18, 15)],
+    ]);
+  });
+
+  it('plans a Friday under its own labels and makes the scored practical an assessment the scheduler cannot move', async () => {
+    const { client } = await v2Program('08:00');
+    const planned = ok(await client.invoke('session.plan_day', { date: '2026-11-06' })).result;
+    expect(planned.created.map((s) => [s.block, s.planned_ms / 60_000])).toEqual([
+      ['recall', 30],
+      ['theory', 120],
+      ['performance_review', 120],
+      ['blind_practical', 150],
+      ['report', 60],
+    ]);
+    const events = ok(await client.invoke('calendar.list', day('2026-11-06'))).result.events.filter((e) => e.day_id === 'D05');
+    expect(events.map((e) => [e.title, e.kind, e.immutable])).toEqual([
+      ['D05 Active recall', 'STUDY_BLOCK', false],
+      ['D05 Knowledge exam', 'STUDY_BLOCK', false],
+      ['D05 Review and planning', 'STUDY_BLOCK', false],
+      ['D05 Scored practical', 'ASSESSMENT', true],
+      ['D05 Scoring and report', 'STUDY_BLOCK', false],
+    ]);
+    // The Friday has the same layout as any v2 day: 08:00 to 17:15.
+    const friday = Date.UTC(2026, 10, 6, 7, 0);
+    expect(at(events, 0).start).toBe(friday);
+    expect(at(events, 4).end).toBe(friday + (9 * 60 + 15) * 60_000);
+  });
+
+  it('plans only what is missing the second time, and shows the sessions in the day plan', async () => {
+    const { client } = await v2Program();
+    const first = ok(await client.invoke('session.plan_day', { date: '2026-11-04' })).result;
+    expect(first.created).toHaveLength(5);
+    const second = ok(await client.invoke('session.plan_day', { date: '2026-11-04' })).result;
+    expect(second.created).toEqual([]);
+    expect(second.already_planned.map((b) => [b.block, b.seq])).toEqual([
+      ['recall', 1],
+      ['theory', 2],
+      ['guided_lab', 3],
+      ['independent_lab', 4],
+      ['defense_verification', 5],
+    ]);
+    const plan = ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-04' })).result;
+    expect(plan.blocks.map((b) => b.session_id)).toEqual(first.created.map((s) => s.session_id));
+  });
+
+  it('has no training day on a Saturday or a Sunday of a v2 program', async () => {
+    const { client } = await v2Program();
+    for (const date of ['2026-11-07', '2026-11-08', '2027-01-25']) {
+      expect(err(await client.invoke('session.plan_day', { date })).code, date).toBe('curriculum.no_training_day');
+    }
   });
 });

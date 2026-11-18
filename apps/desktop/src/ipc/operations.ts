@@ -68,6 +68,13 @@ export interface SystemStatus {
 
 export type ManifestProvenance = 'PROPOSED_SEED' | 'RECONCILED_CANDIDATE' | 'APPROVED_CANONICAL';
 
+/**
+ * The shape of a curriculum (ADR-0023, `g9_domain::curriculum::StructureProfileId`): `CT9_480` is
+ * the Appendix A shape (six days a week, Saturday assessed), `MASTERY_V2` the owner's v2.0 plan
+ * (five days a week, Friday assessed).
+ */
+export type StructureProfileId = 'CT9_480' | 'MASTERY_V2';
+
 export interface Violation {
   code: string;
   path: string;
@@ -90,7 +97,14 @@ export interface PlannedObjective {
 
 export interface PlannedBlock {
   seq: number;
+  /** The block code (`guided_lab`): a storage category, not a name. */
   block: string;
+  /**
+   * What the structure profile of the active version calls this block on this kind of day
+   * (ADR-0023): the code with spaces in `CT9_480` (`guided lab`); `Core lesson`, `Knowledge exam`,
+   * `Scored practical` ... in `MASTERY_V2`. Screens print this, not a rewrite of `block`.
+   */
+  label: string;
   minutes: number;
   session_id: Id | null;
 }
@@ -218,6 +232,10 @@ export interface ProgramCurriculum {
   name: string | null;
   version_label: string;
   provenance: ManifestProvenance;
+  /** The structure profile the version was imported under (ADR-0023). */
+  profile: StructureProfileId;
+  /** Training days of a week in that profile: 6 in `CT9_480`, 5 in `MASTERY_V2`. */
+  days_per_week: number;
   weeks: number;
   days: number;
   objectives: number;

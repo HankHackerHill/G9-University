@@ -110,6 +110,17 @@ import type {
 } from '../types';
 import { CLASSIFICATIONS, DATA_DOMAINS, INTERACTION_MODES, IPC_LIMITS, RESOURCE_KINDS, SCHEMA_V1, payloadCap, schemaAccepts } from '../types';
 import { cleanFilename, consistentWith, decodeContent, refusedSignature, rustTrim } from './mock-attachments';
+import {
+  CT9_480,
+  MANIFEST_CODES,
+  checkManifest,
+  declaresAssessmentDay,
+  isTrainingDay,
+  labelOrCode,
+  pauseAfter,
+  profileById,
+  type StructureProfile,
+} from './mock-curriculum';
 
 // ---------------------------------------------------------------------------
 // Fixture shape
@@ -155,6 +166,13 @@ export interface CurriculumFixture {
   program_start_date: string;
   zone: string;
   week: { week_number: number; title: string; days: FixtureDay[] };
+}
+
+/** One program week the mock holds: the fixture's, or one week of an imported manifest (`ParsedWeek` is the same shape). */
+export interface ProgramWeek {
+  week_number: number;
+  title: string;
+  days: FixtureDay[];
 }
 
 export const WEEK3_FIXTURE: CurriculumFixture = fixtureJson;
@@ -441,9 +459,11 @@ export interface MockOptions {
   /**
    * A new install: nothing imported, no program start, no sessions, calendar events, review
    * items, assessments or notes. The week-3 fixture then only stands in for the structure of the
-   * imported curriculum (the mock cannot hold all twelve weeks): `curriculum.daily_plan` and
-   * `session.plan_day` answer from it once a curriculum is imported and a start is set, whatever
-   * manifest was imported; the counts `curriculum.program` reports come from the manifest.
+   * imported Appendix A curriculum (the mock cannot hold all twelve weeks): `curriculum.daily_plan`
+   * and `session.plan_day` answer from it once a curriculum is imported and a start is set, whatever
+   * Appendix A manifest was imported; the counts `curriculum.program` reports come from the manifest.
+   * A manifest of the second shape (ADR-0023: format 1.1.0, five days a week) is held whole, so
+   * every one of its twelve weeks is answered from what was imported.
    */
   fresh?: boolean;
 }
@@ -532,8 +552,13 @@ class MockState {
   private readonly erasedNotes = new Map<Id, DataDomain>();
   private evidenceSeq = 0;
   private readonly fresh: boolean;
-  /** `curriculum_versions` and `program_plan`: what is imported and where it sits on the calendar. */
-  private program: { curriculum: ProgramCurriculum | null; start: ProgramStart | null };
+  /**
+   * `curriculum_versions` and `program_plan`: what is imported and where it sits on the calendar.
+   * `weeks` holds every week of an imported manifest of the second shape (ADR-0023, `MASTERY_V2`);
+   * `null` means the Appendix A shape, which the mock answers from the one fixture week.
+   * `curriculumId` is the curriculum of the active version (`null` until something is imported).
+   */
+  private program: { curriculum: ProgramCurriculum | null; start: ProgramStart | null; weeks: ProgramWeek[] | null; curriculumId: string | null };
   /** Competencies of the shipped packs that `competency.import_pack` stored, in load order. */
   private readonly packCompetencies = new Map<Id, { name: string; pack: string }>();
   /** Stored prerequisite edges `from>to` (from = the prerequisite). */
@@ -559,8 +584,13 @@ class MockState {
     this.exportDir = options.exportDir === undefined ? MOCK_EXPORT_DIR : options.exportDir;
     this.fresh = options.fresh === true;
     this.program = this.fresh
-      ? { curriculum: null, start: null }
-      : { curriculum: this.fixtureCurriculum(), start: { monday: this.fixture.program_start_date, day_start: DEFAULT_DAY_START, revision: 1 } };
+      ? { curriculum: null, start: null, weeks: null, curriculumId: null }
+      : {
+          curriculum: this.fixtureCurriculum(),
+          start: { monday: this.fixture.program_start_date, day_start: DEFAULT_DAY_START, revision: 1 },
+          weeks: null,
+          curriculumId: this.fixture.curriculum_id,
+        };
     this.seed();
   }
 
@@ -572,6 +602,9 @@ class MockState {
       name: this.fixture.name,
       version_label: this.fixture.version,
       provenance: this.fixture.provenance as ManifestProvenance,
+      // The fixture is the Appendix A shape (g9-app `curriculum.program`: `profile`, `days_per_week`).
+      profile: CT9_480.id,
+      days_per_week: CT9_480.days_per_week,
       weeks: 1,
       days: days.length,
       objectives: days.reduce((n, d) => n + d.objectives.length, 0),
@@ -610,29 +643,54 @@ class MockState {
     return [...this.sessions.values()].find((s) => s.day_id === dayId && s.block_seq === seq && s.date === date);
   }
 
-  private dateOfDay(day: FixtureDay): CivilDate {
-    const offset = (this.fixture.week.week_number - 1) * 7 + (day.day_of_week - 1);
+  /** The structure profile of the active version (ADR-0023); the Appendix A shape until something else is imported. */
+  private profile(): StructureProfile {
+    return profileById(this.program.curriculum?.profile ?? CT9_480.id);
+  }
+
+  /** `weekNumber`: the program week the day belongs to (the fixture's week unless an imported program says otherwise). */
+  private dateOfDay(day: FixtureDay, weekNumber: number = this.fixture.week.week_number): CivilDate {
+    const offset = (weekNumber - 1) * 7 + (day.day_of_week - 1);
     return addDays(this.programStart(), offset);
   }
 
-  private dayForDate(date: CivilDate): { day: FixtureDay | null; week: number; weekday: number } {
+  /**
+   * The training day on `date`, as g9-app `training_day_on` finds it: the program runs on the
+   * training days of the profile (Monday to Saturday, or Monday to Friday in `MASTERY_V2`) of each
+   * week counted from the program start. `week` is the program week the date falls in, whether or
+   * not the program holds it; `row` is that week when it does. The Appendix A shape holds the one
+   * fixture week.
+   */
+  private dayForDate(date: CivilDate): { day: FixtureDay | null; week: number; weekday: number; row: ProgramWeek | null } {
     const idx = daysBetween(this.programStart(), date);
     const week = Math.floor(idx / 7) + 1;
     const weekday = isoWeekday(date);
-    if (week !== this.fixture.week.week_number || weekday === 7) {
-      return { day: null, week, weekday };
+    const row = this.program.weeks === null ? (week === this.fixture.week.week_number ? this.fixture.week : null) : (this.program.weeks.find((w) => w.week_number === week) ?? null);
+    if (row === null || !isTrainingDay(this.profile(), weekday)) {
+      return { day: null, week, weekday, row };
     }
-    const day = this.fixture.week.days.find((d) => d.day_of_week === weekday) ?? null;
-    return { day, week, weekday };
+    const day = row.days.find((d) => d.day_of_week === weekday) ?? null;
+    return { day, week, weekday, row };
   }
 
-  private blockStart(day: FixtureDay, seq: number): UtcMillis {
-    const date = this.dateOfDay(day);
+  /** Every day the program holds: the fixture week, or every week of an imported manifest of the second shape. */
+  private programDays(): FixtureDay[] {
+    return this.program.weeks === null ? this.fixture.week.days : this.program.weeks.flatMap((w) => w.days);
+  }
+
+  /**
+   * When block `seq` of `day` starts: the day starts at the operator's time and each block follows
+   * the one before it, after the pause the profile puts behind it (g9-app `plan_day`: none in the
+   * Appendix A shape; 15 minutes after the second block and 60 after the third in `MASTERY_V2`).
+   */
+  private blockStart(day: FixtureDay, seq: number, weekNumber: number = this.fixture.week.week_number): UtcMillis {
+    const date = this.dateOfDay(day, weekNumber);
+    const profile = this.profile();
     const [hour, minute] = (this.program.start?.day_start ?? DEFAULT_DAY_START).split(':').map(Number);
     let minutes = (hour ?? DAY_START_HOUR) * 60 + (minute ?? 0);
     for (const b of day.blocks) {
       if (b.seq < seq) {
-        minutes += b.minutes;
+        minutes += b.minutes + pauseAfter(profile, b.seq);
       }
     }
     return civilToUtc({ ...date, hour: Math.floor(minutes / 60), minute: minutes % 60 }, this.zone).utc;
@@ -1293,6 +1351,11 @@ class MockState {
       throw fail('UNAUTHORIZED', 'curriculum.promote_requires_approval', 'importing directly as APPROVED_CANONICAL is denied; use PROMOTE_CANONICAL');
     }
     const violations = validateManifest(manifest);
+    // g9-app `checked_import`: a manifest that is not the manifest format at all is refused before it is validated.
+    const unparseable = violations.find((x) => x.code === MANIFEST_CODES.unparseable);
+    if (unparseable !== undefined) {
+      throw fail('INVALID_INPUT', MANIFEST_CODES.unparseable, unparseable.message);
+    }
     if (violations.length > 0) {
       throw fail('INVALID_INPUT', 'curriculum.invariant_violated', 'manifest violates curriculum invariants', {
         violations: violations.map((x): JsonValue => ({ code: x.code, path: x.path, message: x.message })),
@@ -1303,6 +1366,9 @@ class MockState {
     const checksum = sha256Hex(canonicalJson(manifest));
     const resource: ResourceRef = { kind: 'CURRICULUM_VERSION', id: versionId };
     this.requireApproval(op, { curriculum_version_id: versionId, checksum_sha256: checksum, provenance }, resource, 'CURRICULUM_IMPORT', meta, `Import ${versionId} as ${provenance}`);
+    // The shape the version was checked against (ADR-0023): the second profile declares itself in `structure`.
+    const checked = declaresAssessmentDay(manifest) ? checkManifest(manifest) : null;
+    const profile = checked?.profile ?? CT9_480;
     const weeks = Array.isArray(m.weeks) ? m.weeks : [];
     let days = 0;
     let objectives = 0;
@@ -1322,12 +1388,18 @@ class MockState {
         name: typeof m.name === 'string' ? m.name : null,
         version_label: String(m.version),
         provenance,
+        profile: profile.id,
+        days_per_week: profile.days_per_week,
         weeks: weeks.length,
         days,
         objectives,
         planned_minutes: plannedMinutes,
         imported_at: this.now(),
       };
+      // A manifest of the second shape is held whole, so every week of it can be planned; the
+      // Appendix A shape stays a stand-in answered from the one fixture week.
+      this.program.weeks = checked?.manifest == null || profile.id === CT9_480.id ? null : checked.manifest.weeks;
+      this.program.curriculumId = typeof m.curriculum_id === 'string' ? m.curriculum_id : this.program.curriculumId;
     }
     return {
       result: { curriculum_version_id: versionId, checksum_sha256: checksum, provenance, weeks: weeks.length, days, objectives },
@@ -1422,47 +1494,49 @@ class MockState {
     }
     const zone = optStr(rec, 'zone', 'curriculum.daily_plan') ?? this.zone;
     this.requireProgram();
-    const { day, week, weekday } = this.dayForDate(date);
-    // Before week 1 or after the last week the backend finds no week row: unscheduled, and no week named.
-    if (week < 1 || week > this.fixture.structure.weeks) {
-      return {
-        date: dateStr,
-        zone,
-        day_id: null,
-        week_number: null,
-        week_title: null,
-        unscheduled: true,
-        is_assessment_day: false,
-        planned_minutes: 0,
-        evidence_artifact: null,
-        objectives: [],
-        blocks: [],
-      };
+    const { day, week, weekday, row } = this.dayForDate(date);
+    const profile = this.profile();
+    const unscheduled = (weekNumber: number | null, title: string | null): DailyPlan => ({
+      date: dateStr,
+      zone,
+      day_id: null,
+      week_number: weekNumber,
+      week_title: title,
+      unscheduled: true,
+      is_assessment_day: false,
+      planned_minutes: 0,
+      evidence_artifact: null,
+      objectives: [],
+      blocks: [],
+    });
+    if (this.program.weeks !== null) {
+      // An imported program holds every week, as the backend does (g9-app `daily_plan`): outside the
+      // weeks no week is named; a day the profile does not train on (a Sunday; a Saturday of
+      // MASTERY_V2) is answered as unscheduled, with the week it falls in.
+      if (row === null) {
+        return unscheduled(null, null);
+      }
+      if (day === null) {
+        return unscheduled(row.week_number, row.title);
+      }
+    } else {
+      // Before week 1 or after the last week the backend finds no week row: unscheduled, and no week named.
+      if (week < 1 || week > this.fixture.structure.weeks) {
+        return unscheduled(null, null);
+      }
+      if (weekday === 7 && week === this.fixture.week.week_number) {
+        return unscheduled(week, this.fixture.week.title);
+      }
     }
-    if (weekday === 7 && week === this.fixture.week.week_number) {
-      return {
-        date: dateStr,
-        zone,
-        day_id: null,
-        week_number: week,
-        week_title: this.fixture.week.title,
-        unscheduled: true,
-        is_assessment_day: false,
-        planned_minutes: 0,
-        evidence_artifact: null,
-        objectives: [],
-        blocks: [],
-      };
-    }
-    if (day === null) {
+    if (day === null || row === null) {
       throw fail('NOT_FOUND', 'curriculum.day_not_in_fixture', `no training day loaded for ${dateStr}`, { week });
     }
     return {
       date: dateStr,
       zone,
       day_id: day.day_id,
-      week_number: this.fixture.week.week_number,
-      week_title: this.fixture.week.title,
+      week_number: row.week_number,
+      week_title: row.title,
       unscheduled: false,
       is_assessment_day: day.is_assessment_day,
       planned_minutes: day.planned_minutes,
@@ -1471,6 +1545,8 @@ class MockState {
       blocks: day.blocks.map((b) => ({
         seq: b.seq,
         block: b.block,
+        // What the profile calls the block on this kind of day (the code with spaces in the Appendix A shape).
+        label: labelOrCode(profile, b.block, day.is_assessment_day),
         minutes: b.minutes,
         session_id: this.sessionOfBlock(day.day_id, b.seq, dateStr)?.session_id ?? null,
       })),
@@ -2357,7 +2433,7 @@ class MockState {
    * Port of g9-app `session.create` (sessions.rs): a PLANNED session the operator schedules,
    * optionally checked against an objective code. It is not linked to a curriculum block, so
    * its view is labelled `UNLINKED` (as `session_view` labels it); it then runs like any session.
-   * The mock knows the objectives of the loaded fixture week only.
+   * The mock knows the objectives of the loaded fixture week, or of every week of an imported v2 program.
    */
   private sessionCreate(payload: unknown): Handled<SessionView> {
     const op = 'session.create';
@@ -2367,7 +2443,7 @@ class MockState {
     // The request schema allows STUDY, LAB and REVIEW: EXAM is refused at the boundary.
     optOneOf(rec, 'mode', ['STUDY', 'LAB', 'REVIEW'] as const, op);
     const objective = optId(rec, 'objective_id', op);
-    if (objective !== undefined && !this.fixture.week.days.some((d) => d.objectives.some((o) => o.objective_id === objective))) {
+    if (objective !== undefined && !this.programDays().some((d) => d.objectives.some((o) => o.objective_id === objective))) {
       throw fail('NOT_FOUND', 'objective.not_found', 'objective not found');
     }
     const start = plannedStart ?? this.now();
@@ -2415,7 +2491,7 @@ class MockState {
       throw fail('INVALID_INPUT', 'date.invalid', "date must be 'YYYY-MM-DD'", { field: 'date' });
     }
     if (isoWeekday(date) !== 1) {
-      throw fail('INVALID_INPUT', 'program.start_not_a_monday', 'the program starts on a Monday: week 1 runs Monday to Saturday');
+      throw fail('INVALID_INPUT', 'program.start_not_a_monday', 'the program starts on a Monday: each program week begins on its Monday');
     }
     if (this.program.start !== null) {
       this.checkRevision(meta, this.program.start.revision);
@@ -2425,8 +2501,10 @@ class MockState {
     }
     const revision = (this.program.start?.revision ?? 0) + 1;
     this.program.start = { monday: dateStr, day_start: dayStart, revision };
-    const resource: ResourceRef = { kind: 'CURRICULUM', id: this.fixture.curriculum_id };
-    return { result: { curriculum_id: this.fixture.curriculum_id, monday: dateStr, day_start: dayStart }, revision, resource };
+    // The plan belongs to the curriculum of the active version (g9-app `active_curriculum_id`).
+    const curriculumId = this.program.curriculumId ?? this.fixture.curriculum_id;
+    const resource: ResourceRef = { kind: 'CURRICULUM', id: curriculumId };
+    return { result: { curriculum_id: curriculumId, monday: dateStr, day_start: dayStart }, revision, resource };
   }
 
   /**
@@ -2442,10 +2520,11 @@ class MockState {
       throw fail('INVALID_INPUT', 'date.invalid', "date must be 'YYYY-MM-DD'", { field: 'date' });
     }
     this.requireProgram();
-    const { day } = this.dayForDate(date);
-    if (day === null || day.blocks.length === 0) {
+    const { day, row } = this.dayForDate(date);
+    if (day === null || row === null || day.blocks.length === 0) {
       throw fail('NOT_FOUND', 'curriculum.no_training_day', 'the program has no training day on this date');
     }
+    const profile = this.profile();
     const created: SessionView[] = [];
     const already: DayPlanned['already_planned'] = [];
     for (const block of day.blocks) {
@@ -2475,12 +2554,13 @@ class MockState {
       created.push(stripSession(session));
       // Like g9-app: each block is also placed on the calendar, by the scheduler (the operator cannot edit it);
       // the blind practical is an assessment slot the scheduler may not move. `block` and `session_id` stay null.
+      // The title carries the profile's label of the block on this kind of day (`label_or_code`).
       const isAssessment = block.block === 'blind_practical';
-      const start = this.blockStart(day, block.seq);
+      const start = this.blockStart(day, block.seq, row.week_number);
       const [hour, minute] = (this.program.start?.day_start ?? DEFAULT_DAY_START).split(':').map(Number);
       this.events.push({
         event_id: this.nextId('event'),
-        title: `${day.day_id} ${block.block.replace(/_/g, ' ')}`,
+        title: `${day.day_id} ${labelOrCode(profile, block.block, day.is_assessment_day)}`,
         kind: isAssessment ? 'ASSESSMENT' : 'STUDY_BLOCK',
         start,
         end: start + block.minutes * 60_000,
@@ -3509,8 +3589,16 @@ function isProvenance(v: unknown): v is ManifestProvenance {
   return v === 'PROPOSED_SEED' || v === 'RECONCILED_CANDIDATE' || v === 'APPROVED_CANONICAL';
 }
 
-/** Curriculum invariants (ARCHITECTURE §4): 12 × 6 × 3; 420/300 minutes; 2,400/week; 28,800 total. */
+/**
+ * Curriculum invariants (ARCHITECTURE §4): 12 × 6 × 3; 420/300 minutes; 2,400/week; 28,800 total.
+ * A manifest of format 1.1.0 that declares `structure.assessment_day_of_week` (ADR-0023) is checked
+ * instead by the rules of the profile it selects, with the backend's codes and paths
+ * (`mock-curriculum.ts`): 12 weeks of five days, 480 minutes a day for `MASTERY_V2`.
+ */
 export function validateManifest(manifest: JsonValue): Violation[] {
+  if (declaresAssessmentDay(manifest)) {
+    return checkManifest(manifest).violations;
+  }
   const v: Violation[] = [];
   if (typeof manifest !== 'object' || manifest === null || Array.isArray(manifest)) {
     return [{ code: 'MANIFEST_NOT_OBJECT', path: '$', message: 'manifest must be an object' }];

@@ -1,0 +1,4 @@
+Synthetic audit record 0001.
+event=login actor=synthetic-a result=ok
+event=export actor=synthetic-b result=ok
+End of synthetic record.

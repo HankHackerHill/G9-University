@@ -1,0 +1,26 @@
+Sample (synthetic): outputs of the Stage 00 resource rows on an invented host, and the week 1 stack the plan allocates. Not an observation of the G9 host.
+Host label: host-05. Capture time (invented): 2099-01-01T11:00:00Z.
+
+$ lscpu
+Architecture:             x86_64
+CPU(s):                   12
+Thread(s) per core:       2
+Core(s) per socket:       6
+Socket(s):                1
+Model name:               Synthetic CPU 6C/12T
+Virtualization:           AMD-V
+
+$ free -h
+               total        used        free      shared  buff/cache   available
+Mem:            31Gi       7.0Gi       2.0Gi       0.4Gi        22Gi        24Gi
+Swap:          8.0Gi          0B       8.0Gi
+
+$ df -h /
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme0n1p2  930G  610G  273G  70% /
+
+Week 1 stack from the plan (configured, thin disks):
+guest        vCPU   RAM GiB   disk GiB
+G9-RTR-01       2         2         20
+G9-ATK-01       4         6         80
+G9-TGT-01       2         3         40

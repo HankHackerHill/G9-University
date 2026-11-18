@@ -1,0 +1,7 @@
+root:x:0:
+sudo:x:27:labadmin
+labusers:x:2000:labuser1,labuser2
+labreaders:x:2001:labuser1
+svclab:x:998:
+labuser1:x:1001:
+labuser2:x:1002:

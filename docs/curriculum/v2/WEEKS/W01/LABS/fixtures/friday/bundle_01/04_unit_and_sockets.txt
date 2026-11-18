@@ -1,0 +1,53 @@
+Captured by labanalyst, 2099-01-05T08:47:00Z to 08:50:00Z.
+
+$ systemctl cat g9toy-spool.service
+# /etc/systemd/system/g9toy-spool.service
+[Unit]
+Description=G9 week 1 toy spool service (synthetic)
+After=network.target
+
+[Service]
+Type=simple
+User=svcspool
+Group=svcspool
+ExecStart=/usr/bin/python3 -I /opt/g9toy/g9toy_reportd.py --config /etc/g9toy-spool/g9toy.conf
+Restart=on-failure
+StateDirectory=g9toy-spool
+StateDirectoryMode=0750
+
+[Install]
+WantedBy=multi-user.target
+
+# /etc/systemd/system/g9toy-spool.service.d/90-sandbox.conf
+[Service]
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/g9toy-spool /srv/g9toy-spool/scratch
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET
+UMask=0027
+
+$ systemctl show g9toy-spool.service -p ActiveState -p SubState -p UnitFileState -p User -p MainPID -p NoNewPrivileges -p ProtectSystem -p DropInPaths
+MainPID=4412
+User=svcspool
+NoNewPrivileges=yes
+ProtectSystem=strict
+ActiveState=active
+SubState=running
+UnitFileState=enabled
+DropInPaths=/etc/systemd/system/g9toy-spool.service.d/90-sandbox.conf
+
+$ cat /etc/g9toy-spool/g9toy.conf
+# G9 week 1 toy service configuration, spool instance (synthetic lab file).
+bind = 127.0.0.1
+port = 8100
+reports_dir = /srv/g9toy-spool/outbox
+state_dir = /var/lib/g9toy-spool
+scratch_dir = /srv/g9toy-spool/scratch
+
+$ ss -ltnp
+State  Recv-Q Send-Q Local Address:Port Peer Address:Port Process
+LISTEN 0      5          127.0.0.1:8100      0.0.0.0:*
+LISTEN 0      128        127.0.0.1:22        0.0.0.0:*

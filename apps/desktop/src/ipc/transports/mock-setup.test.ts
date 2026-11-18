@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { createClient, isG9Error, type InvokeResult } from '../client';
 import type { OperationName } from '../operations';
 import type { JsonValue } from '../types';
+import { asJson, v2Manifest } from '../../test/v2-manifest';
 import { createMockClock, createMockTransport, type MockOptions } from './mock';
 
 const SEED = fileURLToPath(new URL('../../../../../data/curriculum/g9-ct9-480.seed.v0.json', import.meta.url));
@@ -358,5 +359,66 @@ describe('mock transport: backup.list', () => {
     ok(await client.invoke('backup.verify', { backup_id: first.backup_id }));
     const verified = ok(await client.invoke('backup.list', {})).result.backups.find((b) => b.backup_id === first.backup_id);
     expect(verified).toMatchObject({ state: 'CHECKED', integrity: 'OK' });
+  });
+});
+
+
+describe('mock transport: the imported Appendix A seed keeps its shape next to the v2 plan (ADR-0023)', () => {
+  async function ready() {
+    const h = harness({ fresh: true });
+    await importSeed(h.client);
+    ok(await h.client.invoke('curriculum.set_program_start', { date: '2026-11-02' }));
+    return h;
+  }
+
+  it('reports profile CT9_480 and six days a week for the imported seed', async () => {
+    const { client } = harness({ fresh: true });
+    await importSeed(client);
+    expect(ok(await client.invoke('curriculum.program', {})).result.curriculum).toMatchObject({
+      profile: 'CT9_480',
+      days_per_week: 6,
+      weeks: 12,
+      days: 72,
+      objectives: 216,
+      planned_minutes: 28_800,
+    });
+  });
+
+  it('labels each block of a weekday with its code and spaces, and the Saturday as before', async () => {
+    const { client } = await ready();
+    const wednesday = ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-18' })).result;
+    expect(wednesday.blocks.map((b) => b.label)).toEqual(['recall', 'theory', 'guided lab', 'independent lab', 'defense verification', 'evidence reporting']);
+    expect(wednesday.blocks.map((b) => b.label)).toEqual(wednesday.blocks.map((b) => b.block.replace(/_/g, ' ')));
+    const saturday = ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-21' })).result;
+    expect(saturday.is_assessment_day).toBe(true);
+    expect(saturday.blocks.map((b) => b.label)).toEqual(['blind practical', 'remediation', 'report', 'performance review']);
+  });
+
+  it('plans a weekday back to back with no pause, titled with the code and spaces', async () => {
+    const { client } = await ready();
+    const planned = ok(await client.invoke('session.plan_day', { date: '2026-11-18' })).result;
+    expect(planned.created.map((s) => s.planned_ms / 60_000)).toEqual([15, 45, 120, 120, 60, 60]);
+    const events = ok(await client.invoke('calendar.list', { from: Date.UTC(2026, 10, 18), to: Date.UTC(2026, 10, 19) })).result.events.filter((e) => e.day_id === 'D15');
+    expect(events.map((e) => e.title)).toEqual(['D15 recall', 'D15 theory', 'D15 guided lab', 'D15 independent lab', 'D15 defense verification', 'D15 evidence reporting']);
+    // 09:00 in Europe/Berlin (UTC+1) is 08:00Z; each block starts when the one before it ends.
+    expect(events[0]?.start).toBe(Date.UTC(2026, 10, 18, 8, 0));
+    for (let i = 1; i < events.length; i += 1) {
+      expect(events[i]?.start).toBe(events[i - 1]?.end);
+    }
+    expect(events[events.length - 1]?.end).toBe(Date.UTC(2026, 10, 18, 8, 0) + 420 * 60_000);
+  });
+
+  it('importing the seed after a v2 manifest brings back the Appendix A profile', async () => {
+    const { client } = harness({ fresh: true });
+    const v2 = asJson(v2Manifest());
+    const asked = err(await client.invoke('curriculum.import', { manifest: v2, provenance: 'PROPOSED_SEED' }));
+    ok(await client.invoke('approvals.decide', { approval_id: asked.approval_id ?? '', decision: 'APPROVE' }));
+    ok(await client.invoke('curriculum.import', { manifest: v2, provenance: 'PROPOSED_SEED' }, { approvalId: asked.approval_id ?? '' }));
+    expect(ok(await client.invoke('curriculum.program', {})).result.curriculum).toMatchObject({ profile: 'MASTERY_V2', days_per_week: 5 });
+    await importSeed(client);
+    expect(ok(await client.invoke('curriculum.program', {})).result.curriculum).toMatchObject({ profile: 'CT9_480', days_per_week: 6, days: 72 });
+    ok(await client.invoke('curriculum.set_program_start', { date: '2026-11-02' }));
+    // The Saturday is a training day of the Appendix A shape again; the one-week fixture answers week 3.
+    expect(ok(await client.invoke('curriculum.daily_plan', { date: '2026-11-21' })).result).toMatchObject({ day_id: 'D18', is_assessment_day: true });
   });
 });

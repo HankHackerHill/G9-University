@@ -2,7 +2,7 @@
 
 - Source: plan section 11.6 (cloud teardown and cost-control record). Context: plan section 3.2 (cloud: CloudGoat and similar only in an approved sandbox with billing limits, minimal credentials and a written destroy-and-verify checklist), section 5 (week 11 required cloud lab), section 14.1 (cloud teardown: evidence that resources are absent after the lab, or a hosted substitute). The course's guardrails are in `docs/curriculum/v2/SAFETY_AUTHORIZATION.md` section 5.
 - Status: PROPOSED. This is a blank template. It holds no sandbox, no spending figure and no teardown result, and no record made with it exists in the repository. No cloud sandbox is approved at the time of writing.
-- Reader: the learner, who fills it, the owner, who authorises the sandbox, and the examiner, who ticks the quality checks.
+- Reader: the learner, who fills it, the owner, who authorizes the sandbox, and the examiner, who ticks the quality checks.
 - Claim labels: OBSERVED, INFERRED, ASSUMED, UNVERIFIED, NOT RUN.
 
 ## How to use
@@ -27,7 +27,7 @@ Handling. The sandbox account id is private. Redact it, resource ids and the own
 
 Done when the quality checks below are ticked and the final status follows the rule below. A teardown whose status is not VERIFIED is not done: the open items are listed with an owner and a date.
 
-## Final status vocabulary
+## Status vocabulary
 
 The plan gives three words. The rule for VERIFIED is the course's (`docs/curriculum/v2/SAFETY_AUTHORIZATION.md` section 5.3, step 11). The rules for the other two are PROPOSED.
 
@@ -54,7 +54,7 @@ The field names below are the plan's, in the plan's order. Keep them unchanged.
 | Shutdown/destroy procedure and executor | the procedure as proposed text, the tooling (the one that created), who ran it, the time in UTC and local with zone, and the date the owner reviewed each command |
 | Post-destroy resource query evidence | the text of each query, its output saved as text, the time, the SHA-256; queries by tag, by service, in every region used and in the global services; the same queries the next day |
 | Remaining security groups/volumes/addresses/roles/keys | the per-type check of what outlives a stack: volumes, snapshots, addresses, gateways, log groups, keys, roles, policies, users, access keys and buckets, each with its result or "not checked" |
-| Billing or delayed-charge caveats | billing data can lag and charges can appear after a resource is gone (ASSUMED provider behaviour, see the departures table); the date you will inspect again, and what the figure does not cover |
+| Billing or delayed-charge caveats | billing data can lag and charges can appear after a resource is gone (ASSUMED provider behavior, see the departures table); the date you will inspect again, and what the figure does not cover |
 | Final status: VERIFIED / PARTIAL / UNVERIFIED | one word from the rule above, with the open items |
 
 ## Teardown checklist
@@ -160,4 +160,4 @@ Final status:   PARTIAL. Open: global services, snapshots, log groups, the next-
 | The rule for VERIFIED is taken from the course's checklist, with the condition that steps 8 and 9 raised no STOP-12 added; the rules for PARTIAL and UNVERIFIED are added | the plan names three statuses and defines none. The VERIFIED rule is `docs/curriculum/v2/SAFETY_AUTHORIZATION.md` section 5.3, step 11; the added condition and the other two rules are PROPOSED |
 | A teardown checklist table supports the eleven fields | the plan's list holds the results and no procedure; the checklist is the course's section 5.3 and adds no field |
 | When no sandbox is approved, no record is made | the plan requires a hosted or no-cloud substitute and a marked substitution (section 5, week 11); a record of a teardown that never happened would claim a result |
-| Billing behaviour, such as lagging data and delayed charges, is named | provider facts are ASSUMED here and unchecked; the week 11 registry entries are ASSUMED (`docs/curriculum/v2/WEEKS/W11/RESOURCES.json`) and the checked state is in `docs/curriculum/v2/RESOURCE_REGISTRY.md`, generated later from the week registries |
+| Billing behavior, such as lagging data and delayed charges, is named | provider facts are ASSUMED here and unchecked; the week 11 registry entries are ASSUMED (`docs/curriculum/v2/WEEKS/W11/RESOURCES.json`) and the checked state is in `docs/curriculum/v2/RESOURCE_REGISTRY.md`, generated later from the week registries |

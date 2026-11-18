@@ -1,0 +1,37 @@
+Sample (synthetic): outputs of Stage 00 read-only rows on an invented host. Not an observation of the G9 host.
+Host label: host-04. Capture time (invented): 2099-01-01T10:15:00Z. Logged-in user (invented): learner.
+Failed client command (invented): virsh list --all
+Failed client output (invented):
+error: failed to connect to the hypervisor
+error: Failed to connect socket to '/var/run/libvirt/libvirt-sock': Permission denied
+
+$ systemctl list-unit-files 'libvirtd*' 'virtqemud*' 'virtproxyd*' --no-pager
+UNIT FILE               STATE    PRESET
+libvirtd-admin.socket   enabled  enabled
+libvirtd-ro.socket      enabled  enabled
+libvirtd.service        enabled  enabled
+libvirtd.socket         enabled  enabled
+
+4 unit files listed.
+
+$ systemctl list-sockets --all --no-pager 'libvirt*'
+LISTEN                          UNIT                   ACTIVATES
+/run/libvirt/libvirt-admin-sock libvirtd-admin.socket  libvirtd.service
+/run/libvirt/libvirt-sock-ro    libvirtd-ro.socket     libvirtd.service
+/run/libvirt/libvirt-sock       libvirtd.socket        libvirtd.service
+
+3 sockets listed.
+
+$ ls -la /run/libvirt/
+total 0
+drwxr-xr-x  2 root root    120 Jan  1 09:41 .
+drwxr-xr-x 38 root root    980 Jan  1 09:41 ..
+srwxrwx---  1 root libvirt   0 Jan  1 09:41 libvirt-admin-sock
+srwxrwx---  1 root libvirt   0 Jan  1 09:41 libvirt-sock
+srwxrwxrwx  1 root root      0 Jan  1 09:41 libvirt-sock-ro
+
+$ id
+uid=1000(learner) gid=1000(learner) groups=1000(learner),27(sudo)
+
+$ getent group libvirt
+libvirt:x:994:

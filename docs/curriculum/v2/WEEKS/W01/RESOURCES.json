@@ -965,6 +965,298 @@
       "difficulty": null,
       "fallback": null,
       "notes": "The /3/ address tracks the newest Python; the guest may run an older interpreter, so the lesson should name the interpreter version it was tested on. shlex.quote is documented as designed for Unix shells only. json.JSONDecodeError is a subclass of ValueError."
+    },
+    {
+      "id": "w01-man7-credentials",
+      "url": "https://man7.org/linux/man-pages/man7/credentials.7.html",
+      "provider": "Linux man-pages project",
+      "title": "credentials(7) - Linux manual page",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'credentials(7) Linux manual page real user ID effective user ID supplementary groups' restricted to man7.org, authoring pass of week 1 (2026-11-18): first result at this URL. The result text says that real IDs establish process ownership, that effective IDs govern access checks, that for file access Linux uses the filesystem IDs, which normally equal the effective IDs, and that supplementary groups are used for permission checks.",
+      "version": "Linux man-pages online copy as listed 2026-11-18",
+      "topics": [
+        "real effective saved uid",
+        "filesystem uid",
+        "supplementary groups",
+        "process credentials"
+      ],
+      "suggested_days": [
+        "D01",
+        "D02"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Mechanism reference for the identity a permission check uses (Day 1 privilege model, Day 2 group semantics). A group added to the group database does not enter the supplementary groups of a process that already runs; this page names where the set is kept (the process), not how a login refreshes it: say that part from the learner's own observation of id with and without a user name."
+    },
+    {
+      "id": "w01-man7-path-resolution",
+      "url": "https://www.man7.org/linux/man-pages/man7/path_resolution.7.html",
+      "provider": "Linux man-pages project",
+      "title": "path_resolution(7) - Linux manual page",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'path_resolution(7) Linux manual page permission checks search permission directory' restricted to man7.org, authoring pass of week 1 (2026-11-18): first result at this URL. The result text says that a lookup fails with EACCES when the process lacks search permission on a directory of the prefix, that the owner, group or other triplet is chosen from the process IDs, that Linux uses the fsuid, that CAP_DAC_READ_SEARCH and CAP_DAC_OVERRIDE bypass checks, and that execute permission is granted by CAP_DAC_OVERRIDE only when at least one execute bit is set.",
+      "version": "Linux man-pages online copy as listed 2026-11-18",
+      "topics": [
+        "path lookup",
+        "search permission on directories",
+        "owner group other triplet",
+        "EACCES",
+        "CAP_DAC_OVERRIDE"
+      ],
+      "suggested_days": [
+        "D02"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Authority for the Day 2 claim that a file mode is only the last element of an access decision: every directory of the path must grant search first. Use it for the toy-directory exercise and for the explanation of mode 0640."
+    },
+    {
+      "id": "w01-man7-acl",
+      "url": "https://man7.org/linux/man-pages/man5/acl.5.html",
+      "provider": "Linux man-pages project",
+      "title": "acl(5) - Linux manual page",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'acl(5) Linux manual page POSIX access control lists mask entry ACL_USER_OBJ' restricted to man7.org, authoring pass of week 1 (2026-11-18): first result at this URL. The result text says that an entry has a tag type, an optional qualifier and a permission set, that ACL_USER_OBJ is the owner entry, and that ACL_MASK caps ACL_USER, ACL_GROUP_OBJ and ACL_GROUP entries; the getfacl(1) result adds that the mask affects neither the owner nor the other entry.",
+      "version": "Linux man-pages online copy as listed 2026-11-18",
+      "topics": [
+        "POSIX ACL",
+        "mask entry",
+        "named user and group entries",
+        "effective permissions"
+      ],
+      "suggested_days": [
+        "D02",
+        "D03"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Mechanism reference for ACLs on top of mode bits. The lesson must say that a plus sign after the mode string of ls -l means an ACL exists, and that the group bits of ls -l then show the mask, not the owning group's entry."
+    },
+    {
+      "id": "w01-man7-bind",
+      "url": "https://man7.org/linux/man-pages/man2/bind.2.html",
+      "provider": "Linux man-pages project",
+      "title": "bind(2) - Linux manual page",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'listen(2) Linux manual page mark socket as passive accept connections backlog' restricted to man7.org, authoring pass of week 1 (2026-11-18): bind(2) at this URL was the eighth result, next to the first result listen(2). Only the title and address were seen; the content of bind(2) was not in the result text.",
+      "version": "Linux man-pages online copy as listed 2026-11-18",
+      "topics": [
+        "bind",
+        "socket address",
+        "listening socket",
+        "privileged ports"
+      ],
+      "suggested_days": [
+        "D03"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Pair with w01-man7-listen for the question how a process creates a listening TCP socket. The claim that binding a port below 1024 needs CAP_NET_BIND_SERVICE (or a lowered net.ipv4.ip_unprivileged_port_start) is not in the result text: write it ASSUMED or read it on the page before teaching it."
+    },
+    {
+      "id": "w01-man7-listen",
+      "url": "https://man7.org/linux/man-pages/man2/listen.2.html",
+      "provider": "Linux man-pages project",
+      "title": "listen(2) - Linux manual page",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'listen(2) Linux manual page mark socket as passive accept connections backlog' restricted to man7.org, authoring pass of week 1 (2026-11-18): first result at this URL. The result text says that listen() marks the socket as a passive socket used to accept incoming connection requests with accept(2), that the backlog limits the queue of pending connections, and that a backlog above net.core.somaxconn is silently reduced to it.",
+      "version": "Linux man-pages online copy as listed 2026-11-18",
+      "topics": [
+        "listen",
+        "passive socket",
+        "accept queue",
+        "backlog"
+      ],
+      "suggested_days": [
+        "D03"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Kernel abstraction for the Day 3 and Friday question on listening sockets: a socket is a kernel object reached through a file descriptor; bind gives it an address, listen makes it passive, accept returns a new descriptor for each connection."
+    },
+    {
+      "id": "w01-man7-ss",
+      "url": "https://man7.org/linux/man-pages/man8/ss.8.html",
+      "provider": "Linux man-pages project",
+      "title": "ss(8) - Linux manual page",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'ss(8) Linux manual page socket statistics -l -t -n -p process using socket' restricted to man7.org, authoring pass of week 1 (2026-11-18): first result at this URL. The result text confirms -l (listening sockets, omitted by default), -n (no service-name resolution) and -p (show processes using sockets); the -t option was not in the result text.",
+      "version": "Linux man-pages online copy as listed 2026-11-18",
+      "topics": [
+        "ss",
+        "listening sockets",
+        "socket owner",
+        "numeric output"
+      ],
+      "suggested_days": [
+        "D03",
+        "D04"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Reference for reading a socket inventory. Which sockets the process column shows to an unprivileged user is not in the result text: the lesson must state it as the learner's observation on the guest (compare the output as an unprivileged account and with administrative rights), not as a quotation."
+    },
+    {
+      "id": "w01-systemd-exec",
+      "url": "https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html",
+      "provider": "systemd",
+      "title": "systemd.exec",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'systemd.exec manual ProtectSystem NoNewPrivileges CapabilityBoundingSet' restricted to freedesktop.org, authoring pass of week 1 (2026-11-18): first result at this URL. The result text says that NoNewPrivileges= stops a service and its children from gaining privileges through execve (setuid bits, file capabilities), that ProtectSystem=strict makes the whole hierarchy read-only apart from /dev, /proc and /sys, that full also covers /etc, that CapabilityBoundingSet= removes every capability not listed, and that the effect of ProtectSystem= may be undone by privileged processes.",
+      "version": "systemd manual, 'latest' channel, as listed 2026-11-18",
+      "topics": [
+        "User=",
+        "NoNewPrivileges",
+        "ProtectSystem",
+        "ReadWritePaths",
+        "CapabilityBoundingSet",
+        "service sandboxing"
+      ],
+      "suggested_days": [
+        "D03"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Directive reference for the service-hardening extension of the guided lab. The guest's own man page matches its installed systemd version and takes precedence. Read the passage on environment variables and secrets before teaching Environment= for a credential: ASSUMED: the page warns that unit environments are visible to unprivileged clients through systemctl show; the search result did not show it, so the lab has the learner observe it on the guest."
+    },
+    {
+      "id": "w01-sudoers-manual",
+      "url": "https://www.sudo.ws/docs/man/sudoers.man/",
+      "provider": "Sudo project",
+      "title": "Sudoers Manual",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'sudoers manual wildcards command line arguments fnmatch matches slashes spaces' restricted to sudo.ws, authoring pass of week 1 (2026-11-18): first result at this unversioned address. The result text says that wildcards in command-line arguments are matched with fnmatch, that a wildcard matches slashes and white space in arguments (unlike in the command path), that the arguments are matched as one concatenated string so a wildcard can match across word boundaries, and gives the example of an entry for /var/log/messages* that also permits an extra path argument.",
+      "version": "Sudoers Manual, unversioned address as listed 2026-11-18 (versioned copies from 1.7.10 to 1.9.16 also appeared)",
+      "topics": [
+        "sudoers rules",
+        "command arguments and wildcards",
+        "runas and NOPASSWD",
+        "delegation"
+      ],
+      "suggested_days": [
+        "D03"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Closes the gap noted in this file's gaps list (only versioned sudo.ws addresses had been seen). Authority for the question how an unauthorized sudo rule breaks a privilege boundary. The behaviour of the includedir directory (which file names are skipped) was not in the result text: state it as ASSUMED until the page is read, and test it on the guest with visudo -c and sudo -l."
+    },
+    {
+      "id": "w01-ubuntu-ssh-socket-activation",
+      "url": "https://discourse.ubuntu.com/t/sshd-now-uses-socket-based-activation-ubuntu-22-10-and-later/30189",
+      "provider": "Canonical (Ubuntu Discourse)",
+      "title": "SSHd now uses socket-based activation (Ubuntu 22.10 and later) - Server - Ubuntu Discourse",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Ubuntu OpenSSH ssh.socket socket activation ListenAddress Port sshd_config not applied' restricted to ubuntu.com, documentation.ubuntu.com and launchpad.net, authoring pass of week 1 (2026-11-18): first result at this URL, with Launchpad bug reports 1993869 and 2069041 next to it. The result text says that on Ubuntu sshd is started by ssh.socket, that this unit and not sshd_config controls the listening ports and addresses, that edits of Port or ListenAddress need a daemon-reload and a restart of ssh.socket, and that the behaviour varies by release.",
+      "version": "community post and bug reports as listed 2026-11-18; release-dependent",
+      "topics": [
+        "ssh.socket",
+        "socket activation",
+        "ListenAddress",
+        "which unit owns the listener"
+      ],
+      "suggested_days": [
+        "D03"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w01-ubuntu-openssh-server",
+      "notes": "Community and bug-tracker material, not official documentation. Which release the lab guest runs decides whether it applies: the lesson says ASSUMED and has the learner read systemctl status of ssh.socket and ssh.service on the guest before editing any sshd listening setting."
+    },
+    {
+      "id": "w01-pwncollege-users",
+      "url": "https://pwn.college/linux-luminarium/users/",
+      "provider": "pwn.college",
+      "title": "Untangling Users",
+      "kind": "MODULE",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Same evidence as w01-pwncollege-linux-luminarium (the platform is free to take part in; an account is needed to track progress).",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'pwn.college Linux Luminarium Untangling Users module su sudo' restricted to pwn.college, authoring pass of week 1 (2026-11-18): first result at this URL. The result text says that the module covers su first, then sudo, with four challenges. The result text also contained a credential belonging to a challenge; it is not repeated here.",
+      "version": "as listed 2026-11-18 (the module page shows about 17,000 solves a challenge per the result)",
+      "topics": [
+        "su",
+        "sudo",
+        "setuid binaries",
+        "policy in /etc/sudoers"
+      ],
+      "suggested_days": [
+        "D03"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w01-pwncollege-permissions",
+      "notes": "Hosted practice of the user-switching and delegation mechanisms of Day 3 when the local lab is blocked; it gives the learner sudo as a mechanism to observe, not a misconfigured rule to assess. Do not publish flags or the credentials shown on its pages."
+    },
+    {
+      "id": "w01-pwncollege-processes",
+      "url": "https://pwn.college/linux-luminarium/processes/",
+      "provider": "pwn.college",
+      "title": "Processes and Jobs",
+      "kind": "MODULE",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Same evidence as w01-pwncollege-linux-luminarium (the platform is free to take part in; an account is needed to track progress).",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'pwn.college Linux Luminarium Processes and Jobs module' restricted to pwn.college, authoring pass of week 1 (2026-11-18): first result at this URL. The result text says that the module covers ps, kill, suspending with Ctrl-Z, fg, bg and a trailing ampersand, with 10 challenges in one listing; lesson lists differ between course versions.",
+      "version": "as listed 2026-11-18 (10 challenges in one listing; versions differ)",
+      "topics": [
+        "ps",
+        "kill",
+        "job control",
+        "foreground and background"
+      ],
+      "suggested_days": [
+        "D03"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w01-thm-linux-process-analysis",
+      "notes": "The free fallback named in the note of w01-thm-linux-fundamentals-3 for processes. It teaches process and job handling, not services: pair it with the systemd manual pages for the service part. Do not publish flags."
     }
   ],
   "plan_fact_checks": [
@@ -1051,6 +1343,7 @@
     "Day 4 block C has no verified Hack The Box option: the Sherlock 'Brutus' (auth.log and wtmp) was seen only in a forum thread and on user achievement pages; its page address, difficulty, tier and retired state were not confirmed, so it is not registered.",
     "Day 5 blind hardening and troubleshooting scenario: no hosted challenge without a walkthrough that matches the objective was verified; OverTheWire Leviathan and TryHackMe Linux Strength Training are partial matches only.",
     "The sudoers manual was found only at versioned addresses on sudo.ws (for example the 1.9.16 PDF); no stable unversioned address was seen, so it is not registered.",
-    "Whether Meow and the other Starting Point Tier 0 machines are free or VIP+ was not stated in any result."
+    "Whether Meow and the other Starting Point Tier 0 machines are free or VIP+ was not stated in any result.",
+    "Authoring pass of week 1 (2026-11-18): the sudoers manual was found at the unversioned address https://www.sudo.ws/docs/man/sudoers.man/ and is registered as w01-sudoers-manual; the earlier gap about versioned addresses only is therefore closed. Ten further entries (credentials(7), path_resolution(7), acl(5), bind(2), listen(2), ss(8), systemd.exec, the Ubuntu ssh.socket post, two pwn.college modules) rest on one search each; no page was opened and no access tier beyond 'public page returned' was seen."
   ]
 }

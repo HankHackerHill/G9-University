@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { formatDuration, formatMinutes, sentenceCase } from '../../lib/format';
+import { blockName, formatDuration, formatMinutes } from '../../lib/format';
 import { findSheet } from '../../lib/lesson-sheets';
 import { SETUP_CODES } from '../../lib/program';
 import { NON_CANONICAL_WARNING, hasWarning, mergeWarnings } from '../../lib/warnings';
@@ -188,7 +188,7 @@ export function DailyClassroom() {
                         <li key={b.seq}>
                           <div className="row-main">
                             <Link className="row-title" to="/session" title="Open the session tracker" viewTransition>
-                              {sentenceCase(b.block)}
+                              {blockName(b)}
                             </Link>
                             <span className="row-sub">
                               Block {b.seq} of {day.blocks.length}, {formatMinutes(b.minutes)} planned

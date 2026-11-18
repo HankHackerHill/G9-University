@@ -1,0 +1,41 @@
+Sample (synthetic): outputs of Stage 00 read-only rows on an invented host. Not an observation of the G9 host.
+Host label: host-01. Capture time (invented): 2099-01-01T10:00:00Z. Logged-in user (invented): learner.
+Failed client command (invented): virsh list --all
+Failed client output (invented):
+error: failed to connect to the hypervisor
+error: Failed to connect socket to '/var/run/libvirt/libvirt-sock': No such file or directory
+
+$ systemctl list-unit-files 'libvirtd*' 'virtqemud*' 'virtproxyd*' --no-pager
+UNIT FILE                STATE    PRESET
+virtproxyd-admin.socket  disabled enabled
+virtproxyd-ro.socket     disabled enabled
+virtproxyd.service       disabled enabled
+virtproxyd.socket        disabled enabled
+virtqemud-admin.socket   disabled enabled
+virtqemud-ro.socket      disabled enabled
+virtqemud.service        disabled enabled
+virtqemud.socket         enabled  enabled
+
+8 unit files listed.
+
+$ systemctl list-sockets --all --no-pager 'virt*'
+LISTEN                          UNIT                    ACTIVATES
+/run/libvirt/virtqemud-admin-sock  virtqemud-admin.socket  virtqemud.service
+/run/libvirt/virtqemud-sock-ro     virtqemud-ro.socket     virtqemud.service
+/run/libvirt/virtqemud-sock        virtqemud.socket        virtqemud.service
+
+3 sockets listed.
+
+$ ls -la /run/libvirt/
+total 0
+drwxr-xr-x  2 root root    120 Jan  1 09:41 .
+drwxr-xr-x 38 root root    980 Jan  1 09:41 ..
+srwx------  1 root root      0 Jan  1 09:41 virtqemud-admin-sock
+srwxrwx---  1 root libvirt   0 Jan  1 09:41 virtqemud-sock
+srwxrwxrwx  1 root root      0 Jan  1 09:41 virtqemud-sock-ro
+
+$ printenv LIBVIRT_DEFAULT_URI
+(no output, exit status 1)
+
+$ id
+uid=1000(learner) gid=1000(learner) groups=1000(learner),27(sudo)

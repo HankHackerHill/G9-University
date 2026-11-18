@@ -1,0 +1,4 @@
+Synthetic report, quarter 3, summary.
+region=north units=120 status=on-plan
+region=south units=95 status=on-plan
+End of synthetic report.

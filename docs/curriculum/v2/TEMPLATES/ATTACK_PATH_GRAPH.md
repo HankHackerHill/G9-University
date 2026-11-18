@@ -9,7 +9,7 @@
 
 When. In week 6 (a privilege or routing path across segments), in week 10 (directory permission paths), and for the identity or privilege path of the final. Draw a graph when a conclusion needs more than one hop: it forces every hop to state its precondition and its evidence.
 
-Where the data comes from. Only from collections that you were authorised to run, under a signed RoE for the exercise, or from a supplied synthetic dataset (`docs/curriculum/v2/SAFETY_AUTHORIZATION.md` section 2.2, classes E and H, and section 8). A graph tool shows relationships present in the data at the moment of collection. It is a model.
+Where the data comes from. Only from collections that you were authorized to run, under a signed RoE for the exercise, or from a supplied synthetic dataset (`docs/curriculum/v2/SAFETY_AUTHORIZATION.md` section 2.2: class E for a local lab, class F for a hosted exercise, and section 8). A graph tool shows relationships present in the data at the moment of collection. It is a model.
 
 Order of work.
 
@@ -17,7 +17,7 @@ Order of work.
 2. Record the collection: tool and version, time with zone, the account it ran as, and its scope (domains, hosts, object types).
 3. List the nodes and then the edges, each with its precondition.
 4. Mark every edge with its claim label (below). Do not mark an edge OBSERVED because the tool drew it.
-5. Test what you are authorised to test, edge by edge and then end to end, with a prediction written before each test and an outcome after it.
+5. Test what you are authorized to test, edge by edge and then end to end, with a prediction written before each test and an outcome after it.
 6. Write what the graph proves and does not prove (below), and the telemetry the demonstrated edges should leave.
 7. After a fix, re-collect, redraw, and test the effective access with a positive and a negative case. A graph that no longer shows the edge does not prove that the access is gone.
 
@@ -44,9 +44,9 @@ Edge claim label (what you know about the edge):
 
 | Label | Meaning | Drawn as |
 |---|---|---|
-| OBSERVED | the edge was exercised or read directly in scope, the outcome was saved, and the state at the time is recorded | solid arrow when it allowed the step; arrow with a cross when it denied it |
-| INFERRED | derived from collected data or documentation by reasoning, not exercised | dashed arrow |
-| ASSUMED | taken without data, for example a user's behaviour or a network position | dashed arrow, label says ASSUMED |
+| OBSERVED | the relationship was read directly from the system in scope (a listing), or the edge was exercised there; the output or the outcome was saved and the state at the time is recorded. A directly read right shows that the right is listed. It does not show that the right is effective for a given principal: effectiveness is OBSERVED only when exercised | solid arrow when it allowed the step; arrow with a cross when it denied it |
+| INFERRED | computed or deduced rather than read or exercised: effective rights worked out from nesting and inheritance, an edge derived by a tool, a statement of documentation | dashed arrow |
+| ASSUMED | taken without data, for example a user's behavior or a network position | dashed arrow, label says ASSUMED |
 | NOT RUN | a test is proposed, not run | dashed arrow, label says NOT RUN |
 
 Edge outcome: ALLOWED, DENIED, NOT TESTED. A tested edge that was denied stays in the graph with its evidence: a denial is a result.
@@ -55,7 +55,7 @@ Path classification (PROPOSED):
 
 | Class | Meaning |
 |---|---|
-| DEMONSTRATED | every edge was exercised in one scoped test from the stated start to the stated end, and the start and end states and the artifacts are recorded |
+| DEMONSTRATED | the whole path was exercised in one scoped test from the stated start to the stated end, the end state was reached and shown, and the start and end states, the evidence of each edge and the artifacts are recorded |
 | MODELLED | at least one edge is INFERRED, ASSUMED or NOT RUN. The path is a hypothesis, and its strength is that of its weakest edge |
 | REFUTED | a test shows an edge denied under the stated preconditions. The path is closed in that state, with the evidence |
 
@@ -111,14 +111,14 @@ An examiner ticks each line from the diagram, the registers and the evidence onl
 
 Data and scope
 
-- [ ] The collection is recorded: tool and version, time with zone, account, scope, and the authorisation (RoE id) under which it ran, or the supplied dataset's id and hash.
+- [ ] The collection is recorded: tool and version, time with zone, account, scope, and the authorization (RoE id) under which it ran, or the supplied dataset's id and hash.
 - [ ] Every node has a type, a zone, and the source and time of the fact; criticality is labelled ASSUMED unless an inventory states it.
 - [ ] Names, addresses and domain are synthetic or the plan's lab addresses; nothing real appears.
 
 Edges
 
 - [ ] Every edge has a relation, a precondition marked OBSERVED or ASSUMED, a claim label, an outcome, an evidence reference or NOT RUN, and the control that would break it.
-- [ ] No edge is labelled OBSERVED because a tool drew it; an OBSERVED edge has a saved test result with the state at the time.
+- [ ] No edge is labelled OBSERVED because a tool drew it; an OBSERVED edge has a saved result, a direct read or an exercise, with the state at the time.
 - [ ] Edges differ visually by claim label and outcome, and the legend is present.
 - [ ] A denied edge stays in the graph with its evidence.
 
@@ -141,6 +141,7 @@ Telemetry and fix
 Nothing below was observed. The graph, the names and the outcomes are invented to show the notation and the registers. The relationships are generic and are not a technique.
 
 ```mermaid
+%% Sample (synthetic): not a result of any collection or test
 flowchart LR
   subgraph CORP["CORP, 10.77.30.0/24, corp.g9.test"]
     U1["SYN-USER-A: standard user"]
@@ -153,7 +154,7 @@ flowchart LR
   U1 -->|"E1 member_of, OBSERVED"| G1
   G1 -->|"E2 member_of, OBSERVED"| G2
   G2 -.->|"E3 controls, INFERRED"| G3
-  G3 -->|"E4 grants_access_to, OBSERVED"| R1
+  G3 -->|"E4 grants_access_to (ACL read), OBSERVED"| R1
   U1 --x|"E5 can_authenticate_to, OBSERVED denied"| H2
 ```
 

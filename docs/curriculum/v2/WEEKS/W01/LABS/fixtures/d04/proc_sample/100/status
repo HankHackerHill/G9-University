@@ -1,0 +1,19 @@
+Name:	python3
+Umask:	0027
+State:	S (sleeping)
+Tgid:	100
+Pid:	100
+PPid:	1
+TracerPid:	0
+Uid:	998	998	998	998
+Gid:	998	998	998	998
+FDSize:	64
+Groups:	
+Threads:	1
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	0000000000000000
+CapAmb:	0000000000000000
+NoNewPrivs:	1
+Seccomp:	0

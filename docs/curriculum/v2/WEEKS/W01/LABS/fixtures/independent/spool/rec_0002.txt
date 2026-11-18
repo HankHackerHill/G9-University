@@ -1,0 +1,4 @@
+Synthetic audit record 0002.
+event=login actor=synthetic-c result=denied
+event=login actor=synthetic-c result=denied
+End of synthetic record.

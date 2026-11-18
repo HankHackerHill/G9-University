@@ -16,6 +16,7 @@ import { OPERATION_NAMES, type OperationName } from './operations';
 import { IPC_LIMITS, payloadCap, type JsonValue } from './types';
 import { createMockClock, createMockTransport } from './transports/mock';
 import { encodeBase64 } from './transports/mock-attachments';
+import { asJson, v2Manifest } from '../test/v2-manifest';
 
 const SCHEMA_DIR = fileURLToPath(new URL('../../../../schemas/ipc/', import.meta.url));
 
@@ -375,5 +376,76 @@ describe('mock responses of a new install validate against the response schemas'
     expect(loaded.loaded).toBe(64);
     expect((await check('backup.list', {})).backups).toEqual([]);
     expect((await check('notes.list', {})).notes).toEqual([]);
+  });
+});
+
+
+describe('the response schemas require the structure fields of ADR-0023', () => {
+  const clock = createMockClock();
+  const transport = createMockTransport({ clock, fresh: true });
+  let n = 0;
+  const client = createClient(transport, {
+    now: () => clock.now(),
+    uuid: () => {
+      n += 1;
+      return `v${n}`;
+    },
+  });
+  const outcomeValidator = validator('command-outcome.schema.json');
+
+  async function check<K extends OperationName>(op: K, payload: Parameters<typeof client.invoke<K>>[1], options?: InvokeOptions) {
+    const r = await client.invoke(op, payload, options);
+    if (isG9Error(r)) {
+      throw new Error(`${op} failed: ${r.category} ${r.code}`);
+    }
+    expect(outcomeValidator(r), `${op} envelope ${JSON.stringify(outcomeValidator.errors)}`).toBe(true);
+    const validate = validator(`${op}.response.schema.json`);
+    expect(validate(r.result), `${op} ${JSON.stringify(validate.errors)}`).toBe(true);
+    return r.result;
+  }
+
+  it('lists profile, days_per_week and label as required, in both response schemas', () => {
+    const program = schemas.get('curriculum.program.response.schema.json') as { properties: { curriculum: { required: string[] } } };
+    expect(program.properties.curriculum.required).toEqual(expect.arrayContaining(['profile', 'days_per_week']));
+    const plan = schemas.get('curriculum.daily_plan.response.schema.json') as { properties: { blocks: { items: { required: string[] } } } };
+    expect(plan.properties.blocks.items.required).toContain('label');
+  });
+
+  it('walks a v2 program: import, program, a Monday, a Friday, a Saturday and a Sunday, plan_day; every answer validates', async () => {
+    const manifest = asJson(v2Manifest());
+    const asked = await client.invoke('curriculum.import', { manifest, provenance: 'PROPOSED_SEED' });
+    if (!isG9Error(asked) || asked.approval_id === undefined) {
+      throw new Error('curriculum.import: expected APPROVAL_REQUIRED');
+    }
+    await check('approvals.decide', { approval_id: asked.approval_id, decision: 'APPROVE' });
+    await check('curriculum.import', { manifest, provenance: 'PROPOSED_SEED' }, { approvalId: asked.approval_id });
+
+    const program = await check('curriculum.program', {});
+    expect(program.curriculum).toMatchObject({ profile: 'MASTERY_V2', days_per_week: 5, weeks: 12, days: 60, objectives: 180, planned_minutes: 28_800 });
+    await check('curriculum.set_program_start', { date: '2026-11-02', day_start: '08:00' });
+    const monday = await check('curriculum.daily_plan', { date: '2026-11-02' });
+    expect(monday.blocks.every((b) => b.label.length > 0)).toBe(true);
+    const friday = await check('curriculum.daily_plan', { date: '2026-11-06' });
+    expect(friday.blocks.map((b) => b.label)).toEqual(['Active recall', 'Knowledge exam', 'Review and planning', 'Scored practical', 'Scoring and report']);
+    expect((await check('curriculum.daily_plan', { date: '2026-11-07' })).unscheduled).toBe(true);
+    expect((await check('curriculum.daily_plan', { date: '2026-11-08' })).unscheduled).toBe(true);
+    expect((await check('curriculum.daily_plan', { date: '2027-01-25' })).week_number).toBeNull();
+    expect((await check('session.plan_day', { date: '2026-11-04' })).created).toHaveLength(5);
+  });
+
+  it('refuses an answer without the fields: the interface that predates them no longer validates', async () => {
+    const withoutLabel = await check('curriculum.daily_plan', { date: '2026-11-04' });
+    const validatePlan = validator('curriculum.daily_plan.response.schema.json');
+    const stripped = { ...withoutLabel, blocks: withoutLabel.blocks.map((b) => Object.fromEntries(Object.entries(b).filter(([key]) => key !== 'label'))) };
+    expect(validatePlan(stripped)).toBe(false);
+    const program = await check('curriculum.program', {});
+    const validateProgram = validator('curriculum.program.response.schema.json');
+    for (const field of ['profile', 'days_per_week'] as const) {
+      const curriculum = Object.fromEntries(Object.entries(program.curriculum ?? {}).filter(([key]) => key !== field));
+      expect(validateProgram({ ...program, curriculum }), field).toBe(false);
+    }
+    // Present, they stay typed.
+    expect(validateProgram({ ...program, curriculum: { ...program.curriculum, profile: 'CT9_420' } })).toBe(false);
+    expect(validateProgram({ ...program, curriculum: { ...program.curriculum, days_per_week: 7 } })).toBe(false);
   });
 });

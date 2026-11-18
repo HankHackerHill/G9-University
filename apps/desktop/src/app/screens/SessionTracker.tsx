@@ -1,9 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { isG9Error, type InvokeResult } from '../../ipc/client';
-import type { PlannedSessionMode, RequestOf, SessionView, TimeCorrection, TimeInterval } from '../../ipc/operations';
+import type { DailyPlan, PlannedSessionMode, RequestOf, SessionView, TimeCorrection, TimeInterval } from '../../ipc/operations';
 import type { G9Error, IanaZone, SessionEvent } from '../../ipc/types';
 import { civilToUtc, parseLocalDateTime } from '../../lib/civil-time';
-import { formatDateTime, formatDuration, formatMinutes, formatTime, sentenceCase } from '../../lib/format';
+import { formatDateTime, formatDuration, formatMinutes, formatTime, sessionBlockName } from '../../lib/format';
 import { dayNumber } from '../../lib/program';
 import { SESSION_MACHINE, can, type SESSION_OPERATION_EVENTS } from '../../lib/state-machines';
 import { mergeWarnings, warningsOf } from '../../lib/warnings';
@@ -95,10 +95,12 @@ const OBJECTIVE_CODE = /^[A-Za-z0-9._:-]{1,128}$/;
 
 /**
  * A session's name: its curriculum block, or "Your session" for one you planned yourself. The
- * backend labels those `UNLINKED` (`session_view`); they run like any other session.
+ * backend labels those `UNLINKED` (`session_view`); they run like any other session. A session
+ * carries only the block code: the name the curriculum's profile gives the block comes from the
+ * day plan that lists the session (`plan`), and a session of another day is named from its code.
  */
-export function blockLabel(session: SessionView): string {
-  return session.block === 'UNLINKED' ? 'Your session' : sentenceCase(session.block);
+export function blockLabel(session: SessionView, plan: DailyPlan | null = null): string {
+  return session.block === 'UNLINKED' ? 'Your session' : sessionBlockName(session, plan);
 }
 
 function ownSession(session: SessionView): boolean {
@@ -284,7 +286,7 @@ export function SessionTracker() {
         >
           <span className="row-main">
             <span className="row-title">
-              {withDay && !ownSession(s) ? <code>{s.day_id}</code> : null} {blockLabel(s)}
+              {withDay && !ownSession(s) ? <code>{s.day_id}</code> : null} {blockLabel(s, dayPlan.data)}
             </span>
             <span className="row-sub">{rowSub(s)}</span>
           </span>
@@ -496,7 +498,7 @@ export function SessionTracker() {
             </Panel>
           ) : (
             <>
-              <Instrument title={blockLabel(selected)} actions={<StateBadge state={selected.state} />} label={`Session: ${blockLabel(selected)}`}>
+              <Instrument title={blockLabel(selected, dayPlan.data)} actions={<StateBadge state={selected.state} />} label={`Session: ${blockLabel(selected, dayPlan.data)}`}>
                 <p className="muted small">{dayLine(selected)}</p>
                 <div className="timesheet">
                   <p className="timesheet-figure">

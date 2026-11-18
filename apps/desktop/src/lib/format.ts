@@ -60,3 +60,24 @@ export function sentenceCase(value: string): string {
   const text = humanizeEnum(value);
   return text.length === 0 ? text : `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 }
+
+/**
+ * The name of a planned block on screen. The plan's `label` is what the structure profile of the
+ * active version calls the block on that kind of day (ADR-0023: `guided lab` in the Appendix A shape,
+ * `Tool practice` in the v2 plan), so it is printed as it is, with its first letter capital. Only a
+ * block without a label (an answer that carries none) falls back to the block code as a sentence.
+ */
+export function blockName(block: { block: string; label?: string | undefined }): string {
+  const label = block.label;
+  return label === undefined || label === '' ? sentenceCase(block.block) : `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
+}
+
+/**
+ * The name of the block a session belongs to. A session carries only the block code, so its label
+ * comes from the day plan that lists the session; a session the plan does not list (another day,
+ * or the plan not read) is named from its code.
+ */
+export function sessionBlockName(session: { session_id: string; block: string }, plan: { blocks: readonly { session_id: string | null; block: string; label?: string | undefined }[] } | null): string {
+  const planned = plan?.blocks.find((b) => b.session_id === session.session_id);
+  return planned === undefined ? sentenceCase(session.block) : blockName(planned);
+}

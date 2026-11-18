@@ -1,0 +1,4 @@
+Synthetic spool batch 0001.
+item=a-100 qty=4
+item=b-200 qty=9
+End of synthetic batch.

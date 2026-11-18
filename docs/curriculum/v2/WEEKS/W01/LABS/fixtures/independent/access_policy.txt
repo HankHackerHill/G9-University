@@ -1,0 +1,15 @@
+Synthetic access policy for the audit-intake service on G9-TGT-01 (lab file, no real data). Version 1.
+
+Principals
+  labadmin   administrator account of the guest; may use sudo for any command.
+  svcaudit   service account; runs the audit-intake service; no login shell.
+  labuser3   auditor; member of group auditors.
+  labuser4   operator; member of group ops.
+
+Required access
+  R1  The service runs as svcaudit and has no privilege beyond that account.
+  R2  The service listens on 127.0.0.1 port 8090 and on no other address.
+  R3  Auditors may read the records in /srv/g9toy-audit/spool. Nobody except the service account may change them.
+  R4  Operators may restart the service. Operators may not read or change records. An operator may place one file named requeue_ops.txt in the spool directory.
+  R5  Only labuser3, labuser4 and labadmin may log in over SSH, with a key. Password logins are not allowed. Root may not log in with a password.
+  R6  A secret used by the service is not visible to an unprivileged account.

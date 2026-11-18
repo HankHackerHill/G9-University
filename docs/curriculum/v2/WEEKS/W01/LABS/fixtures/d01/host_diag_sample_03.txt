@@ -1,0 +1,32 @@
+Sample (synthetic): outputs of Stage 00 read-only rows on an invented host. Not an observation of the G9 host.
+Host label: host-03. Capture time (invented): 2099-01-01T10:10:00Z. Logged-in user (invented): learner.
+Failed client command (invented): virsh list --all
+Failed client output (invented):
+error: failed to connect to the hypervisor
+error: Failed to connect socket to '/var/run/libvirt/libvirt-sock': No such file or directory
+
+$ systemctl list-unit-files 'libvirtd*' 'virtqemud*' 'virtproxyd*' --no-pager
+UNIT FILE               STATE    PRESET
+libvirtd-admin.socket   disabled enabled
+libvirtd-ro.socket      disabled enabled
+libvirtd.service        disabled enabled
+libvirtd.socket         disabled enabled
+
+4 unit files listed.
+
+$ systemctl status libvirtd.service libvirtd.socket --no-pager
+o libvirtd.service - libvirt legacy monolithic daemon
+     Loaded: loaded (/usr/lib/systemd/system/libvirtd.service; disabled; preset: enabled)
+     Active: inactive (dead)
+TriggeredBy: o libvirtd.socket
+o libvirtd.socket - libvirt legacy monolithic daemon socket
+     Loaded: loaded (/usr/lib/systemd/system/libvirtd.socket; disabled; preset: enabled)
+     Active: inactive (dead)
+   Triggers: o libvirtd.service
+     Listen: /run/libvirt/libvirt-sock (Stream)
+
+$ ls -la /run/libvirt/
+ls: cannot access '/run/libvirt/': No such file or directory
+
+$ uptime -s
+2099-01-01 09:41:07

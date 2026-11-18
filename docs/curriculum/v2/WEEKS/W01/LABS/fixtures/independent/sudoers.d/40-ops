@@ -1,0 +1,2 @@
+# Synthetic lab file. No real accounts.
+labuser4 ALL=(root) NOPASSWD: /usr/bin/systemctl restart g9toy-audit.service, /usr/bin/tee /srv/g9toy-audit/spool/requeue_*

@@ -14,9 +14,17 @@ What it is for. It lets one person decide what to do about the risk without read
 
 Business context. The lab has no real business, so "business terms" need a stated context. Write the modelled context once, in one sentence, and label it ASSUMED (for example the kind of service the lab asset stands for and what an outage or a disclosure would cost the sponsor). Every business statement afterwards is an inference from that context, and is labelled INFERRED. Do not invent costs, losses, user counts or regulatory outcomes.
 
-Sanitising. A report made from a platform-designated active target is never published: no flags, credentials found, step orders or screenshots (`docs/curriculum/v2/SAFETY_AUTHORIZATION.md` section 8.1). Replace asset names with the target ids of the scope line, use synthetic names only, and keep the lab addresses of the plan (`10.77.10.0/24` RED, `10.77.20.0/24` DMZ, `10.77.30.0/24` CORP, domain `corp.g9.test`). No real host, person or organisation appears.
+Sanitizing. A report made from a platform-designated active target is never published: no flags, credentials found, step orders or screenshots (`docs/curriculum/v2/SAFETY_AUTHORIZATION.md` section 8.1). Replace asset names with the target ids of the scope line, use synthetic names only, and keep the lab addresses of the plan (`10.77.10.0/24` RED, `10.77.20.0/24` DMZ, `10.77.30.0/24` CORP, domain `corp.g9.test`). No real host, person or organization appears.
 
 Done when the quality checks below are ticked, the findings table matches the technical report row for row, and the evidence bundle of the engagement carries a recorded SHA-256 hash that the report names.
+
+## Status vocabulary
+
+| Where | Words |
+|---|---|
+| The report | draft (not yet checked against the technical report and the evidence) and final (every quality check ticked, the findings table equal to the technical report's) |
+| A finding | Confirmed, Unconfirmed, False positive, Not retested, as defined in `docs/curriculum/v2/TEMPLATES/PENTEST_FINDING.md`; never a word of your own |
+| A claim | OBSERVED, INFERRED, ASSUMED, UNVERIFIED, NOT RUN |
 
 ## Sections
 
@@ -29,7 +37,7 @@ Done when the quality checks below are ticked, the findings table matches the te
 | 4 | What was tested and what was not | a table of areas with the depth reached, the method (manual or tool-assisted), the evidence, and the limit | the "not tested" rows are as visible as the tested ones. An area with no findings is "no issue found in the tests run", never "secure" |
 | 5 | Top findings | the highest-priority findings, at most five, with the plain-language consequence, priority, status and the finding id | statuses use the vocabulary of the finding template; an Unconfirmed finding is listed as Unconfirmed and is not ranked as if it were Confirmed |
 | 6 | Fixes and retests | what was corrected in the lab, what was retested and with what result, and what was recommended and not applied | a retest appears here only if its artifact is in the evidence bundle |
-| 7 | Residual risk | what remains open after the work, why, and what is not known | summarises the unresolved-risk register of the technical report; the register itself is not repeated |
+| 7 | Residual risk | what remains open after the work, why, and what is not known | summarizes the unresolved-risk register of the technical report; the register itself is not repeated |
 | 8 | Decisions needed | the decisions the reader must take, with options, a recommendation, the consequence of delay, who decides and by when | an item the reader cannot act on is removed |
 | 9 | Pointers | the technical report id, the evidence bundle hash and where the evidence is kept | no evidence is attached to this report |
 
@@ -122,7 +130,7 @@ Residual risk and decisions
 Safety and handling
 
 - [ ] The report names the evidence bundle hash that was recorded before the report was written.
-- [ ] Nothing in it is real: no host, person, organisation, credential or data; no flag or step order of an active third-party target.
+- [ ] Nothing in it is real: no host, person, organization, credential or data; no flag or step order of an active third-party target.
 
 ## Sample (synthetic)
 

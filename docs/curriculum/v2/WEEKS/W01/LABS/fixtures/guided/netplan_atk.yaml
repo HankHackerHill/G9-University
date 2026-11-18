@@ -1,0 +1,13 @@
+# G9-ATK-01 static addressing, RED zone, no router (stack A). Synthetic lab file.
+# The interface name is an assumption: read it with `ip -br link` in the guest first.
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp1s0:
+      dhcp4: false
+      dhcp6: false
+      accept-ra: false
+      link-local: []
+      addresses:
+        - 10.77.10.10/24

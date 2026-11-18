@@ -7,7 +7,7 @@
 
 ## How to use
 
-When. One record per detection (one behaviour, one rule version), in week 7 and again in week 12 for the capstone's three tested detections, and whenever a day's block D asks for a detection to be tested. A rule whose record shows only a positive result is not a tested detection.
+When. One record per detection (one behavior, one rule version), in week 7 and again in week 12 for the capstone's three tested detections, and whenever a day's block D asks for a detection to be tested. A rule whose record shows only a positive result is not a tested detection.
 
 The ten steps (plan, week 7), in order. Each step has a place in the record.
 
@@ -28,7 +28,7 @@ Why the steps are separate. Generation of the event, collection at the host, and
 
 Safety. Fixtures are synthetic or benign simulations in the instrumented lab, run only after the RoE for that exercise is signed (`docs/curriculum/v2/SAFETY_AUTHORIZATION.md` section 2.2, class E). Replaying a stored event file tests the rule and the parser. It does not test whether the host produces the event. Say which one you did. Lab addresses are the plan's (`10.77.30.0/24` CORP, with the Wazuh server at `10.77.30.30`; `docs/curriculum/v2/LAB_ARCHITECTURE.md`) and the domain is `corp.g9.test`.
 
-Done when the quality checks below are ticked, both fixtures were run with their outcomes recorded, the event was seen at the source and at the collector, and a stranger could rebuild the test from the record.
+Done when the quality checks below are ticked, the positive fixture and every negative fixture were run with their outcomes recorded, the event was seen at the source and at the collector, and a stranger could rebuild the test from the record.
 
 ## Status vocabulary
 
@@ -39,7 +39,7 @@ The plan gives this record no status field and no status words. The words below 
 | PROPOSED | designed on paper; nothing run | the expected event and the rule text |
 | TESTED | the positive and at least two negative fixtures were run and their outcomes recorded | outcomes, times and identifiers; the source and collector sightings |
 | FAILED | an expected outcome was not obtained (a missed positive, a matched negative, no ingestion) | what was observed, in which of the three places the chain broke, your next hypothesis. A FAILED record is complete and valid |
-| VERIFIED | TESTED, and the source event was confirmed at the host and at the collector, and the positive was repeated | all sightings and runs attached, the limits stated. It means the rule fires on these fixtures in this pipeline. It does not mean the behaviour is covered in general |
+| VERIFIED | TESTED, and the source event was confirmed at the host and at the collector, and the positive was repeated | all sightings and runs attached, the limits stated. It means the rule fires on these fixtures in this pipeline. It does not mean the behavior is covered in general |
 
 Outcome words for a fixture: MATCH, NO MATCH, NOT RUN. Words for each sighting: SEEN, NOT SEEN, NOT RUN, with the time and the place.
 
@@ -49,8 +49,8 @@ The field names below are the plan's, in the plan's order. Keep them unchanged.
 
 | Field | What to write (one line) |
 |---|---|
-| Detection ID | a unique id, the rule version, the status word, and the behaviour in one sentence; the rule is a hypothesis until tested |
-| ATT&CK behavior mapping (if applicable) | a technique id only where your fixture shows the behaviour, with the ATT&CK version you mapped against; "not applicable" is valid, for example for a telemetry-health rule; never map from a tool's name |
+| Detection ID | a unique id, the rule version, the status word, and the behavior in one sentence; the rule is a hypothesis until tested |
+| ATT&CK behavior mapping (if applicable) | a technique id only where your fixture shows the behavior, with the ATT&CK version you mapped against; "not applicable" is valid, for example for a telemetry-health rule; never map from a tool's name |
 | Target event/log source and actual enabled configuration | the source and its event family (a Windows Security id and a Sysmon id are different families), the host id, and the configuration that makes it exist: the audit setting or the Sysmon configuration excerpt, read from the host and not assumed |
 | Field mapping/parser/backend | the Sigma logsource and field names, the backend and converter with versions, the decoder or parser, and each field that is renamed or missing between source and SIEM |
 | Test fixture and exact event time | the fixture id and SHA-256, how it was produced (generated live in the lab, or replayed from a file), the start and end of the action in UTC and local time with zone, and the clock source |
@@ -60,7 +60,7 @@ The field names below are the plan's, in the plan's order. Keep them unchanged.
 | Benign negative fixture / outcome | at least two fixtures that must not trigger: a near miss that differs from the positive in one controlled variable, and legitimate activity that produces a similar event; each with predicted and observed outcome; plus the case where the source is disabled and the gap is detected |
 | Known false positives/false negatives | measured items as counts on named fixtures, reasoned items labelled INFERRED, the blind spots (sensor placement, encryption, sampling, drops, retention), and what a miss would look like |
 | Investigation and response playbook | what an analyst checks when the alert fires, what decides escalation, which other sources confirm or refute, and what is not done automatically; an alert is not a verdict |
-| Change/retune log | an append-only list: version, date and time with zone, what changed, why, the effect on both fixtures, and the status after the change. Rerun both fixtures after every change |
+| Change/retune log | an append-only list: version, date and time with zone, what changed, why, the effect on the fixtures, and the status after the change. Rerun the positive and every negative fixture after every change |
 
 ## Blank record
 
@@ -99,19 +99,19 @@ Rule and fixtures
 - [ ] The positive outcome was predicted before the run, observed with an alert identifier and time, and repeated at least once.
 - [ ] There are at least two benign negatives, one of them a near miss that differs in one controlled variable, and one legitimate activity that produces a similar event.
 - [ ] The disabled-source case is recorded: the record shows how a missing source is noticed.
-- [ ] A negative that matched is recorded as a false positive, and the rule was retuned and both fixtures rerun.
+- [ ] A negative that matched is recorded as a false positive, and the rule was retuned and the positive and every negative fixture rerun.
 
 Claims and limits
 
-- [ ] The ATT&CK mapping rests on the behaviour the fixture shows. No technique is declared from one event id or one field value; the record names the second observation that supports the mapping (plan section 5, weeks 7 and 10).
+- [ ] The ATT&CK mapping rests on the behavior the fixture shows. No technique is declared from one event id or one field value; the record names the second observation that supports the mapping (plan section 5, weeks 7 and 10).
 - [ ] False positives and false negatives are counts on named fixtures, and no rate or coverage claim is made from them.
-- [ ] A missing alert is analysed in the three places (generation, collection, ingestion) and is never read as an absent action.
+- [ ] A missing alert is analyzed in the three places (generation, collection, ingestion) and is never read as an absent action.
 - [ ] Blind spots and sensor placement assumptions are named.
 
 Handling
 
 - [ ] The playbook says what an analyst does and what is not automated, and treats an alert as a lead, not a verdict.
-- [ ] Every change is in the retune log with its reason and its effect on both fixtures; no earlier entry was edited.
+- [ ] Every change is in the retune log with its reason and its effect on the fixtures; no earlier entry was edited.
 - [ ] Fixtures are synthetic or benign, hashed, and contain no real data.
 - [ ] The status is the lowest that the evidence supports, and VERIFIED has the repeat and both sightings.
 
@@ -121,8 +121,9 @@ Nothing below was observed. The detection, the fixtures, the counts and the date
 
 ```text
 Sample (synthetic): not a result of any test.
-Detection ID: SYN-DET-001 v1, status TESTED. Behaviour (sample): six failed logons for
-              one account from one source within 60 seconds (threshold 5).
+Detection ID: SYN-DET-001 v1, status FAILED (a negative fixture matched). Behavior
+              (sample): six failed logons for one account from one source within 60
+              seconds (threshold 5).
 Positive fixture SYN-FX-POS-01 (replayed from a file; so the host's production of the
 event is NOT RUN). Predicted MATCH. Observed MATCH at 2099-01-01T10:00:05Z (synthetic).
 Negative fixtures:
@@ -132,7 +133,7 @@ Negative fixtures:
                 password retries six times from its usual host. Predicted NO MATCH.
                 Observed MATCH (synthetic): a false positive. Retune logged as v2 with
                 its reason and its risk (a host exclusion can hide real misuse from
-                that host); both fixtures to be rerun.
+                that host); all fixtures to be rerun.
 Counts on named fixtures (sample): true match 1 of 1 positive fixtures; false match 1 of
 2 negative fixtures. No rate or coverage is claimed from three fixtures.
 ```

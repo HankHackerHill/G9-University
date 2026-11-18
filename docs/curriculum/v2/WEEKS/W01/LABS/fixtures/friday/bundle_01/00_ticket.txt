@@ -1,0 +1,14 @@
+Synthetic ticket (lab file). Opened 2099-01-05T08:30:00Z by an invented requester. No real data.
+
+Context: the host tgt runs the spool service g9toy-spool, which hands batches from one team to another.
+One team reads batches; the other delivers new ones.
+
+Symptoms reported
+  S1  labuser6 says the service answers "permission denied" for batch_0002.txt, while batch_0001.txt is served.
+  S2  labuser6 says key-based SSH login stopped working yesterday evening and that nothing was changed on that account.
+
+Request: find the cause of S1 and S2; say whether the access of any account or process exceeds its role;
+propose a correction for each finding and a way to test it.
+
+Access given to you: the account labanalyst, which has no sudo. Material that labanalyst cannot read was
+requested from labadmin and is marked "labadmin extract". All times are UTC.

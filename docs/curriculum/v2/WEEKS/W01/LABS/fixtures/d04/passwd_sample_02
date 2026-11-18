@@ -1,0 +1,9 @@
+root:x:0:0:root:/root:/bin/bash
+svclab:x:998:998::/nonexistent
+labadmin:x:1000:1000:Lab Admin:/home/labadmin:/bin/bash:extra
+labuser1:x:abc:1001::/home/labuser1:/bin/bash
+
+:x:1003:1003::/home/x:/bin/bash
+labuser2:x:1002:1002::/home/labuser2:/bin/bash
+labuser2:x:1002:1002::/home/labuser2:/bin/bash
++::::::

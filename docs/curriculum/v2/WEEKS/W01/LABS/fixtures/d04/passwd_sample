@@ -1,0 +1,6 @@
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+svclab:x:998:998::/nonexistent:/usr/sbin/nologin
+labadmin:x:1000:1000:Lab Admin:/home/labadmin:/bin/bash
+labuser1:x:1001:1001::/home/labuser1:/bin/bash
+labuser2:x:1002:1002::/home/labuser2:/bin/bash

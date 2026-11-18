@@ -1,0 +1,29 @@
+Sample (synthetic): outputs of Stage 00 read-only rows on an invented host. Not an observation of the G9 host.
+Host label: host-02. Capture time (invented): 2099-01-01T10:05:00Z. Logged-in user (invented): learner.
+Failed client command (invented): virsh list --all
+Failed client output (invented):
+error: failed to connect to the hypervisor
+error: Failed to connect socket to '/var/run/libvirt/libvirt-sock': No such file or directory
+
+$ systemctl list-unit-files 'libvirtd*' 'virtqemud*' 'virtproxyd*' --no-pager
+0 unit files listed.
+
+$ systemctl list-unit-files 'virt*' 'libvirt*' --no-pager
+0 unit files listed.
+
+$ ls -la /run/libvirt/
+ls: cannot access '/run/libvirt/': No such file or directory
+
+$ dpkg-query -W -f='${Package} ${Version} ${db:Status-Abbrev}\n' 'libvirt*' 'qemu*' 'virtinst' 'dnsmasq*'
+libvirt-clients 99.0.0-1synthetic ii 
+libvirt0:amd64 99.0.0-1synthetic ii 
+dpkg-query: no packages found matching qemu*
+dpkg-query: no packages found matching virtinst
+dpkg-query: no packages found matching dnsmasq*
+
+$ command -v virsh virt-host-validate qemu-system-x86_64 libvirtd virtqemud virtproxyd
+/usr/bin/virsh
+/usr/bin/virt-host-validate
+
+$ ls -l /dev/kvm
+crw-rw----+ 1 root kvm 10, 232 Jan  1 09:41 /dev/kvm

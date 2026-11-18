@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import type { DailyPlan, SessionView } from '../../ipc/operations';
 import { addDays, startOfDayUtc } from '../../lib/civil-time';
-import { formatCivilDate, formatDateTime, formatDuration, formatMinutes, formatTime, sentenceCase } from '../../lib/format';
+import { blockName, formatCivilDate, formatDateTime, formatDuration, formatMinutes, formatTime, sessionBlockName } from '../../lib/format';
 import { DAYS_PER_WEEK, PROGRAM_DAYS, dayNumber, programMap } from '../../lib/program';
 import { NON_CANONICAL_WARNING, hasWarning, mergeWarnings } from '../../lib/warnings';
 import { ProvenanceBadge, StateBadge } from '../components/Badge';
@@ -84,19 +84,19 @@ function NowBlock({
     meta = sessionsFailed ? 'The reason is shown above. Nothing is assumed about your time.' : '';
   } else if (active !== undefined) {
     kicker = active.state === 'RUNNING' ? 'Running now' : 'Paused';
-    title = sentenceCase(active.block);
+    title = sessionBlockName(active, plan);
     meta = `${formatDuration(active.credited_ms)} credited of ${formatDuration(active.planned_ms)} planned`;
     action = { to: '/session', label: active.state === 'RUNNING' ? 'Open the timer' : 'Resume in the session tracker' };
   } else if (interrupted !== undefined) {
     kicker = 'Needs you';
-    title = `${sentenceCase(interrupted.block)} was interrupted`;
+    title = `${sessionBlockName(interrupted, plan)} was interrupted`;
     meta = `${formatDuration(interrupted.uncertain_ms)} could not be vouched for and is not credited until you correct it.`;
     action = { to: '/session', label: 'Correct the time' };
   } else if (next !== undefined) {
     kicker = 'Next';
-    title = sentenceCase(next.block);
+    title = sessionBlockName(next, plan);
     meta = `${formatMinutes(Math.round(next.planned_ms / 60_000))} planned${blockCount === null ? '' : `, block ${next.block_seq} of ${blockCount}`}`;
-    action = { to: '/session', label: `Go to ${sentenceCase(next.block).toLowerCase()}` };
+    action = { to: '/session', label: `Go to ${sessionBlockName(next, plan).toLowerCase()}` };
   } else if (plan?.unscheduled === true) {
     kicker = 'Today';
     title = 'Rest day';
@@ -304,7 +304,7 @@ export function MissionControl() {
                         key: `${b.seq}`,
                         cells: [
                           b.seq,
-                          sentenceCase(b.block),
+                          blockName(b),
                           formatMinutes(b.minutes),
                           session === undefined ? '—' : formatDuration(session.credited_ms),
                           session === undefined ? '—' : formatDuration(session.uncertain_ms),
@@ -321,7 +321,7 @@ export function MissionControl() {
                     const session = todaySessions?.find((x) => x.session_id === b.session_id);
                     return {
                       key: `${b.seq}`,
-                      name: sentenceCase(b.block),
+                      name: blockName(b),
                       of: b.minutes * 60_000,
                       posted: session?.credited_ms ?? 0,
                       doubted: session?.uncertain_ms ?? 0,

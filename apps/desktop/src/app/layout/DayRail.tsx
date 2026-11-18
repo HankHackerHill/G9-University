@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { SessionView, SystemStatus } from '../../ipc/operations';
 import { civilDateOf, formatIsoDate } from '../../lib/civil-time';
-import { formatDuration, formatMinutes, humanizeEnum, sentenceCase } from '../../lib/format';
+import { blockName, formatDuration, formatMinutes, humanizeEnum } from '../../lib/format';
 import { SETUP_CODES } from '../../lib/program';
 import { useCommand } from '../hooks/useCommand';
 
@@ -83,7 +83,7 @@ export function DayRail({ status, epoch, clock }: { status: SystemStatus | null;
         <ol className="rail" aria-label={summary} data-drawn="true">
           {blocks.map((b) => {
             const session = list?.find((x) => x.session_id === b.session_id);
-            const name = sentenceCase(b.block);
+            const name = blockName(b);
             const postedShare = session === undefined ? 0 : share(session.credited_ms, session.planned_ms);
             const doubtShare = session === undefined ? 0 : Math.min(share(session.uncertain_ms, session.planned_ms), 1 - postedShare);
             const attention = session !== undefined && (session.requires_correction || session.state === 'INTERRUPTED');

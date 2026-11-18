@@ -3,7 +3,7 @@
 - Source: plan section 11.1 (standard lab record). The plan's block D asks for "one concise lab record" per substantial lab (sections 10.1 and 10.4).
 - Status: PROPOSED. This is a blank template. It holds no result, and no record made with it exists in the repository.
 - Reader: the learner, who fills it, and the examiner (the owner, as instructor), who ticks the quality checks.
-- Related: what each field must hold is also summarised in `docs/curriculum/v2/STUDENT_GUIDE.md` section 10; the scope line is defined in `docs/curriculum/v2/SAFETY_AUTHORIZATION.md` section 2.4; the marking of the evidence is in `docs/curriculum/v2/ASSESSMENTS/GRADING_RUBRICS.md`.
+- Related: what each field must hold is also summarized in `docs/curriculum/v2/STUDENT_GUIDE.md` section 10; the scope line is defined in `docs/curriculum/v2/SAFETY_AUTHORIZATION.md` section 2.4; the marking of the evidence is in `docs/curriculum/v2/ASSESSMENTS/GRADING_RUBRICS.md`.
 - Labels in a record made with this template: OBSERVED, INFERRED, ASSUMED, UNVERIFIED, NOT RUN. A claim without one of them is not a claim.
 
 ## How to use
@@ -22,7 +22,7 @@ Done when all five hold:
 
 Where it is kept. The record is your own file: in the Learning Journal or a private folder, never in the course source. While an assessment attempt is open, keep your notes in a private file and attach them when you submit (`docs/curriculum/v2/STUDENT_GUIDE.md` section 10).
 
-What never goes in. Real credentials, real hosts, real people or organisations; flags, step orders, payload sequences or screenshots of an active third-party machine, challenge or room; text copied from a vendor course. Use synthetic credentials such as `<synthetic-password>` and the lab addresses of the plan only (`10.77.10.0/24` RED, `10.77.20.0/24` DMZ, `10.77.30.0/24` CORP, domain `corp.g9.test`).
+What never goes in. Real credentials, real hosts, real people or organizations; flags, step orders, payload sequences or screenshots of an active third-party machine, challenge or room; text copied from a vendor course. Use synthetic credentials such as `<synthetic-password>` and the lab addresses of the plan only (`10.77.10.0/24` RED, `10.77.20.0/24` DMZ, `10.77.30.0/24` CORP, domain `corp.g9.test`).
 
 ## Status vocabulary
 
@@ -58,7 +58,7 @@ The field names below are the plan's, in the plan's order. Keep them unchanged.
 | Impact and realistic exploitability limitations | what the evidence supports, with the preconditions and privilege it needs, and what it does not support: a crash is not a vulnerability, a version match is not an impact, a missing mitigation is not an exploit path |
 | Defensive signals and telemetry gaps | what was logged, where, confirmed at the source and again at the collector; what was not logged; a missing event is a gap, never proof that nothing happened |
 | Remediation or compensating control | the change that removes the cause, its side effects and its rollback; a compensating control is labelled as one and never replaces the fix |
-| Positive retest / negative retest | positive: the permitted behaviour still works; negative: the forbidden behaviour now fails, in a near-miss form that differs from the positive in one variable; each with its artifact and time. "Retest passed" with no artifact is an evidence-integrity failure |
+| Positive retest / negative retest | positive: the permitted behavior still works; negative: the forbidden behavior now fails, in a near-miss form that differs from the positive in one variable; each with its artifact and time. "Retest passed" with no artifact is an evidence-integrity failure |
 | Recovery / cleanup | each temporary change (account, rule, route, listener, file) and how its reversal was verified, the baseline id restored, and the isolation test rerun if a route, rule or listener was added |
 | Confidence (observed, inferred, unresolved) | three lists, and every claim of the record sits in one of them; end with the independence declaration: hint level used (0 to 3), published solution or walkthrough read (yes or no, and when), AI assistant used (none, or as a critic after an unassisted attempt) |
 | Reflection and spaced recall prompts | the three interrogation questions, one sentence each (what actually made this possible, how would I detect it, what would disprove it), and the 1, 3, 7 and 14 day prompts tagged with the day id; note the cards you added |
@@ -129,7 +129,7 @@ Cleanup and honesty
 - [ ] Every temporary change is shown reversed with evidence, or the record says it is not.
 - [ ] The status is the lowest that the evidence supports; VERIFIED has two independent observations.
 - [ ] The independence declaration is present; a published solution, if read, is declared and the lab is not counted as independent evidence.
-- [ ] No real credential, host, person, organisation or third-party solution text appears anywhere in the record.
+- [ ] No real credential, host, person, organization or third-party solution text appears anywhere in the record.
 
 ## Sample (synthetic)
 

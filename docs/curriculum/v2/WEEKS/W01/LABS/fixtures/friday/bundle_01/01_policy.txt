@@ -1,0 +1,15 @@
+Synthetic access policy for the spool service on tgt (lab file, no real data). Version 1.
+
+Principals
+  labadmin    administrator of the host; member of group sudo.
+  labanalyst  assessment account; read-only; no sudo.
+  labuser6    member of group shippers.
+  labuser7    member of group loaders.
+  svcspool    service account of g9toy-spool; no login shell.
+
+Required access
+  P1  The service runs as svcspool and listens on 127.0.0.1 port 8100 and on no other address.
+  P2  Members of shippers may read the batches in /srv/g9toy-spool/outbox. Only svcspool creates, changes or deletes them.
+  P3  Members of loaders may deliver files into /srv/g9toy-spool/inbox. They may not list, read or delete anything there, and they have no access to outbox.
+  P4  SSH logins are by key only. Root may not log in. Only labanalyst, labuser6, labuser7 and labadmin may log in.
+  P5  Only labadmin has sudo rights.

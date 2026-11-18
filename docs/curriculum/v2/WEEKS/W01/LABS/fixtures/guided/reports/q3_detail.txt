@@ -1,0 +1,6 @@
+Synthetic report, quarter 3, detail.
+region=north week=1 units=30
+region=north week=2 units=28
+region=south week=1 units=24
+region=south week=2 units=22
+End of synthetic report.

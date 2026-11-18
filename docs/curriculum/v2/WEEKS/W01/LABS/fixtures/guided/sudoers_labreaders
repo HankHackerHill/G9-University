@@ -1,0 +1,2 @@
+# Synthetic lab file for the optional delegation exercise.
+labuser1 ALL=(root) NOPASSWD: /usr/bin/cat /srv/g9toy/reports/*

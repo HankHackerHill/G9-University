@@ -1004,7 +1004,7 @@ type Refusal = (&'static str, fn(&mut Value));
 /// When the interface emits the fields, list them in `required` in both schemas and turn the
 /// "without them" half of this test into the opposite assertion.
 #[test]
-fn the_response_schemas_type_the_structure_fields_without_requiring_them() {
+fn the_response_schemas_require_and_type_the_structure_fields() {
     let strip = |program: &mut Value, daily_plan: &mut Value| {
         let curriculum = program["curriculum"].as_object_mut().unwrap();
         curriculum.remove("profile").unwrap();
@@ -1040,7 +1040,7 @@ fn the_response_schemas_type_the_structure_fields_without_requiring_them() {
         g9_app::schemas::validate_response("curriculum.program", &full_program).unwrap();
         g9_app::schemas::validate_response("curriculum.daily_plan", &full_plan).unwrap();
 
-        // The answer of an interface that predates them validates too.
+        // They are required: an answer without them is refused.
         let (mut old_program, mut old_plan) = (full_program.clone(), full_plan.clone());
         strip(&mut old_program, &mut old_plan);
         for (op, answer) in [
@@ -1048,8 +1048,8 @@ fn the_response_schemas_type_the_structure_fields_without_requiring_them() {
             ("curriculum.daily_plan", &old_plan),
         ] {
             assert!(
-                g9_app::schemas::validate_response(op, answer).is_ok(),
-                "{shape}: {op} without the ADR-0023 fields"
+                g9_app::schemas::validate_response(op, answer).is_err(),
+                "{shape}: {op} without the ADR-0023 fields was accepted"
             );
         }
 

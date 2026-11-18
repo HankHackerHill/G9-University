@@ -16,6 +16,15 @@ Done when the quality checks below are ticked, every finding and every timeline 
 
 Handling. A report about a platform-designated active target is private: no flags, credentials found, step orders or screenshots are shared or placed in a portfolio (`docs/curriculum/v2/SAFETY_AUTHORIZATION.md` section 8.1). Use target ids and synthetic names, `<synthetic-password>` style placeholders, and the lab addresses of the plan (`10.77.10.0/24` RED, `10.77.20.0/24` DMZ, `10.77.30.0/24` CORP, domain `corp.g9.test`). A report states the use of any assistant: no AI is used in the midpoint, the final or any scored Friday attempt, and elsewhere it is a critic after an unassisted attempt (`docs/curriculum/v2/SAFETY_AUTHORIZATION.md` section 7).
 
+## Status vocabulary
+
+| Where | Words |
+|---|---|
+| The report | draft (not yet re-run from the report alone) and final (every quality check ticked, the second run recorded) |
+| A finding | Confirmed, Unconfirmed, False positive, Not retested, as defined in `docs/curriculum/v2/TEMPLATES/PENTEST_FINDING.md` |
+| A timeline claim | the claim types and confidence levels of `docs/curriculum/v2/TEMPLATES/DFIR_TIMELINE.md` |
+| A command | PROPOSED, REVIEWED, APPROVED, EXECUTED, NOT RUN |
+
 ## Part A: penetration-test report
 
 The order is the plan's. The plan lists severity rationale, preconditions, impact, reproduction, evidence, recommended fix and retest as parts of one flat structure; they are written once for each finding, inside section 5, in that order.
@@ -42,7 +51,7 @@ For forensic, SOC and incident work (weeks 7 and 8, and the multi-artifact timel
 |---|---|---|---|
 | B1 | Case summary | case id, the question the report answers, the artifacts examined, and the conclusion in two sentences with its confidence | the conclusion is no stronger than the weakest link it depends on |
 | B2 | Artifact provenance | one row per artifact: id, where it came from, how and when it was acquired or supplied, who handled it, the original hash and algorithm, the hash verified before analysis and at the end, the acquisition limits | a hash establishes that the bytes did not change since the hash was computed. It does not establish that the acquisition was accurate. Say which |
-| B3 | Timeline | the events in UTC order: original time with its zone or offset, normalised UTC time, the artifact, the event claim, its label and confidence | built from the records of `docs/curriculum/v2/TEMPLATES/DFIR_TIMELINE.md`; the original time is kept beside the normalised one; clock offsets and their uncertainty are stated |
+| B3 | Timeline | the events in UTC order: original time with its zone or offset, normalized UTC time, the artifact, the event claim, its label and confidence | built from the records of `docs/curriculum/v2/TEMPLATES/DFIR_TIMELINE.md`; the original time is kept beside the normalized one; clock offsets and their uncertainty are stated |
 | B4 | Observed versus inferred | a table of claims: the claim, OBSERVED or INFERRED or UNVERIFIED, the supporting artifacts, the strongest alternative explanation, the test that would separate them | intent and attribution are not asserted from weak indicators; "unknown" is a valid entry |
 | B5 | Response recommendations | containment, eradication and recovery steps, ordered so that volatile evidence is captured first; the link to the lesson's detections | framed as incident response inside risk management as NIST SP 800-61 Rev. 3 does (the plan states it is final, April 2025: ASSUMED here, see the registry pointer in the departures table); no step is presented as already done unless an artifact shows it |
 | B6 | Gaps and uncertainty | missing evidence and what it would show; the limits of each artifact; how each gap would change the conclusion | a missing log is a gap and not a finding of no activity |
@@ -54,8 +63,8 @@ Include it when the engagement covered detections, fixes or an agent boundary. E
 | Item | Record | Positive result | Negative result | Counts or limits | Status |
 |---|---|---|---|---|---|
 | detection | the id of the detection record | outcome on the positive fixture | outcome on the near-miss negatives | true and false matches on named fixtures, with the number of fixtures | the record's status |
-| remediation | the finding id | the permitted function still works | the forbidden behaviour fails | what the regression did not cover | retest artifact id |
-| agent boundary test | the id of the agent evaluation | the normal request succeeded | the unauthorised proposal was denied by the broker and the state digest is unchanged | the number of runs and of tests | the record's result |
+| remediation | the finding id | the permitted function still works | the forbidden behavior fails | what the regression did not cover | retest artifact id |
+| agent boundary test | the id of the agent evaluation | the normal request succeeded | the unauthorized proposal was denied by the broker and the state digest is unchanged | the number of runs and of tests | the record's result |
 
 The plan's minimum for the final: at least three tested detections, at least two remediations with regression tests, and at least three agent boundary test cases across weeks 11 and 12. If the work supports fewer, report the actual work. A quota is never filled with an invented result.
 
@@ -141,7 +150,7 @@ Whole report
 - [ ] A second run from the report alone was made, by another person or by you from a clean state after 24 hours, and its deviations are recorded.
 - [ ] Every command shown has a status word and a target id; none is shown as run without a stored output.
 - [ ] The use of aids is stated, and no AI was used in a scored attempt.
-- [ ] No real credential, host, person or organisation appears, and nothing of an active third-party target is disclosed.
+- [ ] No real credential, host, person or organization appears, and nothing of an active third-party target is disclosed.
 
 Part A
 

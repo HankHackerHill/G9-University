@@ -1,0 +1,16 @@
+[Unit]
+Description=G9 week 1 toy audit-intake service (synthetic)
+After=network.target
+
+[Service]
+Type=simple
+User=svcaudit
+Group=svcaudit
+Environment=G9TOY_API_TOKEN=synthetic-token-0042
+ExecStart=/usr/bin/python3 -I /opt/g9toy/g9toy_reportd.py --config /etc/g9toy-audit/g9toy.conf
+Restart=on-failure
+StateDirectory=g9toy-audit
+StateDirectoryMode=0750
+
+[Install]
+WantedBy=multi-user.target

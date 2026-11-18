@@ -1,0 +1,28 @@
+Captured by labanalyst, 2099-01-05T08:41:00Z to 08:43:00Z.
+
+$ getent passwd labadmin labanalyst labuser6 labuser7 svcspool
+labadmin:x:1000:1000:Lab Admin:/home/labadmin:/bin/bash
+labanalyst:x:1001:1001::/home/labanalyst:/bin/bash
+labuser6:x:1006:1006::/home/labuser6:/bin/bash
+labuser7:x:1007:1007::/home/labuser7:/bin/bash
+svcspool:x:998:998::/nonexistent:/usr/sbin/nologin
+
+$ getent group shippers loaders sudo
+shippers:x:2001:labuser6
+loaders:x:2002:labuser7
+sudo:x:27:labadmin
+
+$ id
+uid=1001(labanalyst) gid=1001(labanalyst) groups=1001(labanalyst)
+
+$ id labuser6
+uid=1006(labuser6) gid=1006(labuser6) groups=1006(labuser6),2001(shippers)
+
+$ id labuser7
+uid=1007(labuser7) gid=1007(labuser7) groups=1007(labuser7),2002(loaders)
+
+$ id svcspool
+uid=998(svcspool) gid=998(svcspool) groups=998(svcspool)
+
+$ sudo -n -l
+sudo: a password is required

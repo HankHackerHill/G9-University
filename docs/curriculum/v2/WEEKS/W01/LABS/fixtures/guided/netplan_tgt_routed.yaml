@@ -1,0 +1,16 @@
+# G9-TGT-01 static addressing, DMZ zone, behind G9-RTR-01 (stack B). Synthetic lab file.
+# No default route: only the RED prefix, so that replies to the permitted exercise find their way back.
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp1s0:
+      dhcp4: false
+      dhcp6: false
+      accept-ra: false
+      link-local: []
+      addresses:
+        - 10.77.20.20/24
+      routes:
+        - to: 10.77.10.0/24
+          via: 10.77.20.1

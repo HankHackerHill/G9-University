@@ -1,0 +1,4 @@
+$ ss -H -ltnp
+LISTEN 0 5   127.0.0.1:8080  0.0.0.0:*  users:(("python3",pid=100,fd=3))
+LISTEN 0 128 127.0.0.1:22    0.0.0.0:*  users:(("sshd",pid=900,fd=3))
+LISTEN 0 5   0.0.0.0:8090    0.0.0.0:*  users:(("python3",pid=102,fd=3))

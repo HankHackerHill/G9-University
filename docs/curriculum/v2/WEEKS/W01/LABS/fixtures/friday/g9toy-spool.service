@@ -1,0 +1,15 @@
+[Unit]
+Description=G9 week 1 toy spool service (synthetic)
+After=network.target
+
+[Service]
+Type=simple
+User=svcspool
+Group=svcspool
+ExecStart=/usr/bin/python3 -I /opt/g9toy/g9toy_reportd.py --config /etc/g9toy-spool/g9toy.conf
+Restart=on-failure
+StateDirectory=g9toy-spool
+StateDirectoryMode=0750
+
+[Install]
+WantedBy=multi-user.target

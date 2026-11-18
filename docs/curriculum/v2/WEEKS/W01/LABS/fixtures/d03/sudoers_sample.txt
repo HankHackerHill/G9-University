@@ -1,0 +1,6 @@
+# Synthetic sudoers drop-in for paper analysis. File name: 30-lab-delegation (no dot in the name). No real accounts.
+Cmnd_Alias G9_STATUS = /usr/bin/systemctl status g9toy.service, /usr/bin/systemctl is-active g9toy.service
+labuser1 ALL=(root) NOPASSWD: G9_STATUS
+labuser2 ALL=(root) NOPASSWD: /usr/bin/cat /srv/g9toy/reports/*
+%labreaders ALL=(svclab) NOPASSWD: /usr/bin/tee /var/lib/g9toy/*
+labadmin ALL=(ALL:ALL) ALL

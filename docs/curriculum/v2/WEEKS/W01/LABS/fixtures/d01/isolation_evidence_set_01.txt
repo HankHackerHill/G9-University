@@ -1,0 +1,104 @@
+Sample (synthetic): an invented evidence package for stack A (two guests on separate lab networks, no router). Not an observation of any lab.
+Stack label: stack-01. Guests: g9-atk-01 (RED), g9-tgt-01 (DMZ). Package time (invented): 2099-01-01T12:10:00Z.
+The designated LAN address of the owner's probe is written 203.0.113.10 here, a documentation address standing in for the real one.
+Host interfaces (invented): enp7s0 (uplink), vpn0 (tunnel), docker0, virbr91, virbr92, virbr93, vnet3, vnet4.
+
+== E1 host, domain interfaces ==
+$ virsh -c qemu:///system domiflist g9-atk-01
+ Interface   Type      Source       Model    MAC
+-------------------------------------------------------------------
+ vnet3       network   g9-lab-red   virtio   52:54:00:77:10:0a
+
+$ virsh -c qemu:///system domiflist g9-tgt-01
+ Interface   Type      Source       Model    MAC
+-------------------------------------------------------------------
+ vnet4       network   g9-lab-dmz   virtio   52:54:00:77:20:14
+
+== E2 host, live against persistent definition of g9-tgt-01 ==
+$ virsh -c qemu:///system dumpxml --xpath '//interface/mac | //interface/source' g9-tgt-01
+<mac address="52:54:00:77:20:14"/>
+<source network="g9-lab-dmz" bridge="virbr92"/>
+
+$ virsh -c qemu:///system dumpxml --inactive --xpath '//interface/mac | //interface/source' g9-tgt-01
+<mac address="52:54:00:77:20:14"/>
+<source network="g9-lab-dmz"/>
+
+== E3 host, networks and bridges ==
+$ virsh -c qemu:///system net-list --all
+ Name         State      Autostart   Persistent
+------------------------------------------------
+ default      inactive   no          yes
+ g9-lab-dmz   active     no          yes
+ g9-lab-red   active     no          yes
+
+$ ip -br link
+lo       UNKNOWN  00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP>
+enp7s0   UP       02:00:5e:10:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+vpn0     UNKNOWN  <POINTOPOINT,NOARP,UP,LOWER_UP>
+docker0  DOWN     02:42:5e:10:00:02 <NO-CARRIER,BROADCAST,MULTICAST,UP>
+virbr91  UP       52:54:00:5e:91:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+virbr92  UP       52:54:00:5e:92:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+vnet3    UNKNOWN  fe:54:00:77:10:0a <BROADCAST,MULTICAST,UP,LOWER_UP>
+vnet4    UNKNOWN  fe:54:00:77:20:14 <BROADCAST,MULTICAST,UP,LOWER_UP>
+
+== E4 guest g9-atk-01 ==
+$ ip -br addr
+lo       UNKNOWN  127.0.0.1/8
+enp1s0   UP       10.77.10.10/24
+$ ip route
+10.77.10.0/24 dev enp1s0 proto kernel scope link src 10.77.10.10
+$ ip -6 route
+(no output)
+$ sysctl net.ipv6.conf.all.disable_ipv6
+net.ipv6.conf.all.disable_ipv6 = 1
+$ ip route get 192.0.2.1
+RTNETLINK answers: Network is unreachable
+
+== E5 guest g9-tgt-01 ==
+$ ip -br addr
+lo       UNKNOWN  127.0.0.1/8
+enp1s0   UP       10.77.20.20/24
+$ ip route
+10.77.20.0/24 dev enp1s0 proto kernel scope link src 10.77.20.20
+$ ip -6 route
+(no output)
+$ sysctl net.ipv6.conf.all.disable_ipv6
+net.ipv6.conf.all.disable_ipv6 = 1
+$ ip route get 192.0.2.1
+RTNETLINK answers: Network is unreachable
+
+== E6 host firewall excerpt ==
+$ sudo nft list ruleset
+table inet g9lab_guard {
+	chain input {
+		type filter hook input priority -10; policy accept;
+		iifname { "virbr91", "virbr92", "virbr93" } drop
+	}
+	chain forward {
+		type filter hook forward priority -10; policy accept;
+		iifname { "virbr91", "virbr92", "virbr93" } drop
+		oifname { "virbr91", "virbr92", "virbr93" } drop
+	}
+}
+
+== E7 host IPv6 on the lab bridges ==
+$ ip -6 addr show dev virbr91
+(no output)
+$ sysctl net.ipv6.conf.virbr91.disable_ipv6
+net.ipv6.conf.virbr91.disable_ipv6 = 1
+
+== E8 probe from g9-atk-01 toward the designated address, with host captures ==
+$ date -u +%Y-%m-%dT%H:%M:%SZ        (host, before the captures)
+2099-01-01T12:00:00Z
+$ sudo tcpdump -i enp7s0 -nn -p 'net 10.77.0.0/16'      (host, started 12:00:05Z)
+$ sudo tcpdump -i vpn0 -nn -p 'net 10.77.0.0/16'        (host, started 12:00:08Z)
+$ date -u +%Y-%m-%dT%H:%M:%SZ        (guest g9-atk-01, before the probe)
+2099-01-01T12:01:30Z
+$ timeout 5 bash -c ': < /dev/tcp/203.0.113.10/22'; echo "exit=$?"
+bash: connect: Network is unreachable
+bash: /dev/tcp/203.0.113.10/22: Network is unreachable
+exit=1
+$ date -u +%Y-%m-%dT%H:%M:%SZ        (guest g9-atk-01, after the probe)
+2099-01-01T12:01:31Z
+captures stopped at 12:03:00Z; enp7s0: 0 packets captured, 0 packets received by filter, 0 packets dropped by kernel
+captures stopped at 12:03:00Z; vpn0: 0 packets captured, 0 packets received by filter, 0 packets dropped by kernel

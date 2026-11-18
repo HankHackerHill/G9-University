@@ -1,0 +1,36 @@
+Sample (synthetic): an invented directory tree, three invented accounts and twelve requests. Not an observation of any host.
+Capture time (invented): 2099-01-02T09:00:00Z. No ACL exists on any path below. Every filesystem is mounted read-write. No mandatory access control applies.
+
+$ ls -ld /srv/drill /srv/drill/data /srv/drill/data/plan.txt /srv/drill/data/notes.txt /srv/drill/data/open.txt /srv/drill/shared /srv/drill/shared/log.txt /srv/drill/upload
+drwxr-xr-x  root      root   /srv/drill
+drwxr-x---  root      team   /srv/drill/data
+-rw-r-----  labuser1  team   /srv/drill/data/plan.txt
+----r--r--  labuser1  team   /srv/drill/data/notes.txt
+-rw-rw-rw-  root      root   /srv/drill/data/open.txt
+drwxrwsr-x  labuser2  team   /srv/drill/shared
+-rw-rw----  labuser2  team   /srv/drill/shared/log.txt
+drwx-wx---  labuser2  team   /srv/drill/upload
+
+$ id labuser1
+uid=1001(labuser1) gid=1001(labuser1) groups=1001(labuser1),3001(team)
+$ id labuser2
+uid=1002(labuser2) gid=3001(team) groups=3001(team)
+$ id labuser3
+uid=1003(labuser3) gid=1003(labuser3) groups=1003(labuser3)
+
+The processes of the three accounts were started after the group database was last changed.
+No path has the sticky bit. The umask of every account is 022.
+
+Requests: for each, say whether the kernel allows it, and name the one element of the evidence that decides it.
+ 1. labuser1 reads /srv/drill/data/plan.txt
+ 2. labuser3 reads /srv/drill/data/open.txt
+ 3. labuser1 reads /srv/drill/data/notes.txt
+ 4. labuser2 reads /srv/drill/data/notes.txt
+ 5. labuser2 appends a line to /srv/drill/shared/log.txt
+ 6. labuser1 appends a line to /srv/drill/shared/log.txt
+ 7. labuser3 reads /srv/drill/shared/log.txt
+ 8. labuser3 creates a new file in /srv/drill/shared
+ 9. labuser1 creates a new file in /srv/drill/shared; then: which owner, which group and which mode bits does the new file get?
+10. labuser1 creates a new file in /srv/drill/upload, then lists /srv/drill/upload with ls
+11. labuser1 deletes /srv/drill/data/plan.txt, a file it owns
+12. labuser2 deletes /srv/drill/shared/log.txt

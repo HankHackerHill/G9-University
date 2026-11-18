@@ -1,14 +1,15 @@
 /**
  * Test helper: set up the program on a harness the way the operator does (import the curriculum
  * that ships with the application through the approval, then choose the Monday week 1 starts).
+ * `curriculum` is the Appendix A seed unless a test passes another manifest (the second shape).
  */
 import seedJson from '../../../../data/curriculum/g9-ct9-480.seed.v0.json';
 import { isG9Error } from '../ipc/client';
 import type { JsonValue } from '../ipc/types';
 import type { Harness } from './render';
 
-export async function setUpProgram(harness: Harness, monday = '2026-11-02', dayStart?: string): Promise<void> {
-  const manifest = seedJson as JsonValue;
+export async function setUpProgram(harness: Harness, monday = '2026-11-02', dayStart?: string, curriculum: JsonValue = seedJson): Promise<void> {
+  const manifest = curriculum;
   const asked = await harness.client.invoke('curriculum.import', { manifest, provenance: 'PROPOSED_SEED' });
   if (!isG9Error(asked) || asked.approval_id === undefined) {
     throw new Error('curriculum.import: expected APPROVAL_REQUIRED');

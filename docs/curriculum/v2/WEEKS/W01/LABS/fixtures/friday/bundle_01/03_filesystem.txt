@@ -1,0 +1,49 @@
+Part 1: captured by labanalyst, 2099-01-05T08:44:00Z to 08:46:00Z.
+
+$ ls -l /srv/g9toy-spool/outbox
+ls: cannot open directory '/srv/g9toy-spool/outbox': Permission denied
+
+$ namei -l /srv/g9toy-spool/outbox/batch_0002.txt
+f: /srv/g9toy-spool/outbox/batch_0002.txt
+dr-xr-xr-x root     root     /
+drwxr-xr-x root     root     srv
+drwxr-xr-x root     root     g9toy-spool
+drwxrws--- svcspool shippers outbox
+                             batch_0002.txt - Permission denied
+
+$ ls -ld /home/labuser6 /home/labuser6/.ssh
+drwxr-x--- 5 labuser6 labuser6 4096 Jan  4 17:01 /home/labuser6
+ls: cannot access '/home/labuser6/.ssh': Permission denied
+
+Part 2: labadmin extract, run by labadmin, 2099-01-05T09:05:00Z to 09:09:00Z.
+
+$ sudo stat -c '%A %U:%G %n' /srv/g9toy-spool /srv/g9toy-spool/outbox /srv/g9toy-spool/outbox/batch_0001.txt /srv/g9toy-spool/outbox/batch_0002.txt /srv/g9toy-spool/inbox /srv/g9toy-spool/scratch /var/lib/g9toy-spool /var/lib/g9toy-spool/counter /etc/g9toy-spool/g9toy.conf
+drwxr-xr-x root:root /srv/g9toy-spool
+drwxrws---+ svcspool:shippers /srv/g9toy-spool/outbox
+-rw-r----- svcspool:shippers /srv/g9toy-spool/outbox/batch_0001.txt
+-rw-r----- labuser7:shippers /srv/g9toy-spool/outbox/batch_0002.txt
+drwx-ws--- svcspool:loaders /srv/g9toy-spool/inbox
+drwxr-x--- svcspool:svcspool /srv/g9toy-spool/scratch
+drwxr-x--- svcspool:svcspool /var/lib/g9toy-spool
+-rw-r----- svcspool:svcspool /var/lib/g9toy-spool/counter
+-rw-r--r-- root:root /etc/g9toy-spool/g9toy.conf
+
+$ sudo getfacl /srv/g9toy-spool/outbox
+# file: srv/g9toy-spool/outbox
+# owner: svcspool
+# group: shippers
+# flags: -s-
+user::rwx
+user:labuser7:rwx
+group::r-x
+mask::rwx
+other::---
+
+$ sudo stat -c '%A %U:%G %y %n' /srv/g9toy-spool/outbox/batch_0002.txt
+-rw-r----- labuser7:shippers 2099-01-04 16:12:41.000000000 +0000 /srv/g9toy-spool/outbox/batch_0002.txt
+
+$ sudo stat -c '%A %U:%G %n' /home/labuser6/.ssh /home/labuser6/.ssh/authorized_keys /home/labuser7/.ssh /home/labuser7/.ssh/authorized_keys
+drwxrwxr-x labuser6:labuser6 /home/labuser6/.ssh
+-rw------- labuser6:labuser6 /home/labuser6/.ssh/authorized_keys
+drwx------ labuser7:labuser7 /home/labuser7/.ssh
+-rw------- labuser7:labuser7 /home/labuser7/.ssh/authorized_keys

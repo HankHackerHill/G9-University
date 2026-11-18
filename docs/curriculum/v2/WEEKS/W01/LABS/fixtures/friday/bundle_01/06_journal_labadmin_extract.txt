@@ -1,0 +1,11 @@
+labadmin extract, 2099-01-05T09:13:00Z: journalctl -u g9toy-spool.service -u ssh.service --since 2099-01-04 --no-pager -o short-iso (lines trimmed to the relevant hours)
+2099-01-04T16:11:40+0000 tgt python3[4412]: g9toy peer=127.0.0.1 LIST -> OK 1
+2099-01-04T16:11:52+0000 tgt python3[4412]: g9toy peer=127.0.0.1 GET batch_0001.txt -> OK 86
+2099-01-04T16:12:03+0000 tgt sshd[4551]: Accepted publickey for labuser7 from 127.0.0.1 port 41010 ssh2: ED25519 SHA256:synthetic-fingerprint-0107
+2099-01-04T16:12:03+0000 tgt sshd[4551]: pam_unix(sshd:session): session opened for user labuser7(uid=1007) by (uid=0)
+2099-01-04T16:15:40+0000 tgt python3[4412]: g9toy peer=127.0.0.1 LIST -> OK 2
+2099-01-04T16:15:52+0000 tgt python3[4412]: g9toy peer=127.0.0.1 GET batch_0002.txt -> ERR 13 EACCES
+2099-01-04T16:16:20+0000 tgt python3[4412]: g9toy peer=127.0.0.1 GET batch_0001.txt -> OK 86
+2099-01-04T17:03:40+0000 tgt sshd[4620]: Authentication refused: bad ownership or modes for directory /home/labuser6/.ssh
+2099-01-04T17:03:40+0000 tgt sshd[4620]: Connection closed by authenticating user labuser6 127.0.0.1 port 41022 [preauth]
+2099-01-05T07:55:10+0000 tgt sshd[4801]: Accepted publickey for labadmin from 127.0.0.1 port 41100 ssh2: ED25519 SHA256:synthetic-fingerprint-0100

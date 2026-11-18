@@ -1,0 +1,15 @@
+[Unit]
+Description=G9 week 1 toy report service (synthetic)
+After=network.target
+
+[Service]
+Type=simple
+User=svclab
+Group=svclab
+ExecStart=/usr/bin/python3 -I /opt/g9toy/g9toy_reportd.py --config /etc/g9toy/g9toy.conf
+Restart=on-failure
+StateDirectory=g9toy
+StateDirectoryMode=0750
+
+[Install]
+WantedBy=multi-user.target

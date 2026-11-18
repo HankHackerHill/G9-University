@@ -1,0 +1,19 @@
+Name:	bash
+Umask:	0022
+State:	S (sleeping)
+Tgid:	101
+Pid:	101
+PPid:	900
+TracerPid:	0
+Uid:	1001	1001	1001	1001
+Gid:	1001	1001	1001	1001
+FDSize:	64
+Groups:	1001 2000 2001
+Threads:	1
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	000001ffffffffff
+CapAmb:	0000000000000000
+NoNewPrivs:	0
+Seccomp:	0
