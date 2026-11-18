@@ -1,7 +1,7 @@
 {
   "week": 1,
   "checked_on": "2026-11-18",
-  "method": "web search results only; pages were not opened from the authoring session",
+  "method": "web search results only; pages were not opened from the authoring session. Second pass of 2026-11-18: the independent re-search of the entries, access tiers and plan fact checks was NOT run because the shared web-search budget (200 calls per turn) was already used up; only structural checks were made (valid JSON, exact keys, unique ids, fallbacks name entries, suggested_days inside the week, address host matches provider, field lengths). Every SEARCH_CHECKED label and access tier is therefore the authoring pass's single-search result.",
   "entries": [
     {
       "id": "w01-otw-bandit",
@@ -1040,6 +1040,8 @@
     }
   ],
   "gaps": [
+    "Second pass not performed: the independent re-search of every entry, access tier and plan fact check could not run on 2026-11-18 (web-search budget exhausted), so nothing here has a second confirmation. Repeat it before a tier is quoted to the learner as free or paid and before any price is relied on. Weakest tier claims, resting on a provider blog post, page metadata or a free-rooms list rather than a tier label: w01-htb-academy-linux-fundamentals, w01-thm-linux-fundamentals-1, w01-thm-linux-fundamentals-2, w01-thm-python-basics, w01-thm-linux-process-analysis.",
+    "Day 4 (D04) has no verified free hands-on entry for block C: w01-cyberdefenders-hammered and w01-thm-linux-logs-investigations are both UNKNOWN in access, and the first has no fallback entry. Until a tier is confirmed, block C of Day 4 rests on the plan's local sample-log fixture.",
     "The shared web-search budget of the authoring run ran out before three final checks (HTB Academy tier labels, Sherlock pages, Starting Point free machines); the affected entries are marked UNKNOWN.",
     "HTB Academy tier labels (Tier 0, I or II) were not shown for 'Setting Up', 'Introduction to Bash Scripting' and 'Introduction to Python 3'; their access is UNKNOWN until the module page is opened by the owner.",
     "TryHackMe tier not shown for Bash Scripting, Linux System Hardening, Linux Strength Training and Linux Logs Investigations; confirm on each room page before assigning.",

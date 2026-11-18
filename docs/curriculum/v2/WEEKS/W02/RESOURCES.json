@@ -1,7 +1,7 @@
 {
   "week": 2,
   "checked_on": "2026-11-18",
-  "method": "web search results only; pages were not opened from the authoring session",
+  "method": "web search results only; pages were not opened from the authoring session. Second pass of 2026-11-18: the independent re-search of the entries, access tiers and plan fact checks was NOT run because the shared web-search budget (200 calls per turn) was already used up; only structural checks were made (valid JSON, exact keys, unique ids, fallbacks name entries, suggested_days inside the week, address host matches provider, field lengths). Every SEARCH_CHECKED label and access tier is therefore the authoring pass's single-search result.",
   "entries": [
     {
       "id": "w02-htb-academy-intro-networking",
@@ -145,7 +145,7 @@
       "url": "https://www.hackthebox.com/blog/best-dfir-labs",
       "provider": "Hack The Box",
       "title": "Our top 5 DFIR labs for beginner analysts (to get good fast)",
-      "kind": "CHALLENGE",
+      "kind": "DOCS",
       "access": "MIXED",
       "access_note": "An HTB blog post on Sherlocks returned by the search (www.hackthebox.com/blog/sherlocks was in the result list) says Sherlocks are divided into free and premium labs, with eight kept accessible on the free plan. 'HTB Labs Subscriptions' result: VIP+ ($25.00 per month) includes all retired Sherlocks. Which of the named Sherlocks is free today was not shown.",
       "verification": "SEARCH_CHECKED",
@@ -165,7 +165,7 @@
       "estimate_minutes": null,
       "difficulty": null,
       "fallback": "w02-cyberdefenders-psexec-hunt",
-      "notes": "Use Meerkat or Litter for the Day 10 independent PCAP triage. The page address, difficulty, tier and RETIRED state of each Sherlock were not confirmed in a search result: the owner checks them on the Sherlock page before the lab is assigned, and no solution is written down outside private notes until 'retired' is confirmed. Spoiler policy: Hack The Box Platform Rules forbid sharing how any ACTIVE machine, challenge or Sherlock was solved; write-ups are allowed only for retired machines, retired Sherlocks, retired challenges, Starting Point machines and Tier 0 Academy modules, and the retired state must be confirmed before anything is published. HTB's submission guide says a Very Easy Sherlock typically takes under 1 hour and an Easy one 2 to 4 hours."
+      "notes": "Registered as DOCS: the address is a blog article that names Sherlocks, not a Sherlock page, so it does not count as a hands-on entry. Use Meerkat or Litter for the Day 10 independent PCAP triage. The page address, difficulty, tier and RETIRED state of each Sherlock were not confirmed in a search result: the owner checks them on the Sherlock page before the lab is assigned, and no solution is written down outside private notes until 'retired' is confirmed. Spoiler policy: Hack The Box Platform Rules forbid sharing how any ACTIVE machine, challenge or Sherlock was solved; write-ups are allowed only for retired machines, retired Sherlocks, retired challenges, Starting Point machines and Tier 0 Academy modules, and the retired state must be confirmed before anything is published. HTB's submission guide says a Very Easy Sherlock typically takes under 1 hour and an Easy one 2 to 4 hours."
     },
     {
       "id": "w02-thm-networking-concepts",
@@ -995,6 +995,8 @@
     }
   ],
   "gaps": [
+    "Second pass not performed: the independent re-search of every entry, access tier and plan fact check could not run on 2026-11-18 (web-search budget exhausted), so nothing here has a second confirmation. Repeat it before a tier is quoted to the learner as free or paid and before any price is relied on. Weakest tier claims, resting on a provider blog post or page metadata rather than a tier label: w02-htb-academy-intro-networking, w02-thm-dns-in-detail, w02-cyberdefenders-psexec-hunt, w02-cyberdefenders-web-investigation, w02-cyberdefenders-xxe-infiltration, w02-cyberdefenders-webstrike.",
+    "w02-htb-sherlocks-beginner-dfir is an HTB blog article, not a Sherlock page, so its kind is DOCS; no Hack The Box Sherlock is registered as a hands-on entry until its own page, tier and retired state are confirmed.",
     "The shared web-search budget of the authoring run ran out before three final checks (HTB Academy tier labels, Sherlock pages, Starting Point free machines); the affected entries are marked UNKNOWN or MIXED.",
     "HTB Academy tier labels were not shown for 'Network Enumeration with Nmap', 'Intro to Network Traffic Analysis', 'Network Foundations' and 'Introduction to Python 3'; their access is UNKNOWN until the owner opens the module pages.",
     "TryHackMe tier not shown for eleven of the twelve registered rooms; confirm on each room page. Free substitutes are named in each entry's fallback.",

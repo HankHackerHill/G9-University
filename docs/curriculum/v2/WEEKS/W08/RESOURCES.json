@@ -1,0 +1,1007 @@
+{
+  "week": 8,
+  "checked_on": "2026-11-18",
+  "method": "web search results only; pages were not opened from the authoring session. Checker pass 2026-11-18: the search tool refused every call (the shared budget of 200 calls per turn was used up), so no entry was re-searched. Only internal consistency was checked (JSON, ids, fallbacks, day ranges, result and access labels against the author's own evidence text); the verification labels remain the author's.",
+  "entries": [
+    {
+      "id": "w08-nist-sp800-61r3",
+      "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
+      "provider": "NIST",
+      "title": "NIST Special Publication (SP) 800-61 Rev. 3, Incident Response Recommendations and Considerations for Cybersecurity Risk Management: A CSF 2.0 Community Profile",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Public NIST CSRC publication page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'NIST SP 800-61 Revision 3 Incident Response Recommendations and Considerations for Cybersecurity Risk Management final April 2025' restricted to csrc.nist.gov: first result is this page with the title above; the result text gives publication date April 2025, authors Alexander Nelson, Sanjay Rekhi, Murugiah Souppaya (NIST) and Karen Scarfone (Scarfone Cybersecurity), supersession of Rev. 2 (2012, 'Computer Security Incident Handling Guide') which NIST withdrew on the same date, and finalization on 2025-04-03 (CSRC news item 'NIST Revises SP 800-61', csrc.nist.gov/news/2025/nist-revises-sp-800-61).",
+      "version": "Rev. 3 final, April 2025 (finalized 2025-04-03 per CSRC news); PDF at nvlpubs.nist.gov/nistpubs/specialpublications/nist.sp.800-61r3.pdf",
+      "topics": [
+        "incident response",
+        "csf 2.0 community profile",
+        "govern identify protect",
+        "detect respond recover",
+        "containment eradication recovery planning"
+      ],
+      "suggested_days": [
+        "D39",
+        "D40"
+      ],
+      "block": "D",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Use Rev. 3 vocabulary in the D39 containment, eradication and recovery plan and the D40 incident summary. Per the search result, Rev. 3 places Govern, Identify and Protect as preparation outside incident response proper and treats Detect, Respond and Recover as the incident response activities, and no longer keeps detailed procedures in a static publication. The Rev. 2 PDF (nvlpubs.nist.gov/nistpubs/specialpublications/nist.sp.800-61r2.pdf) still turns up in search: it is withdrawn, do not cite it as current. HTB's 'Incident Handling Process' module text says it follows NIST's 'Computer Security Incident Handling Guide' (the Rev. 2 title), so its phase names may differ from Rev. 3 (INFERRED). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-nist-sp800-86",
+      "url": "https://csrc.nist.gov/pubs/sp/800/86/final",
+      "provider": "NIST",
+      "title": "NIST Special Publication (SP) 800-86, Guide to Integrating Forensic Techniques into Incident Response",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Public NIST CSRC publication page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'NIST SP 800-86 Guide to Integrating Forensic Techniques into Incident Response' restricted to csrc.nist.gov and nvlpubs.nist.gov: first result is this page; text: Final, published August 2006, authors Karen Kent, Suzanne Chevalier, Tim Grance and Hung Dang, DOI 10.6028/NIST.SP.800-86; covers forensic processes and data sources (files, operating systems, network traffic, applications); NIST says it is not an all-inclusive step-by-step guide or legal advice. No newer revision appeared in the results.",
+      "version": "Final, August 2006; no newer revision seen in search 2026-11-18",
+      "topics": [
+        "forensic process",
+        "data sources",
+        "evidence handling",
+        "collection examination analysis reporting"
+      ],
+      "suggested_days": [
+        "D36",
+        "D40"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Dated (2006): use it for the process (collection, examination, analysis, reporting) and not for current tool or file-system detail. It is the NIST companion that SP 800-61 Rev. 2 pointed to for a forensic capability; whether Rev. 3 still points to it was not checked. A PDF copy is at nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-86.pdf. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-rfc3227",
+      "url": "https://datatracker.ietf.org/doc/html/rfc3227",
+      "provider": "IETF",
+      "title": "RFC 3227 - Guidelines for Evidence Collection and Archiving",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Public IETF document; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'RFC 3227 Guidelines for Evidence Collection and Archiving order of volatility' restricted to rfc-editor.org, datatracker.ietf.org and ietf.org: result 'RFC 3227 - Guidelines for Evidence Collection and Archiving' at this URL, also rfc-editor.org/info/rfc3227/ and ietf.org/rfc/rfc3227.txt. Text: BCP 55, D. Brezinski and T. Killalea, February 2002; collect the most volatile evidence first (Section 2.1 gives an example order) and do not shut the machine down before collection is complete.",
+      "version": "BCP 55, February 2002",
+      "topics": [
+        "order of volatility",
+        "evidence collection",
+        "evidence archiving",
+        "chain of custody",
+        "memory acquisition caveats"
+      ],
+      "suggested_days": [
+        "D36",
+        "D38"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Source for the volatile-versus-persistent evidence point of the week 8 expansion and the memory-acquisition caveats of D38. The exact example order was not in the result text (from general knowledge it runs from registers and caches through memory and temporary file systems to disk and archival media): read Section 2.1 itself before quoting it. The RFC is 24 years old; modern acquisition (EDR, VM snapshots, encrypted volumes) needs other sources. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-ms-get-filehash",
+      "url": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/get-filehash?view=powershell-7.5",
+      "provider": "Microsoft Learn",
+      "title": "Get-FileHash (Microsoft.PowerShell.Utility) - PowerShell",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Get-FileHash PowerShell cmdlet SHA256 Microsoft.PowerShell.Utility' restricted to learn.microsoft.com: first result 'Get-FileHash (Microsoft.PowerShell.Utility) - PowerShell' at this URL (view 7.5; views 5.1 and 7.6 also returned). Text: default algorithm SHA256; parameter sets Path, LiteralPath and InputStream; the docs warn that MD5 and SHA1 are no longer considered secure and are for simple change checks only; the 5.1 page lists more algorithms than 7.x.",
+      "version": "PowerShell 7.5 documentation view, as listed 2026-11-18",
+      "topics": [
+        "sha-256 hashing",
+        "evidence inventory",
+        "hash limits",
+        "get-filehash"
+      ],
+      "suggested_days": [
+        "D36"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Hash the supplied image or dataset before any analysis, record the value in the case manifest, and re-hash after work to show the original was not changed. A hash proves the bytes are the same, not that the data is authentic or complete (the plan's 'hash limits'). On Linux the equivalent is sha256sum (coreutils manual not searched). Read-only operation. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-ms-filetime",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-filetime",
+      "provider": "Microsoft Learn",
+      "title": "FILETIME structure (minwinbase.h) - Win32",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'FILETIME structure 100-nanosecond intervals since January 1, 1601 UTC' restricted to learn.microsoft.com: first result 'FILETIME structure (minwinbase.h) - Win32' at this URL; text: a 64-bit value counting 100-nanosecond intervals since January 1, 1601 (UTC); Microsoft advises copying the parts into a ULARGE_INTEGER for 64-bit arithmetic. The [MS-DTYP] FILETIME page (learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/2c57429b-fdd4-488f-b5fc-9e4cf020fcdf) was also returned.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "filetime",
+        "utc timestamps",
+        "timestamp provenance",
+        "time normalization"
+      ],
+      "suggested_days": [
+        "D36"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Basis for 'UTC-normalize timeline with timestamp provenance' (plan guided lab step 5): NTFS and registry timestamps are FILETIME values in UTC, while many other sources (event display, Linux logs, browser times) are local or other epochs, so record the source clock and zone for every row. Whether a given artifact stores FILETIME was not checked for each artifact. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-ms-mft",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/devnotes/master-file-table",
+      "provider": "Microsoft Learn",
+      "title": "Master File Table (Developer Notes) - Win32 apps",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Master File Table NTFS local file systems $MFT file record' restricted to learn.microsoft.com: first result 'Master File Table (Developer Notes) - Win32 apps' at this URL; text: the MFT holds the information needed to retrieve files from an NTFS volume; each File Record Segment is 1,024 bytes; the first 16 records are reserved system files (record 0 is $Mft, record 5 the root directory); a record has a sequence number that increases when it is freed; deleting files does not shrink the MFT.",
+      "version": "as listed 2026-11-18; the page is marked as applying to NTFS version 3 and looked old in the result",
+      "topics": [
+        "ntfs",
+        "master file table",
+        "file record segment",
+        "sequence number",
+        "deleted file records"
+      ],
+      "suggested_days": [
+        "D36"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Pair with MFTECmd (w08-ez-tools) for the parsing side. Microsoft's page does not describe the timestamp attributes ($STANDARD_INFORMATION versus $FILE_NAME) in the result text; use another source for that and label it ASSUMED until sourced. Also returned: FILE_RECORD_SEGMENT_HEADER and [MS-FSCC] reserved-file-name pages. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-ms-shllink",
+      "url": "https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-shllink/16cb4ca1-9339-4d0c-a68d-bf1d6cc0f943",
+      "provider": "Microsoft Learn",
+      "title": "[MS-SHLLINK]: Shell Link (.LNK) Binary File Format",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'MS-SHLLINK Shell Link (.LNK) binary file format specification' restricted to learn.microsoft.com: first result '[MS-SHLLINK]: Shell Link (.LNK) Binary File Format' at this URL; text: latest listed revision 10.0 dated 11/21/2025; structure is a ShellLinkHeader (0x4C bytes) followed by optional LinkTargetIDList, LinkInfo, StringData and ExtraData blocks; multi-byte values are little-endian; section 3.1 gives a worked example for C:\\test\\a.txt.",
+      "version": "[MS-SHLLINK] revision 10.0, 2025-11-21 (per search result)",
+      "topics": [
+        "lnk files",
+        "shell link header",
+        "target timestamps",
+        "linkinfo",
+        "format specification"
+      ],
+      "suggested_days": [
+        "D37"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Microsoft's own format specification, useful to explain what a parser such as LECmd reads. What a .lnk file proves about user activity (for example that a target existed and was opened) is an interpretation that the specification does not make; keep that in the artifact-and-confidence table as INFERRED unless corroborated. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-ez-tools",
+      "url": "https://ericzimmerman.github.io/",
+      "provider": "Eric Zimmerman",
+      "title": "Home - Eric Zimmerman's Tools",
+      "kind": "TOOL",
+      "access": "FREE",
+      "access_note": "Public project site of free command-line and GUI tools shown in the search result.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Eric Zimmerman tools MFTECmd PECmd AmcacheParser RECmd EvtxECmd LECmd' restricted to ericzimmerman.github.io, github.com and sans.org: first result 'Home - Eric Zimmerman's Tools' at this URL; the result text lists MFTECmd 2026.10.6 ($MFT, $Boot, $J, $SDS, $I30, $LogFile), PECmd 2026.10.3 (Prefetch), AmcacheParser 2026.10.1 (Amcache.hve, including Windows 11 26H2 databases), RECmd 2026.10.3 (registry), EvtxECmd 2026.10.2 (event logs to CSV, XML or JSON) and LECmd 2026.10.4 (.lnk files); the tools target .NET 4.7.2 and .NET 10, AmcacheParser .NET 10 only. SANS page 'MFTECmd' at sans.org/tools/mftecmd also returned.",
+      "version": "2026.10 release line (versions as listed by the result 2026-11-18)",
+      "topics": [
+        "mftecmd",
+        "pecmd",
+        "amcacheparser",
+        "recmd",
+        "evtxecmd",
+        "lecmd",
+        "prefetch",
+        "amcache",
+        "registry",
+        "event logs"
+      ],
+      "suggested_days": [
+        "D36",
+        "D37"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "One site for the Windows artifact parsers of D36 and D37. Run them on a copy of the evidence, never on the original, and keep the output CSVs with the tool version. A community project in the results reports that PECmd cannot run on non-Windows platforms (second-hand): plan a Windows analysis guest for Prefetch. The Zimmerman tools are not an official Microsoft or vendor-supported toolset; downloading them needs network access that the lab rules forbid during training, so staging them offline needs the owner's approval (PROPOSED). Free hosted alternative with the same tools: w08-thm-windows-forensics-1. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-plaso-creating-a-timeline",
+      "url": "https://plaso.readthedocs.io/en/latest/sources/user/Creating-a-timeline.html",
+      "provider": "Plaso (log2timeline)",
+      "title": "Creating a timeline — Plaso (log2timeline) 20261027 documentation",
+      "kind": "TOOL",
+      "access": "FREE",
+      "access_note": "Public open-source documentation shown in the search result.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Plaso log2timeline documentation super timeline psort' restricted to plaso.readthedocs.io and github.com: first result 'Creating a timeline — Plaso (log2timeline) 20261027 documentation' at this URL, with 'Using psort.py' (plaso.readthedocs.io/en/latest/sources/user/Using-psort.html) and 'User's Guide'. Text: log2timeline writes a Plaso storage file, psort filters, sorts and writes the timeline (default time zone UTC), psteal runs both steps, and since 1.5.0 psort needs -w for output.",
+      "version": "Plaso 20261027 documentation (build date shown in the result title)",
+      "topics": [
+        "timeline",
+        "log2timeline",
+        "psort",
+        "super timeline",
+        "utc normalization"
+      ],
+      "suggested_days": [
+        "D37",
+        "D40"
+      ],
+      "block": "D",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Optional heavy tool for building the multi-source chronology (D37 D, D40 C). A hand-built, source-labelled table from EZ tools output satisfies the plan's gate; Plaso adds volume and parser noise, so keep every row traceable to a source artifact. Needs a Linux analysis guest; installation and parser coverage were not checked. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-volatility3-windows-tutorial",
+      "url": "https://volatility3.readthedocs.io/en/latest/getting-started-windows-tutorial.html",
+      "provider": "Volatility Foundation",
+      "title": "Windows Tutorial — Volatility 3 2.28.3 documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation shown in the search result.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Volatility 3 documentation how to use windows.pslist windows.netscan plugins' restricted to volatility3.readthedocs.io, github.com and volatilityfoundation.org: result 'Windows Tutorial — Volatility 3 2.28.3 documentation' at this URL; text: vol.py -f <dump> windows.pslist lists processes at dump time (columns PID, PPID, image name, offset, threads, handles, create and exit times); symbol tables (ISF) can usually be generated from PDB files downloaded from Microsoft automatically. The netscan plugin page (volatility3.readthedocs.io/en/latest/volatility3.plugins.windows.netscan.html) says it scans memory for network objects by pool tag.",
+      "version": "Volatility 3 documentation 2.28.3 (as listed 2026-11-18); API signatures changed between releases",
+      "topics": [
+        "volatility 3",
+        "windows.pslist",
+        "windows.netscan",
+        "process listing",
+        "memory analysis"
+      ],
+      "suggested_days": [
+        "D38"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Automatic symbol download needs network access to Microsoft symbol servers, which the lab rules forbid during training: pre-stage the symbol cache or use a hosted room (owner approval, PROPOSED). pslist follows the OS process list and psscan scans pool memory, so a process missing from pslist but present in psscan is a lead, not proof of malice (the Volatility 2 command reference in the same result says pslist does not detect hidden processes; Volatility 3 behaviour was not read). netscan results can include corrupt entries when --include-corrupt is used; treat them as weak. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-volatility3-repo",
+      "url": "https://github.com/volatilityfoundation/volatility3",
+      "provider": "Volatility Foundation",
+      "title": "GitHub - volatilityfoundation/volatility3: Volatility 3.0 development · GitHub",
+      "kind": "TOOL",
+      "access": "FREE",
+      "access_note": "Public GitHub repository; the Volatility Software License applies per the README summary in the search result.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Volatility 3 GitHub volatilityfoundation volatility3 README memory forensics framework Python 3' restricted to github.com and volatility3.readthedocs.io: first result at this URL; README text: needs Python 3.8.0 or later, published on PyPI as volatility3, run 'vol -f <imagepath> windows.info' first, 'stable' branch holds the latest stable release and 'develop' is the default; Windows symbol tables are downloaded or generated automatically, Mac and Linux tables must be built manually (for example with dwarf2json). The organisation page showed the repository updated 2026-10-12. Many forks and mirrors also appear; use only this repository.",
+      "version": "as listed 2026-11-18; repository updated 2026-10-12 per the organisation page",
+      "topics": [
+        "volatility 3",
+        "memory forensics",
+        "symbol tables",
+        "linux memory"
+      ],
+      "suggested_days": [
+        "D38"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w08-thm-volatility",
+      "notes": "Plan registry source. Install from PyPI or the stable branch needs network access, so staging is the owner's decision. Linux memory images need a matching symbol table built by hand, so a Linux memory exercise needs extra preparation (see gaps). Hosted alternative that needs no local install: w08-thm-volatility. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-velociraptor-quickstart",
+      "url": "https://docs.velociraptor.app/docs/deployment/quickstart/",
+      "provider": "Velociraptor",
+      "title": "Quickstart Guide",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries 'Velociraptor documentation getting started overview VQL artifacts reference' and 'Velociraptor documentation artifacts Windows.KapeFiles.Targets collection hunts offline collector' restricted to docs.velociraptor.app: result 'Quickstart Guide' at this URL, next to 'What is Velociraptor?' (docs.velociraptor.app/docs/overview/), 'Velociraptor - Digging deeper!' (docs.velociraptor.app/), 'Working With Offline Collection Data' (docs.velociraptor.app/docs/deployment/offline_collections/collection_data/) and 'Preserving Forensic Evidence' (docs.velociraptor.app/training/playbooks/preservation/). Text: a 2025 blog post says Windows.KapeFiles.Targets is no longer built in since release 0.75 and was renamed Windows.Triage.Targets; offline collectors cannot take part in hunts but an imported collection can be added to a hunt.",
+      "version": "as listed 2026-11-18; artifact name changed in release 0.75 (Windows.KapeFiles.Targets to Windows.Triage.Targets); the Velociraptor release current in 2026-11 was not read",
+      "topics": [
+        "velociraptor",
+        "endpoint collection",
+        "vql",
+        "offline collector",
+        "triage artifacts",
+        "evidence preservation"
+      ],
+      "suggested_days": [
+        "D37",
+        "D40"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Plan core site for week 8. The docs recommend a local single-machine deployment first, then the GUI and built-in artifacts, then VQL. Collecting triage files can produce several gigabytes per host (blog post in the result). Use it only against the lab guests or supplied datasets, and hash collected output. No hosted Velociraptor room was registered: the TryHackMe Velociraptor room (tryhackme.com/room/velociraptorhp) was reported as Premium or Max only and left out (see gaps). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-journalctl-man",
+      "url": "https://man7.org/linux/man-pages/man1/journalctl.1.html",
+      "provider": "man7.org (Linux man-pages)",
+      "title": "journalctl(1) - Linux manual page",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'journalctl man page systemd journal query filter since until UTC' restricted to freedesktop.org and man7.org: first result 'journalctl(1) - Linux manual page' at this URL, also freedesktop.org/software/systemd/man/journalctl and the systemd.journal-fields page. Text: -S/--since and -U/--until take dates like '2012-10-30 18:17:16'; --utc shows time in UTC; short-unix output gives epoch seconds.",
+      "version": "man page as listed 2026-11-18; the installed systemd version decides which options exist",
+      "topics": [
+        "journalctl",
+        "systemd journal",
+        "time filtering",
+        "utc display",
+        "journal fields"
+      ],
+      "suggested_days": [
+        "D39"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "The results did not say whether bare --since and --until values are read as local time or UTC (from general knowledge they are local time): label that ASSUMED or test it on the lab guest before building a UTC timeline. Journal retention and rotation (persistent versus volatile storage, vacuum limits) were not in the results; the week 8 expansion asks for log-rotation caveats, so source them separately. Companion pages returned by search: utmp(5), last(1) and lastlog(8) (man7.org/linux/man-pages/man5/utmp.5.html and neighbours) for wtmp, btmp and lastlog, and ausearch(8) and audit.rules(7) for auditd. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-systemd-timer-man",
+      "url": "https://man7.org/linux/man-pages/man5/systemd.timer.5.html",
+      "provider": "man7.org (Linux man-pages)",
+      "title": "systemd.timer(5) - Linux manual page",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'systemd.timer man page OnCalendar timer units persistence' restricted to freedesktop.org and man7.org: first result 'systemd.timer(5) - Linux manual page' at this URL; text: Persistent= stores the last trigger time on disk and runs a missed OnCalendar= job at activation (default false); calendar timers that elapse during sleep fire on resume; RandomizedOffsetSec= was added in version 258.",
+      "version": "man page as listed 2026-11-18 (mentions systemd 258)",
+      "topics": [
+        "systemd timers",
+        "persistence mechanisms",
+        "oncalendar",
+        "persistent timers",
+        "linux services"
+      ],
+      "suggested_days": [
+        "D39"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Timers are a persistence location next to cron, systemd services, shell start-up files and SSH keys (the last four per the TryHackMe Linux Server Forensics result text). A timer unit and its service unit are separate files: inspect both. Defensive use only; no persistence is created on any host in this exercise. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-thm-windows-forensics-1",
+      "url": "https://tryhackme.com/room/windowsforensics1",
+      "provider": "TryHackMe",
+      "title": "Windows Forensics 1",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Per-room free or Premium flag not visible in the search result. TryHackMe's free-rooms page (tryhackme.com/free-rooms) says hundreds of rooms need only a free account (no card), free users get up to one hour per day of the browser AttackBox, and Premium unlocks the structured paths; whether this room is free was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe Windows Forensics 1 Windows Forensics 2 registry prefetch artifacts room' restricted to tryhackme.com: first result at this URL; the result text names 'Windows Forensics 1' (registry hives in C:\\Windows\\System32\\Config and user NTUSER.DAT, Amcache and transaction logs, Registry Explorer and Eric Zimmerman tools, KAPE as live acquisition). It also states that FTK Imager can pull protected registry hives from a live system but will not copy Amcache.hve. The room named 'Windows Forensics 2' did not appear in the result list.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "registry forensics",
+        "amcache",
+        "registry hives",
+        "kape",
+        "eric zimmerman tools"
+      ],
+      "suggested_days": [
+        "D36",
+        "D37"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w08-ld-windows-forensics",
+      "notes": "Hosted guided practice for the registry and Amcache half of D37 A/B. Related rooms returned: 'Expediting Registry Analysis' (tryhackme.com/room/expregistryforensics), 'KAPE' (tryhackme.com/room/kape) and 'Key Artifacts for DFIR' (tryhackme.com/room/keyartifactsfordfir, full-disk acquisition versus selective artifacts). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-thm-compromised-windows-analysis",
+      "url": "https://tryhackme.com/room/compromisedwindowsanalysis",
+      "provider": "TryHackMe",
+      "title": "Compromised Windows Analysis",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Per-room free or Premium flag not visible in the search result. TryHackMe's free-rooms page (tryhackme.com/free-rooms) says hundreds of rooms need only a free account (no card), free users get up to one hour per day of the browser AttackBox, and Premium unlocks the structured paths; whether this room is free was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe Windows Forensics 1 Windows Forensics 2 registry prefetch artifacts room' restricted to tryhackme.com: result at this URL; the result text names it 'Compromised Windows Analysis' (Prefetch files parsed with PECmd, run count and last run time; lists Windows Forensics 1 and 2 as prerequisites; notes Prefetch is not enabled by default on Windows Server).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "prefetch",
+        "pecmd",
+        "execution evidence",
+        "windows host investigation"
+      ],
+      "suggested_days": [
+        "D37"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w08-ld-windows-forensics",
+      "notes": "Independent-block candidate for the Windows activity timeline of D37 (choose it if you have not read a walkthrough). Prefetch absence on a server is a configuration fact, not evidence that nothing ran. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-thm-volatility",
+      "url": "https://tryhackme.com/room/volatility",
+      "provider": "TryHackMe",
+      "title": "Volatility",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Per-room free or Premium flag not visible in the search result. TryHackMe's free-rooms page (tryhackme.com/free-rooms) says hundreds of rooms need only a free account (no card), free users get up to one hour per day of the browser AttackBox, and Premium unlocks the structured paths; whether this room is free was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe Volatility room memory forensics' restricted to tryhackme.com: first result at this URL; the result text describes an 11-task room using Volatility 3 (overview, installation, memory acquisition, plugins, process and network listing, malware hunting, practical case on a VMware memory file) and notes that Volatility 2 profiles are replaced by symbol tables. Other results: 'Volatility Essentials' (tryhackme.com/room/volatilityessentials), 'Critical' (tryhackme.com/room/critical, short Volatility 3 room), 'Memory Analysis Introduction' (tryhackme.com/room/memoryanalysisintroduction).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "volatility 3",
+        "memory acquisition",
+        "process listing",
+        "network listing",
+        "malware hunting"
+      ],
+      "suggested_days": [
+        "D38"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w08-ld-memory-analysis",
+      "notes": "Hosted Volatility 3 practice that needs no local symbol staging (D38 B). The plan's D38 B reviews a purpose-built image; the room's own image is spoiler territory once you have read its answers. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-thm-linux-server-forensics",
+      "url": "https://tryhackme.com/room/linuxserverforensics",
+      "provider": "TryHackMe",
+      "title": "Linux Server Forensics",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Per-room free or Premium flag not visible in the search result. TryHackMe's free-rooms page (tryhackme.com/free-rooms) says hundreds of rooms need only a free account (no card), free users get up to one hour per day of the browser AttackBox, and Premium unlocks the structured paths; whether this room is free was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe Linux forensics room auth.log persistence cron incident response Linux' restricted to tryhackme.com: first result at this URL; the result text names it 'Linux Server Forensics' (persistence footholds cron, systemd services, bashrc, kernel modules and SSH keys; execution history including sudo activity in auth.log). Related rooms returned: 'Linux Incident Surface' (tryhackme.com/room/linuxincidentsurface), 'Linux File System Analysis' (tryhackme.com/room/linuxfilesystemanalysis), 'Linux Logging for SOC' (tryhackme.com/room/linuxloggingforsoc), 'Log Analysis with SIEM' (tryhackme.com/room/loganalysiswithsiem).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "linux persistence",
+        "auth.log",
+        "sudo history",
+        "cron",
+        "systemd services",
+        "ssh keys"
+      ],
+      "suggested_days": [
+        "D39"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w08-cd-hammered",
+      "notes": "Hosted counterpart of the D39 B 'review test Linux authentication and system log data'. Compare any log conclusion with the other log source before stating it (the Log Analysis with SIEM result notes auth.log alone cannot show how the attacker got in). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-thm-incident-response-process",
+      "url": "https://tryhackme.com/room/incidentresponseprocess",
+      "provider": "TryHackMe",
+      "title": "Incident Response Process",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Per-room free or Premium flag not visible in the search result. TryHackMe's free-rooms page (tryhackme.com/free-rooms) says hundreds of rooms need only a free account (no card), free users get up to one hour per day of the browser AttackBox, and Premium unlocks the structured paths; whether this room is free was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe incident response process room Preparation Identification Scoping Eradication Lessons learned' restricted to tryhackme.com: first result at this URL; the result text names 'Incident Response Process' (works the NIST lifecycle on a compromised Windows workstation, and notes that SANS splits containment, eradication and recovery into separate steps, a six-step model). Other results: 'Preparation' (tryhackme.com/room/preparation), 'IR Preparation' (tryhackme.com/room/irpreparation, based on NIST SP 800-61, four rooms around a fictional firm), 'Incident Response Fundamentals' (tryhackme.com/room/incidentresponsefundamentals); the 'Post-Incident Activity' room is reported as Premium only.",
+      "version": "as listed 2026-11-18; which NIST revision these rooms follow was not shown",
+      "topics": [
+        "incident response lifecycle",
+        "containment eradication recovery",
+        "nist 800-61",
+        "sans phases",
+        "lessons learned"
+      ],
+      "suggested_days": [
+        "D39",
+        "D40"
+      ],
+      "block": "A",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w08-htb-incident-handling-process",
+      "notes": "Compare its phase names with SP 800-61 Rev. 3 (w08-nist-sp800-61r3) in the written exam: the room's lifecycle may be the Rev. 2 four-phase model (INFERRED, revision not shown). Use for the D39 plan structure, not as the authority. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-thm-ftk-imager-case-b4dm755",
+      "url": "https://tryhackme.com/room/caseb4dm755",
+      "provider": "TryHackMe",
+      "title": "Digital Forensics Case B4DM755",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Per-room free or Premium flag not visible in the search result. TryHackMe's free-rooms page (tryhackme.com/free-rooms) says hundreds of rooms need only a free account (no card), free users get up to one hour per day of the browser AttackBox, and Premium unlocks the structured paths; whether this room is free was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe Autopsy KAPE disk forensics room evidence acquisition FTK Imager' restricted to tryhackme.com: result at this URL; the result text names the room 'Digital Forensics Case B4DM755' (FTK Imager to acquire a forensic disk image, create a raw (dd) image, verify it with hashes, then mount it and extract artefacts). Related: 'Key Artifacts for DFIR' (tryhackme.com/room/keyartifactsfordfir). A blog on the same query names an Autopsy practice room at tryhackme.com/room/autopsy2ze0, which did not appear as a result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "disk imaging",
+        "ftk imager",
+        "raw dd image",
+        "hash verification",
+        "evidence integrity"
+      ],
+      "suggested_days": [
+        "D36"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w08-ms-get-filehash",
+      "notes": "Hosted practice for acquisition, hashing and mounting (D36 B). The room images a hosted VM; on the G9 host the equivalent is hashing the supplied dataset with w08-ms-get-filehash, which is the actual D36 task (no real device is imaged). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-htb-academy-intro-digital-forensics",
+      "url": "https://academy.hackthebox.com/course/preview/introduction-to-digital-forensics",
+      "provider": "HTB Academy",
+      "title": "Introduction to Digital Forensics Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier label not shown in the result. HTB help (help.hackthebox.com/en/articles/13677074-academy-subscriptions, FAQ academy.hackthebox.com/faq): all Tier 0 modules are free, new accounts start with 200 Cubes, Tier I to IV unlock with Cubes (50, 100, 500, 1000) or with a subscription; the Student plan (USD 10 per month, eligibility required) unlocks up to Tier II.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries 'HTB Academy Windows Event Logs & Finding Evil module Sysmon' and 'HTB Academy Introduction to Digital Forensics course medium sections disk memory forensics' restricted to academy.hackthebox.com: result 'Introduction to Digital Forensics Course' at this URL; text: Medium, sections Windows Forensics Overview, Evidence Acquisition Techniques & Tools, Memory Forensics, Disk Forensics, Rapid Triage Examination & Analysis Tools, Practical Digital Forensics Scenario, Skills Assessment (8 sections), 14 exercises, tools named FTK Imager, KAPE, Velociraptor, Volatility, Eric Zimmerman's suite and Autopsy; recommended first: Incident Handling Process, Windows Event Logs & Finding Evil, Introduction to Malware Analysis, YARA & Sigma for SOC Analysts.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "evidence acquisition",
+        "memory forensics",
+        "disk forensics",
+        "rapid triage",
+        "windows forensics overview"
+      ],
+      "suggested_days": [
+        "D36",
+        "D37",
+        "D38"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "Medium as stated by HTB",
+      "fallback": "w08-thm-windows-forensics-1",
+      "notes": "HTB Academy counterpart for D36 to D38; use its sections as the guided A/B material and keep its skills assessment for a later unassisted attempt. Part of the SOC Analyst path (w07-htb-soc-analyst-path in week 7). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-htb-incident-handling-process",
+      "url": "https://academy.hackthebox.com/course/preview/incident-handling-process",
+      "provider": "HTB Academy",
+      "title": "Incident Handling Process Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier not confirmed. A path-page summary labelled it General, Easy, Tier I, but the extracted layout could misalign labels and the checker pass of 2026-11-18 could not re-run a search to confirm it on the module page. HTB help (help.hackthebox.com/en/articles/13677074-academy-subscriptions), as reported by the author's search: Tier I unlocks with 50 Cubes or a subscription and new accounts start with 200 Cubes; apply that only after the module page shows its tier.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'HTB Academy Incident Handling Process course' restricted to academy.hackthebox.com: first result 'Incident Handling Process Course' at this URL; text: Easy, covers the process from detecting a suspicious event to confirming a compromise and responding, sections from Preparation through Post-Incident Activity, a case study of a fictional breach and a skills assessment, described as procedural with no hands-on exercises, aligned with NIST's 'Computer Security Incident Handling Guide'. A Medium module 'Cybersecurity Incident Handling Guide' (academy.hackthebox.com/course/preview/cybersecurity-incident-handling-guide) and 'Security Incident Reporting' (academy.hackthebox.com/course/preview/security-incident-reporting) were also returned.",
+      "version": "as listed 2026-11-18; follows the Rev. 2 era NIST guide by title (INFERRED)",
+      "topics": [
+        "incident handling",
+        "incident response phases",
+        "post-incident activity",
+        "case study"
+      ],
+      "suggested_days": [
+        "D39",
+        "D40"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "Easy as stated by HTB",
+      "fallback": "w08-thm-incident-response-process",
+      "notes": "Prerequisite of the HTB Introduction to Digital Forensics module. It is procedural reading, so it supports the written exam rather than a hands-on block. Reconcile its phase names with SP 800-61 Rev. 3 before using them in the incident report. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-htb-academy-digital-forensics-on-linux",
+      "url": "https://academy.hackthebox.com/course/preview/digital-forensics-on-linux",
+      "provider": "HTB Academy",
+      "title": "Digital Forensics on Linux Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier label not shown in the result. HTB help (help.hackthebox.com/en/articles/13677074-academy-subscriptions, FAQ academy.hackthebox.com/faq): all Tier 0 modules are free, new accounts start with 200 Cubes, Tier I to IV unlock with Cubes (50, 100, 500, 1000) or with a subscription; the Student plan (USD 10 per month, eligibility required) unlocks up to Tier II.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'HTB Academy Digital Forensics on Linux course sections difficulty prerequisites' restricted to academy.hackthebox.com: first result 'Digital Forensics on Linux Course' at this URL; text: Hard, Defensive, 8 sections (Introduction to DFIR on Linux, Linux Live Response, Linux Live Response - 2, Linux File Systems, Linux File System Forensics, Linux Configuration Files, Linux System Files, Quiz); recommended starting points basic Linux knowledge and cybersecurity concepts. The Medium module 'Introduction to Linux Forensics' (academy.hackthebox.com/course/preview/introduction-to-linux-forensics, 15 sections, prerequisites Linux Fundamentals, Introduction to Digital Forensics, Introduction to Networking) was also returned.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "linux live response",
+        "linux file system forensics",
+        "linux configuration files",
+        "linux system files"
+      ],
+      "suggested_days": [
+        "D39"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": "Hard as stated by HTB",
+      "fallback": "w08-thm-linux-server-forensics",
+      "notes": "Rated Hard: take one or two sections (live response) for D39 B instead of the whole module. The Medium 'Introduction to Linux Forensics' is the gentler HTB option if this one is too steep; it was not registered. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-htb-sherlock-logjammer",
+      "url": "https://app.hackthebox.com/sherlocks/Logjammer",
+      "provider": "Hack The Box",
+      "title": "Logjammer",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "Free plan includes active Sherlocks; retired Sherlocks need HTB VIP+ (listed at USD 25 per month in one search result; prices differ across HTB pages) or Pro (help.hackthebox.com/en/articles/8570249-how-to-play-sherlocks and .../7257535-htb-labs-subscriptions). Whether this Sherlock is active or retired was not confirmed, so its access is UNKNOWN.",
+      "verification": "UNVERIFIED",
+      "evidence": "Queries 'Hack The Box Sherlock Logjammer Windows event log analysis retired', 'Hack The Box blog best DFIR labs Meerkat Bumblebee Litter Logjammer Tracer Sherlock description' and 'app.hackthebox.com sherlocks Sherlock Very Easy retired Windows event logs investigation' restricted to hackthebox.com, forum.hackthebox.com, app.hackthebox.com and labs.hackthebox.com: the name appears in HTB's own blog 'Our top 5 DFIR labs for beginner analysts (to get good fast)' (hackthebox.com/blog/best-dfir-labs) as 'Logjammer: Level up your Event Log analysis' covering System, Security, Windows Defender, Windows Firewall and PowerShell operational logs. No result showed a page at app.hackthebox.com/sherlocks/Logjammer or its retired status: the URL is the author's reconstruction of HTB's Sherlock URL pattern and was not seen.",
+      "version": "state (active or retired) not confirmed; name and scope as described by the HTB blog 2026-11-18",
+      "topics": [
+        "windows event logs",
+        "system security defender firewall powershell logs",
+        "user activity reconstruction"
+      ],
+      "suggested_days": [
+        "D37"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w08-ld-windows-forensics",
+      "notes": "Listed by HTB as a beginner DFIR lab. If it is rated Very Easy, HTB's Sherlock submission requirements (help.hackthebox.com/en/articles/8463668-sherlocks-submission-requirements) say such an investigation takes about one hour; this Sherlock's difficulty was not seen, so plan it as a short unassisted item and pair it with another artifact set rather than as a full 2.5 hour block. Platform rule (help.hackthebox.com/en/articles/12325897-hack-the-box-platform-rules, AUP effective 2026-04-01): solutions, flags, answers, write-ups and hints may be published only for retired Machines, retired Sherlocks, retired Challenges, Starting Point machines, Tier 0 Academy modules and a few Mini Pro Labs; publishing solutions for active content is prohibited. Confirm the Sherlock shows as retired on the platform before assigning it, and treat it as active (no write-up, no sharing of answers) until then. Evidence package password and play modes (linear or free-flow) are in the 'How to Play Sherlocks' article (w08-htb-how-to-play-sherlocks). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-htb-sherlock-brutus",
+      "url": "https://app.hackthebox.com/sherlocks/Brutus",
+      "provider": "Hack The Box",
+      "title": "Brutus",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "Free plan includes active Sherlocks; retired Sherlocks need HTB VIP+ (listed at USD 25 per month in one search result; prices differ across HTB pages) or Pro (help.hackthebox.com/en/articles/8570249-how-to-play-sherlocks and .../7257535-htb-labs-subscriptions). Whether this Sherlock is active or retired was not confirmed, so its access is UNKNOWN.",
+      "verification": "UNVERIFIED",
+      "evidence": "Queries 'Hack The Box Sherlocks retired Sherlock DFIR Brutus auth.log' (restricted to app.hackthebox.com, hackthebox.com, help.hackthebox.com) and 'Brutus Sherlock' (app.hackthebox.com): the Sherlock name appears as a forum thread 'Sherlocks - Brutus' (forum.hackthebox.com/t/sherlocks-brutus/311278, about 2.5 years old) and as a solved-achievement page 'Solved Brutus from Hack The Box!' (labs.hackthebox.com/achievement/sherlock/1570172/631). No result showed a page at app.hackthebox.com/sherlocks/Brutus, its difficulty or its retired status: the URL is the author's reconstruction of HTB's Sherlock URL pattern and was not seen. The thread's content was not relied on.",
+      "version": "state (active or retired) not confirmed; existence seen only through a forum thread and an achievement page 2026-11-18",
+      "topics": [
+        "linux authentication logs",
+        "auth.log",
+        "wtmp",
+        "ssh login evidence"
+      ],
+      "suggested_days": [
+        "D39"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w08-cd-hammered",
+      "notes": "Chosen for the Linux log theme of D39 from the forum thread title only; its scope was not confirmed from a provider page. Platform rule (help.hackthebox.com/en/articles/12325897-hack-the-box-platform-rules, AUP effective 2026-04-01): solutions, flags, answers, write-ups and hints may be published only for retired Machines, retired Sherlocks, retired Challenges, Starting Point machines, Tier 0 Academy modules and a few Mini Pro Labs; publishing solutions for active content is prohibited. Confirm the Sherlock shows as retired on the platform before assigning it, and treat it as active (no write-up, no sharing of answers) until then. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-htb-platform-rules",
+      "url": "https://help.hackthebox.com/en/articles/12325897-hack-the-box-platform-rules",
+      "provider": "Hack The Box",
+      "title": "Hack The Box Platform Rules",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public HTB help-centre article; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Hack The Box policy publishing walkthroughs writeups active machines Sherlocks retired only' restricted to help.hackthebox.com and hackthebox.com: result 'Hack The Box Platform Rules' at this URL, next to 'Streaming / Writeups / Walkthrough Guidelines' (help.hackthebox.com/en/articles/5188925-streaming-writeups-walkthrough-guidelines) and 'Legal & Compliance: ACCEPTABLE USE POLICY Effective: 01 April 2026' (resources.hackthebox.com/hubfs/Legal/AUP.pdf). Text: write-ups are allowed for retired Machines, retired Sherlocks, retired Challenges, Starting Point machines, Tier 0 Academy modules and a named set of Mini Pro Labs; sharing solutions for any other Pro Lab, active Machine, active Challenge or active Sherlock is prohibited; a machine can be active and expired at once, so confirm it is officially retired; enterprise content may be discussed only inside the company.",
+      "version": "as listed 2026-11-18; AUP effective 2026-04-01",
+      "topics": [
+        "spoiler policy",
+        "retired content",
+        "active content",
+        "write-up rules",
+        "portfolio evidence"
+      ],
+      "suggested_days": [
+        "D37",
+        "D39"
+      ],
+      "block": "any",
+      "estimate_minutes": 15,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "The rule behind the plan's 'no active-machine spoilers in portfolio'. HTB states it will take action against material that violates the terms. Portfolio entries for HTB work should name the exercise and state what was practised and which evidence was kept, never the solution, and only for content confirmed retired. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-htb-how-to-play-sherlocks",
+      "url": "https://help.hackthebox.com/en/articles/8570249-how-to-play-sherlocks",
+      "provider": "Hack The Box",
+      "title": "How to Play Sherlocks",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public HTB help-centre article; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries 'Hack The Box Sherlocks retired Sherlock DFIR Brutus auth.log' and 'How to Play Sherlocks Hack The Box help center guided mode retired Sherlocks subscription free' restricted to help.hackthebox.com: result 'How to Play Sherlocks' at this URL; text: download the investigation package (a zip, password given in the article), answer questions on the platform in linear mode (answering unlocks the next) or free-flow mode (any order); the Free plan includes active Sherlocks and retired Sherlocks need VIP+ (with 'HTB Labs Subscriptions', help.hackthebox.com/en/articles/7257535-htb-labs-subscriptions). Guided Mode on HTB Labs (article 8117054) is documented for Machines only.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "sherlocks",
+        "investigation package",
+        "linear and free-flow mode",
+        "plan access"
+      ],
+      "suggested_days": [
+        "D37",
+        "D39"
+      ],
+      "block": "any",
+      "estimate_minutes": 15,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Evidence packages from Sherlocks are artefacts of simulated incidents; open them only in the isolated analysis guest and hash the package first. About 150 Sherlocks were added from LetsDefend (roadmap.hackthebox.com/changelog/150-sherlocks-have-been-added-from-letsdefend-to-htb-labs) with releases free for one month each according to a search summary of the HTB changelog; that detail was not confirmed on the page itself. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-ld-windows-forensics",
+      "url": "https://app.letsdefend.io/challenge/windows-forensics",
+      "provider": "LetsDefend",
+      "title": "Windows Forensics - LetsDefend",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "Hack The Box acquired LetsDefend. Search results (app.letsdefend.io/pricing, help.hackthebox.com articles 14961689 'LetsDefend Subscriptions' and 14945568 'Introduction to LetsDefend') say the Basic plan is free and includes Certificates of Completion, SOC environments, challenges and quizzes, with SOC analyst alerts limited and hands-on labs capped at 1 hour per month; free courses named were Windows Fundamentals, Malware Analysis Fundamentals and Introduction to Cryptology; premium needs a paid LetsDefend plan; LetsDefend courses and challenges are being added to HTB Academy and Labs. This item's own tier was not shown.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'LetsDefend challenges investigate challenge endpoint log forensic Windows' restricted to letsdefend.io and app.letsdefend.io: result 'Windows Forensics - LetsDefend' at this URL; text: a manual artifact-analysis challenge on a triage image from a system hit by a phishing campaign, goal to identify the attacker's techniques and tactics, Eric Zimmerman's tools suggested for most artifacts, artifacts supplied in a password-protected zip, some questions need extra research. Related: 'Practical Windows Forensics' lesson (app.letsdefend.io/training/lessons/practical-windows-forensics), 'Windows Registry' challenge (app.letsdefend.io/challenge/windows-registry) and 'Registry Forensics - 2' lesson.",
+      "version": "as listed 2026-11-18; the platform is migrating to HTB",
+      "topics": [
+        "windows triage image",
+        "artifact analysis",
+        "attacker techniques",
+        "eric zimmerman tools"
+      ],
+      "suggested_days": [
+        "D37"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w08-thm-compromised-windows-analysis",
+      "notes": "Independent Windows artifact timeline (D37 C) when the learner has not read a write-up. Community write-ups are linked from the challenge page per the search summary: do not open them before the attempt. The Windows tools needed are the ones in w08-ez-tools. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-ld-memory-analysis",
+      "url": "https://app.letsdefend.io/challenge/memory-analysis",
+      "provider": "LetsDefend",
+      "title": "Memory Analysis - LetsDefend",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "Hack The Box acquired LetsDefend. Search results (app.letsdefend.io/pricing, help.hackthebox.com articles 14961689 'LetsDefend Subscriptions' and 14945568 'Introduction to LetsDefend') say the Basic plan is free and includes Certificates of Completion, SOC environments, challenges and quizzes, with SOC analyst alerts limited and hands-on labs capped at 1 hour per month; free courses named were Windows Fundamentals, Malware Analysis Fundamentals and Introduction to Cryptology; premium needs a paid LetsDefend plan; LetsDefend courses and challenges are being added to HTB Academy and Labs. This item's own tier was not shown.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'LetsDefend challenges investigate challenge endpoint log forensic Windows' restricted to letsdefend.io and app.letsdefend.io: result 'Memory Analysis - LetsDefend' at this URL; text: a Windows endpoint memory dump challenge with Volatility 2 and Volatility 3 commands provided, listed as older content. Related: 'Windows Memory Forensics' lesson (app.letsdefend.io/training/lessons/windows-memory-forensics), 'Linux Memory Forensics' lesson and challenge (app.letsdefend.io/challenge/linux-memory-forensics) and the DFIR Learning Path (app.letsdefend.io/path/dfir-learning-path).",
+      "version": "as listed 2026-11-18; flagged as older content; the platform is migrating to HTB",
+      "topics": [
+        "windows memory dump",
+        "volatility 2 and 3",
+        "process analysis"
+      ],
+      "suggested_days": [
+        "D38"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w08-cd-volatility-traces",
+      "notes": "Older content with both Volatility generations: use the Volatility 3 commands only, since the plan teaches Volatility 3. Weak indicators (for example one unlinked process) need a corroborating source before they are written as findings (D38 D). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-cd-volatility-traces",
+      "url": "https://cyberdefenders.org/blueteam-ctf-challenges/volatility-traces/",
+      "provider": "CyberDefenders",
+      "title": "Volatility Traces",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "CyberDefenders help (help.cyberdefenders.org/en/articles/8933649-cyberrange-free-vs-pro-labs and .../9544344-free-trial-labs): free labs are open to all users; Pro labs need a CyberRange Pro subscription; free users get limited trial access to some premium labs (one page about 742 days old says 5 hours once per account). The blueteam-ctf-challenges listing marks many challenges PREMIUM. This lab's own flag was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'CyberDefenders memory forensics lab Volatility 3 Windows memory dump' restricted to cyberdefenders.org: result 'Blue team CTF Challenges' at this URL; the result text names the lab 'Volatility Traces' (easy; find malicious processes, persistence and defense evasion in a memory image and map them to MITRE ATT&CK; requires Volatility 3 version 2.7.0 or later). The Memory Forensics track is at cyberdefenders.org/tracks/memory-forensics/.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "volatility 3",
+        "malicious process",
+        "persistence in memory",
+        "attack mapping"
+      ],
+      "suggested_days": [
+        "D38"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": "easy as stated by CyberDefenders",
+      "fallback": "w08-ld-memory-analysis",
+      "notes": "First choice for the unassisted memory investigation of D38 C. CyberDefenders publishes official walkthroughs (for example cyberdefenders.org/walkthroughs/hammered/ and /walkthroughs/redline/ were returned); they are spoilers, so do not open one before an unassisted attempt. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-cd-reveal",
+      "url": "https://cyberdefenders.org/blueteam-ctf-challenges/reveal/",
+      "provider": "CyberDefenders",
+      "title": "Reveal",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "CyberDefenders help (help.cyberdefenders.org/en/articles/8933649-cyberrange-free-vs-pro-labs and .../9544344-free-trial-labs): free labs are open to all users; Pro labs need a CyberRange Pro subscription; free users get limited trial access to some premium labs (one page about 742 days old says 5 hours once per account). The blueteam-ctf-challenges listing marks many challenges PREMIUM. This lab's own flag was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'CyberDefenders memory forensics lab Volatility 3 Windows memory dump' restricted to cyberdefenders.org: result 'Blue team CTF Challenges' at this URL; the result text names the lab 'Reveal' (easy; reconstruct a multi-stage attack from Windows memory dumps, focusing on malicious processes and command lines). Other memory labs returned: Ramnit (easy, blueteam-ctf-challenges/ramnit/), Brave (medium, blueteam-ctf-challenges/brave/), RedLine, Amadey - APT-C-36, QBot, BlackEnergy, IcedID 2, TeamSpy, NintendoHunt, TOCTOU - OilRig and DarkCrystal.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "windows memory",
+        "process tree",
+        "command line evidence",
+        "multi-stage attack"
+      ],
+      "suggested_days": [
+        "D38"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": "easy as stated by CyberDefenders",
+      "fallback": "w08-cd-volatility-traces",
+      "notes": "Second candidate for D38 C or a repeat the next week. Pick one lab per attempt; the point of D38 D is to separate supported facts from weak indicators. CyberDefenders publishes official walkthroughs (for example cyberdefenders.org/walkthroughs/hammered/ and /walkthroughs/redline/ were returned); they are spoilers, so do not open one before an unassisted attempt. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-cd-cybercorp-case-1",
+      "url": "https://cyberdefenders.org/labs/74",
+      "provider": "CyberDefenders",
+      "title": "CyberCorp Case 1",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "CyberDefenders help (help.cyberdefenders.org/en/articles/8933649-cyberrange-free-vs-pro-labs and .../9544344-free-trial-labs): free labs are open to all users; Pro labs need a CyberRange Pro subscription; free users get limited trial access to some premium labs (one page about 742 days old says 5 hours once per account). The blueteam-ctf-challenges listing marks many challenges PREMIUM. This lab's own flag was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'CyberDefenders endpoint forensics lab Windows disk image MFT Prefetch Amcache registry' restricted to cyberdefenders.org: result 'CyberCorp Case 1' at this URL; the result text says it is a 2021 lab whose compromised-host artifacts include a memory dump, OS event logs, registry files, Prefetch files, the $MFT, ShimCache, AmCache and network traffic dumps, with PECmd, MFTECmd and AmcacheParser among the listed tools. Other endpoint labs returned: Sysinternals (walkthrough at cyberdefenders.org/walkthroughs/sysinternals/), Fog Ransomware (Fluttering Scorpius), Rhadamanthys (reported medium and premium) and Maranhao. The Disk Forensics track is at cyberdefenders.org/tracks/disk-forensics/.",
+      "version": "as listed 2026-11-18; a 2021 lab, so artifact versions may be old",
+      "topics": [
+        "multi-artifact investigation",
+        "prefetch",
+        "mft",
+        "amcache",
+        "shimcache",
+        "memory and network evidence",
+        "timeline"
+      ],
+      "suggested_days": [
+        "D37",
+        "D40"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w08-ld-windows-forensics",
+      "notes": "Best fit of the registered items for the D40 multi-artifact case (disk, memory, event log and network evidence in one case). Use it on D40 only if you have not used it on D37. CyberDefenders publishes official walkthroughs (for example cyberdefenders.org/walkthroughs/hammered/ and /walkthroughs/redline/ were returned); they are spoilers, so do not open one before an unassisted attempt. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-cd-corporatesecrets",
+      "url": "https://cyberdefenders.org/blueteam-ctf-challenges/corporatesecrets/",
+      "provider": "CyberDefenders",
+      "title": "CorporateSecrets",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "CyberDefenders help (help.cyberdefenders.org/en/articles/8933649-cyberrange-free-vs-pro-labs and .../9544344-free-trial-labs): free labs are open to all users; Pro labs need a CyberRange Pro subscription; free users get limited trial access to some premium labs (one page about 742 days old says 5 hours once per account). The blueteam-ctf-challenges listing marks many challenges PREMIUM. This lab's own flag was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'CyberDefenders endpoint forensics lab Windows disk image MFT Prefetch Amcache registry' restricted to cyberdefenders.org: result 'Blue team CTF Challenges' at this URL (lab page also at cyberdefenders.org/labs/33); the result text names 'CorporateSecrets' combining registry, event log, browser and MFT artifacts with Registry Explorer, RegRipper and MFTDump.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "file and user activity",
+        "registry",
+        "event logs",
+        "browser artifacts",
+        "mft"
+      ],
+      "suggested_days": [
+        "D36"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w08-thm-windows-forensics-1",
+      "notes": "Read-only file and user activity investigation for D36 C: work on copies, hash first, record the tool and version for every finding. CyberDefenders publishes official walkthroughs (for example cyberdefenders.org/walkthroughs/hammered/ and /walkthroughs/redline/ were returned); they are spoilers, so do not open one before an unassisted attempt. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-cd-hammered",
+      "url": "https://cyberdefenders.org/labs/42",
+      "provider": "CyberDefenders",
+      "title": "Hammered",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "CyberDefenders help (help.cyberdefenders.org/en/articles/8933649-cyberrange-free-vs-pro-labs and .../9544344-free-trial-labs): free labs are open to all users; Pro labs need a CyberRange Pro subscription; free users get limited trial access to some premium labs (one page about 742 days old says 5 hours once per account). The blueteam-ctf-challenges listing marks many challenges PREMIUM. This lab's own flag was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'CyberDefenders Linux forensics lab SSH auth.log compromised server' restricted to cyberdefenders.org: result 'Hammered' at this URL; the result text describes a honeypot-style challenge on kern.log, auth.log, daemon.log, dmesg and Apache logs of a compromised web server (SSH logins, brute force, firewall changes, database warnings). A walkthrough page at cyberdefenders.org/walkthroughs/hammered/ was also returned.",
+      "version": "as listed 2026-11-18; the walkthrough uses grep, awk and sed",
+      "topics": [
+        "linux auth logs",
+        "ssh brute force",
+        "log analysis",
+        "compromised web server"
+      ],
+      "suggested_days": [
+        "D39"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w08-thm-linux-server-forensics",
+      "notes": "Log-only Linux investigation matching D39 B/C ('Linux authentication and system log data'); extend it with your own containment, eradication and recovery plan (D39 D) using w08-nist-sp800-61r3. CyberDefenders publishes official walkthroughs (for example cyberdefenders.org/walkthroughs/hammered/ and /walkthroughs/redline/ were returned); they are spoilers, so do not open one before an unassisted attempt. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w08-cd-hacked",
+      "url": "https://cyberdefenders.org/labs/71",
+      "provider": "CyberDefenders",
+      "title": "Hacked",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "CyberDefenders help (help.cyberdefenders.org/en/articles/8933649-cyberrange-free-vs-pro-labs and .../9544344-free-trial-labs): free labs are open to all users; Pro labs need a CyberRange Pro subscription; free users get limited trial access to some premium labs (one page about 742 days old says 5 hours once per account). The blueteam-ctf-challenges listing marks many challenges PREMIUM. This lab's own flag was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'CyberDefenders Linux forensics lab SSH auth.log compromised server' restricted to cyberdefenders.org: result 'Hacked' at this URL; the result text describes a disk-image challenge on a compromised Linux web server (how the attacker got in, what they changed, what persistence they left).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "linux disk image",
+        "web server compromise",
+        "persistence",
+        "account changes"
+      ],
+      "suggested_days": [
+        "D39",
+        "D40"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w08-cd-hammered",
+      "notes": "The 'synthetic compromised-server scenario' of D39 C or the unknown case of D40 C; use it once. CyberDefenders publishes official walkthroughs (for example cyberdefenders.org/walkthroughs/hammered/ and /walkthroughs/redline/ were returned); they are spoilers, so do not open one before an unassisted attempt. The estimate is the author's, not a provider figure."
+    }
+  ],
+  "plan_fact_checks": [
+    {
+      "claim": "Plan section 4 and section 16 item 7: NIST SP 800-61 Rev. 3 is final (April 2025) and frames incident response as part of CSF 2.0 risk management.",
+      "result": "CONFIRMED",
+      "evidence": "csrc.nist.gov/pubs/sp/800/61/r3/final and csrc.nist.gov/news/2025/nist-revises-sp-800-61 in search results: title 'Incident Response Recommendations and Considerations for Cybersecurity Risk Management: A CSF 2.0 Community Profile', published April 2025 (finalized 2025-04-03), supersedes Rev. 2 (2012), which NIST withdrew the same day. The project page says the document no longer holds detailed procedures and focuses on risk management across CSF 2.0 functions: Govern, Identify and Protect as preparation, Detect, Respond and Recover as incident response proper. The initial public draft was 2024-04-03."
+    },
+    {
+      "claim": "Plan section 7.2 W08-Q08 and section 8: SP 800-61r3 frames incident response within broader cybersecurity risk management.",
+      "result": "CONFIRMED",
+      "evidence": "Same CSRC results: the publication is titled a CSF 2.0 Community Profile, and the search summary of the abstract says it helps organizations fold incident response into their CSF 2.0 risk management activities (paraphrase, not a verbatim quote)."
+    },
+    {
+      "claim": "Plan section 4: Velociraptor documentation (docs.velociraptor.app) covers endpoint forensic collection and hunting.",
+      "result": "CONFIRMED",
+      "evidence": "docs.velociraptor.app overview, quickstart, offline collection, hunt reference and 'Preserving Forensic Evidence' pages in search results. Version-sensitive change the plan does not mention: since release 0.75 the artifact Windows.KapeFiles.Targets is no longer built in and was renamed Windows.Triage.Targets (2025 blog post on adaptive collections); older guides still use the old name. The current Velociraptor release number was not read."
+    },
+    {
+      "claim": "Plan section 4: the Volatility 3 repository (github.com/volatilityfoundation/volatility3) is the memory forensic workflow source.",
+      "result": "CONFIRMED",
+      "evidence": "github.com/volatilityfoundation/volatility3 and volatility3.readthedocs.io in search results: README says Python 3.8.0 or later, stable and develop branches, Windows symbols downloaded or generated automatically, Mac and Linux symbol tables built manually (dwarf2json); documentation build 2.28.3; the repository was updated 2026-10-12 per the organisation page. Forks and mirrors with older README text also appear and must not be used."
+    },
+    {
+      "claim": "Plan section 5 week 8 guided lab step 5: UTC-normalize the timeline with timestamp provenance.",
+      "result": "CONFIRMED",
+      "evidence": "learn.microsoft.com FILETIME pages: a 64-bit count of 100-nanosecond intervals since 1601-01-01 UTC. Plaso docs: psort output defaults to UTC. The approach is supported for Windows artifacts and Plaso; journalctl's treatment of bare --since and --until values (local time or UTC) was NOT found in the results and must be labelled ASSUMED or tested."
+    },
+    {
+      "claim": "Plan section 4 (HTB main labs): no active-machine spoilers in the portfolio; use retired content only for named exercises.",
+      "result": "CONFIRMED",
+      "evidence": "help.hackthebox.com/en/articles/12325897-hack-the-box-platform-rules and the Acceptable Use Policy effective 2026-04-01 in search results: solutions may be published only for retired Machines, retired Sherlocks, retired Challenges, Starting Point machines, Tier 0 Academy modules and a few Mini Pro Labs; active content is off limits. Practical consequence found in help.hackthebox.com articles 8570249 and 7257535: the Free plan includes only active Sherlocks and retired Sherlocks need VIP+. Whether the Sherlocks named in this file (Logjammer, Brutus) are retired was NOT confirmed (UNVERIFIED entries)."
+    },
+    {
+      "claim": "Plan section 10.2: LetsDefend and CyberDefenders provide SOC, PCAP and DFIR practice.",
+      "result": "CONFIRMED",
+      "evidence": "LetsDefend: app.letsdefend.io/path/dfir-learning-path (Windows Memory Forensics, Linux Memory Forensics, Windows Data Acquisition, Digital Forensics on Linux and others), challenges Windows Forensics, Windows Registry, Memory Analysis; the platform is now part of Hack The Box and moving to HTB Academy and Labs (help.hackthebox.com 14961689, 14945568). CyberDefenders: cyberdefenders.org/tracks/memory-forensics/ and /tracks/disk-forensics/ and labs such as Volatility Traces, Reveal, CyberCorp Case 1, Hammered, Hacked. Free access is partial on both platforms and per-item flags were not seen."
+    }
+  ],
+  "gaps": [
+    "The shared web-search budget of the authoring run (200 calls per turn) ran out before a last attempt to read TryHackMe's free-training blog posts for per-room free flags, so every TryHackMe entry stays UNKNOWN on access.",
+    "No Hack The Box Sherlock page was found at its canonical address (app.hackthebox.com/sherlocks/<name>) in any search result, and no search result showed that a Sherlock is retired. Logjammer and Brutus are registered as UNVERIFIED (names seen on HTB's blog and forum only). The blog also names Meerkat, Bumblebee, Litter and Tracer as beginner DFIR Sherlocks; they were not registered. A retired Sherlock needs VIP+, so the hosted free alternatives are the LetsDefend and CyberDefenders items.",
+    "No official Microsoft or vendor page was found for Prefetch, Amcache, ShimCache or the registry hive file list (the Microsoft 'Registry hives' page was not returned). Artifact semantics rest on the Eric Zimmerman site, TryHackMe room text and CyberDefenders lab text; the SANS Windows forensic analysis poster was not searched. Statements about what Prefetch, Amcache or LNK files prove should be labelled INFERRED or ASSUMED.",
+    "journalctl: whether bare --since and --until values are local time or UTC, journal retention and rotation, and wtmp, btmp and lastlog rotation were not confirmed in search results; the man pages utmp(5), last(1), lastlog(8), ausearch(8) and audit.rules(7) were returned but are not registered. The week 8 expansion asks for Linux journaling and log-rotation caveats, so the author must source or label them.",
+    "No Linux memory forensics resource was registered. Volatility 3 needs a hand-built symbol table for Linux (README), so a Linux memory exercise needs preparation. LetsDefend 'Linux Memory Forensics' (app.letsdefend.io/challenge/linux-memory-forensics) and TryHackMe 'Profiles' were returned but not registered.",
+    "The TryHackMe Velociraptor room (tryhackme.com/room/velociraptorhp) was returned and reported as Premium or Max only, so it was left out; the Velociraptor documentation is the only registered Velociraptor resource. TryHackMe 'Windows Forensics 2', the Autopsy room (tryhackme.com/room/autopsy2ze0, named by a TryHackMe blog) and the KAPE room (tryhackme.com/room/kape, returned) were not registered or not seen as results.",
+    "Per-item access flags (free account, Premium, Tier 0 to IV, VIP+, CyberDefenders Pro, LetsDefend plan) were not visible for most hands-on entries; they are UNKNOWN. The only tier statements found were Incident Handling Process as Tier I (path page, layout may misalign) and Rhadamanthys as a premium CyberDefenders lab (not registered).",
+    "Autopsy (sleuthkit.org/autopsy/docs/user-docs/4.22.0/quick_start_guide.html), the NIST CSF 2.0 white paper (nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf), the HTB article 'A (realistic) template for writing incident response reports' (hackthebox.com/blog/writing-incident-response-report-template) and the Microsoft 1102 and Get-WinEvent pages (week 7 holds Get-WinEvent as w07-ms-get-winevent) were returned by search but not registered to stay within the entry limit; an author may add them under the same rules.",
+    "Instructor synthetic evidence files (plan week 8 authoring expansion) need no external resource, and no registered hands-on item is a substitute for the owner-built synthetic case: all registered hands-on items are third-party training cases with spoilers available online.",
+    "Checker pass 2026-11-18: independent re-verification of every SEARCH_CHECKED entry, every non-UNKNOWN access tier and every plan fact check was NOT RUN because the search budget was exhausted. SEARCH_CHECKED in this file still means the author's search result; a later pass should re-search each entry and each FREE claim on the provider's own domain."
+  ]
+}

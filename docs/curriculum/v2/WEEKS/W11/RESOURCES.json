@@ -1,0 +1,988 @@
+{
+  "week": 11,
+  "checked_on": "2026-11-18",
+  "method": "web search results only; pages were not opened from the authoring session. LIMIT OF THIS FILE: the shared web-search budget (200 calls per turn) was used up before this author's first query, so this author ran 0 searches. One WebFetch (the single attempt the brief allows) read the CloudGoat README. All other entries are ASSUMED (address and title recalled from training data, or the plan's own address) or UNVERIFIED, each with the reason in its evidence field. Checker pass 2026-11-18: the search tool refused both calls (the shared budget of 200 calls per turn was used up), so no entry, no access tier and no plan_fact_checks item was re-searched and no page was opened. Offline checks done: JSON, schema keys, unique ids across all registries, fallback ids, suggested_days within D51 to D55, the addresses and claims marked as the plan's own against MASTER_PLAN_V2.0.md section 4, the sibling text quoted in tier notes and fact checks against WEEKS/W01 to W08, and each label against its own evidence text. Changes by the checker: w11-cloudgoat label SEARCH_CHECKED to ASSUMED and tier FREE to UNKNOWN, its fact check CONFIRMED to NOT_CONFIRMED, a provenance note on w11-owasp-agentic-top10, a revision note on w11-mcp-authorization-spec, a caveat on the OWASP GenAI fact check, and two gap rows. No other label, tier or result was confirmed by the checker.",
+  "entries": [
+    {
+      "id": "w11-aws-shared-responsibility",
+      "url": "https://aws.amazon.com/compliance/shared-responsibility-model/",
+      "provider": "AWS",
+      "title": "Shared Responsibility Model",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because this is AWS's long-standing canonical page for the model; the plan names 'shared responsibility' in D51 column A but gives no address.",
+      "version": "not checked; unversioned vendor page",
+      "topics": [
+        "shared responsibility",
+        "cloud security boundary",
+        "customer versus provider"
+      ],
+      "suggested_days": [
+        "D51"
+      ],
+      "block": "A",
+      "estimate_minutes": 20,
+      "difficulty": null,
+      "fallback": "w11-aws-security-pillar",
+      "notes": "Use to state which side owns IAM configuration, data and the guest operating system, and to write the account boundary of the sandbox lab in the learner's own words. Wording may have changed since the training data. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-aws-iam-roles",
+      "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html",
+      "provider": "AWS",
+      "title": "IAM roles",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because AWS user-guide paths are long-lived and this is the reference page for roles.",
+      "version": "not checked; AWS IAM User Guide pages are unversioned",
+      "topics": [
+        "IAM roles",
+        "trust policy",
+        "principals",
+        "temporary credentials"
+      ],
+      "suggested_days": [
+        "D51"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w11-aws-security-pillar",
+      "notes": "Supports W11-Q01: the trust relationship (who may assume the role) is separate from the permissions the role carries (what it may do on which resources). Draw both for every role of the principal and permission matrix. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-aws-policy-evaluation-logic",
+      "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html",
+      "provider": "AWS",
+      "title": "Policy evaluation logic",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because this is the reference page for how AWS combines policies.",
+      "version": "not checked; AWS IAM User Guide pages are unversioned",
+      "topics": [
+        "policy evaluation",
+        "explicit deny",
+        "permissions boundary",
+        "service control policy",
+        "session policy"
+      ],
+      "suggested_days": [
+        "D51"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w11-aws-security-pillar",
+      "notes": "Use to predict allowed and denied operations BEFORE testing them, then compare prediction and observed result in the allowed/denied test table the plan asks for; a mismatch is a finding about the learner's model, not about AWS. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-aws-sts-assumerole",
+      "url": "https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html",
+      "provider": "AWS",
+      "title": "AssumeRole",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because the STS API reference path for AssumeRole is long-lived.",
+      "version": "not checked; AWS API reference pages are unversioned",
+      "topics": [
+        "STS",
+        "temporary credentials",
+        "session duration",
+        "session policy",
+        "role chaining"
+      ],
+      "suggested_days": [
+        "D51"
+      ],
+      "block": "A",
+      "estimate_minutes": 20,
+      "difficulty": null,
+      "fallback": "w11-aws-iam-roles",
+      "notes": "Read together with the role trust policy: the call succeeds only if the caller's identity policy allows it AND the role's trust policy names the caller. Keep temporary credentials out of the portfolio (record the role ARN pattern, not keys). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-aws-security-pillar",
+      "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/",
+      "provider": "AWS",
+      "title": "Security Pillar - AWS Well-Architected Framework",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address is the plan's own (section 4 and the Week 11 core sites), which states that core resource identities were checked by the owner on 2026-11-17; this author did not see it in a result. Title recalled from training data.",
+      "version": "not checked; the plan gives the base path without a version",
+      "topics": [
+        "security pillar",
+        "IAM",
+        "detection",
+        "infrastructure protection"
+      ],
+      "suggested_days": [
+        "D51",
+        "D52",
+        "D53"
+      ],
+      "block": "any",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Core site of the plan for the whole cloud block. Architecture-level reference; day-specific pages are the IAM pages of this registry. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-aws-cloudtrail",
+      "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-user-guide.html",
+      "provider": "AWS",
+      "title": "What is AWS CloudTrail?",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because this is the CloudTrail user-guide entry page.",
+      "version": "not checked; AWS user-guide pages are unversioned",
+      "topics": [
+        "CloudTrail",
+        "audit events",
+        "management events",
+        "event history"
+      ],
+      "suggested_days": [
+        "D51"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w11-aws-iam-roles",
+      "notes": "D51 block D (review audit events after the least-privilege change). Which events are recorded by default and for how long must be read in the sandbox and on the live page; this registry did not check it (INFERRED from training data: management events appear in event history). A trail also has a storage and cost side: include it in the teardown list. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-cloudgoat",
+      "url": "https://github.com/RhinoSecurityLabs/cloudgoat",
+      "provider": "Rhino Security Labs",
+      "title": "CloudGoat - Vulnerable by Design AWS deployment tool (RhinoSecurityLabs/cloudgoat)",
+      "kind": "LAB",
+      "access": "UNKNOWN",
+      "access_note": "Checker 2026-11-18: changed from FREE to UNKNOWN. The only basis was the author's page fetch of the README (BSD-3-Clause licence), which is not a search result, and the checker could not search. The licence is not the whole cost: the scenarios deploy resources into an AWS account and no AWS Free Tier, pricing or Budgets evidence was seen, so the cost to the learner is unknown. Author's original note: The repository page loaded without sign-in and the README states the BSD-3-Clause licence. The tool is free; the AWS resources it deploys are billed to the learner's own AWS account (no AWS pricing evidence was seen; the AWS Free Tier was not checked).",
+      "verification": "ASSUMED",
+      "evidence": "Checker 2026-11-18: label changed from SEARCH_CHECKED to ASSUMED. The author's evidence below is a page fetch of the README, not a search result on the provider's domain, and the registry defines SEARCH_CHECKED as a search result; the checker could not run a search (budget used up), so the page read is neither confirmed nor refuted. The address is also the plan's own (MASTER_PLAN_V2.0.md section 4, CloudGoat row). Author's original evidence: WebFetch (the single attempt the brief allows; a page read, not a search result) of this address on 2026-11-18 returned the README: the project describes itself as a 'Vulnerable by Design' AWS deployment tool by Rhino Security Labs; licence BSD-3-Clause; 25 scenarios listed. Searches: none (budget exhausted). Labelled SEARCH_CHECKED as the nearest of the three labels because the page content was seen today on the provider's own domain.",
+      "version": "README read 2026-11-18: 25 scenarios (8 under Easy, 11 under Medium, 6 under Hard); release number not read",
+      "topics": [
+        "AWS IAM privilege escalation",
+        "vulnerable by design",
+        "Terraform deployment",
+        "AWS agent identity scenarios",
+        "teardown"
+      ],
+      "suggested_days": [
+        "D51",
+        "D55"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": "The README groups scenarios under Easy, Medium and Hard headings (ecs_privesc_evade_protection is labelled Medium but listed under Hard)",
+      "fallback": "w11-cloudsplaining",
+      "notes": "SANDBOX ONLY (plan: approved sandbox account, principal/permission matrix, plant a flaw, test allowed and denied operations, correct policy, review audit events, destroy and verify, report cost and account boundary). It deploys intentionally vulnerable resources: never into a personal or production account, and never without the owner's written sandbox approval. If no sandbox is approved use w11-cloudsplaining on synthetic policies and MARK THE SUBSTITUTION. Scenario names from the README (names only, contents not read): Easy iam_enum_basics, data_secrets, beanstalk_secrets, sns_secrets, iam_privesc_by_key_rotation, iam_privesc_by_rollback, lambda_privesc, sqs_flag_shop; Medium static, vulnerable_cognito, vulnerable_lambda, cloud_breach_s3, iam_privesc_by_attachment, ec2_ssrf, ecs_takeover, rds_snapshot, glue_privesc, agentcore_identity_confusion, bedrock_agent_hijacking; Hard rce_web_app, codebuild_secrets, detection_evasion, ecs_efs_attack, ecs_privesc_evade_protection, secrets_in_the_cloud. IAM-themed candidates for D51: iam_enum_basics, iam_privesc_by_rollback, iam_privesc_by_key_rotation, iam_privesc_by_attachment; the last two names in the Medium list that mention an agent (agentcore_identity_confusion, bedrock_agent_hijacking) are candidates for D55 only if a sandbox is approved (INFERRED from the names). Choose one scenario after reading its own README; no solution text belongs in the portfolio. The deployment mechanism (Terraform and the AWS CLI) is recalled from training data, not in the fetched text. Teardown evidence: keep the destroy output and a list of the account's remaining resources (W11-Q08). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-flaws-cloud",
+      "url": "https://flaws.cloud/",
+      "provider": "flAWS (Scott Piper)",
+      "title": "flAWS",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. The challenge is hosted by its author and is recalled as free to play without a paid plan (ASSUMED, not evidence); some levels need the AWS CLI with the learner's own credentials.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data. The site's own links use http:// (recalled); if https:// does not answer, use the address the site itself shows. Kept ASSUMED because flaws.cloud is a well-known, long-running public challenge.",
+      "version": "not checked; level count and availability not read",
+      "topics": [
+        "S3 bucket exposure",
+        "instance metadata",
+        "AWS CLI",
+        "IAM keys",
+        "cloud misconfiguration"
+      ],
+      "suggested_days": [
+        "D51"
+      ],
+      "block": "C",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w11-flaws2-cloud",
+      "notes": "Hosted alternative or addition for D51 block C: the challenge runs in the author's AWS account, so nothing is deployed in the learner's account, but AWS CLI calls use the learner's own credentials: create a throwaway free-tier test identity with the owner's approval, never use a real one. Spoiler policy: do not copy level addresses, hints or solutions into the portfolio; record the misconfiguration class and the control that would have prevented it. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-flaws2-cloud",
+      "url": "https://flaws2.cloud/",
+      "provider": "flAWS (Scott Piper)",
+      "title": "flAWS 2",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Hosted by its author; recalled as free to play (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data. Recalled but unchecked: the challenge has an attacker path and a defender path. Kept ASSUMED because flAWS 2 is a well-known public sequel to flAWS.",
+      "version": "not checked; level count and availability not read",
+      "topics": [
+        "AWS IAM",
+        "ECS and Lambda misconfiguration",
+        "defender path",
+        "CloudTrail log reading"
+      ],
+      "suggested_days": [
+        "D51",
+        "D52"
+      ],
+      "block": "C",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w11-cloudsplaining",
+      "notes": "Use the defender path for D51 block D thinking (audit events, what logging would have shown). Same spoiler and credential rules as w11-flaws-cloud: throwaway test identity only, no solutions in the portfolio. The path contents are recalled, not read; check them on the site before assigning. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-cloudsplaining",
+      "url": "https://github.com/salesforce/cloudsplaining",
+      "provider": "Salesforce (open source)",
+      "title": "salesforce/cloudsplaining - AWS IAM Security Assessment tool",
+      "kind": "TOOL",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public open-source repository expected; licence not read (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because this is a well-known open-source IAM review tool; the repository description is recalled as a tool that identifies violations of least privilege and writes a risk-prioritised report.",
+      "version": "not checked; no release number read",
+      "topics": [
+        "IAM least privilege",
+        "policy review",
+        "offline policy analysis",
+        "no-cloud substitution"
+      ],
+      "suggested_days": [
+        "D51"
+      ],
+      "block": "B",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "No-cloud route for D51 when no sandbox is approved: scan synthetic IAM policy JSON files written by the author (a scan-policy-file style command is recalled, unchecked), then correct the policy and rescan. Installing it needs a package index (network), so the owner must approve a staged install (PROPOSED). Output is a heuristic report, not proof of exploitability: confirm each flagged action against w11-aws-policy-evaluation-logic. Mark the substitution in the report (plan: hosted/no-cloud lab). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-docker-engine-security",
+      "url": "https://docs.docker.com/engine/security/",
+      "provider": "Docker",
+      "title": "Docker Engine security",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because the Docker Engine documentation path for security is long-lived.",
+      "version": "not checked; Docker documentation tracks the current Engine release",
+      "topics": [
+        "namespaces",
+        "control groups",
+        "capabilities",
+        "daemon attack surface",
+        "rootless"
+      ],
+      "suggested_days": [
+        "D52"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w11-owasp-docker-cheatsheet",
+      "notes": "Supports W11-Q02 (privileged container, mounted daemon socket). Pair with the capabilities(7) and namespaces(7) manual pages (man7.org; capabilities(7) is registered in WEEKS/W06 as w06-man7-capabilities). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-docker-bench-security",
+      "url": "https://github.com/docker/docker-bench-security",
+      "provider": "Docker (open source)",
+      "title": "docker/docker-bench-security - Docker Bench for Security",
+      "kind": "TOOL",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public open-source repository expected; licence not read (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because it is the long-standing script that checks a host against the CIS Docker Benchmark (recalled).",
+      "version": "not checked; benchmark edition covered by the script not read",
+      "topics": [
+        "CIS Docker Benchmark",
+        "host audit",
+        "container configuration"
+      ],
+      "suggested_days": [
+        "D52"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w11-owasp-docker-cheatsheet",
+      "notes": "Run only on the disposable lab guest that hosts the vulnerable container, after the owner approves the install. Treat each WARN as a hypothesis: check the configuration yourself before calling it a finding, and record which checks do not apply to the lab. Do not run it on the G9 host itself. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-owasp-docker-cheatsheet",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
+      "provider": "OWASP",
+      "title": "Docker Security - OWASP Cheat Sheet Series",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because the cheat-sheet address pattern was seen for other OWASP cheat sheets in WEEKS/W04 and W05 (for example Session_Management_Cheat_Sheet.html), but not this page.",
+      "version": "not checked; OWASP cheat sheets are continuously updated",
+      "topics": [
+        "Docker hardening",
+        "daemon socket",
+        "capabilities",
+        "read-only filesystem"
+      ],
+      "suggested_days": [
+        "D52"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w11-docker-engine-security",
+      "notes": "D52 block D checklist source: tighten privileges and isolation, then retest the same attack to show the change worked (positive and negative retest). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-k8s-rbac",
+      "url": "https://kubernetes.io/docs/reference/access-authn-authz/rbac/",
+      "provider": "Kubernetes",
+      "title": "Using RBAC Authorization",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because the Kubernetes reference path for RBAC is long-lived.",
+      "version": "not checked; Kubernetes documentation tracks the current release",
+      "topics": [
+        "RBAC",
+        "roles and bindings",
+        "service account permissions",
+        "least privilege"
+      ],
+      "suggested_days": [
+        "D52"
+      ],
+      "block": "A",
+      "estimate_minutes": 40,
+      "difficulty": null,
+      "fallback": "w11-k8s-service-accounts",
+      "notes": "Supports W11-Q03. Use `kubectl auth can-i` style checks (recalled, PROPOSED) to build the permission matrix of the lab cluster, in the disposable cluster only. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-k8s-pod-security-standards",
+      "url": "https://kubernetes.io/docs/concepts/security/pod-security-standards/",
+      "provider": "Kubernetes",
+      "title": "Pod Security Standards",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because the Kubernetes concepts path for the Pod Security Standards is long-lived.",
+      "version": "not checked; Kubernetes documentation tracks the current release",
+      "topics": [
+        "Pod Security Standards",
+        "privileged pods",
+        "baseline and restricted profiles",
+        "security context"
+      ],
+      "suggested_days": [
+        "D52"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w11-owasp-docker-cheatsheet",
+      "notes": "Use the privileged, baseline and restricted profiles as the target state for the D52 block D tightening and name which profile the vulnerable workload violates. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-k8s-network-policies",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/network-policies/",
+      "provider": "Kubernetes",
+      "title": "Network Policies",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because the Kubernetes concepts path for network policies is long-lived.",
+      "version": "not checked; Kubernetes documentation tracks the current release",
+      "topics": [
+        "NetworkPolicy",
+        "pod isolation",
+        "default deny",
+        "east-west traffic"
+      ],
+      "suggested_days": [
+        "D52"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w11-k8s-pod-security-standards",
+      "notes": "A NetworkPolicy has an effect only if the cluster's network plugin enforces it (recalled; check the plugin of the lab cluster). Retest: show the denied connection before and the allowed one after, with the same client. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-k8s-service-accounts",
+      "url": "https://kubernetes.io/docs/concepts/security/service-accounts/",
+      "provider": "Kubernetes",
+      "title": "Service Accounts",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because the Kubernetes concepts path for service accounts is long-lived; the exact path may have moved between releases (recalled, unchecked).",
+      "version": "not checked; Kubernetes documentation tracks the current release",
+      "topics": [
+        "service account tokens",
+        "workload identity",
+        "blast radius",
+        "token projection"
+      ],
+      "suggested_days": [
+        "D52"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w11-k8s-rbac",
+      "notes": "Supports W11-Q03 (service-account tokens and workload blast radius). Never put a real token in the portfolio; record the permission set the token carries. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-kubernetes-goat",
+      "url": "https://madhuakula.com/kubernetes-goat/",
+      "provider": "Kubernetes Goat (Madhu Akula)",
+      "title": "Kubernetes Goat",
+      "kind": "LAB",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Open-source project site named by the plan; expected to be free to run yourself (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address is the plan's own (section 4 and the Week 11 core sites; owner check 2026-11-17 per the plan). Title recalled. The companion repository is recalled as github.com/madhuakula/kubernetes-goat (not seen).",
+      "version": "not checked; scenario list not read",
+      "topics": [
+        "vulnerable Kubernetes cluster",
+        "container escape",
+        "RBAC misconfiguration",
+        "secrets in images",
+        "hardening"
+      ],
+      "suggested_days": [
+        "D52"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w11-k8s-rbac",
+      "notes": "Run only in a disposable local cluster inside the isolated lab VM, never in a shared, cloud or production cluster; it is deliberately vulnerable. The site is recalled to carry a solution per scenario: read only the scenario description before the independent attempt, open the solution after, and keep solutions out of the portfolio. Scenario names were not verified and none is assigned here: choose one from the site's own list and record which. Local cluster tooling (kind or minikube) is named by the project (recalled) and is not registered. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-trivy",
+      "url": "https://trivy.dev/",
+      "provider": "Aqua Security (Trivy)",
+      "title": "Trivy",
+      "kind": "TOOL",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Open-source scanner named by the plan (ASSUMED free, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address is the plan's own (section 4 and the Week 11 core sites; owner check 2026-11-17 per the plan). Title recalled. The documentation path under trivy.dev was not checked and is not registered (it has moved before).",
+      "version": "not checked; no release number read",
+      "topics": [
+        "vulnerability scanning",
+        "misconfiguration scanning",
+        "secret scanning",
+        "SBOM",
+        "container images"
+      ],
+      "suggested_days": [
+        "D53"
+      ],
+      "block": "B",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w11-semgrep-docs",
+      "notes": "D53 block B: scan the synthetic repository and its container or IaC files and read the report critically. The scanner downloads a vulnerability database from a network registry by default (recalled), which conflicts with the no-internet lab: the owner must approve a staged or offline database (PROPOSED). A finding is a candidate: check reachability and the fixed version before patching, and record false positives (W11-Q04). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-semgrep-docs",
+      "url": "https://semgrep.dev/docs/",
+      "provider": "Semgrep",
+      "title": "Semgrep documentation",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. The plan lists semgrep.dev as 'verify rules/usage'; a free open-source CLI is recalled, some platform features are recalled as paid (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The plan lists https://semgrep.dev/ (section 4); this documentation address and its title are recalled from training data and were not seen.",
+      "version": "not checked; no CLI release number read",
+      "topics": [
+        "SAST",
+        "static analysis rules",
+        "taint tracking",
+        "local rule files"
+      ],
+      "suggested_days": [
+        "D53"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w11-trivy",
+      "notes": "D53 block B/C: write and run a local rule file against the synthetic repository rather than pulling a remote ruleset; the default 'auto' configuration is recalled to need network access and to send metrics, so check the flags before running and get the owner's approval for any network use (PROPOSED). Record each finding as true or false positive with the reason. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-cyclonedx-overview",
+      "url": "https://cyclonedx.org/specification/overview/",
+      "provider": "CycloneDX (OWASP)",
+      "title": "Specification Overview",
+      "kind": "STANDARD",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because CycloneDX is a well-known SBOM standard and this is its specification overview path.",
+      "version": "not checked; specification version not read",
+      "topics": [
+        "SBOM",
+        "software supply chain",
+        "component inventory",
+        "VEX"
+      ],
+      "suggested_days": [
+        "D53"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Supports W11-Q04: an SBOM lists components; it does not say which are exploitable. The standard is recalled to support a VEX (vulnerability exploitability) statement type, which is how exploitability context travels with an SBOM; verify on the live site. SPDX is the other common SBOM format and is not registered here. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-github-actions-security-hardening",
+      "url": "https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions",
+      "provider": "GitHub",
+      "title": "Security hardening for GitHub Actions",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "UNVERIFIED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address is the older path of this page, recalled from training data; GitHub has reorganised its Actions documentation paths more than once (recalled), so the address may redirect or have moved and the title may differ. Not ASSUMED because the path is not stable.",
+      "version": "not checked",
+      "topics": [
+        "GitHub Actions",
+        "GITHUB_TOKEN permissions",
+        "third-party actions",
+        "script injection",
+        "secrets"
+      ],
+      "suggested_days": [
+        "D53"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w11-owasp-wrongsecrets",
+      "notes": "CI/CD permissions and workflow trust (D53 columns A and C). If the address fails, search the GitHub docs site for the page title before assigning. Use it on a synthetic workflow file in the lab, not on a real repository. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-owasp-wrongsecrets",
+      "url": "https://owasp.org/www-project-wrongsecrets/",
+      "provider": "OWASP",
+      "title": "OWASP WrongSecrets",
+      "kind": "LAB",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. OWASP open-source project (ASSUMED free, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because WrongSecrets is a well-known OWASP project page.",
+      "version": "not checked; challenge count and release not read",
+      "topics": [
+        "secrets management",
+        "hard-coded credentials",
+        "secrets in images and configuration",
+        "challenge app"
+      ],
+      "suggested_days": [
+        "D53"
+      ],
+      "block": "C",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w11-trivy",
+      "notes": "Independent block for 'trace one planted credential': the project is recalled to be an intentionally vulnerable application with secret-handling challenges that runs locally in a container; confirm how to run it and whether it needs network, then run it only in the lab guest with the owner's approval. It ships hints and solutions (recalled): use hints only until the attempt is finished. All values in it are training values; never paste a real secret anywhere. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-cicd-goat",
+      "url": "https://github.com/cider-security-research/cicd-goat",
+      "provider": "Cider Security (open source)",
+      "title": "cider-security-research/cicd-goat - a deliberately vulnerable CI/CD environment",
+      "kind": "LAB",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public open-source repository expected; licence not read (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because CI/CD Goat is a well-known deliberately vulnerable CI/CD lab; the one-line description is recalled.",
+      "version": "not checked; the repository may be archived or moved",
+      "topics": [
+        "CI/CD pipeline attacks",
+        "workflow trust",
+        "pipeline secrets",
+        "vulnerable by design"
+      ],
+      "suggested_days": [
+        "D53"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w11-owasp-wrongsecrets",
+      "notes": "Candidate for 'trace one workflow trust defect'. It is recalled to start several services (a source host and a CI server) from a compose file, which is heavy: check the resources of the lab guest and get the owner's approval first (PROPOSED). Lab-only, loopback or isolated network, no real tokens. If the repository is archived or too heavy, use a synthetic workflow file with w11-github-actions-security-hardening. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-portswigger-llm-attacks",
+      "url": "https://portswigger.net/web-security/llm-attacks",
+      "provider": "PortSwigger",
+      "title": "Web LLM attacks | Web Security Academy",
+      "kind": "DOCS",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Second-hand from entry w04-ps-sqli-retrieve-hidden-data of WEEKS/W04/RESOURCES.json: a search result on portswigger.net/web-security quotes 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in. Not seen for this URL by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address is the plan's own (section 4 and the Week 11 core sites; owner check 2026-11-17 per the plan). Title recalled from training data. Kept ASSUMED because the topic page is a long-standing part of the Web Security Academy.",
+      "version": "not checked",
+      "topics": [
+        "LLM attacks",
+        "prompt injection",
+        "excessive agency",
+        "insecure output handling",
+        "LLM API abuse"
+      ],
+      "suggested_days": [
+        "D54",
+        "D55"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w11-owasp-genai-llm-top10-2026",
+      "notes": "Reading page for D54 column A and D55. The four labs recalled under it are registered as w11-ps-lab-* entries. PortSwigger's own labs use the PortSwigger-hosted LLM; the learner's local toy assistant is separate and has its own tests. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-ps-lab-indirect-prompt-injection",
+      "url": "https://portswigger.net/web-security/llm-attacks/lab-indirect-prompt-injection",
+      "provider": "PortSwigger",
+      "title": "Lab: Indirect prompt injection | Web Security Academy",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Second-hand from entry w04-ps-sqli-retrieve-hidden-data of WEEKS/W04/RESOURCES.json: a search result on portswigger.net/web-security quotes 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in. Not seen for this URL by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (the lab slug follows the pattern of other PortSwigger lab addresses seen in WEEKS/W04). Kept ASSUMED because the lab is a well-known part of the Web Security Academy.",
+      "version": "not checked; the provider's difficulty label was not seen (recalled as Practitioner, INFERRED)",
+      "topics": [
+        "indirect prompt injection",
+        "untrusted content",
+        "LLM tool use"
+      ],
+      "suggested_days": [
+        "D54"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w11-ps-lab-insecure-output-handling",
+      "notes": "The guided lab of D54 block B. Each PortSwigger lab page carries an official solution section: keep it closed during the independent block and record the root cause, the request and the evidence instead. The lab runs on PortSwigger's own infrastructure (platform-designated target). The provider's difficulty label was not seen today. Record separately: what the model was told, which input was lower-trust, what the model proposed and what actually happened (W11-Q05, W11-Q07). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-ps-lab-insecure-output-handling",
+      "url": "https://portswigger.net/web-security/llm-attacks/lab-exploiting-insecure-output-handling-in-llms",
+      "provider": "PortSwigger",
+      "title": "Lab: Exploiting insecure output handling in LLMs | Web Security Academy",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Second-hand from entry w04-ps-sqli-retrieve-hidden-data of WEEKS/W04/RESOURCES.json: a search result on portswigger.net/web-security quotes 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in. Not seen for this URL by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data. Kept ASSUMED because the lab is a well-known part of the Web Security Academy.",
+      "version": "not checked; the provider's difficulty label was not seen (recalled as Expert, INFERRED)",
+      "topics": [
+        "insecure output handling",
+        "LLM output as untrusted input",
+        "client-side injection"
+      ],
+      "suggested_days": [
+        "D54"
+      ],
+      "block": "C",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w11-ps-lab-indirect-prompt-injection",
+      "notes": "Hosted option for D54 block C/D when the local toy assistant is blocked, and the web-side counterpart of the rule that model output is data, not an instruction. Each PortSwigger lab page carries an official solution section: keep it closed during the independent block and record the root cause, the request and the evidence instead. The lab runs on PortSwigger's own infrastructure (platform-designated target). The provider's difficulty label was not seen today. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-ps-lab-excessive-agency",
+      "url": "https://portswigger.net/web-security/llm-attacks/lab-exploiting-llm-apis-with-excessive-agency",
+      "provider": "PortSwigger",
+      "title": "Lab: Exploiting LLM APIs with excessive agency | Web Security Academy",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Second-hand from entry w04-ps-sqli-retrieve-hidden-data of WEEKS/W04/RESOURCES.json: a search result on portswigger.net/web-security quotes 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in. Not seen for this URL by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data. Kept ASSUMED because the lab is a well-known part of the Web Security Academy.",
+      "version": "not checked; the provider's difficulty label was not seen (recalled as Apprentice, INFERRED)",
+      "topics": [
+        "excessive agency",
+        "LLM API tool calls",
+        "tool authority"
+      ],
+      "suggested_days": [
+        "D55"
+      ],
+      "block": "C",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w11-ps-lab-llm-api-vulnerabilities",
+      "notes": "Hosted option for D55 block B/C (tool authority). Each PortSwigger lab page carries an official solution section: keep it closed during the independent block and record the root cause, the request and the evidence instead. The lab runs on PortSwigger's own infrastructure (platform-designated target). The provider's difficulty label was not seen today. It does not replace the plan's local lab: the independent broker, the policy decision log and the two unauthorized tool proposals are built and tested on the toy agent. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-ps-lab-llm-api-vulnerabilities",
+      "url": "https://portswigger.net/web-security/llm-attacks/lab-exploiting-vulnerabilities-in-llm-apis",
+      "provider": "PortSwigger",
+      "title": "Lab: Exploiting vulnerabilities in LLM APIs | Web Security Academy",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Second-hand from entry w04-ps-sqli-retrieve-hidden-data of WEEKS/W04/RESOURCES.json: a search result on portswigger.net/web-security quotes 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in. Not seen for this URL by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data. Kept ASSUMED because the lab is a well-known part of the Web Security Academy.",
+      "version": "not checked; the provider's difficulty label was not seen (recalled as Practitioner, INFERRED)",
+      "topics": [
+        "tool argument validation",
+        "injection through LLM API arguments",
+        "excessive agency"
+      ],
+      "suggested_days": [
+        "D55"
+      ],
+      "block": "C",
+      "estimate_minutes": 75,
+      "difficulty": null,
+      "fallback": "w11-ps-lab-excessive-agency",
+      "notes": "Hosted option for the 'tool argument validation' negative test the plan's authoring expansion asks for: the model-chosen argument is untrusted input to the tool. Each PortSwigger lab page carries an official solution section: keep it closed during the independent block and record the root cause, the request and the evidence instead. The lab runs on PortSwigger's own infrastructure (platform-designated target). The provider's difficulty label was not seen today. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-owasp-genai-llm-top10-2026",
+      "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+      "provider": "OWASP GenAI Security Project",
+      "title": "OWASP GenAI LLM Top 10 2026 (title as named in the plan; exact page title not seen)",
+      "kind": "STANDARD",
+      "access": "UNKNOWN",
+      "access_note": "No page or tier evidence seen by this author. The plan names this address as the 2026 list location; whether the download needs a form was not seen.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: the plan_fact_checks of WEEKS/W01 and WEEKS/W03 (both CONFIRMED there) record genai.owasp.org results: a press release 'OWASP GenAI Security Project Unveils 2026 Top 10 for LLM Applications, New Agent Control Standard ...' under /2026/09/01/ and this resource address named in the result text; release dates differ between pages (June, August, September 2026); the 2025 edition (November 2024) is superseded and remains as an archived resource. Kept ASSUMED because the sighting is another author's.",
+      "version": "2026 edition per W01 and W03 (dates differ between pages); the 2025 edition is superseded",
+      "topics": [
+        "OWASP GenAI",
+        "LLM top 10",
+        "prompt injection",
+        "excessive agency",
+        "agent risks"
+      ],
+      "suggested_days": [
+        "D54",
+        "D55"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w11-mitre-atlas",
+      "notes": "The plan (Week 11 expansion) says to cite the 2026 list, not 2025 labels. NO category identifier or name of the 2026 list was seen in this run: the author of the lesson and the question bank must read the live list, cite each risk with its edition year, and not reuse 2025 labels (LLM01:2025 and similar) as 2026 labels. The 2026 press-release title also names a 'New Agent Control Standard'; its title, status and address were not seen. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-owasp-agentic-top10",
+      "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+      "provider": "OWASP GenAI Security Project",
+      "title": "OWASP Top 10 for Agentic Applications for 2026 (title recalled)",
+      "kind": "STANDARD",
+      "access": "UNKNOWN",
+      "access_note": "No page or tier evidence seen.",
+      "verification": "UNVERIFIED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address and title are recalled from training data and were not seen in any result of this run. What another author saw: WEEKS/W01 plan_fact_checks records that a Top 10 for Agentic Applications dates from 2025-12-09 and is a separate publication from the LLM list, without giving its address. Checker 2026-11-18 (provenance only, no search ran): the same address and title appear as item 29 of Appendix C of the v6.0 handoff, which states that only its entries 1 to 16 were inspected, so this shows where the address came from and is not a verification.",
+      "version": "recalled as published 2025-12-09 (W01 second-hand); not checked",
+      "topics": [
+        "agentic applications",
+        "agent tool misuse",
+        "agent identity",
+        "excessive agency"
+      ],
+      "suggested_days": [
+        "D55"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w11-owasp-genai-llm-top10-2026",
+      "notes": "The plan's Week 11 source row says the 2026 LLM URL covers 'LLM and agentic risks'; W01 indicates the agentic list is a separate document. If this address fails, search genai.owasp.org for the agentic list before assigning. Category names unknown to this registry. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-mitre-atlas",
+      "url": "https://atlas.mitre.org/",
+      "provider": "MITRE",
+      "title": "MITRE ATLAS",
+      "kind": "STANDARD",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public MITRE knowledge base named by the plan (ASSUMED free, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address is the plan's own (section 4 and the Week 11 core sites; owner check 2026-11-17 per the plan). Title recalled. ATLAS was not named in any result seen by the authors of WEEKS/W01 to W08.",
+      "version": "not checked; ATLAS release or data version not read",
+      "topics": [
+        "MITRE ATLAS",
+        "AI adversary tactics and techniques",
+        "AI threat modelling"
+      ],
+      "suggested_days": [
+        "D54",
+        "D55"
+      ],
+      "block": "A",
+      "estimate_minutes": 40,
+      "difficulty": null,
+      "fallback": "w11-owasp-genai-llm-top10-2026",
+      "notes": "Use for the AI threat-model vocabulary of D54 and the W12 agent threat model. Second-hand, related: WEEKS/W03 and W07 record that ATT&CK v20 (started 2026-10-13) added AI-related Enterprise techniques including direct and indirect prompt injection; compare the ATLAS technique names with ATT&CK before mapping, and record the version of each knowledge base next to every mapping. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-mcp-authorization-spec",
+      "url": "https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization",
+      "provider": "Model Context Protocol",
+      "title": "Authorization (MCP specification 2025-06-18)",
+      "kind": "STANDARD",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because dated specification paths of the Model Context Protocol are fixed once published; 2025-06-18 is a revision recalled from training data. A newer revision may exist by November 2026; none was checked.",
+      "version": "revision 2025-06-18 as pinned in the address (recalled); the v6.0 handoff cites 2025-11-25 (unverified); the revision current on 2026-11-18 was not checked",
+      "topics": [
+        "Model Context Protocol",
+        "OAuth-based authorization",
+        "tool server access",
+        "token handling"
+      ],
+      "suggested_days": [
+        "D55"
+      ],
+      "block": "A",
+      "estimate_minutes": 40,
+      "difficulty": null,
+      "fallback": "w11-aws-confused-deputy",
+      "notes": "Protocol-level authorization decides which client may reach which server; it does not decide whether a model-proposed tool call is allowed in a given context, which is the broker's job in the plan (INFERRED from the plan). Check the specification index at modelcontextprotocol.io/specification/ for the current revision before citing. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Checker 2026-11-18: item 34 of Appendix C of the v6.0 handoff cites MCP authorization revision 2025-11-25 (a GitHub path under docs/specification/2025-11-25/basic/authorization.mdx, not verified), while this entry pins 2025-06-18. Cite the revision the lesson actually uses after reading the live specification index; a later revision may exist (unchecked)."
+    },
+    {
+      "id": "w11-aws-confused-deputy",
+      "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html",
+      "provider": "AWS",
+      "title": "The confused deputy problem",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public documentation page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because AWS documents the confused deputy problem on this IAM User Guide page.",
+      "version": "not checked; AWS IAM User Guide pages are unversioned",
+      "topics": [
+        "confused deputy",
+        "cross-service access",
+        "external ID",
+        "source account condition"
+      ],
+      "suggested_days": [
+        "D51",
+        "D55"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w11-aws-iam-roles",
+      "notes": "Cloud-side definition of the pattern D55 teaches for agents: a privileged intermediary acts for a lower-trust caller. Use it to state the same defect in both worlds (a role trusted by a service, a broker trusted by a model). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w11-pyrit",
+      "url": "https://github.com/Azure/PyRIT",
+      "provider": "Microsoft (open source)",
+      "title": "Azure/PyRIT - Python Risk Identification Tool for generative AI",
+      "kind": "TOOL",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public open-source repository expected; licence not read (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address is the plan's own (section 4: 'Optional eval harness if manual baseline exists'); the repository description is recalled. The repository owner may have changed since the plan was written; not checked.",
+      "version": "not checked; no release number read",
+      "topics": [
+        "AI red teaming",
+        "evaluation harness",
+        "prompt injection testing"
+      ],
+      "suggested_days": [
+        "D55"
+      ],
+      "block": "B",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Optional and only AFTER the manual baseline exists (plan section 4). It sends prompts to a model endpoint: point it only at the local mock or toy target, never at a production endpoint or with a real key, and get the owner's approval for any network use (PROPOSED). Score model compliance, policy decision and actual side effect separately (plan expansion). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    }
+  ],
+  "plan_fact_checks": [
+    {
+      "claim": "Section 4 and Week 11 core sites: the OWASP GenAI LLM Top 10 2026 at https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/ is the current OWASP list for LLM applications, and the 2025 labels are obsolete.",
+      "result": "CONFIRMED",
+      "evidence": "SECOND-HAND, not re-searched by this author (budget exhausted). WEEKS/W01 and WEEKS/W03 plan_fact_checks, both CONFIRMED, record genai.owasp.org results: press release 'OWASP GenAI Security Project Unveils 2026 Top 10 for LLM Applications, New Agent Control Standard ...' under /2026/09/01/, this address named as the download location, the 2025 edition (November 2024) superseded and archived, dates differing between pages (June, August, September 2026). Limit: no 2026 category identifier was seen by anyone, so the question bank must read the live list. Checker caveat (offline, from WEEKS/W03 plan_fact_checks): the owasp.org project page still showed 'Version 2025' when W03 searched, so a page that still carries the 2025 label exists; the v6.0 handoff (Appendix C item 30) cites the 2026-09-01 announcement address. Not re-searched."
+    },
+    {
+      "claim": "Section 4 (OWASP GenAI 2026 row): the single address above covers 'current 2026 LLM and agentic risks'.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "WEEKS/W01 plan_fact_checks records a separate Top 10 for Agentic Applications dated 2025-12-09 and a press release naming an additional 'Agent Control Standard'. No result seen shows agentic risks inside the LLM 2026 page. Treat the agentic list as a separate document (registered as UNVERIFIED w11-owasp-agentic-top10) until read."
+    },
+    {
+      "claim": "Section 4 and Week 11 core sites: MITRE ATLAS at https://atlas.mitre.org/ is the knowledge base for AI adversarial threat modelling.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "No search result on atlas.mitre.org was seen by this author (0 searches possible) or recorded by the authors of W01 to W08. The address is the plan's own. ATLAS version or release date unknown."
+    },
+    {
+      "claim": "Section 4: https://portswigger.net/web-security/llm-attacks offers practical LLM and agent tool-use labs.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Not searched. Four lab addresses under /web-security/llm-attacks/ and their titles are recalled from training data (excessive agency, vulnerabilities in LLM APIs, indirect prompt injection, insecure output handling) and registered as ASSUMED. Platform-level access wording ('You can access everything (for free) ... by creating an account') is second-hand from WEEKS/W04."
+    },
+    {
+      "claim": "Section 4: CloudGoat at https://github.com/RhinoSecurityLabs/cloudgoat is a deliberately vulnerable AWS deployment tool (sandbox only).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Checker 2026-11-18: changed from CONFIRMED. The basis is the author's single page fetch, not a search result, and the checker could not re-check it (search budget used up). Nothing seen contradicts it. Author's evidence: WebFetch of the repository page on 2026-11-18 (single attempt): self-described 'Vulnerable by Design' AWS deployment tool, BSD-3-Clause, 25 scenarios in the README (Easy, Medium, Hard). The sandbox-only rule is the plan's own safety rule, not a provider statement."
+    },
+    {
+      "claim": "Section 4: Kubernetes Goat at https://madhuakula.com/kubernetes-goat/ is a Kubernetes security lab.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Not searched or fetched. Address is the plan's own; scenario names and access conditions unknown."
+    },
+    {
+      "claim": "Section 4: Trivy (https://trivy.dev/) scans containers, IaC and dependencies; Semgrep (https://semgrep.dev/) does source-code analysis, 'verify rules/usage'.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Not searched. Both addresses are the plan's own. Tool behaviour recorded in the entries (default network use for the vulnerability database and for Semgrep's 'auto' configuration) is recalled from training data, not seen today."
+    },
+    {
+      "claim": "Section 4: Microsoft PyRIT is at https://github.com/Azure/PyRIT and is an optional evaluation harness.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Not searched. The repository owner (Azure or Microsoft) may have changed; check the redirect before pinning a version."
+    },
+    {
+      "claim": "Section 4: AWS security architecture reference at https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Not searched. Address is the plan's own; the IAM pages of this registry are recalled addresses, also unchecked."
+    }
+  ],
+  "gaps": [
+    "SEARCH BUDGET: the shared web-search budget (200 calls per turn) was exhausted before this author's first query; 0 searches ran. One WebFetch (the single attempt the brief allows) read the CloudGoat README. Every other entry is ASSUMED (address and title recalled from training data, or the plan's own address) or UNVERIFIED; none of them was seen in a search result. A verification pass is needed: search each address on its provider's domain and upgrade or remove the entry. The owner can raise CLAUDE_CODE_MAX_WEB_SEARCHES_PER_SESSION or continue in a follow-up turn.",
+    "No Hack The Box Academy module or path for AI red teaming was verified (the brief names 'HTB AI Red Teamer modules'). Query to run: 'HTB Academy AI Red Teamer job role path modules prompt injection' on academy.hackthebox.com and help.hackthebox.com. No HTB address is registered for this week.",
+    "No TryHackMe room for LLM, prompt-injection or AI-agent security was verified. Query to run: 'TryHackMe prompt injection LLM room' on tryhackme.com. A TryHackMe Docker room (recalled as 'Docker Rodeo') and container rooms were NOT registered because their addresses were not seen.",
+    "No hosted TryHackMe or Hack The Box option was verified for AWS IAM, Docker, Kubernetes or supply-chain work, so the coverage target of one HTB and one THM option per day is NOT met for D51 to D55. The hosted substitutes registered are flAWS and flAWS 2 (cloud), PortSwigger LLM labs (AI) and local lab tools.",
+    "Access tiers: every entry is UNKNOWN except the five PortSwigger entries (FREE_ACCOUNT). That tier is second-hand from WEEKS/W04: the quoted portswigger.net/web-security sentence exists in w04-ps-sqli-retrieve-hidden-data (checker read it offline), it is a platform-level statement, and it was not seen for these URLs and not re-searched. CloudGoat was FREE in the author's draft and is UNKNOWN after the checker pass (page fetch only; AWS cost unseen). No price, plan or tier of any paid platform was seen. No entry of this file is PAID, so no paid-entry fallback was needed.",
+    "flAWS and flAWS 2: whether https:// answers, the level counts and the current availability were not checked; the levels' own addresses are deliberately not recorded (spoiler policy).",
+    "OWASP GenAI 2026: no category identifier or name of the 2026 LLM list and no title or status of the 'Agent Control Standard' was seen; W11-Q05 to W11-Q07 and the AI mini-exam must read the live list. The OWASP LLM Prompt Injection Prevention cheat sheet was not searched.",
+    "MITRE ATLAS version, the MCP specification revision current in November 2026, the Kubernetes Goat scenario names, and the Trivy documentation path were not checked and are not registered beyond the entries above.",
+    "Cloud cost and account boundary: no AWS Free Tier, Budgets or billing document is registered; the D51 report's cost section has no verified source. Terraform destroy semantics (CloudGoat teardown) were not checked beyond the README.",
+    "Not registered for lack of a seen address: SPDX, SLSA, Sigstore, OpenSSF Scorecard, gitleaks, OSV-Scanner, FIRST EPSS, CISA KEV (KEV and EPSS are in the W12 registry), NVIDIA garak, Lakera Gandalf, kind, kube-bench, Falco.",
+    "Hands-on coverage by day (counting only block C entries as independent practice): D51 flAWS, flAWS 2, CloudGoat; D52 Kubernetes Goat (flAWS 2 also listed); D53 WrongSecrets and CI/CD Goat; D54 PortSwigger insecure output handling; D55 PortSwigger excessive agency and LLM API labs, CloudGoat agent scenarios. D54 and D55 block C in the plan are local toy-agent exercises, which have no registry entry by design.",
+    "CHECKER PASS (2026-11-18): the search tool refused both calls (the shared 200-call budget of the turn was used up), so nothing in this file was re-searched. Still open: every ASSUMED entry (33) and UNVERIFIED entry (2) needs a search on the provider's domain; no entry is SEARCH_CHECKED; the five FREE_ACCOUNT tiers and the NOT_CONFIRMED fact checks (including CloudGoat) need a provider-domain result. Run this pass again when the budget is available (CLAUDE_CODE_MAX_WEB_SEARCHES_PER_SESSION) or in a follow-up turn."
+  ]
+}

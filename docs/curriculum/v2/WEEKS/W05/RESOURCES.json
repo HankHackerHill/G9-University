@@ -1,0 +1,967 @@
+{
+  "week": 5,
+  "checked_on": "2026-11-18",
+  "method": "web search results only; pages were not opened from the authoring session. Independent re-check by a second agent on 2026-11-18: web search NOT RUN (the shared 200-search budget of the turn was already used up before the checker's first query), so no entry was re-searched, no access tier was re-confirmed and no plan_fact_checks item was re-checked; every verification label, tier and result in this file is the author's. Offline checks done: JSON validity, registry rules of scripts/build_curriculum_v2.py, unique ids, fallback ids, suggested_days within D21 to D25, agreement with the same URLs in other week files, and transcription of the plan claims.",
+  "entries": [
+    {
+      "id": "w05-ps-xss-stored-html",
+      "url": "https://portswigger.net/web-security/cross-site-scripting/stored/lab-html-context-nothing-encoded",
+      "provider": "PortSwigger",
+      "title": "Lab: Stored XSS into HTML context with nothing encoded",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Provider's own site (search result 'Web Security Academy: Free Online Training from PortSwigger' at portswigger.net/web-security, 2026-11-18): 'you can access everything (for free) and track your progress by creating an account'. A free PortSwigger account is used to launch labs and track progress.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'PortSwigger lab Stored XSS into HTML context with nothing encoded' (portswigger.net). Result title 'Lab: Stored XSS into HTML context with nothing encoded' at this URL; result text: stored XSS in the blog comment feature, goal is to call alert when the post is viewed.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "stored XSS",
+        "output encoding",
+        "HTML context"
+      ],
+      "suggested_days": [
+        "D21"
+      ],
+      "block": "B",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w05-thm-xss",
+      "notes": "Guided lab for the stored variant. Evidence to keep: the request that stores the input, the response context where it is rendered, the encoding that is missing. Spoiler policy: do not read the lab's solution tab or any write-up before the time box ends; keep only your own requests, observations and evidence. Burp Suite Community is enough; Intruder is rate-limited there. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-ps-xss-dom-document-write",
+      "url": "https://portswigger.net/web-security/cross-site-scripting/dom-based/lab-document-write-sink",
+      "provider": "PortSwigger",
+      "title": "Lab: DOM XSS in document.write sink using source location.search",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Provider's own site (search result 'Web Security Academy: Free Online Training from PortSwigger' at portswigger.net/web-security, 2026-11-18): 'you can access everything (for free) and track your progress by creating an account'. A free PortSwigger account is used to launch labs and track progress.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'PortSwigger lab DOM XSS in document.write sink using source location.search' (portswigger.net). First result, title 'Lab: DOM XSS in document.write sink using source location.search' at this URL; result text: a document.write sink fed from location.search, goal is to call alert. Same query returned the innerHTML variant at .../dom-based/lab-innerhtml-sink.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "DOM XSS",
+        "source and sink",
+        "document.write"
+      ],
+      "suggested_days": [
+        "D21"
+      ],
+      "block": "B",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w05-thm-xss",
+      "notes": "Use the browser DOM inspector, not view-source, to follow the value from source to sink. The sibling lab 'DOM XSS in innerHTML sink using source location.search' (portswigger.net/web-security/cross-site-scripting/dom-based/lab-innerhtml-sink) was returned by the same query and can replace this one. Spoiler policy: do not read the lab's solution tab or any write-up before the time box ends; keep only your own requests, observations and evidence. Burp Suite Community is enough; Intruder is rate-limited there. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-ps-xss-attribute-angle-brackets",
+      "url": "https://portswigger.net/web-security/cross-site-scripting/contexts/lab-attribute-angle-brackets-html-encoded",
+      "provider": "PortSwigger",
+      "title": "Lab: Reflected XSS into attribute with angle brackets HTML-encoded",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Provider's own site (search result 'Web Security Academy: Free Online Training from PortSwigger' at portswigger.net/web-security, 2026-11-18): 'you can access everything (for free) and track your progress by creating an account'. A free PortSwigger account is used to launch labs and track progress.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'PortSwigger lab Reflected XSS into HTML context with nothing encoded' (portswigger.net). The result list contained 'Lab: Reflected XSS into attribute with angle brackets HTML-encoded' at this URL (title only, no description text). The page text was not seen.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "reflected XSS",
+        "attribute context",
+        "encoding failure"
+      ],
+      "suggested_days": [
+        "D21"
+      ],
+      "block": "C",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w05-htb-xss-module",
+      "notes": "Independent-block lab: identify the reflection context and the missing encoding before attempting anything, and record source, sink and failed control. Difficulty label not shown in the search result. The plain reflected lab 'Reflected XSS into HTML context with nothing encoded' (portswigger.net/web-security/cross-site-scripting/reflected/lab-html-context-nothing-encoded) was returned by the same query as a warm-up. Spoiler policy: do not read the lab's solution tab or any write-up before the time box ends; keep only your own requests, observations and evidence. Burp Suite Community is enough; Intruder is rate-limited there. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-ps-csrf-no-defenses",
+      "url": "https://portswigger.net/web-security/csrf/lab-no-defenses",
+      "provider": "PortSwigger",
+      "title": "Lab: CSRF vulnerability with no defenses",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Provider's own site (search result 'Web Security Academy: Free Online Training from PortSwigger' at portswigger.net/web-security, 2026-11-18): 'you can access everything (for free) and track your progress by creating an account'. A free PortSwigger account is used to launch labs and track progress.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'PortSwigger lab CSRF vulnerability with no defenses' (portswigger.net). First result, title 'Lab: CSRF vulnerability with no defenses' at this URL; result text: an email-change feature without CSRF protection, exploit HTML hosted on the lab's exploit server; listed as an apprentice-level lab on the CSRF learning path (portswigger.net/web-security/learning-paths/csrf).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "CSRF",
+        "SameSite",
+        "state-changing request"
+      ],
+      "suggested_days": [
+        "D21"
+      ],
+      "block": "B",
+      "estimate_minutes": 45,
+      "difficulty": "APPRENTICE",
+      "fallback": "w05-htb-session-security",
+      "notes": "Burp Community has no automatic CSRF PoC generator (Professional only per the search summary); write the form by hand. Harder neighbours returned by the same query: token validation depends on request method (portswigger.net/web-security/csrf/bypassing-token-validation/lab-token-validation-depends-on-request-method), token not tied to user session, token tied to non-session cookie. Spoiler policy: do not read the lab's solution tab or any write-up before the time box ends; keep only your own requests, observations and evidence. Burp Suite Community is enough; Intruder is rate-limited there. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-ps-jwt-unverified-signature",
+      "url": "https://portswigger.net/web-security/jwt/lab-jwt-authentication-bypass-via-unverified-signature",
+      "provider": "PortSwigger",
+      "title": "Lab: JWT authentication bypass via unverified signature",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Provider's own site (search result 'Web Security Academy: Free Online Training from PortSwigger' at portswigger.net/web-security, 2026-11-18): 'you can access everything (for free) and track your progress by creating an account'. A free PortSwigger account is used to launch labs and track progress.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'PortSwigger lab JWT authentication bypass via unverified signature' (portswigger.net). First result, title 'Lab: JWT authentication bypass via unverified signature' at this URL; result text: apprentice-level, the server does not verify the signature of JWTs it receives. The same query returned the flawed-signature lab (.../lab-jwt-authentication-bypass-via-flawed-signature-verification), weak-signing-key lab (.../lab-jwt-authentication-bypass-via-weak-signing-key) and algorithm-confusion labs.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "JWT",
+        "signature verification",
+        "claims tampering"
+      ],
+      "suggested_days": [
+        "D22"
+      ],
+      "block": "B",
+      "estimate_minutes": 30,
+      "difficulty": "APPRENTICE",
+      "fallback": "w05-thm-jwt-security",
+      "notes": "Turn the lab behaviour into a negative-case row of the D22 verification matrix (algorithm allowlist, key, exp, aud). Burp JWT documentation: portswigger.net/burp/documentation/desktop/testing-workflow/vulnerabilities/session-management/jwts. Spoiler policy: do not read the lab's solution tab or any write-up before the time box ends; keep only your own requests, observations and evidence. Burp Suite Community is enough; Intruder is rate-limited there. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-ps-auth-2fa-simple-bypass",
+      "url": "https://portswigger.net/web-security/authentication/multi-factor/lab-2fa-simple-bypass",
+      "provider": "PortSwigger",
+      "title": "Lab: 2FA simple bypass",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Provider's own site (search result 'Web Security Academy: Free Online Training from PortSwigger' at portswigger.net/web-security, 2026-11-18): 'you can access everything (for free) and track your progress by creating an account'. A free PortSwigger account is used to launch labs and track progress.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'PortSwigger lab 2FA simple bypass' (portswigger.net). First result, title 'Lab: 2FA simple bypass' at this URL; result text: apprentice-level lab in the authentication section, the 2FA step can be bypassed, a valid username and password are given. Same query returned 'Lab: 2FA bypass using a brute-force attack' (.../multi-factor/lab-2fa-bypass-using-a-brute-force-attack) and the 'Authentication vulnerabilities' learning path (portswigger.net/web-security/learning-paths/authentication-vulnerabilities).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "authentication logic",
+        "MFA bypass",
+        "workflow enforcement"
+      ],
+      "suggested_days": [
+        "D22"
+      ],
+      "block": "C",
+      "estimate_minutes": 30,
+      "difficulty": "APPRENTICE",
+      "fallback": null,
+      "notes": "Authentication success is not authorization or completed MFA: record which request the server should have refused. No hosted free alternative for MFA logic was verified (the TryHackMe room Authentication Bypass was described as premium). Spoiler policy: do not read the lab's solution tab or any write-up before the time box ends; keep only your own requests, observations and evidence. Burp Suite Community is enough; Intruder is rate-limited there. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-ps-ac-user-id-request-parameter",
+      "url": "https://portswigger.net/web-security/access-control/lab-user-id-controlled-by-request-parameter",
+      "provider": "PortSwigger",
+      "title": "Lab: User ID controlled by request parameter",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Provider's own site (search result 'Web Security Academy: Free Online Training from PortSwigger' at portswigger.net/web-security, 2026-11-18): 'you can access everything (for free) and track your progress by creating an account'. A free PortSwigger account is used to launch labs and track progress.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'PortSwigger lab User ID controlled by request parameter' (portswigger.net). First result, title 'Lab: User ID controlled by request parameter' at this URL; result text: horizontal privilege escalation on the account page. The same query returned the unpredictable-ID, password-disclosure and data-leakage-in-redirect variants and the Burp guide 'Testing for IDORs' (portswigger.net/burp/documentation/desktop/testing-workflow/vulnerabilities/access-controls/testing-for-idors).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "IDOR",
+        "horizontal privilege escalation",
+        "object-level authorization"
+      ],
+      "suggested_days": [
+        "D23"
+      ],
+      "block": "B",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w05-htb-web-attacks",
+      "notes": "Maps to BOLA on an API. Use the two-account method: same request as user A and as user B, same object ID, compare status and body. Spoiler policy: do not read the lab's solution tab or any write-up before the time box ends; keep only your own requests, observations and evidence. Burp Suite Community is enough; Intruder is rate-limited there. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-ps-ac-method-based",
+      "url": "https://portswigger.net/web-security/access-control/lab-method-based-access-control-can-be-circumvented",
+      "provider": "PortSwigger",
+      "title": "Lab: Method-based access control can be circumvented",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Provider's own site (search result 'Web Security Academy: Free Online Training from PortSwigger' at portswigger.net/web-security, 2026-11-18): 'you can access everything (for free) and track your progress by creating an account'. A free PortSwigger account is used to launch labs and track progress.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'PortSwigger lab Method-based access control can be circumvented' (portswigger.net). First result, title 'Lab: Method-based access control can be circumvented' at this URL; result text: access controls enforced per HTTP method, goal is to promote the low-privileged user to administrator.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "function-level authorization",
+        "BFLA",
+        "HTTP method"
+      ],
+      "suggested_days": [
+        "D23"
+      ],
+      "block": "C",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w05-htb-web-attacks",
+      "notes": "Function-level counterpart of the object-level labs: the same function must be denied for every method. Difficulty label not shown in the search result. Spoiler policy: do not read the lab's solution tab or any write-up before the time box ends; keep only your own requests, observations and evidence. Burp Suite Community is enough; Intruder is rate-limited there. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-ps-api-mass-assignment",
+      "url": "https://portswigger.net/web-security/api-testing/lab-exploiting-mass-assignment-vulnerability",
+      "provider": "PortSwigger",
+      "title": "Lab: Exploiting a mass assignment vulnerability",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Provider's own site (search result 'Web Security Academy: Free Online Training from PortSwigger' at portswigger.net/web-security, 2026-11-18): 'you can access everything (for free) and track your progress by creating an account'. A free PortSwigger account is used to launch labs and track progress.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'PortSwigger lab Exploiting a mass assignment vulnerability API testing' (portswigger.net). First result, title 'Lab: Exploiting a mass assignment vulnerability' at this URL; result text: rated PRACTITIONER, part of the API testing learning path (portswigger.net/web-security/learning-paths/api-testing). The API testing topic page (portswigger.net/web-security/api-testing) was returned by the same query.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "mass assignment",
+        "API testing",
+        "hidden fields"
+      ],
+      "suggested_days": [
+        "D23"
+      ],
+      "block": "C",
+      "estimate_minutes": 60,
+      "difficulty": "PRACTITIONER",
+      "fallback": "w05-owasp-crapi",
+      "notes": "Allow-list fix is the D23 block D target (OWASP Mass Assignment cheat sheet). Spoiler policy: do not read the lab's solution tab or any write-up before the time box ends; keep only your own requests, observations and evidence. Burp Suite Community is enough; Intruder is rate-limited there. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-ps-upload-web-shell-rce",
+      "url": "https://portswigger.net/web-security/file-upload/lab-file-upload-remote-code-execution-via-web-shell-upload",
+      "provider": "PortSwigger",
+      "title": "Lab: Remote code execution via web shell upload",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Provider's own site (search result 'Web Security Academy: Free Online Training from PortSwigger' at portswigger.net/web-security, 2026-11-18): 'you can access everything (for free) and track your progress by creating an account'. A free PortSwigger account is used to launch labs and track progress.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'PortSwigger lab Remote code execution via web shell upload file upload vulnerabilities' (portswigger.net). First result, title 'Lab: Remote code execution via web shell upload' at this URL; result text: apprentice-level, an image upload function with no validation. Same query returned the extension-blacklist, path-traversal, polyglot and race-condition upload labs and the topic page (portswigger.net/web-security/file-upload).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "file upload",
+        "validation",
+        "remote code execution"
+      ],
+      "suggested_days": [
+        "D24"
+      ],
+      "block": "C",
+      "estimate_minutes": 45,
+      "difficulty": "APPRENTICE",
+      "fallback": "w05-htb-file-upload-attacks",
+      "notes": "Exploit only inside this PortSwigger lab; never reuse a web shell or payload against any other system. Record the missing control (type, extension, content, storage location, execution permission). The Content-Type restriction lab was not returned by the search, so it is not listed. Spoiler policy: do not read the lab's solution tab or any write-up before the time box ends; keep only your own requests, observations and evidence. Burp Suite Community is enough; Intruder is rate-limited there. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-ps-deser-modifying-serialized-objects",
+      "url": "https://portswigger.net/web-security/deserialization/exploiting/lab-deserialization-modifying-serialized-objects",
+      "provider": "PortSwigger",
+      "title": "Lab: Modifying serialized objects",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Provider's own site (search result 'Web Security Academy: Free Online Training from PortSwigger' at portswigger.net/web-security, 2026-11-18): 'you can access everything (for free) and track your progress by creating an account'. A free PortSwigger account is used to launch labs and track progress.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'PortSwigger lab Modifying serialized objects insecure deserialization' (portswigger.net). First result, title 'Lab: Modifying serialized objects' at this URL; result text: a serialization-based session mechanism vulnerable to privilege escalation, tampered through the Burp Inspector. Same query returned the topic page 'Exploiting insecure deserialization vulnerabilities' (portswigger.net/web-security/deserialization/exploiting).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "insecure deserialization",
+        "integrity of serialized data",
+        "privilege escalation"
+      ],
+      "suggested_days": [
+        "D24"
+      ],
+      "block": "C",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Shows why serialized data from the client is a trust boundary. Difficulty label not shown in the search result. No hosted TryHackMe or HTB deserialization exercise is recorded in this file (see gaps). Spoiler policy: do not read the lab's solution tab or any write-up before the time box ends; keep only your own requests, observations and evidence. Burp Suite Community is enough; Intruder is rate-limited there. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-htb-xss-module",
+      "url": "https://academy.hackthebox.com/course/preview/cross-site-scripting-xss",
+      "provider": "HTB Academy",
+      "title": "Cross-Site Scripting (XSS) Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "No search result showed this module's tier or cube cost. help.hackthebox.com 'Academy Subscriptions' (search result, 2026-11-18): Tier 0 modules are free with an account; Silver unlocks modules up to Tier II and Gold up to Tier III; single modules can also be unlocked with Cubes. Check the module page for 'Start Module (Free)'.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'HTB Academy Cross-Site Scripting (XSS) module' (academy.hackthebox.com). First result, title 'Cross-Site Scripting (XSS) Course' at this URL; result text: Easy-rated, stored, reflected and DOM-based XSS, discovery, defacing, phishing, session hijacking, skills assessment and prevention; prerequisites Learning Process, Web Requests, Introduction to Web Applications.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "XSS",
+        "stored",
+        "reflected",
+        "DOM"
+      ],
+      "suggested_days": [
+        "D21"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "Easy",
+      "fallback": "w05-ps-xss-stored-html",
+      "notes": "Use selected sections only (the plan does not require the whole module in one day). Defacing, phishing and session-hijacking sections are practised only against the module's own target. Follow-on modules seen: Session Security and Advanced XSS and CSRF Exploitation (academy.hackthebox.com/course/preview/advanced-xss-and-csrf-exploitation). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-htb-session-security",
+      "url": "https://academy.hackthebox.com/course/preview/session-security",
+      "provider": "HTB Academy",
+      "title": "Session Security Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "No search result showed this module's tier or cube cost. help.hackthebox.com 'Academy Subscriptions' (search result, 2026-11-18): Tier 0 modules are free with an account; Silver unlocks modules up to Tier II and Gold up to Tier III; single modules can also be unlocked with Cubes. Check the module page for 'Start Module (Free)'.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'HTB Academy Session Security module course preview' (academy.hackthebox.com). First result, title 'Session Security Course' at this URL; result text: Medium, session hijacking, session fixation, CSRF, XSS and open redirects, hands-on exercises and a skills assessment; prerequisites include Linux Fundamentals, Web Requests, Introduction to Web Applications, Using Web Proxies and Cross-Site Scripting (XSS).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "session fixation",
+        "session hijacking",
+        "CSRF",
+        "cookies"
+      ],
+      "suggested_days": [
+        "D21",
+        "D22"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "Medium",
+      "fallback": "w05-ps-csrf-no-defenses",
+      "notes": "Requires the XSS module first according to the prerequisite list. The Broken Authentication module (academy.hackthebox.com/course/preview/broken-authentication, Medium, brute force, password reset, 2FA, session token attacks) was also returned and is a candidate for D22 if a tier allows it. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-htb-web-attacks",
+      "url": "https://academy.hackthebox.com/course/preview/web-attacks",
+      "provider": "HTB Academy",
+      "title": "Web Attacks Course - HTB Academy - Hack The Box",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "No search result showed this module's tier or cube cost. help.hackthebox.com 'Academy Subscriptions' (search result, 2026-11-18): Tier 0 modules are free with an account; Silver unlocks modules up to Tier II and Gold up to Tier III; single modules can also be unlocked with Cubes. Check the module page for 'Start Module (Free)'.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'HTB Academy Web Attacks module IDOR verb tampering XXE' (academy.hackthebox.com). First result, title 'Web Attacks Course - HTB Academy - Hack The Box' at this URL; result text: Medium, covers HTTP verb tampering, IDOR (identifying IDORs, mass enumeration, bypassing encoded references, IDOR in insecure APIs) and XXE.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "IDOR",
+        "verb tampering",
+        "access control"
+      ],
+      "suggested_days": [
+        "D23"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "Medium",
+      "fallback": "w05-ps-ac-user-id-request-parameter",
+      "notes": "Use the IDOR and verb-tampering sections for D23; XXE is outside the week. The API Attacks module (academy.hackthebox.com/course/preview/api-attacks, Medium, OWASP API Security Top 10 2023 against a REST e-commerce API) was returned by another query and is a deeper option. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-htb-file-upload-attacks",
+      "url": "https://academy.hackthebox.com/course/preview/file-upload-attacks",
+      "provider": "HTB Academy",
+      "title": "File Upload Attacks Course - HTB Academy - Hack The Box",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "No search result showed this module's tier or cube cost. help.hackthebox.com 'Academy Subscriptions' (search result, 2026-11-18): Tier 0 modules are free with an account; Silver unlocks modules up to Tier II and Gold up to Tier III; single modules can also be unlocked with Cubes. Check the module page for 'Start Module (Free)'.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'HTB Academy File Upload Attacks module' (academy.hackthebox.com). First result, title 'File Upload Attacks Course - HTB Academy - Hack The Box' at this URL; result text: Medium, about 11 sections from absent validation to preventing file upload vulnerabilities, ending with a skills assessment; suggested prerequisites Linux Fundamentals, Web Requests, Introduction to Web Applications, Using Web Proxies, Web Attacks.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "file upload",
+        "validation bypass",
+        "prevention"
+      ],
+      "suggested_days": [
+        "D24"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "Medium",
+      "fallback": "w05-ps-upload-web-shell-rce",
+      "notes": "Use the prevention section as the D24 block D input. Shells are used only against the module's own target. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-htb-starting-point",
+      "url": "https://help.hackthebox.com/en/articles/6007919-introduction-to-starting-point",
+      "provider": "Hack The Box",
+      "title": "Introduction to Starting Point",
+      "kind": "PATH",
+      "access": "MIXED",
+      "access_note": "Help-centre article (search result, query 'Hack The Box Starting Point Oopsie machine very easy'): Tier 2 machines available to everyone are Archetype, Shield and Pathfinder (Windows) and Oopsie and Vaccine (Linux); the HTB blog 'Start Cybersecurity Awareness Month with our new Starting Point' was returned by the same query. The earlier week files record that each tier mixes free machines with VIP+/PRO ones. An HTB Labs account is needed.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'Hack The Box Starting Point Oopsie machine very easy' (hackthebox.com, help.hackthebox.com). Result title 'Introduction to Starting Point' at this URL; result text: Tier 2 machines are full machines that chain enumeration, foothold and privilege escalation. No machine page of the Starting Point list was returned, so no machine URL is recorded.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "Starting Point",
+        "hosted web target",
+        "foothold"
+      ],
+      "suggested_days": [
+        "D24",
+        "D25"
+      ],
+      "block": "C",
+      "estimate_minutes": 120,
+      "difficulty": "Very Easy (Starting Point label per HTB)",
+      "fallback": "w05-owasp-juice-shop",
+      "notes": "Official beginner track: allowed to use. Hosted alternative when the local lab is blocked; the web topic fit of each Tier 2 machine was not confirmed by a search result, check the machine page before assigning. HTB rule (Hack The Box Platform Rules, help.hackthebox.com/en/articles/12325897): solutions of ACTIVE machines, challenges and Sherlocks must not be published; only retired content, Starting Point machines and Tier 0 Academy modules may be written about. Do not publish solutions; keep evidence private. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-thm-xss",
+      "url": "https://tryhackme.com/room/xss",
+      "provider": "TryHackMe",
+      "title": "Intro to Cross-site Scripting",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium. tryhackme.com/free-rooms (search result 'Free Cyber Security Rooms & Labs') says 650+ rooms are free; help.tryhackme.com 'The AttackBox Explained': free users get up to one hour of AttackBox per day or can use their own machine through VPN.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'TryHackMe room Cross-site Scripting XSS' (tryhackme.com). First result at this URL; result text: 'Learn how to detect and exploit XSS vulnerabilities, giving you control of other visitors' browsers'; tasks cover XSS payloads, reflected, stored, DOM-based and blind XSS, perfecting payloads and a practical blind XSS example. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "XSS",
+        "reflected",
+        "stored",
+        "DOM",
+        "blind XSS"
+      ],
+      "suggested_days": [
+        "D21"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w05-ps-xss-stored-html",
+      "notes": "Hosted guided alternative for D21. Other XSS rooms returned: Merry XSSMas (tryhackme.com/room/xss-aoc2025-c5j8b1m4t6) and the OWASP Juice Shop room (tryhackme.com/room/owaspjuiceshop). The CSRF room tryhackme.com/room/csrfintroduction was returned by a separate query (tasks: concept, finding vulnerable endpoints, building an HTML form exploit against a practice app). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-thm-jwt-security",
+      "url": "https://tryhackme.com/room/jwtsecurity",
+      "provider": "TryHackMe",
+      "title": "JWT Security",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium. tryhackme.com/free-rooms (search result 'Free Cyber Security Rooms & Labs') says 650+ rooms are free; help.tryhackme.com 'The AttackBox Explained': free users get up to one hour of AttackBox per day or can use their own machine through VPN.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'TryHackMe room JWT Security JSON Web Tokens' (tryhackme.com). First result at this URL; result text: eight tasks (introduction, token-based authentication, JSON Web Tokens, sensitive information disclosure, signature validation mistakes, JWT lifetimes, cross-service relay attacks, conclusion); part of the Authentication module (tryhackme.com/module/authentication) and the Web Application Pentesting path. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "JWT",
+        "signature validation",
+        "token lifetime"
+      ],
+      "suggested_days": [
+        "D22"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w05-ps-jwt-unverified-signature",
+      "notes": "Hosted guided alternative for D22 token verification. The Session Management room (tryhackme.com/room/sessionmanagement: cookies vs tokens, session lifecycle, insecure session management) was returned by another query. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-thm-api-pentesting",
+      "url": "https://tryhackme.com/room/apitesting",
+      "provider": "TryHackMe",
+      "title": "API Pentesting",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium. tryhackme.com/free-rooms (search result 'Free Cyber Security Rooms & Labs') says 650+ rooms are free; help.tryhackme.com 'The AttackBox Explained': free users get up to one hour of AttackBox per day or can use their own machine through VPN.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'TryHackMe room OWASP API Security Top 10 BOLA broken object level authorization' (tryhackme.com). Result at this URL; result text: Task 3 covers BOLA alongside broken authentication, mass assignment and rate limiting; described as the more hands-on option. Also returned: 'OWASP API Security Top 10 - 1' (tryhackme.com/room/owaspapisecuritytop105w, Task 3 BOLA, listing about 1,400 days old). The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "BOLA",
+        "mass assignment",
+        "API authorization"
+      ],
+      "suggested_days": [
+        "D23"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w05-owasp-crapi",
+      "notes": "Hosted guided alternative for D23. The IDOR room tryhackme.com/room/idor (seven tasks, tasks 3 and 4 on encoded and hashed IDs; snippet about 1,870 days old) was returned by another query. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-thm-hashing-crypto-101",
+      "url": "https://tryhackme.com/room/hashingcrypto101",
+      "provider": "TryHackMe",
+      "title": "Hashing - Crypto 101",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium. tryhackme.com/free-rooms (search result 'Free Cyber Security Rooms & Labs') says 650+ rooms are free; help.tryhackme.com 'The AttackBox Explained': free users get up to one hour of AttackBox per day or can use their own machine through VPN.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'TryHackMe room Hashing Crypto 101 password hashing salt bcrypt' (tryhackme.com). First result at this URL; result text: task outline of key terms, what a hash function is, uses for hashing, recognising password hashes, password cracking and hashing for integrity checking. The room name is taken from the query and the task outline; the result title field is the generic 'TryHackMe'.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "hash functions",
+        "password hashing",
+        "salting"
+      ],
+      "suggested_days": [
+        "D24"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w05-python-hashlib",
+      "notes": "Use only for concepts and synthetic samples; never crack real credentials or third-party dumps (plan password exercise). The rooms 'Breaking Crypto the Simple Way' (tryhackme.com/room/breakingcryptothesimpleway: salts, rainbow tables, bcrypt, Argon2, PBKDF2) and 'Brute Force Heroes' were returned by the same query. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-owasp-cs-xss-prevention",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
+      "provider": "OWASP",
+      "title": "Cross Site Scripting Prevention - OWASP Cheat Sheet Series",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public page returned by the search on the provider's domain; no sign-in indicated.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'OWASP Cheat Sheet Series Cross Site Scripting Prevention Cheat Sheet' (cheatsheetseries.owasp.org). First result, title 'Cross Site Scripting Prevention - OWASP Cheat Sheet Series' at this URL; result text: layered defences, context-specific output encoding, safe text-oriented APIs, a maintained HTML sanitizer, CSP and WAF only as defence in depth. DOM companion sheet returned: 'DOM based XSS Prevention' (.../DOM_based_XSS_Prevention_Cheat_Sheet.html).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "XSS prevention",
+        "output encoding",
+        "CSP"
+      ],
+      "suggested_days": [
+        "D21"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "D21 block D: verify contextual escaping and the limits of CSP and cookie flags against the lab fix. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-owasp-cs-csrf-prevention",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html",
+      "provider": "OWASP",
+      "title": "Cross-Site Request Forgery Prevention - OWASP Cheat Sheet Series",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public page returned by the search on the provider's domain; no sign-in indicated.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'OWASP Cheat Sheet Series Cross-Site Request Forgery Prevention Cheat Sheet and Session Management Cheat Sheet' (cheatsheetseries.owasp.org). Result title 'Cross-Site Request Forgery Prevention - OWASP Cheat Sheet Series' at this URL; result text: synchronizer token for stateful apps, double-submit cookie for stateless apps, SameSite as defence in depth and not a replacement for a token.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "CSRF",
+        "synchronizer token",
+        "SameSite"
+      ],
+      "suggested_days": [
+        "D21"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Also the reference for the CSRF-versus-CORS question: CORS does not replace server-side checks. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-owasp-cs-session-management",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html",
+      "provider": "OWASP",
+      "title": "Session Management - OWASP Cheat Sheet Series",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public page returned by the search on the provider's domain; no sign-in indicated.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'OWASP Cheat Sheet Series Cross-Site Request Forgery Prevention Cheat Sheet and Session Management Cheat Sheet' (cheatsheetseries.owasp.org). Result title 'Session Management - OWASP Cheat Sheet Series' at this URL; result text: opaque session IDs, SameSite Strict (preferred) or Lax, Secure, HttpOnly, __Host- prefix, renewal on privilege change, idle and absolute timeouts. MDN cookie references returned by another query: developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie ('Set-Cookie header - HTTP - MDN Web Docs').",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "sessions",
+        "cookie flags",
+        "session lifecycle"
+      ],
+      "suggested_days": [
+        "D22"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Input for the D22 session verification matrix and for W05-Q02 (what each cookie flag does and does not protect). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-owasp-cs-jwt",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html",
+      "provider": "OWASP",
+      "title": "JSON Web Token - OWASP Cheat Sheet Series",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public page returned by the search on the provider's domain; no sign-in indicated.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'OWASP Cheat Sheet Series JSON Web Token Cheat Sheet for Java' (cheatsheetseries.owasp.org). Result title 'JSON Web Token - OWASP Cheat Sheet Series' at this URL (not Java-specific); result text: header fields alg, jku and kid and claims exp, aud and jti with their security impact, type confusion, do not let the token header choose the algorithm, cites RFC 8725 and RFC 7519.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "JWT",
+        "algorithm allowlist",
+        "claims validation"
+      ],
+      "suggested_days": [
+        "D22"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Primary reference for the case-based JWT validation (algorithm allowlist, key purpose, expiration, audience). The standard itself: RFC 8725 'JSON Web Token Best Current Practices' (datatracker.ietf.org/doc/html/rfc8725, BCP 225, February 2020); an update draft, draft-ietf-oauth-rfc8725bis, was also returned (version -10 seen) so a published successor was not confirmed. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-owasp-cs-idor",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html",
+      "provider": "OWASP",
+      "title": "Insecure Direct Object Reference Prevention - OWASP Cheat Sheet Series",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public page returned by the search on the provider's domain; no sign-in indicated.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'OWASP Cheat Sheet Series Authorization Cheat Sheet and Insecure Direct Object Reference Prevention Cheat Sheet' (cheatsheetseries.owasp.org). Result title 'Insecure Direct Object Reference Prevention - OWASP Cheat Sheet Series' at this URL; result text: an access check on every object, lookups scoped to the current user, random IDs only as defence in depth, test with two users across read, create, update, delete, export and admin actions. Companion pages returned: 'Authorization' (.../Authorization_Cheat_Sheet.html) and 'Authorization Regression Testing' (.../Authorization_Regression_Testing_Cheat_Sheet.html).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "IDOR",
+        "BOLA",
+        "per-object authorization",
+        "regression test"
+      ],
+      "suggested_days": [
+        "D23"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "D23 block D: the fix is a server-side per-object permission check, then rerun the two-user matrix. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-owasp-cs-mass-assignment",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html",
+      "provider": "OWASP",
+      "title": "Mass Assignment - OWASP Cheat Sheet Series",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public page returned by the search on the provider's domain; no sign-in indicated.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'OWASP Cheat Sheet Series Mass Assignment Cheat Sheet' (cheatsheetseries.owasp.org). First result, title 'Mass Assignment - OWASP Cheat Sheet Series' at this URL; result text: dedicated input objects (DTOs) and explicit allow-lists, a block-list alone is weak, CWE-915, framework examples.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "mass assignment",
+        "allow-list",
+        "DTO"
+      ],
+      "suggested_days": [
+        "D23"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Pair with the PortSwigger mass assignment lab. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-owasp-api-security-top10-2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
+      "provider": "OWASP",
+      "title": "OWASP Top 10 API Security Risks",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Public page returned by the search on the provider's domain; no sign-in indicated.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'OWASP API Security Top 10 2023 API1:2023 Broken Object Level Authorization' (owasp.org). Result title 'OWASP Top 10 API Security Risks' at this URL (2023 edition); the API1:2023 page 'Broken Object Level Authorization' (owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/) was also returned. Result text: BOLA is the most common API flaw, an authorization check is needed on every endpoint that takes an object ID, GUIDs are a supplement.",
+      "version": "2023 edition; a newer edition was not seen (query 'OWASP API Security Top 10 new edition 2025 2026' returned only the web Top 10:2025 and GenAI lists)",
+      "topics": [
+        "BOLA",
+        "BFLA",
+        "mass assignment",
+        "API risks"
+      ],
+      "suggested_days": [
+        "D23"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Names the risk classes used in the W05 role matrix (BOLA object level, BFLA function level, property level). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-owasp-cs-password-storage",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html",
+      "provider": "OWASP",
+      "title": "Password Storage - OWASP Cheat Sheet Series",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public page returned by the search on the provider's domain; no sign-in indicated.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'OWASP Cheat Sheet Series Password Storage Cheat Sheet Argon2id scrypt bcrypt PBKDF2' (cheatsheetseries.owasp.org). First result, title 'Password Storage - OWASP Cheat Sheet Series' at this URL; result text: Argon2id first (minimum 19 MiB memory, 2 iterations, parallelism 1), scrypt (2^17, block size 8, parallelism 1), bcrypt for legacy (work factor at least 10, 72-byte input limit), PBKDF2-HMAC-SHA256 600,000 iterations when FIPS-140 is required; the search metadata showed an old index date.",
+      "version": "values as shown in the search summary on 2026-11-18; verify on the live page",
+      "topics": [
+        "password hashing",
+        "KDF",
+        "Argon2id",
+        "salting"
+      ],
+      "suggested_days": [
+        "D24"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Source of the parameters for the D24 synthetic-hash comparison; record the page date when you copy any number. Only generated or synthetic passwords and hashes are used, never third-party dumps. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-owasp-cs-file-upload",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html",
+      "provider": "OWASP",
+      "title": "File Upload - OWASP Cheat Sheet Series",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public page returned by the search on the provider's domain; no sign-in indicated.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'OWASP Cheat Sheet Series Deserialization Cheat Sheet and File Upload Cheat Sheet' (cheatsheetseries.owasp.org). Result title 'File Upload - OWASP Cheat Sheet Series' at this URL; result text: storage on a separate host or outside the web root, extension allow-list, Content-Type is user-supplied, random server-side file names, re-encode images. The Deserialization cheat sheet appeared only in index and mapping pages, so no page URL for it is recorded.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "file upload",
+        "storage",
+        "validation"
+      ],
+      "suggested_days": [
+        "D24"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "D24 block D input. For deserialization, no OWASP cheat sheet page URL was returned (see gaps); the PortSwigger topic page is the verified reading. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-python-hashlib",
+      "url": "https://docs.python.org/3/library/hashlib.html",
+      "provider": "Python Software Foundation",
+      "title": "hashlib — Secure hashes and message digests — Python 3.15.2 documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search on docs.python.org; no sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'Python hashlib scrypt pbkdf2_hmac documentation password hashing' (docs.python.org). First result, title 'hashlib — Secure hashes and message digests — Python 3.15.2 documentation' at this URL; result text: hashlib.scrypt (RFC 7914, since Python 3.6), hashlib.pbkdf2_hmac, salt of at least 16 bytes from os.urandom, current example 500,000 iterations.",
+      "version": "Python 3.15.2 documentation as listed 2026-11-18",
+      "topics": [
+        "PBKDF2",
+        "scrypt",
+        "salt",
+        "fast vs slow hashes"
+      ],
+      "suggested_days": [
+        "D24"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w05-thm-hashing-crypto-101",
+      "notes": "Local tool practice with generated synthetic passwords only: time a fast hash against PBKDF2 and scrypt with the same salt policy. The standard library documents scrypt and pbkdf2_hmac but no Argon2 or bcrypt (not seen in the result), see the argon2-cffi entry. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-argon2-cffi-api",
+      "url": "https://argon2-cffi.readthedocs.io/en/latest/api.html",
+      "provider": "argon2-cffi project",
+      "title": "API Reference",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search on argon2-cffi.readthedocs.io; no sign-in. The library is a third-party package.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'argon2-cffi documentation PasswordHasher Argon2id parameters' (web search, no domain filter). Result title 'API Reference' at this URL; result text: Argon2id is the choice when unsure, RFC 9106 profiles RFC_9106_LOW_MEMORY and RFC_9106_HIGH_MEMORY, rehash when parameters or defaults change. The 'Choosing Parameters' page (argon2-cffi.readthedocs.io/en/23.1.0/parameters.html) was also returned; sources disagreed on the default values (m=65536,t=3,p=4 in one mirror), so defaults are not recorded.",
+      "version": "docs 'latest'; versions 23.1.0 and 25.1.0 also seen",
+      "topics": [
+        "Argon2id",
+        "password hashing library",
+        "parameters"
+      ],
+      "suggested_days": [
+        "D24"
+      ],
+      "block": "B",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w05-python-hashlib",
+      "notes": "Third-party package (installation would need a package index; not verified here). If it is unavailable offline, use the standard-library PBKDF2 and scrypt path. The standard: RFC 9106 (rfc-editor.org/rfc/rfc9106.html, Informational, September 2021, Argon2 version 1.3). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-owasp-crapi",
+      "url": "https://github.com/OWASP/crAPI",
+      "provider": "OWASP",
+      "title": "OWASP crAPI",
+      "kind": "TOOL",
+      "access": "FREE",
+      "access_note": "Open-source project page on github.com and owasp.org (search results 'GitHub - OWASP/crAPI at main' at github.com/OWASP/crAPI/tree/main and 'OWASP crAPI' at owasp.org/projects/crapi); runs locally, no account. Licence text not read.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'OWASP crAPI completely ridiculous API vulnerable by design' (github.com, owasp.org). Results 'OWASP crAPI' (owasp.org/projects/crapi), 'Intro' (owasp.org/crAPI/docs/challenges.html), 'Overview crAPI' (owasp.org/crAPI/docs/overview.html), 'GitHub - OWASP/crAPI at main' (github.com/OWASP/crAPI/tree/main); text: deliberately vulnerable, targets the API Security Top 10 risks, vehicle-owner platform on microservices (identity, community, workshop, mail) with MongoDB and PostgreSQL; one page notes it does not cover classic XSS or SQL injection.",
+      "version": "release number not seen; as listed 2026-11-18",
+      "topics": [
+        "BOLA",
+        "broken authentication",
+        "mass assignment",
+        "API testing"
+      ],
+      "suggested_days": [
+        "D22",
+        "D23",
+        "D25"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w05-thm-api-pentesting",
+      "notes": "Local Docker target in the isolated lab VM only (plan section 4). The challenge list is on the project's docs page; do not read third-party crAPI write-ups before the time box ends (several appeared in the results). Because crAPI skips XSS, D21 uses PortSwigger and Juice Shop instead. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-owasp-juice-shop",
+      "url": "https://github.com/juice-shop/juice-shop",
+      "provider": "OWASP",
+      "title": "OWASP Juice Shop",
+      "kind": "TOOL",
+      "access": "FREE",
+      "access_note": "Open-source project on github.com (search result 'Releases · juice-shop/juice-shop · GitHub' at github.com/juice-shop/juice-shop/releases/); runs locally, no account. Licence text not read.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'OWASP Juice Shop GitHub juice-shop releases version and companion guide pwning OWASP Juice Shop' (github.com, owasp-juice.shop domains). Result 'Releases · juice-shop/juice-shop · GitHub' at github.com/juice-shop/juice-shop/releases/; result text: latest listed release v20.4.0 with artifacts dated 2026-11-08, passkey/WebAuthn login added; a cached OWASP news page still showed v20.1.1. The repository root URL itself was not a result, the releases path of the same repository was.",
+      "version": "v20.4.0 listed as latest on 2026-11-18 (search summary; verify on the releases page)",
+      "topics": [
+        "XSS",
+        "access control",
+        "broken authentication",
+        "local target"
+      ],
+      "suggested_days": [
+        "D21",
+        "D25"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w05-ps-xss-stored-html",
+      "notes": "Local vulnerable target bound to loopback inside the isolated VM. A hosted alternative exists as the TryHackMe room 'OWASP Juice Shop' (tryhackme.com/room/owaspjuiceshop), returned by the D21 XSS query but not recorded as an entry. The companion guide site was not returned by the search. Use the score board only for challenge discovery, not for hints, in the D25 mini pentest. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-owasp-wstg",
+      "url": "https://wstg.owasp.org/",
+      "provider": "OWASP",
+      "title": "OWASP Web Security Testing Guide",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public page returned by the search on the provider's domain; no sign-in indicated.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries: 'OWASP WSTG v4.2 Testing for Reflected Cross Site Scripting Stored XSS DOM-based' and 'OWASP WSTG v4.2 Testing for Insecure Direct Object References authorization testing' (owasp.org, wstg.owasp.org). Result 'OWASP Web Security Testing Guide' at this URL; text: Latest is development toward 5.0, Stable is v4.2, v4.2 is the version to cite, versioned links are preferred over 'latest'.",
+      "version": "Stable = v4.2; latest = development toward 5.0",
+      "topics": [
+        "web testing methodology",
+        "authorization testing",
+        "session management testing",
+        "reporting"
+      ],
+      "suggested_days": [
+        "D21",
+        "D22",
+        "D23",
+        "D24",
+        "D25"
+      ],
+      "block": "any",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Versioned v4.2 pages seen: IDOR 4.5.4 (wstg.owasp.org/v4.2/4-Web_Application_Security_Testing/05-Authorization_Testing/04-Testing_for_Insecure_Direct_Object_References/), CSRF 4.6.5 (owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/06-Session_Management_Testing/05-Testing_for_Cross_Site_Request_Forgery), upload of malicious files 4.10.9 (wstg.owasp.org/v4.2/4-Web_Application_Security_Testing/10-Business_Logic_Testing/09-Test_Upload_of_Malicious_Files/), DOM-based XSS (owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/11-Client-side_Testing/01-Testing_for_DOM-based_Cross_Site_Scripting), reporting (wstg.owasp.org/v4.2/5-Reporting/). No v4.2 JWT test page and no v4.2 reflected-XSS page were returned. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w05-first-cvss-v4-specification",
+      "url": "https://www.first.org/cvss/v4.0/specification-document",
+      "provider": "FIRST",
+      "title": "CVSS v4.0 Specification Document",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Public standard page on first.org returned by the search; no sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'FIRST CVSS v4.0 specification document and user guide' (first.org). First result, title 'CVSS v4.0 Specification Document' at this URL; result text: metrics, formulas, qualitative scale and vector string; the PDF is document version 1.2 dated 2024-06-18; the user guide PDF is dated 2025-11-16; the FAQ says CVSS v4.0 was released on 2023-11-01.",
+      "version": "v4.0, spec document 1.2 (2024-06-18); user guide 2025-11-16",
+      "topics": [
+        "severity rating",
+        "risk rationale",
+        "report"
+      ],
+      "suggested_days": [
+        "D25"
+      ],
+      "block": "D",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Use the score as one input; the plan asks for a severity rationale from asset impact and preconditions, not an automatic label. Calculator: first.org/cvss/calculator/v4-0 (named in the search summary, URL not a result). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    }
+  ],
+  "plan_fact_checks": [
+    {
+      "claim": "OWASP WSTG: the stable documented release is 4.2 (plan sections 4 and 16 item 8; Week 5 core sites).",
+      "result": "CONFIRMED",
+      "evidence": "Queries on WSTG v4.2 pages (owasp.org, wstg.owasp.org): the site names 'Latest (development toward 5.0)', 'Stable (currently v4.2)' and v4.2 as the canonical version to cite; the v4.2 release post 'Web Security Testing Guide v4.2 Released' (owasp.org/2020/12/03/wstg-v42-released) was returned. Versioned links are preferred to 'latest'."
+    },
+    {
+      "claim": "WSTG v4.2 contains a JSON Web Token test page (Week 5 expansion point: case-based JWT validation).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Query 'OWASP WSTG v4.2 Testing JSON Web Tokens session management testing': the only JWT page named was '4.6.10 Testing JSON Web Tokens' in the table of contents of the 'latest' version; v4.2 pages returned were 4.6.1 session management schema and 4.6.4 exposed session variables. Use the OWASP JWT cheat sheet and RFC 8725 for JWT validation."
+    },
+    {
+      "claim": "The JWT validation cases (algorithm allow-list, key purpose, expiration, audience) are documented by official sources.",
+      "result": "CONFIRMED",
+      "evidence": "Query 'RFC 8725 JSON Web Token Best Current Practices' (rfc-editor.org, datatracker.ietf.org): RFC 8725 (BCP 225, February 2020) asks libraries to take a permitted algorithm set, to check audience and issuer keys, and to use explicit typ values; the OWASP JSON Web Token cheat sheet tabulates alg, kid, jku, exp, aud and jti. Note: an update draft draft-ietf-oauth-rfc8725bis exists (version -10 seen); publication as an RFC was not confirmed."
+    },
+    {
+      "claim": "OWASP crAPI (github.com/OWASP/crAPI) is a vulnerable-by-design API for controlled Docker use (plan section 4).",
+      "result": "CONFIRMED",
+      "evidence": "Query 'OWASP crAPI completely ridiculous API vulnerable by design': owasp.org/projects/crapi and github.com/OWASP/crAPI describe a deliberately vulnerable API platform that targets the OWASP API Security Top 10; one page notes it skips classic XSS and SQL injection, so XSS exercises on D21 need PortSwigger or Juice Shop."
+    },
+    {
+      "claim": "OWASP Juice Shop at github.com/juice-shop/juice-shop is the local vulnerable web target (plan section 4).",
+      "result": "CONFIRMED",
+      "evidence": "Query on Juice Shop releases (github.com): 'Releases · juice-shop/juice-shop · GitHub' lists v20.4.0 as the latest release with artifacts dated 2026-11-08 (search summary); earlier tags v20.1.0 to v20.3.0 were also listed. Verify the version on the page before pinning."
+    },
+    {
+      "claim": "PortSwigger offers XSS, authentication, access control and JWT labs for the Week 5 gate of at least 4 independent labs across client, auth and API classes.",
+      "result": "CONFIRMED",
+      "evidence": "Searches on portswigger.net returned lab pages for XSS (stored, DOM, reflected into attribute), CSRF, JWT (unverified, flawed, weak key, algorithm confusion), authentication (username enumeration, 2FA bypass), access control (user ID, IDOR, method-based), API testing (mass assignment), file upload and deserialization. The gate is reachable with free-account labs."
+    },
+    {
+      "claim": "Password exercise: Argon2id, bcrypt and PBKDF2 are the appropriate password KDFs to compare with fast hashes.",
+      "result": "CONFIRMED",
+      "evidence": "Query on the OWASP Password Storage cheat sheet: Argon2id first (19 MiB, 2 iterations, parallelism 1 minimum), scrypt, bcrypt (work factor at least 10, 72-byte limit), PBKDF2-HMAC-SHA256 at 600,000 iterations; RFC 9106 (rfc-editor.org/rfc/rfc9106.html, September 2021) specifies Argon2 and recommends Argon2id. The search metadata showed the cheat sheet page as an old index, so the numbers must be re-read on the live page."
+    },
+    {
+      "claim": "The Python standard library can run the Week 5 hash comparison offline.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Query 'Python hashlib scrypt pbkdf2_hmac documentation password hashing' (docs.python.org): hashlib documents scrypt and pbkdf2_hmac only; no Argon2 or bcrypt in the result. Argon2id needs a third-party package (argon2-cffi docs returned); package availability in the lab VM was not verified."
+    },
+    {
+      "claim": "The OWASP API Security Top 10 2023 edition is the current API list (used for BOLA, BFLA, mass assignment terminology).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Query 'OWASP API Security Top 10 new edition 2025 2026 update release' returned the web Top 10:2025 and the GenAI lists but no API-specific page, so a newer API edition could be neither seen nor excluded. The 2023 edition pages (owasp.org/API-Security/editions/2023/en/0x11-t10/) are the ones verified."
+    },
+    {
+      "claim": "Burp Suite Community is sufficient for the PortSwigger labs of this week.",
+      "result": "CONFIRMED",
+      "evidence": "Query 'Burp Suite Community Edition free download ...' (portswigger.net): Community includes proxy and history, Repeater, Decoder, Sequencer, Comparer and a rate-restricted Intruder demo; project files, the scanner and Burp Collaborator are Professional features. CSRF PoC generation is a Professional feature per the lab text, so forms are written by hand."
+    }
+  ],
+  "gaps": [
+    "D25 hosted TryHackMe option: the room 'OWASP Juice Shop' (tryhackme.com/room/owaspjuiceshop) was returned by the D21 XSS query but is not recorded as its own entry (the file is held at 35 entries); an author can add it under the AUTHORING.md rule. No other TryHackMe room for the unassisted mini pentest was searched.",
+    "Deserialization (D24): only the PortSwigger lab and topic page are verified. The TryHackMe room Insecure Deserialisation (tryhackme.com/room/insecuredeserialisation, listing about 924 days old) and the Web Frameworks: Code Review room were returned but are not recorded; no HTB Academy module or retired HTB machine on deserialization was searched; the OWASP Deserialization cheat sheet page URL was not returned (index pages only).",
+    "HTB Academy tier: none of the five Hack The Box entries shows a tier or cube cost in a search result, so access is UNKNOWN or MIXED; check for 'Start Module (Free)' before assigning.",
+    "TryHackMe tier: no search result stated free or Premium for any room of this file; the Authentication Bypass room (tryhackme.com/room/authenticationbypass) was described as premium in a search summary and is therefore not recorded.",
+    "Authentication and MFA logic (D22): no free hosted room with a two-user MFA scenario was verified; the two-user authentication scenario of block C has to come from the local lab (crAPI, Juice Shop).",
+    "WSTG v4.2 pages for reflected XSS and JWT were not returned (only v4.1 reflected XSS and the 'latest' JWT page).",
+    "Juice Shop companion guide (hints and challenge solutions) was not returned; this is fine under the spoiler policy but means no official hint resource is recorded.",
+    "MDN's Content Security Policy guide page was not returned by the search; the cookie pages (Set-Cookie, secure cookie configuration, using HTTP cookies) were, and are cited in the session cheat sheet entry notes only.",
+    "Provider-stated durations were not seen for any entry; every estimate is a planning figure.",
+    "Out-of-band techniques that need Burp Collaborator (Professional) are not covered.",
+    "INDEPENDENT RE-CHECK NOT RUN (2026-11-18): the checker could not run any web search because the shared 200-search budget of the turn was already used up. The 35 SEARCH_CHECKED labels, the access tiers (11 FREE_ACCOUNT for PortSwigger, 15 FREE, 1 MIXED, 8 UNKNOWN) and the 10 plan_fact_checks results rest on the author's evidence only. Re-run the checker with a fresh search budget before any day guide treats a URL, title, tier or fact check of this file as independently confirmed. Doubts the checker could not test: the Python 3.15.2 patch number in the hashlib title; the exact Juice Shop address (the releases path, not the repository root, was the search result); the THM Hashing - Crypto 101 title (taken from the query and task outline); the Starting Point Tier 2 machine list quoted in w05-htb-starting-point."
+  ]
+}

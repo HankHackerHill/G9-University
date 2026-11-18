@@ -1,7 +1,7 @@
 {
   "week": 4,
   "checked_on": "2026-11-18",
-  "method": "web search results only; pages were not opened from the authoring session",
+  "method": "web search results only; pages were not opened from the authoring session; second-pass review of 2026-11-18 by a separate checker: the independent re-search of SEARCH_CHECKED entries, tier claims and plan_fact_checks did NOT run (the shared WebSearch budget of the turn was exhausted before the first query), so every SEARCH_CHECKED label is the author's own and was not re-confirmed; the second pass only audited the recorded evidence, ids, days and fallback chains offline",
   "entries": [
     {
       "id": "w04-ps-path-server-side-vulnerabilities",
@@ -394,8 +394,8 @@
       "provider": "HTB Academy",
       "title": "Command Injections",
       "kind": "MODULE",
-      "access": "PAID",
-      "access_note": "A search summary of the HTB Certified Web Exploitation Specialist page tags Command Injections as a Tier II module (the scraped labels were partly misaligned, so confirm in the catalogue). Paid tiers as shown in search results for hackthebox.com/blog/new-academy-pricing and help article 13677074 'Academy Subscriptions': subscriptions became tier-based on October 12 (the year 2026 is inferred from the age of the post, about 75 days on 2026-11-18); Student 10 USD/month and Silver 30 USD/month cover Tier 0-II, Gold 95 USD/month Tier 0-III, Platinum 125 USD/month Tier 0-IV; single modules can still be unlocked with Cubes. New accounts receive some Cubes at sign-up; the amount and its conditions differ between the results.",
+      "access": "UNKNOWN",
+      "access_note": "Second-pass check 2026-11-18: an independent re-search was not possible because the shared WebSearch budget of the turn was exhausted, so no tier in this file was re-confirmed; the access tier was changed from PAID to UNKNOWN because the Tier II reading comes from one scraped summary whose labels the author itself reports as partly misaligned. Check the provider's own page before assigning. Recorded basis, unchanged: A search summary of the HTB Certified Web Exploitation Specialist page tags Command Injections as a Tier II module (the scraped labels were partly misaligned, so confirm in the catalogue). Paid tiers as shown in search results for hackthebox.com/blog/new-academy-pricing and help article 13677074 'Academy Subscriptions': subscriptions became tier-based on October 12 (the year 2026 is inferred from the age of the post, about 75 days on 2026-11-18); Student 10 USD/month and Silver 30 USD/month cover Tier 0-II, Gold 95 USD/month Tier 0-III, Platinum 125 USD/month Tier 0-IV; single modules can still be unlocked with Cubes. New accounts receive some Cubes at sign-up; the amount and its conditions differ between the results.",
       "verification": "SEARCH_CHECKED",
       "evidence": "Queries: HTB Academy \"Kerberos Attacks\" course OR ... and the Web Requests query above (academy.hackthebox.com). Result title 'Command Injections Course - HTB Academy - Hack The Box' at this URL (first section .../command-injections/intro-to-command-injections); listed as Medium.",
       "version": "as listed 2026-11-18",
@@ -412,7 +412,7 @@
       "estimate_minutes": 120,
       "difficulty": "Medium",
       "fallback": "w04-ps-os-command-injection-simple",
-      "notes": "Higher-tier Academy module: its exercise answers are not Retired Content and must not be published. The estimate is a registry planning figure sized to the block, not a provider figure."
+      "notes": "Higher-tier Academy module: its exercise answers are not Retired Content and must not be published. The estimate is a registry planning figure sized to the block, not a provider figure. Until the catalogue shows Tier 0, treat this module as not Tier 0: its answers are not Retired Content and must not be published."
     },
     {
       "id": "w04-htb-server-side-attacks",
@@ -420,8 +420,8 @@
       "provider": "HTB Academy",
       "title": "Server-side Attacks",
       "kind": "MODULE",
-      "access": "PAID",
-      "access_note": "A search summary of the HTB Certified Web Exploitation Specialist page tags Server-side Attacks as a Tier II module (labels partly misaligned, confirm in the catalogue). Paid tiers as shown in search results for hackthebox.com/blog/new-academy-pricing and help article 13677074 'Academy Subscriptions': subscriptions became tier-based on October 12 (the year 2026 is inferred from the age of the post, about 75 days on 2026-11-18); Student 10 USD/month and Silver 30 USD/month cover Tier 0-II, Gold 95 USD/month Tier 0-III, Platinum 125 USD/month Tier 0-IV; single modules can still be unlocked with Cubes.",
+      "access": "UNKNOWN",
+      "access_note": "Second-pass check 2026-11-18: an independent re-search was not possible because the shared WebSearch budget of the turn was exhausted, so no tier in this file was re-confirmed; the access tier was changed from PAID to UNKNOWN because the Tier II reading comes from one scraped summary whose labels the author itself reports as partly misaligned. Check the provider's own page before assigning. Recorded basis, unchanged: A search summary of the HTB Certified Web Exploitation Specialist page tags Server-side Attacks as a Tier II module (labels partly misaligned, confirm in the catalogue). Paid tiers as shown in search results for hackthebox.com/blog/new-academy-pricing and help article 13677074 'Academy Subscriptions': subscriptions became tier-based on October 12 (the year 2026 is inferred from the age of the post, about 75 days on 2026-11-18); Student 10 USD/month and Silver 30 USD/month cover Tier 0-II, Gold 95 USD/month Tier 0-III, Platinum 125 USD/month Tier 0-IV; single modules can still be unlocked with Cubes.",
       "verification": "SEARCH_CHECKED",
       "evidence": "Query: HTB Academy Bug Bounty Hunter job role path modules tiers ... (academy.hackthebox.com). Result title 'Server-side Attacks Course' at this URL; result text: covers Server-Side Request Forgery (SSRF), Server-Side Template Injection (SSTI) and Server-Side Includes (SSI) injection.",
       "version": "as listed 2026-11-18",
@@ -438,7 +438,7 @@
       "estimate_minutes": 120,
       "difficulty": null,
       "fallback": "w04-ps-ssrf-basic-local-server",
-      "notes": "Use only the SSRF sections in week 4. The HTB module 'File Inclusion' (.../course/preview/file-inclusion, Medium, 11 sections, Tier II per the same summary) covers the file inclusion half of D19. Higher-tier module answers must not be published. The estimate is a registry planning figure sized to the block, not a provider figure."
+      "notes": "Use only the SSRF sections in week 4. The HTB module 'File Inclusion' (.../course/preview/file-inclusion, Medium, 11 sections, Tier II per the same summary) covers the file inclusion half of D19. Higher-tier module answers must not be published. The estimate is a registry planning figure sized to the block, not a provider figure. Until the catalogue shows Tier 0, treat this module as not Tier 0: its answers are not Retired Content and must not be published."
     },
     {
       "id": "w04-htb-starting-point",
@@ -472,8 +472,8 @@
       "provider": "TryHackMe",
       "title": "HTTP in Detail",
       "kind": "ROOM",
-      "access": "FREE_ACCOUNT",
-      "access_note": "A search summary of TryHackMe's free roadmap post (tryhackme.com/resources/blog/free_path) lists HTTP in Detail next to SQL Injection and OWASP Juice Shop; the post was described as dated 2025 or earlier, so confirm on the room page. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
+      "access": "UNKNOWN",
+      "access_note": "Second-pass check 2026-11-18: an independent re-search was not possible because the shared WebSearch budget of the turn was exhausted, so no tier in this file was re-confirmed; the access tier was changed from FREE_ACCOUNT to UNKNOWN because the only basis is a TryHackMe free-roadmap post that the author itself described as dated 2025 or earlier, which does not show the tier on 2026-11-18. Check the provider's own page before assigning. Recorded basis, unchanged: A search summary of TryHackMe's free roadmap post (tryhackme.com/resources/blog/free_path) lists HTTP in Detail next to SQL Injection and OWASP Juice Shop; the post was described as dated 2025 or earlier, so confirm on the room page. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
       "verification": "SEARCH_CHECKED",
       "evidence": "Query: tryhackme.com/room/httpindetail \"HTTP in Detail\" OR tryhackme.com/room/burpsuitebasics ... (tryhackme.com). This URL was returned; result text: 'Learn about how you request content from a web server using the HTTP protocol'; requests and responses, methods, status codes, headers, hands-on GET, POST, PUT and DELETE requests; part of the Web Hacking Fundamentals module. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
       "version": "as listed 2026-11-18",
@@ -499,8 +499,8 @@
       "provider": "TryHackMe",
       "title": "Burp Suite: The Basics",
       "kind": "ROOM",
-      "access": "FREE_ACCOUNT",
-      "access_note": "The text of the TryHackMe room OWASP Juice Shop (search result) says: 'The FREE Burpsuite rooms \"Burpsuite Basics\" and \"Burpsuite Repeater\" are recommended before completing this room'; TryHackMe's free listing also names 'Burp Suite: Repeater' (tryhackme.com/room/burpsuiterepeater). The wording may predate the current room version, so confirm on the room page. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
+      "access": "UNKNOWN",
+      "access_note": "Second-pass check 2026-11-18: an independent re-search was not possible because the shared WebSearch budget of the turn was exhausted, so no tier in this file was re-confirmed; the access tier was changed from FREE_ACCOUNT to UNKNOWN because the only basis is wording in another room's text that may predate the current room version, which does not show the tier on 2026-11-18. Check the provider's own page before assigning. Recorded basis, unchanged: The text of the TryHackMe room OWASP Juice Shop (search result) says: 'The FREE Burpsuite rooms \"Burpsuite Basics\" and \"Burpsuite Repeater\" are recommended before completing this room'; TryHackMe's free listing also names 'Burp Suite: Repeater' (tryhackme.com/room/burpsuiterepeater). The wording may predate the current room version, so confirm on the room page. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
       "verification": "SEARCH_CHECKED",
       "evidence": "Query: tryhackme.com/room/httpindetail \"HTTP in Detail\" OR tryhackme.com/room/burpsuitebasics \"Burp Suite: The Basics\" room (tryhackme.com). This URL was returned; result text: 'An introduction to using Burp Suite for web application pentesting', 15 tasks covering installation, the dashboard, Proxy, FoxyProxy, scoping, proxying HTTPS and an example attack. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
       "version": "as listed 2026-11-18",
@@ -525,8 +525,8 @@
       "provider": "TryHackMe",
       "title": "SQL Injection",
       "kind": "ROOM",
-      "access": "FREE_ACCOUNT",
-      "access_note": "TryHackMe's free-resources guide (search result) lists 'SQL Injection - Learn how to detect and exploit SQL Injection vulnerabilities' and states that the rooms listed are free with a TryHackMe account. The guide's link target was not shown, and a different SQL room was reported as Premium or MAX only, so confirm on the room page. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
+      "access": "UNKNOWN",
+      "access_note": "Second-pass check 2026-11-18: an independent re-search was not possible because the shared WebSearch budget of the turn was exhausted, so no tier in this file was re-confirmed; the access tier was changed from FREE_ACCOUNT to UNKNOWN because the free guide's link target was not seen and a different SQL room was reported as Premium or MAX only, so the free claim cannot be tied to this URL. Check the provider's own page before assigning. Recorded basis, unchanged: TryHackMe's free-resources guide (search result) lists 'SQL Injection - Learn how to detect and exploit SQL Injection vulnerabilities' and states that the rooms listed are free with a TryHackMe account. The guide's link target was not shown, and a different SQL room was reported as Premium or MAX only, so confirm on the room page. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
       "verification": "SEARCH_CHECKED",
       "evidence": "Query: TryHackMe room \"SQL Injection\" sqlinjectionlm AND \"Command Injection\" oscommandinjection AND \"File Inclusion\" fileinc (tryhackme.com). This URL was returned; result text: SQL basics, in-band (error-based, UNION), blind (authentication bypass, boolean-based) and out-of-band SQL injection, and remediation. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
       "version": "as listed 2026-11-18",
@@ -946,8 +946,8 @@
     "D20 blocks A and B are an examination and a document review by the plan, so no guided platform exercise is assigned to them. A candidate for a guided review is the TryHackMe room at tryhackme.com/room/owasptopten2025three (OWASP Top 10 2025: Insecure Data Handling, covers A05 Injection); its tier was not seen.",
     "File inclusion (D19): no PortSwigger lab on local or remote file inclusion appeared in the results. The verified options are the TryHackMe room File Inclusion (tier unknown) and the HTB Academy module File Inclusion (Tier II per one search summary, URL academy.hackthebox.com/course/preview/file-inclusion).",
     "No retired Hack The Box machine that is specifically about SQL injection, OS command injection or SSRF was verified; only the Starting Point pages of Sequel and Vaccine were seen, and the pages of Appointment, Crocodile and Oopsie were not returned.",
-    "HTB Academy tier not confirmed for SQL Injection Fundamentals, Using Web Proxies and Introduction to Web Applications.",
-    "TryHackMe tier not confirmed for Command Injection, File Inclusion and Intro to SSRF.",
+    "HTB Academy tier not confirmed for SQL Injection Fundamentals, Using Web Proxies, Introduction to Web Applications, Command Injections and Server-side Attacks (the Tier II reading of the last two comes from one scraped summary with misaligned labels).",
+    "TryHackMe tier not confirmed for HTTP in Detail, Burp Suite: The Basics, SQL Injection, Command Injection, File Inclusion and Intro to SSRF.",
     "pwn.college: access conditions of the Web Security module were not shown in a search result.",
     "Defence and detection side of the week (block D): two resources were seen but their tier was not, and they are not recorded as entries: LetsDefend 'Detecting Web Attacks' (app.letsdefend.io/training/lessons/web-attacks-101, covers SQL injection, command injection, RFI and LFI detection) and CyberDefenders 'Web Investigation Lab' (cyberdefenders.org/blueteam-ctf-challenges/web-investigation/, network forensics of a web server compromise).",
     "Out-of-band labs (blind SSRF, blind OS command injection with out-of-band interaction) are not covered because Burp Collaborator is listed as a Professional feature.",

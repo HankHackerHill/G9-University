@@ -1,0 +1,976 @@
+{
+  "week": 12,
+  "checked_on": "2026-11-18",
+  "method": "web search results only; pages were not opened from the authoring session. LIMIT OF THIS FILE: the shared web-search budget (200 calls per turn) was used up before this author's first query, so this author ran 0 searches and 0 fetches. Entries are ASSUMED or UNVERIFIED, none SEARCH_CHECKED. An ASSUMED entry copied from another week's registry cites that entry and its search evidence; the others are the plan's own addresses or recalled from training data, each with the reason in its evidence field. Checker pass 2026-11-18: the search tool refused both calls (the shared budget of 200 calls per turn was used up), so no entry, no access tier and no plan_fact_checks item was re-searched and no page was opened. Offline checks done: JSON, schema keys, unique ids across all registries, fallback ids, suggested_days within D56 to D60, the addresses and claims marked as the plan's own against MASTER_PLAN_V2.0.md section 4, every sibling entry, tier note and quoted evidence against WEEKS/W01 to W08 (same address, same title, same tier, quoted text present), and each label against its own evidence text. Changes by the checker: the CPTS fact check CONFIRMED to NOT_CONFIRMED with a corrected account of W01 and W06, the same correction in the CPTS entry and the gaps, a caveat on the OWASP GenAI fact check, and one gap row. The carried FREE, FREE_ACCOUNT and MIXED tiers and the other CONFIRMED results rest on sibling records and were not re-confirmed by the checker.",
+  "entries": [
+    {
+      "id": "w12-nist-sp800-115",
+      "url": "https://csrc.nist.gov/pubs/sp/800/115/final",
+      "provider": "NIST",
+      "title": "NIST Special Publication (SP) 800-115, Technical Guide to Information Security Testing and Assessment",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w06-nist-sp-800-115 of WEEKS/W06/RESOURCES.json: Public NIST publication page returned by the search on csrc.nist.gov; no sign-in indicated. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w06-nist-sp-800-115 of WEEKS/W06/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query: 'NIST SP 800-115 Technical Guide to Information Security Testing and Assessment' (nist.gov, csrc.nist.gov). First result, title 'NIST Special Publication (SP) 800-115, Technical Guide to Information Security Testing and Assessment' at this URL; result text: 2008 guide, final, phases of planning, execution and post-execution, review techniques, target identification and analysis, target vulnerability validation, appendices include a rules-of-engagement template. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "SP 800-115 (2008), final per the CSRC page; whether a newer revision exists was not shown",
+      "topics": [
+        "rules of engagement",
+        "assessment planning",
+        "post-execution",
+        "technical testing"
+      ],
+      "suggested_days": [
+        "D56",
+        "D57",
+        "D59"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "D56 and D57 block A: use the rules-of-engagement template appendix and the planning phase for the RoE and scope statement of the capstone; D59 block D: the post-execution phase for the residual-risk write-up. The 2008 date makes it a method reference, not an AI reference: the agent threat model uses w12-owasp-genai-llm-top10-2026 and w12-mitre-atlas. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-first-cvss-v4",
+      "url": "https://www.first.org/cvss/v4.0/specification-document",
+      "provider": "FIRST",
+      "title": "CVSS v4.0 Specification Document",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w06-first-cvss-v4-specification of WEEKS/W06/RESOURCES.json: Public standard page on first.org returned by the search; no sign-in. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w06-first-cvss-v4-specification of WEEKS/W06/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query: 'FIRST CVSS v4.0 specification document and user guide' (first.org). First result, title 'CVSS v4.0 Specification Document' at this URL; result text: metrics, formulas, qualitative scale and vector string; the PDF is document version 1.2 dated 2024-06-18; the user guide PDF is dated 2025-11-16 (first.org/cvss/v4-0/cvss-v40-user-guide.pdf); the FAQ says CVSS v4.0 was released on 2023-11-01. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "v4.0, spec document 1.2 (2024-06-18); user guide 2025-11-16",
+      "topics": [
+        "CVSS v4.0",
+        "severity rationale",
+        "vector string",
+        "environmental context"
+      ],
+      "suggested_days": [
+        "D57",
+        "D59"
+      ],
+      "block": "A",
+      "estimate_minutes": 40,
+      "difficulty": null,
+      "fallback": "w12-owasp-risk-rating",
+      "notes": "D57 block A (reporting standard) and D59 block A. A score is one input to severity: write the rationale from asset, preconditions, exploitability in the lab and business impact (W12-Q06). Flaws the learner seeded in the local lab have no CVE: score the vector and say it is a lab estimate. Version facts are second-hand from W06 (spec 1.2 dated 2024-06-18, user guide dated 2025-11-16). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-owasp-risk-rating",
+      "url": "https://owasp.org/www-community/OWASP_Risk_Rating_Methodology",
+      "provider": "OWASP",
+      "title": "OWASP Risk Rating Methodology",
+      "kind": "STANDARD",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because it is a long-standing OWASP community page; address pattern owasp.org/www-community/ was not seen in WEEKS/W01 to W08.",
+      "version": "not checked; the page is community-maintained and may have been revised",
+      "topics": [
+        "risk rating",
+        "likelihood and impact",
+        "severity versus CVSS"
+      ],
+      "suggested_days": [
+        "D59"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w12-first-cvss-v4",
+      "notes": "Supports W12-Q06: severity differs from a raw CVSS score because likelihood, exploitability in context and business impact are rated separately. Use alongside the CVSS vector and record both with the rationale. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-cisa-kev",
+      "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+      "provider": "CISA",
+      "title": "Known Exploited Vulnerabilities Catalog",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because the catalogue page of CISA is a well-known public reference; its address was not seen in WEEKS/W01 to W08 (WEEKS/W06 lists CISA KEV as not searched).",
+      "version": "not checked; the catalogue changes continuously",
+      "topics": [
+        "known exploited vulnerabilities",
+        "prioritisation",
+        "business impact"
+      ],
+      "suggested_days": [
+        "D59"
+      ],
+      "block": "A",
+      "estimate_minutes": 15,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "An input to prioritisation only for findings that map to a public CVE; the lab's seeded flaws have none (INFERRED). Do not present listing in or absence from the catalogue as proof of risk. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-htb-documentation-reporting",
+      "url": "https://academy.hackthebox.com/course/preview/documentation--reporting",
+      "provider": "HTB Academy",
+      "title": "Documentation & Reporting Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Second-hand from entry w06-htb-documentation-reporting of WEEKS/W06/RESOURCES.json: No search result showed this module's tier or cube cost. help.hackthebox.com 'Academy Subscriptions' (search result, 2026-11-18): Tier 0 modules are free with an account; Silver unlocks modules up to Tier II and Gold up to Tier III; single modules can also be unlocked with Cubes. Check the module page for 'Start Module (Free)'. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w06-htb-documentation-reporting of WEEKS/W06/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query: 'HTB Academy Documentation & Reporting course preview penetration test report' (academy.hackthebox.com). First result, title 'Documentation & Reporting Course' at this URL; result text: Easy, note-taking, the components of a pentest report, writing up a finding in detail, an overview section naming the testing type, the testers and source IPs; the Resources tab ships a sample Internal Penetration Test report (Word and PDF) and an Obsidian notebook; prerequisite Penetration Testing Process. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "pentest report structure",
+        "note taking",
+        "finding write-up"
+      ],
+      "suggested_days": [
+        "D57",
+        "D60"
+      ],
+      "block": "D",
+      "estimate_minutes": 60,
+      "difficulty": "Easy",
+      "fallback": "w12-nist-sp800-115",
+      "notes": "Structure reference for the plan's report (scope, methodology, asset inventory, severity rationale, preconditions, impact, reproduction, evidence, fix, retest, limitations). Do not copy the module's sample report text or findings into the learner's report. This module's own tier was not seen; Tier 0 modules are free with an account per the Academy subscriptions text quoted in W06. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-public-pentesting-reports",
+      "url": "https://github.com/juliocesarfort/public-pentesting-reports",
+      "provider": "Julio Cesar Fort (open-source list)",
+      "title": "juliocesarfort/public-pentesting-reports - list of public penetration test reports",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public GitHub repository expected; the third-party reports it links to were not checked (ASSUMED, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because it is a well-known curated list of public penetration-test reports from consulting firms; the description is recalled.",
+      "version": "not checked; link targets not read",
+      "topics": [
+        "pentest report examples",
+        "report structure",
+        "executive summary"
+      ],
+      "suggested_days": [
+        "D57",
+        "D60"
+      ],
+      "block": "D",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w12-htb-documentation-reporting",
+      "notes": "Format reference only: compare how real reports order scope, methodology, findings and limitations. The reports belong to third parties: do not copy text, findings or client details, and open them only in the analysis guest. Which links still resolve is unknown. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-owasp-wstg",
+      "url": "https://wstg.owasp.org/",
+      "provider": "OWASP",
+      "title": "OWASP Web Security Testing Guide",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w04-owasp-wstg of WEEKS/W04/RESOURCES.json: Public OWASP page, indexed without sign-in. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w04-owasp-wstg of WEEKS/W04/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query: OWASP Web Security Testing Guide latest stable release version v4.2 v5 release 2026 (owasp.org, github.com). Result title 'OWASP Web Security Testing Guide' at this URL; result text: 'Stable' is an alias for the current release, currently v4.2; version 5.0 is in development; v4.2 is the version to cite. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "stable v4.2 (OWASP news post 'Web Security Testing Guide v4.2 Released' under owasp.org/2020/12/03/); v5.0 in development; 'latest' refreshed 2026-10-30",
+      "topics": [
+        "web testing methodology",
+        "test identifiers",
+        "reporting"
+      ],
+      "suggested_days": [
+        "D57"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "D57 block A/B: cite WSTG v4.2 pages with versioned links, not 'latest' (W04 fact check: identifiers and structure differ, for example the SSRF test is WSTG-INPV-19 in v4.2 and WSTG-INJT-19 in 'latest'). Stable = v4.2 and 5.0 is in development (W01, W03, W04, W05 fact checks). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-nist-sp800-61r3",
+      "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
+      "provider": "NIST",
+      "title": "NIST Special Publication (SP) 800-61 Rev. 3, Incident Response Recommendations and Considerations for Cybersecurity Risk Management: A CSF 2.0 Community Profile",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w08-nist-sp800-61r3 of WEEKS/W08/RESOURCES.json: Public NIST CSRC publication page; the search result shows no sign-in or payment wording. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w08-nist-sp800-61r3 of WEEKS/W08/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query 'NIST SP 800-61 Revision 3 Incident Response Recommendations and Considerations for Cybersecurity Risk Management final April 2025' restricted to csrc.nist.gov: first result is this page with the title above; the result text gives publication date April 2025, authors Alexander Nelson, Sanjay Rekhi, Murugiah Souppaya (NIST) and Karen Scarfone (Scarfone Cybersecurity), supersession of Rev. 2 (2012, 'Computer Security Incident Handling Guide') which NIST withdrew on the same date, and finalization on 2025-04-03 (CSRC news item 'NIST Revises SP 800-61', csrc.nist.gov/news/2025/nist-revises-sp-800-61). Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "Rev. 3 final, April 2025 (finalized 2025-04-03 per CSRC news); PDF at nvlpubs.nist.gov/nistpubs/specialpublications/nist.sp.800-61r3.pdf",
+      "topics": [
+        "incident response",
+        "CSF 2.0",
+        "incident reporting",
+        "timeline"
+      ],
+      "suggested_days": [
+        "D58",
+        "D60"
+      ],
+      "block": "A",
+      "estimate_minutes": 40,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "D58 block A (incident reconstruction objectives) and D60 block D (incident report with artifact provenance, timeline and observed-versus-inferred analysis). Rev. 3 (April 2025) treats Govern, Identify and Protect as preparation and Detect, Respond and Recover as incident response proper (W08). Rev. 2 is withdrawn: do not cite it as current. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-htb-hacking-labs",
+      "url": "https://www.hackthebox.com/hacker/hacking-labs",
+      "provider": "Hack The Box",
+      "title": "Hack The Box hacking labs (page title not seen)",
+      "kind": "MACHINE",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen for this page. Second-hand from entry w06-htb-machine-nibbles of WEEKS/W06/RESOURCES.json: help.hackthebox.com 'HTB Labs Subscriptions' (result of 2026-11-18) says the Free plan covers 20 active Machines and retired Machines come with VIP+ (25 USD per month or 223 USD per year) or HTB PRO (49 USD per month or 490 USD per year). The tier of any machine drawn from this page is not known.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address is the plan's own (section 4, 'HTB main labs: unknown/retired practice'; owner check 2026-11-17 per the plan). Title not seen. No specific machine is registered: the retired state and tier of a named machine were not verified, so none is named.",
+      "version": "not checked",
+      "topics": [
+        "unseen target pool",
+        "retired machines",
+        "independent enumeration"
+      ],
+      "suggested_days": [
+        "D57"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w12-htb-starting-point",
+      "notes": "Pool for the D57 unknown target, with the rules of the plan: pick retired content only, never a machine whose full solution the learner has read or played in an earlier week (W06 registers Nibbles, Bashed, Cap and Jerry), and have the instructor draw the target with a seed recorded outside this registry. Confirm 'retired' and the plan tier on the machine's page before assigning. Hack The Box rule (second-hand, WEEKS/W08 w08-htb-platform-rules): solutions of ACTIVE machines, challenges and Sherlocks must not be published; write-ups are allowed only for retired content, Starting Point machines and Tier 0 Academy modules, and the retired state must be confirmed on the page first. The portfolio names the exercise and the evidence kept, never the solution. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-htb-platform-rules",
+      "url": "https://help.hackthebox.com/en/articles/12325897-hack-the-box-platform-rules",
+      "provider": "Hack The Box",
+      "title": "Hack The Box Platform Rules",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w08-htb-platform-rules of WEEKS/W08/RESOURCES.json: Public HTB help-centre article; the search result shows no sign-in or payment wording. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w08-htb-platform-rules of WEEKS/W08/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query 'Hack The Box policy publishing walkthroughs writeups active machines Sherlocks retired only' restricted to help.hackthebox.com and hackthebox.com: result 'Hack The Box Platform Rules' at this URL, next to 'Streaming / Writeups / Walkthrough Guidelines' (help.hackthebox.com/en/articles/5188925-streaming-writeups-walkthrough-guidelines) and 'Legal & Compliance: ACCEPTABLE USE POLICY Effective: 01 April 2026' (resources.hackthebox.com/hubfs/Legal/AUP.pdf). Text: write-ups are allowed for retired Machines, retired Sherlocks, retired Challenges, Starting Point machines, Tier 0 Academy modules and a named set of Mini Pro Labs; sharing solutions for any other Pro Lab, active Machine, active Challenge or active Sherlock is prohibited; a machine can be active and expired at once, so confirm it is officially retired; enterprise content may be discussed only inside the company. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18; AUP effective 2026-04-01",
+      "topics": [
+        "platform rules",
+        "spoiler policy",
+        "retired content"
+      ],
+      "suggested_days": [
+        "D57",
+        "D60"
+      ],
+      "block": "D",
+      "estimate_minutes": 15,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "The rule behind the plan's 'no active-machine spoilers in portfolio'. D57 block D and D60 portfolio audit: for HTB work the portfolio names the exercise, what was practised and which evidence was kept, only for content confirmed retired. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-htb-writeup-guidelines",
+      "url": "https://help.hackthebox.com/en/articles/5188925-streaming-writeups-walkthrough-guidelines",
+      "provider": "Hack The Box",
+      "title": "Streaming / Writeups / Walkthrough Guidelines",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w03-htb-writeup-guidelines of WEEKS/W03/RESOURCES.json: Public help centre article, indexed without sign-in. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w03-htb-writeup-guidelines of WEEKS/W03/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query: Hack The Box rules publishing write-ups active machines prohibited retired only (help.hackthebox.com, hackthebox.com). Result title 'Streaming / Writeups / Walkthrough Guidelines' at this URL; result text: publishing solutions of unauthorized content is a ToS violation; a machine can be active and 'expired' at once, so the 'retired' status must be confirmed first. Companion results: 'Hack The Box Platform Rules' (help article 12325897) and the Acceptable Use Policy PDF effective 01 April 2026. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18; AUP effective 2026-04-01",
+      "topics": [
+        "write-ups",
+        "spoilers",
+        "active versus retired"
+      ],
+      "suggested_days": [
+        "D57"
+      ],
+      "block": "D",
+      "estimate_minutes": 10,
+      "difficulty": null,
+      "fallback": "w12-htb-platform-rules",
+      "notes": "D57 block D (avoid spoilers): a machine can be active and expired at once, so confirm the retired state before writing anything beyond the learner's own method. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-htb-starting-point",
+      "url": "https://help.hackthebox.com/en/articles/6007919-introduction-to-starting-point",
+      "provider": "Hack The Box",
+      "title": "Introduction to Starting Point",
+      "kind": "PATH",
+      "access": "MIXED",
+      "access_note": "Second-hand from entry w01-htb-starting-point of WEEKS/W01/RESOURCES.json: Help-centre text in the search result: Starting Point has three tiers and each mixes free and premium machines; premium machines need HTB VIP+ or PRO but do not block a free user's progress. 'HTB Labs Subscriptions' result: VIP+ $25.00 per month or $223.00 per year. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w01-htb-starting-point of WEEKS/W01/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query 'Hack The Box Starting Point Tier 0 Meow Fawn Dancing Redeemer free' on HTB domains: result 'Introduction to Starting Point' at this URL; text: Tier 0 covers connecting to the VPN, basic enumeration of ports and services and interacting with the services found. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "official beginner track",
+        "unseen target pool"
+      ],
+      "suggested_days": [
+        "D57"
+      ],
+      "block": "C",
+      "estimate_minutes": 120,
+      "difficulty": "Very Easy (Tier 0 machines, as shown for Meow)",
+      "fallback": "w12-thm-free-rooms",
+      "notes": "Official beginner track: allowed as a pool for the D57 unknown target only if the learner has not played the machine in an earlier week (WEEKS/W01 to W05 use Starting Point); the instructor draws the target with a seed recorded outside this registry. No machine is named here because none was verified for this week. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-htb-sherlocks-how-to-play",
+      "url": "https://help.hackthebox.com/en/articles/8570249-how-to-play-sherlocks",
+      "provider": "Hack The Box",
+      "title": "How to Play Sherlocks",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w08-htb-how-to-play-sherlocks of WEEKS/W08/RESOURCES.json: Public HTB help-centre article; the search result shows no sign-in or payment wording. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w08-htb-how-to-play-sherlocks of WEEKS/W08/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Queries 'Hack The Box Sherlocks retired Sherlock DFIR Brutus auth.log' and 'How to Play Sherlocks Hack The Box help center guided mode retired Sherlocks subscription free' restricted to help.hackthebox.com: result 'How to Play Sherlocks' at this URL; text: download the investigation package (a zip, password given in the article), answer questions on the platform in linear mode (answering unlocks the next) or free-flow mode (any order); the Free plan includes active Sherlocks and retired Sherlocks need VIP+ (with 'HTB Labs Subscriptions', help.hackthebox.com/en/articles/7257535-htb-labs-subscriptions). Guided Mode on HTB Labs (article 8117054) is documented for Machines only. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "Sherlocks",
+        "investigation package",
+        "retired Sherlocks"
+      ],
+      "suggested_days": [
+        "D58"
+      ],
+      "block": "C",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w12-cyberdefenders-challenges",
+      "notes": "D58 block C hosted alternative for host and network investigation when the instrumented lab is blocked. Hash the investigation package and open it only in the isolated analysis guest. No Sherlock page was verified in this run (W08 records the same gap), so no Sherlock is named. Hack The Box rule (second-hand, WEEKS/W08 w08-htb-platform-rules): solutions of ACTIVE machines, challenges and Sherlocks must not be published; write-ups are allowed only for retired content, Starting Point machines and Tier 0 Academy modules, and the retired state must be confirmed on the page first. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-portswigger-all-labs",
+      "url": "https://portswigger.net/web-security/all-labs",
+      "provider": "PortSwigger",
+      "title": "All labs | Web Security Academy (title recalled)",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Second-hand from entry w04-ps-sqli-retrieve-hidden-data of WEEKS/W04/RESOURCES.json: a search result on portswigger.net/web-security quotes 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in. Not seen for this URL by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address is the plan's own (section 4: 'exact exercise selection; do not demand whole categories in one day'; owner check 2026-11-17 per the plan). Title recalled.",
+      "version": "not checked; the lab list changes",
+      "topics": [
+        "unseen target pool",
+        "web vulnerabilities",
+        "independent exploitation"
+      ],
+      "suggested_days": [
+        "D57",
+        "D59",
+        "D60"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w12-thm-free-rooms",
+      "notes": "Pool for the D57 unknown target on the web side: the instructor draws a lab the learner has not attempted, with a seed recorded outside this registry, and records the draw. Each lab page has an official solution section: it stays closed. Labs run on PortSwigger's infrastructure (platform-designated target). D59 block C may repeat a drawn lab as a regression of the learner's own method, not as a new target. D60 block C hosted option: reproduce, from the learner's own notes and with the solution section closed, one lab solved earlier, when the local lab cannot run. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-thm-free-rooms",
+      "url": "https://tryhackme.com/free-rooms",
+      "provider": "TryHackMe",
+      "title": "Free Cyber Security Rooms & Labs",
+      "kind": "ROOM",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Second-hand from entry w07-thm-exploring-wazuh of WEEKS/W07/RESOURCES.json: TryHackMe's free-rooms page says hundreds of rooms need only a free account (no card), free users get up to one hour per day of the browser AttackBox, and Premium unlocks the structured paths; WEEKS/W05 and W06 quote '650+ rooms are free'. The tier of an individual room still has to be read on its own page. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: the address and the title 'Free Cyber Security Rooms & Labs' appear in the access notes of WEEKS/W05 (w05-thm-xss) and W06 (w06-thm-pentesting-fundamentals) as a search result on tryhackme.com. Kept ASSUMED because the sighting is another author's.",
+      "version": "as listed 2026-11-18 per W05 and W06; room count not verified by this author",
+      "topics": [
+        "unseen target pool",
+        "free rooms",
+        "hosted alternative"
+      ],
+      "suggested_days": [
+        "D57"
+      ],
+      "block": "C",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w12-htb-starting-point",
+      "notes": "Index of free rooms: pool for a hosted alternative for D57 when the HTB pool is unavailable. No room is named because none was verified for this week; the instructor draws a room the learner has not completed (seed recorded outside this registry) and checks its tier. Do not publish room answers. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-cyberdefenders-challenges",
+      "url": "https://cyberdefenders.org/blueteam-ctf-challenges/",
+      "provider": "CyberDefenders",
+      "title": "CyberDefenders blue team CTF challenges (index; title not seen)",
+      "kind": "CHALLENGE",
+      "access": "MIXED",
+      "access_note": "No search result seen for this index page. Second-hand from entry w08-cd-reveal of WEEKS/W08/RESOURCES.json: CyberDefenders help articles say free labs are open to all users and Pro labs need a CyberRange Pro subscription, and the listing marks many challenges PREMIUM. The tier of a given challenge was not seen.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address is the plan's own (section 4: 'curated forensic/network/endpoint investigations'; owner check 2026-11-17 per the plan); WEEKS/W07 and W08 registered individual challenges under this path as SEARCH_CHECKED. Title of the index not seen.",
+      "version": "not checked; challenge list changes",
+      "topics": [
+        "host and network investigation",
+        "timeline",
+        "unseen incident pool"
+      ],
+      "suggested_days": [
+        "D58"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w12-htb-sherlocks-how-to-play",
+      "notes": "Hosted alternative for D58 block C (investigate host and network events, build a timeline). Choose a challenge the learner has not done in W07 or W08 (W07 registers StarkTech Incident - APT41; W08 registers Volatility Traces, Reveal, CorporateSecrets, Hammered, Hacked and CyberCorp Case 1). Check the tier on the challenge page. Answers stay out of the portfolio. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-sigma-rules",
+      "url": "https://sigmahq.io/docs/basics/rules.html",
+      "provider": "SigmaHQ",
+      "title": "Rules",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w07-sigma-rules-basics of WEEKS/W07/RESOURCES.json: Public documentation page; the search result shows no sign-in or payment wording. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w07-sigma-rules-basics of WEEKS/W07/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query 'Sigma rules specification detection selection condition logsource' restricted to sigmahq.io and sigmahq.github.io: first result 'Rules' at this URL, next to 'Modifiers' (sigmahq.io/docs/basics/modifiers.html), 'Filters' (sigmahq.io/docs/meta/filters.html) and 'Getting Started' (sigmahq.io/docs/guide/getting-started.html). Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18; the site is the official SigmaHQ documentation",
+      "topics": [
+        "Sigma rules",
+        "logsource",
+        "selection and condition"
+      ],
+      "suggested_days": [
+        "D58"
+      ],
+      "block": "A",
+      "estimate_minutes": 40,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "D58 block A/C: express the three detections as Sigma rules. A Sigma rule is evaluated per record, with no sequencing inside one rule (W07 note), so incident reconstruction across events needs a timeline, not a single rule. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-sigma-cli",
+      "url": "https://github.com/SigmaHQ/sigma-cli",
+      "provider": "SigmaHQ",
+      "title": "GitHub - SigmaHQ/sigma-cli: The Sigma command line interface based on pySigma · GitHub",
+      "kind": "TOOL",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w07-sigma-cli of WEEKS/W07/RESOURCES.json: Public GitHub repository (open source) shown in the search result. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w07-sigma-cli of WEEKS/W07/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query 'sigma-cli pySigma convert Sigma rules backend pipeline documentation' restricted to sigmahq.io, sigmahq-pysigma.readthedocs.io and github.com: first result at this URL; companions pySigma docs (sigmahq-pysigma.readthedocs.io/en/latest/index.html) and 'Processing Pipelines' (sigmahq.io/docs/digging-deeper/pipelines.html). Text: 'sigma list' shows backends and pipelines, 'sigma plugin install splunk' installs a backend, -t selects the target and -p a pipeline. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18; no release number was read",
+      "topics": [
+        "sigma-cli",
+        "pySigma",
+        "rule conversion",
+        "backends"
+      ],
+      "suggested_days": [
+        "D58"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w12-thm-sigma-language",
+      "notes": "D58 block B: check and convert rules. Backends are plugins that need a package index (network), so the owner must approve a staged or offline install (PROPOSED, W07). A converted query is not proof that the rule matches real telemetry: run the positive and negative fixtures. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-wazuh-quickstart",
+      "url": "https://documentation.wazuh.com/current/quickstart.html",
+      "provider": "Wazuh",
+      "title": "Quickstart · Wazuh documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w07-wazuh-quickstart of WEEKS/W07/RESOURCES.json: Public documentation page; the search result shows no sign-in or payment wording. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w07-wazuh-quickstart of WEEKS/W07/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query 'Wazuh quickstart all-in-one installation requirements 4 vCPU 8 GB RAM 50 GB disk 1-25 agents' restricted to documentation.wazuh.com: first result 'Quickstart · Wazuh documentation' at this URL; the result text gives the sizing table 4 vCPU / 8 GiB / 50 GB for 1-25 agents (storage covers 90 days of alerts), 8 vCPU / 8 GiB / 100 GB for 26-50 and 8 vCPU / 8 GiB / 200 GB for 51-100. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18; the installation guide in the results references Wazuh 4.14",
+      "topics": [
+        "Wazuh",
+        "SIEM sizing",
+        "all-in-one deployment"
+      ],
+      "suggested_days": [
+        "D58"
+      ],
+      "block": "B",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "D58 block B: the instrumented lab's SIEM. Sizing 4 vCPU, 8 GiB, 50 GB for 1 to 25 agents (W07). Pin version 4.14.3 or later after reading the Wazuh advisory: a TryHackMe description cited in W07 says CVE-2026-25769 (remote code execution in cluster communication) affects 4.0.0 to 4.14.2; that is second-hand and unchecked on an advisory. Deployment needs the owner's approval. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-wazuh-rules-syntax",
+      "url": "https://documentation.wazuh.com/current/user-manual/ruleset/ruleset-xml-syntax/rules.html",
+      "provider": "Wazuh",
+      "title": "Rules Syntax - Ruleset XML syntax · Wazuh documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w07-wazuh-rules-syntax of WEEKS/W07/RESOURCES.json: Public documentation page; the search result shows no sign-in or payment wording. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w07-wazuh-rules-syntax of WEEKS/W07/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query 'Wazuh custom rules decoders documentation ruleset XML syntax' restricted to documentation.wazuh.com: result 'Rules Syntax - Ruleset XML syntax · Wazuh documentation' at this URL, next to 'Decoders Syntax' (.../ruleset-xml-syntax/decoders.html) and 'Custom decoders' (.../ruleset/decoders/custom.html). Text: rule level 0-16, id 1-999999, match/regex, decoded_as, if_sid, if_group; custom rules in /var/ossec/etc/rules/local_rules.xml; testing with wazuh-logtest. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18; the result marks this page as old, so option names may differ by release",
+      "topics": [
+        "Wazuh rules",
+        "rule XML",
+        "custom rules"
+      ],
+      "suggested_days": [
+        "D58"
+      ],
+      "block": "B",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "D58 block B/C: write each of the three detections as a Wazuh rule when the SIEM path is used; each needs a positive and a negative test. Pair with w12-wazuh-testing-rules for the test run. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-wazuh-testing-rules",
+      "url": "https://documentation.wazuh.com/current/user-manual/ruleset/testing.html",
+      "provider": "Wazuh",
+      "title": "Testing decoders and rules (title recalled)",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public page; no sign-in is expected (ASSUMED, not evidence).",
+      "verification": "UNVERIFIED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The path and title are recalled from training data (a page on testing decoders and rules with the wazuh-logtest tool); other pages of documentation.wazuh.com were SEARCH_CHECKED by the W07 author, but this page was not seen. Not ASSUMED because Wazuh reorganises its documentation tree between releases (a 5.0 documentation tree was seen in W03).",
+      "version": "not checked",
+      "topics": [
+        "wazuh-logtest",
+        "rule testing",
+        "positive and negative tests",
+        "decoder testing"
+      ],
+      "suggested_days": [
+        "D58"
+      ],
+      "block": "D",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w12-wazuh-rules-syntax",
+      "notes": "If the address fails, search documentation.wazuh.com for 'wazuh-logtest' before assigning. What it supports for W12-Q05: the learner must show the raw event in the SIEM archive with its timestamp, not only that a rule fired in a test tool. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-sysmon-events",
+      "url": "https://learn.microsoft.com/en-us/windows/security/operating-system-security/sysmon/sysmon-events",
+      "provider": "Microsoft Learn",
+      "title": "Sysmon events",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w07-ms-sysmon-events of WEEKS/W07/RESOURCES.json: Public documentation page; the search result shows no sign-in or payment wording. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w07-ms-sysmon-events of WEEKS/W07/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query 'Sysmon event ID 3 network connection disabled by default configuration' restricted to learn.microsoft.com: first result 'Sysmon events' at this URL; the result text says Event ID 3 (network connect) is disabled by default because of volume and should be enabled selectively, with Event ID 1 = process create; configuration entries enable hashing or enrichment but events still need rules under EventFiltering. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "Sysmon events",
+        "Event ID 3",
+        "telemetry assumptions"
+      ],
+      "suggested_days": [
+        "D58"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Event ID 3 (network connection) is disabled by default and must be enabled in the configuration (W01, W03, W07 fact checks). W12-Q05 asks what shows a source really collected an event: keep the raw event, its ID and its timestamp from the SIEM, not only the alert. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-atomic-red-team",
+      "url": "https://www.atomicredteam.io/docs/atomic-red-team",
+      "provider": "Red Canary (Atomic Red Team)",
+      "title": "Atomic Red Team™ Documentation",
+      "kind": "TOOL",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w07-atomic-red-team-docs of WEEKS/W07/RESOURCES.json: Public documentation site and open-source repositories shown in the search result. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w07-atomic-red-team-docs of WEEKS/W07/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query 'Atomic Red Team atomics tests documentation Invoke-AtomicRedTeam' restricted to atomicredteam.io and github.com: first result 'Atomic Red Team™ Documentation' at this URL; companions 'Invoke-AtomicRedTeam' (www.atomicredteam.io/docs/invoke-atomicredteam) and the wiki github.com/redcanaryco/invoke-atomicredteam/wiki/. Text: tests live in atomics/<technique id>/ as YAML plus Markdown; Invoke-AtomicTest runs by number, name or GUID with a default 120 second timeout; -ShowDetailsBrief lists commands and prerequisites without running them. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18; several wiki pages in the results were old, so command syntax needs checking against the repository",
+      "topics": [
+        "Atomic Red Team",
+        "attack replay",
+        "detection validation"
+      ],
+      "suggested_days": [
+        "D58"
+      ],
+      "block": "B",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w12-thm-sigma-language",
+      "notes": "D58 block B: replay known attack-like benign scenarios in the instrumented lab only, after the owner approves the exact test and the target guest; list a test with -ShowDetailsBrief first and choose reversible tests (W07). Never against the unknown target (two-environment fairness rule of the plan). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-attack-updates",
+      "url": "https://attack.mitre.org/resources/updates/",
+      "provider": "MITRE ATT&CK",
+      "title": "Updates",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w07-attack-updates of WEEKS/W07/RESOURCES.json: Public documentation page; the search result shows no sign-in or payment wording. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w07-attack-updates of WEEKS/W07/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Queries 'MITRE ATT&CK release v19 versions of ATT&CK 2026' and 'ATT&CK v20 October 2026 updates release notes' restricted to attack.mitre.org: result 'Updates' at this URL plus 'Changelog' (attack.mitre.org/resources/changelog.html) and 'Version History' (attack.mitre.org/resources/versions/). Text: v19.0 on 2026-04-28 split the Enterprise Defense Evasion tactic into Stealth and Defense Impairment; v19.1 on 2026-05-12; v19.2 (first Agile release) on 2026-08-06; v20.0 started 2026-10-13 (971 software, 182 groups, 61 campaigns); the changelog lists v20.1 dated 2026-11-05. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "v20.0 released 2026-10-13; v20.1 content release 2026-11-05 per the changelog (search result 2026-11-18). The results were not fully consistent: some cached pages still label v19.2 as current.",
+      "topics": [
+        "ATT&CK versions",
+        "tactic and technique mapping",
+        "detection mapping"
+      ],
+      "suggested_days": [
+        "D58",
+        "D60"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Record the ATT&CK version next to every mapping and map only techniques supported by observed evidence. v19 (2026-04-28) split Defense Evasion into Stealth and Defense Impairment, so older Sigma and Wazuh tags may use the old tactic name; do not mark that as an error without checking the version (W07). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-thm-sigma-language",
+      "url": "https://tryhackme.com/room/sigmalanguage",
+      "provider": "TryHackMe",
+      "title": "Sigma Language",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Second-hand from entry w07-thm-sigma-language of WEEKS/W07/RESOURCES.json: Per-room free or Premium flag not visible in the search result. TryHackMe's free-rooms page (tryhackme.com/free-rooms) says hundreds of rooms need only a free account (no card), free users get up to one hour per day of the browser AttackBox, and Premium unlocks the structured paths; whether this room is free was not seen. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w07-thm-sigma-language of WEEKS/W07/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query 'TryHackMe Sigma room detection rules' restricted to tryhackme.com: first result at this URL; the result text names the 'Sigma Language' room (anatomy of a rule, writing one, converting YAML to a SIEM query, rule tuning). Related results: 'Intro to Detection Engineering' (tryhackme.com/room/introtodetectionengineering) and 'Intro to Log Analysis' (a Sigma task on failed SSH logins). Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "Sigma",
+        "hosted detection practice"
+      ],
+      "suggested_days": [
+        "D58"
+      ],
+      "block": "C",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w12-sigma-cli",
+      "notes": "Hosted alternative for the Sigma part of D58 when the instrumented lab is blocked; tier of the room not seen. Do not publish answers. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-htb-yara-sigma",
+      "url": "https://academy.hackthebox.com/course/preview/yara--sigma-for-soc-analysts",
+      "provider": "HTB Academy",
+      "title": "YARA & Sigma for SOC Analysts Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Second-hand from entry w07-htb-yara-sigma of WEEKS/W07/RESOURCES.json: Tier label not shown in the result. HTB help (help.hackthebox.com/en/articles/13677074-academy-subscriptions, FAQ academy.hackthebox.com/faq): all Tier 0 modules are free, new accounts start with 200 Cubes, Tier I to IV unlock with Cubes (50, 100, 500, 1000) or with a subscription; the Student plan (USD 10 per month, eligibility required) unlocks up to Tier II. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w07-htb-yara-sigma of WEEKS/W07/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query 'HTB Academy Windows Event Logs & Finding Evil module Sysmon' and 'HTB Academy SOC Analyst job role path modules' restricted to academy.hackthebox.com: result 'YARA & Sigma for SOC Analysts Course' at this URL; the path summary says it covers writing YARA rules and Sigma rules. Section list and difficulty were not shown. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "YARA",
+        "Sigma",
+        "SOC detection"
+      ],
+      "suggested_days": [
+        "D58"
+      ],
+      "block": "C",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w12-thm-sigma-language",
+      "notes": "Hosted alternative for D58 detection writing; module tier not seen (Tier 0 modules are free with an account per the Academy subscriptions text quoted in W06). Hack The Box rule (second-hand, WEEKS/W08 w08-htb-platform-rules): solutions of ACTIVE machines, challenges and Sherlocks must not be published; write-ups are allowed only for retired content, Starting Point machines and Tier 0 Academy modules, and the retired state must be confirmed on the page first. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-owasp-genai-llm-top10-2026",
+      "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+      "provider": "OWASP GenAI Security Project",
+      "title": "OWASP GenAI LLM Top 10 2026 (title as named in the plan; exact page title not seen)",
+      "kind": "STANDARD",
+      "access": "UNKNOWN",
+      "access_note": "No page or tier evidence seen by this author. The plan names this address as the 2026 list location.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: plan_fact_checks of WEEKS/W01 and WEEKS/W03 (both CONFIRMED there) record genai.owasp.org results: the press release 'OWASP GenAI Security Project Unveils 2026 Top 10 for LLM Applications, New Agent Control Standard ...' under /2026/09/01/ and this address; the 2025 edition is superseded; a separate Top 10 for Agentic Applications dates from 2025-12-09. Kept ASSUMED because the sighting is another author's.",
+      "version": "2026 edition per W01 and W03; release dates differ between pages",
+      "topics": [
+        "OWASP GenAI",
+        "LLM top 10",
+        "agent risks",
+        "threat model"
+      ],
+      "suggested_days": [
+        "D56"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w12-mitre-atlas",
+      "notes": "D56 block A (synthetic agent threat model). No 2026 category identifier was seen in this run: read the live list and cite each risk with its edition year. The agentic list is registered separately in WEEKS/W11 as w11-owasp-agentic-top10 (UNVERIFIED). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-mitre-atlas",
+      "url": "https://atlas.mitre.org/",
+      "provider": "MITRE",
+      "title": "MITRE ATLAS",
+      "kind": "STANDARD",
+      "access": "UNKNOWN",
+      "access_note": "No search result seen, so no tier evidence. Public MITRE knowledge base named by the plan (ASSUMED free, not evidence).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address is the plan's own (section 4; owner check 2026-11-17 per the plan). Title recalled. ATLAS was not named in any result recorded by the authors of WEEKS/W01 to W08.",
+      "version": "not checked; ATLAS version not read",
+      "topics": [
+        "MITRE ATLAS",
+        "AI threat modelling",
+        "technique mapping"
+      ],
+      "suggested_days": [
+        "D56"
+      ],
+      "block": "A",
+      "estimate_minutes": 40,
+      "difficulty": null,
+      "fallback": "w12-owasp-genai-llm-top10-2026",
+      "notes": "D56 block A: vocabulary for the synthetic agent threat model. Record the ATLAS version next to every mapping; map only what the tests actually showed. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-ps-llm-attacks",
+      "url": "https://portswigger.net/web-security/llm-attacks",
+      "provider": "PortSwigger",
+      "title": "Web LLM attacks | Web Security Academy",
+      "kind": "DOCS",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Second-hand from entry w04-ps-sqli-retrieve-hidden-data of WEEKS/W04/RESOURCES.json: a search result on portswigger.net/web-security quotes 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in. Not seen for this URL by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address is the plan's own (section 4; owner check 2026-11-17 per the plan). Title recalled from training data.",
+      "version": "not checked",
+      "topics": [
+        "LLM attacks",
+        "prompt injection",
+        "excessive agency",
+        "hosted practice"
+      ],
+      "suggested_days": [
+        "D56"
+      ],
+      "block": "C",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w12-owasp-genai-llm-top10-2026",
+      "notes": "Hosted alternative for D56 block C when the local agent harness is blocked: pick a lab under this topic that the learner has not done in Week 11 (the four lab addresses are registered in WEEKS/W11 as w11-ps-lab-* entries, ASSUMED). The plan's own fresh policy tests, including the malicious low-trust document and the allowed baseline, run on the local toy agent. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-htb-cpts-cert",
+      "url": "https://academy.hackthebox.com/preview/certifications/htb-certified-penetration-testing-specialist",
+      "provider": "HTB Academy",
+      "title": "HTB Certified Penetration Testing Specialist - HTB Academy",
+      "kind": "STANDARD",
+      "access": "MIXED",
+      "access_note": "Second-hand from entry w06-htb-cpts-certification of WEEKS/W06/RESOURCES.json: The certification page is public (search result). The exam needs a separate voucher: HTB help centre and blog (search summaries): an annual Academy subscription includes a voucher, on a monthly plan the voucher is bought separately, one voucher includes two exam attempts. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w06-htb-cpts-certification of WEEKS/W06/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query: 'HTB CPTS exam where to start requirements 100% Penetration Tester path completed before attempting exam rules' (academy.hackthebox.com, help.hackthebox.com, hackthebox.com). First result, title 'HTB Certified Penetration Testing Specialist - HTB Academy' at this URL; result text: the entire Penetration Tester job-role path (28 modules per this page) must be completed before the exam, each module ends with a skills assessment. Other results: the launch blog (hackthebox.com/blog/certified-penetration-testing-specialist-cpts) and 'Academy Certifications' (help.hackthebox.com/en/articles/12741732-academy-certifications): report as unencrypted PDF or ZIP up to 20 MB, 10 days to upload it after entering the exam. WEEKS/W06: the plan's where-to-start URL was not a result; WEEKS/W01 instead records that address in a result list under the title 'HTB Certified Penetration Testing Specialist - Hack The Box' without text on the 100 percent requirement (W01 and W06 disagree; checker did not search). Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18; module count and report rules differ between pages",
+      "topics": [
+        "CPTS",
+        "certification requirements",
+        "exam rules"
+      ],
+      "suggested_days": [
+        "D60"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "D60 block D readiness plan. Facts recorded by W06: the entire Penetration Tester job-role path (28 modules on this page, 27 on a course page) must be completed before the exam; the voucher is separate (an annual Academy subscription includes one; a voucher has two attempts); the report is an unencrypted PDF or ZIP up to 20 MB, uploaded within 10 days (Academy Certifications help article 12741732, as returned in W06). Re-read the live page before booking. A 480-hour custom portfolio does not by itself show readiness and no pass is implied (plan W12-Q08). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-htb-cdsa-cert",
+      "url": "https://academy.hackthebox.com/preview/certifications/htb-certified-defensive-security-analyst",
+      "provider": "HTB Academy",
+      "title": "HTB Certified Defensive Security Analyst (CDSA) - certification page (title not seen)",
+      "kind": "STANDARD",
+      "access": "UNKNOWN",
+      "access_note": "No page or tier evidence seen.",
+      "verification": "UNVERIFIED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address appears only inside the plan_fact_checks of WEEKS/W07 (as a search summary, which says all modules of the SOC Analyst path must be completed first); no result with this page's title was recorded by anyone. Hence UNVERIFIED, not ASSUMED.",
+      "version": "not checked",
+      "topics": [
+        "CDSA",
+        "certification requirements",
+        "SOC Analyst path"
+      ],
+      "suggested_days": [
+        "D60"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w12-htb-modules-paths",
+      "notes": "D60 block D readiness plan. Exam format, duration, report rules and price were not seen. The plan lists the SOC Analyst path (189 estimated hours) as 'not a course quota'. Read the live page before any statement about CDSA. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-htb-modules-paths",
+      "url": "https://help.hackthebox.com/en/articles/12741910-academy-modules-paths",
+      "provider": "Hack The Box",
+      "title": "Academy Modules & Paths",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w06-htb-academy-modules-paths of WEEKS/W06/RESOURCES.json: Public help-centre article returned by the search; no sign-in indicated. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w06-htb-academy-modules-paths of WEEKS/W06/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query: 'HTB Academy Modules & Paths help article estimated hours Penetration Tester path 342 hours SOC Analyst 189 hours' (help.hackthebox.com, academy.hackthebox.com, hackthebox.com). First result, title 'Academy Modules & Paths' at this URL; result text: Penetration Tester (CPTS) path 342 estimated hours (42 days 6 hours), SOC Analyst (CDSA) path 189 hours (23 days 5 hours); an estimated 'day' is an 8-hour session. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "path estimates",
+        "CPTS 342 hours",
+        "CDSA path 189 hours"
+      ],
+      "suggested_days": [
+        "D60"
+      ],
+      "block": "D",
+      "estimate_minutes": 15,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Estimates are platform averages (an estimated day is an 8-hour session), not course quotas and not promises for this learner. The 480-hour programme does not contain either path in full (plan section 4: select targeted material, do not promise the full CPTS path in 480 hours). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-oscp-exam-guide",
+      "url": "https://help.offsec.com/hc/en-us/articles/360040165632-OSCP-Exam-Guide",
+      "provider": "OffSec",
+      "title": "OSCP+ Exam Guide",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w06-offsec-oscp-exam-guide of WEEKS/W06/RESOURCES.json: Public help-centre article returned by the search; no sign-in indicated. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w06-offsec-oscp-exam-guide of WEEKS/W06/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Query: 'OffSec OSCP+ exam guide help center scoring changes December 1 2026 equated scaled scoring' (help.offsec.com, offsec.com). Result title 'OSCP+ Exam Guide' at this URL; per the search summary the guide still lists the 60/40 point split (three standalone machines and one Active Directory set) while an older notice, 'OSCP Exam Change' (offsec.com/blog/oscp-exam-structure/), describes a 70/30 structure with a bonus; the exam text of the guide itself was not shown. Other results: 'OSCP+ Exam FAQ' (help.offsec.com/hc/en-us/articles/4412170923924-OSCP-Exam-FAQ) and 'OSCP+ Candidate Handbook' (help.offsec.com/hc/en-us/articles/40393367449108-OSCP-Candidate-Handbook). Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "as listed 2026-11-18; the structure statements conflict between pages",
+      "topics": [
+        "OSCP+",
+        "exam structure",
+        "exam rules"
+      ],
+      "suggested_days": [
+        "D60"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "D60 block D readiness plan. W06 found conflicting structure statements between OffSec pages (a 60/40 split in this guide, a 70/30 split with a bonus in an older notice), so re-read the live guide, FAQ and candidate handbook before booking. Whether AI chatbot or automation use is restricted was NOT confirmed (W06). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-oscp-scoring-faq",
+      "url": "https://help.offsec.com/hc/en-us/articles/54589877508884-OSCP-Equated-Scaled-Scoring-FAQ",
+      "provider": "OffSec",
+      "title": "OSCP+ Equated Scaled Scoring FAQ",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Second-hand from entry w06-offsec-oscp-scoring-faq of WEEKS/W06/RESOURCES.json: Public help-centre article returned by the search; no sign-in indicated. Not seen by this author.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Second-hand: entry w06-offsec-oscp-scoring-faq of WEEKS/W06/RESOURCES.json is SEARCH_CHECKED (2026-11-18); its evidence there: Same query as w06-offsec-oscp-exam-guide. Result title 'OSCP+ Equated Scaled Scoring FAQ' at this URL; result text (with the OffSec blog 'OSCP+ Scoring Update: What You Need to Know', offsec.com/blog/oscp-grading-update/): exams starting before 2026-12-01 08:00 GMT keep the fixed passing score of 70; exams starting on or after it pass at 400 on a scaled 100 to 500 range; the raw points needed for 400 depend on the exam set; past attempts are not rescored; point values, proof requirements, documentation standards, format, time limits, proctoring and the report deadline are unchanged. Kept ASSUMED here, not SEARCH_CHECKED, because the sighting belongs to another author.",
+      "version": "effective for exams starting on or after 2026-12-01 08:00 GMT",
+      "topics": [
+        "OSCP+",
+        "scaled scoring",
+        "2026-12-01"
+      ],
+      "suggested_days": [
+        "D60"
+      ],
+      "block": "D",
+      "estimate_minutes": 20,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Do not use a fixed 70-point target for an exam that starts on or after 2026-12-01 08:00 GMT: from then on the pass mark is 400 on a 100 to 500 scale and the raw points needed depend on the exam set (W06, W03). The W12 benchmark date (2027-02-05) is after the change, so any readiness statement must use the scaled model. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w12-btl1",
+      "url": "https://securityblue.team/why-btl1/",
+      "provider": "Security Blue Team",
+      "title": "Why BTL1? (Blue Team Level 1; title recalled)",
+      "kind": "STANDARD",
+      "access": "UNKNOWN",
+      "access_note": "No page or tier evidence seen.",
+      "verification": "UNVERIFIED",
+      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. The address and title are recalled from training data and were not seen in any result of this run; no author of WEEKS/W01 to W08 recorded a Security Blue Team page.",
+      "version": "not checked",
+      "topics": [
+        "BTL1",
+        "certification requirements",
+        "blue team practical exam"
+      ],
+      "suggested_days": [
+        "D60"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "The brief asks for BTL1 readiness facts. None is recorded here: exam format, duration, syllabus, price, pass mark and retake rules were not seen. Read the live page; no pass is implied by the portfolio. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    }
+  ],
+  "plan_fact_checks": [
+    {
+      "claim": "Section 4 and section 16 item 1: HTB Academy publishes path estimates of 342 hours (Penetration Tester, CPTS) and 189 hours (SOC Analyst, CDSA); they are not course quotas.",
+      "result": "CONFIRMED",
+      "evidence": "SECOND-HAND, not re-searched by this author (budget exhausted). WEEKS/W01, W03, W06 and W07 all record the result 'Academy Modules & Paths' at help.hackthebox.com/en/articles/12741910-academy-modules-paths: Penetration Tester 42 days 6 hours = 342 hours, SOC Analyst 23 days 5 hours = 189 hours, an estimated day being an 8-hour session; HTB calls them averages. 'Not course quotas' is the plan's own framing, consistent with 'averages'."
+    },
+    {
+      "claim": "Section 4 and section 16 item 2: CPTS requires 100% of the Penetration Tester role path before attempting the exam.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Checker 2026-11-18: changed from CONFIRMED to NOT_CONFIRMED. The claim rests on one sibling sighting (WEEKS/W06) and could not be re-searched (search budget used up). WEEKS/W06 recorded that the certification page 'HTB Certified Penetration Testing Specialist - HTB Academy' says the entire Penetration Tester job-role path (28 modules on that page, 27 on a course page) must be completed, and that the plan's where-to-start address itself was not returned. Correction of the author's account of WEEKS/W01: W01 did not say the page failed to appear; it recorded NOT_CONFIRMED because the where-to-start address appeared in a result list under the title 'HTB Certified Penetration Testing Specialist - Hack The Box' without any result text stating the 100 percent requirement. W01 and W06 therefore disagree on whether that address was returned. Nothing seen contradicts the claim. Re-read the live certification page before use."
+    },
+    {
+      "claim": "Section 4 and section 16 item 3: OSCP+ scaled scoring begins for exams on or after 2026-12-01; do not use a fixed 70-point target after that.",
+      "result": "CONFIRMED",
+      "evidence": "SECOND-HAND. WEEKS/W01, W03 and W06 record help.offsec.com 'OSCP+ Equated Scaled Scoring FAQ' (article 54589877508884): exams starting before 2026-12-01 08:00 GMT keep the fixed pass mark of 70; later exams are reported on a 100 to 500 scale with 400 as the pass mark; raw points needed depend on the exam set; past attempts are not rescored; format, time limits, proctoring and report deadline unchanged. The OffSec blog words the cut-off as 'exams taken through November 30, 2026' (W03)."
+    },
+    {
+      "claim": "Section 4: the OSCP+ Exam Guide (article 360040165632) is the place to verify the current exam constraints and structure.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "SECOND-HAND (WEEKS/W06): the guide still lists a 60/40 point split (three standalone machines and one Active Directory set) while an older OffSec notice describes a 70/30 split with a bonus; the guide's own text was not shown. The structure therefore cannot be stated from this registry: re-read the live guide, FAQ and candidate handbook."
+    },
+    {
+      "claim": "Section 13 and 16 item 3: OSCP+ exam conditions restrict AI chatbot use and automation.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "SECOND-HAND (WEEKS/W06): OffSec results were returned but none of the summaries showed rule text on AI chatbots or automation. Neither confirmed nor contradicted; not checked by this author."
+    },
+    {
+      "claim": "Section 4: review the October 2026 MITRE ATT&CK release.",
+      "result": "CONFIRMED",
+      "evidence": "SECOND-HAND. WEEKS/W01, W03 and W07 record attack.mitre.org results: ATT&CK v20.0 started 2026-10-13 (971 software, 182 groups, 61 campaigns; new AI-related Enterprise techniques including direct and indirect prompt injection per W03); the changelog lists a v20.1 content release dated 2026-11-05 while the version-history page showed v20.1 as current from 2026-10-13, so the point-release date is unsettled; v19 (2026-04-28) split Defense Evasion into Stealth and Defense Impairment. Some cached pages still label v19.2 as current."
+    },
+    {
+      "claim": "Section 4 and section 16 item 7: NIST SP 800-61 Rev. 3 is final, April 2025.",
+      "result": "CONFIRMED",
+      "evidence": "SECOND-HAND. WEEKS/W01, W03 and W08 record csrc.nist.gov and nist.gov results: 'Incident Response Recommendations and Considerations for Cybersecurity Risk Management: A CSF 2.0 Community Profile', finalized 2025-04-03, supersedes Rev. 2 (withdrawn the same day)."
+    },
+    {
+      "claim": "Section 4 and section 16 item 8: the stable documented OWASP WSTG release is 4.2.",
+      "result": "CONFIRMED",
+      "evidence": "SECOND-HAND. WEEKS/W01, W03, W04 and W05 record owasp.org and wstg.owasp.org results: 'Stable' is an alias for v4.2, 5.0 is in development and not released; versioned v4.2 links are preferred to 'latest' because identifiers differ."
+    },
+    {
+      "claim": "Section 4 and section 16 item 4: Sysmon network connection Event ID 3 is not enabled by default.",
+      "result": "CONFIRMED",
+      "evidence": "SECOND-HAND. WEEKS/W01, W03 and W07 record learn.microsoft.com 'Sysmon events' and 'Sysmon - Sysinternals': the event is disabled by default because of volume and must be enabled in the configuration."
+    },
+    {
+      "claim": "Section 16 item 5: the Wazuh quickstart sizing starts at 4 vCPU, 8 GiB RAM, 50 GB.",
+      "result": "CONFIRMED",
+      "evidence": "SECOND-HAND. WEEKS/W01, W03 and W07 record documentation.wazuh.com/current/quickstart.html: 1 to 25 agents need 4 vCPU, 8 GiB, 50 GB for 90 days of alerts; 26 to 50 agents 8 vCPU, 8 GiB, 100 GB; 51 to 100 agents 8 vCPU, 8 GiB, 200 GB. Caveats from W03 and W07: the page metadata looked old, a 5.0-beta documentation tree is indexed, the installation guide references 4.14, and an unverified second-hand note cites CVE-2026-25769 for versions 4.0.0 to 4.14.2 (fixed in 4.14.3): pin a version after reading the advisory."
+    },
+    {
+      "claim": "Section 4 ('HTB main labs'): use unknown or retired practice and keep no active-machine spoilers in the portfolio.",
+      "result": "CONFIRMED",
+      "evidence": "SECOND-HAND. WEEKS/W08 (w08-htb-platform-rules) and W03 (w03-htb-writeup-guidelines): Hack The Box Platform Rules allow write-ups for retired Machines, retired Sherlocks, retired Challenges, Starting Point machines and Tier 0 Academy modules; sharing solutions for active content is a violation; a machine can be active and expired at once, so the retired state must be confirmed first."
+    },
+    {
+      "claim": "Section 4 and Week 12 core sites: the OWASP GenAI LLM Top 10 2026 at https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/ is the current OWASP AI guidance.",
+      "result": "CONFIRMED",
+      "evidence": "SECOND-HAND. WEEKS/W01 and W03 record the genai.owasp.org press release under /2026/09/01/ and this address; dates differ between pages (June, August, September 2026). No 2026 category identifier was seen; the agentic risks are a separate list dated 2025-12-09 (W01). Checker caveat (offline, from WEEKS/W03 plan_fact_checks): the owasp.org project page still showed 'Version 2025' when W03 searched, so a page that still carries the 2025 label exists; the v6.0 handoff (Appendix C item 30) cites the 2026-09-01 announcement address. Not re-searched. The result confirms the LLM list and its address only, not every OWASP GenAI document."
+    },
+    {
+      "claim": "Section 4 and Week 12 core sites: MITRE ATLAS at https://atlas.mitre.org/ is available for AI threat modelling.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "No search result on atlas.mitre.org was seen by this author or recorded by the authors of W01 to W08."
+    }
+  ],
+  "gaps": [
+    "SEARCH BUDGET: the shared web-search budget (200 calls per turn) was exhausted before this author's first query; 0 searches and 0 fetches ran for this file. Every entry is ASSUMED (copied from another author's SEARCH_CHECKED entry of WEEKS/W01 to W08, citing it, or the plan's own address, or recalled from training data) or UNVERIFIED. No entry of this file is SEARCH_CHECKED. A verification pass is needed: search each address on its provider's domain and upgrade or remove the entry. The owner can raise CLAUDE_CODE_MAX_WEB_SEARCHES_PER_SESSION or continue in a follow-up turn.",
+    "Unknown-target pools (D57): no specific retired Hack The Box machine, Hack The Box Sherlock, TryHackMe room or CyberDefenders challenge was verified as a candidate, so none is named. The pool entries are index pages (HTB labs, Starting Point, PortSwigger all-labs, TryHackMe free rooms, CyberDefenders). The instructor must draw a target with a recorded seed, exclude everything used in W01 to W11, and confirm retired state, tier and difficulty on the target's own page. Queries to run: 'hackthebox.com machines retired Easy' on hackthebox.com; 'TryHackMe free room Easy boot2root' on tryhackme.com.",
+    "No hosted Hack The Box or TryHackMe option was verified for the agent policy tests (D56) or for remediation regression (D59, D60); those days rely on the local G9 lab by the plan's design. The coverage target of an HTB and a THM option per day is met only for D57 (pool indexes) and D58 (Sigma rooms and modules).",
+    "BTL1: only an unverified address is registered; exam format, duration, syllabus, price, pass mark and retake rules were not seen. CDSA: certification page not seen with a title; exam format, report rules and price were not seen, and the statement that the SOC Analyst path must be completed first is a search summary recorded in WEEKS/W07.",
+    "CPTS: the plan's where-to-start address is reported inconsistently: WEEKS/W01 says it appeared in a result list under the title 'HTB Certified Penetration Testing Specialist - Hack The Box' without text on the 100 percent requirement, WEEKS/W06 says it was not returned. Only W06 recorded the requirement, on the certification page 'HTB Certified Penetration Testing Specialist - HTB Academy' and in the Academy Certifications help article (12741732); the fact check is NOT_CONFIRMED until one result on the provider's domain is seen again. OSCP+: AI chatbot and automation restrictions are not confirmed (W06); the exam-structure statements conflict between OffSec pages. No exam price, retake rule or pass probability is recorded, on purpose.",
+    "Access tiers: no entry is PAID or confirmed FREE by this author. HTB machines and Sherlocks: second-hand evidence is that retired content needs VIP+ or PRO (W06, W08), so any retired machine drawn from the pool is probably paid (INFERRED); fallbacks registered are Starting Point, TryHackMe free rooms and CyberDefenders free labs.",
+    "Report templates: only the HTB Documentation & Reporting module (tier unknown) and a public list of third-party reports (unchecked links) are registered. Not registered: PTES (its address is http-only, recalled), a sample report from TCM Security (recalled, unchecked), the OffSec exam report template, SysReptor, a CVSS v4.0 calculator address (named in a W06 search summary but not a result), CWE and NVD (listed in WEEKS/W06 as ASSUMED), FIRST EPSS, NIST SP 800-30.",
+    "Detection validation: no specific CyberDefenders or LetsDefend challenge was selected for detection writing; the Wazuh testing page path is unverified; the ATT&CK Navigator has no official page recorded (W07 gap). ATLAS version, the OWASP GenAI 2026 category names and the 'Agent Control Standard' were not seen.",
+    "Hands-on coverage by day (block C entries): D56 PortSwigger LLM labs (hosted alternative; the plan's C is local); D57 HTB labs, Starting Point, PortSwigger all-labs, TryHackMe free rooms; D58 Sherlocks, CyberDefenders, Sigma room and module; D59 PortSwigger all-labs (repeat only); D60 none by design (closed-book exam, report assembly and local reproduction). Documentation per day is present for D56 to D60.",
+    "CHECKER PASS (2026-11-18): the search tool refused both calls (the shared 200-call budget of the turn was used up), so nothing in this file was re-searched. Still open: every ASSUMED entry (32) and UNVERIFIED entry (3) needs a search on the provider's domain; no entry is SEARCH_CHECKED; the carried FREE, FREE_ACCOUNT and MIXED tiers and the CONFIRMED fact checks rest on records in WEEKS/W01 to W08 that were read offline, not re-searched. Run this pass again when the budget is available (CLAUDE_CODE_MAX_WEB_SEARCHES_PER_SESSION) or in a follow-up turn."
+  ]
+}

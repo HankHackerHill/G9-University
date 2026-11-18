@@ -1,0 +1,1010 @@
+{
+  "week": 9,
+  "checked_on": "2026-11-18",
+  "method": "web search results only; pages were not opened from the authoring session. LIMITATION OF THIS FILE: the shared WebSearch budget of the run (200 calls per turn) was already used up when weeks 9 and 10 were authored. Every WebSearch call of this author returned 'web search budget used up' (5 queries tried: HTB Academy Intro to Assembly Language, HTB Academy Introduction to Malware Analysis, HTB Academy Stack-Based Buffer Overflows on Linux x86, HTB Academy fuzzing / binary exploitation / reverse engineering, YARA-X documentation) and one WebFetch (virustotal.github.io) failed because the host is outside the session's allowed network domains. No search result was seen for this file, so no entry is SEARCH_CHECKED. Every entry is ASSUMED (well-known stable address, reason given) or UNVERIFIED (name and address recalled, not seen today). Entries whose id says they are carried quote the SEARCH_CHECKED record of another week's file (made by another author on 2026-11-18); they are ASSUMED here because this author did not see the result. Re-run the search pass for this file before any entry is assigned as a sole exercise. CHECKER PASS 2026-11-18: every search call was refused (budget used up), so no entry was re-searched, none can be SEARCH_CHECKED and no page was opened. Offline checks only: JSON, keys, unique ids, fallbacks and quoted wNN ids resolve, days inside the week, carried entries compared with their source records in W01, W03 and W07 (tier, address and quote match). Corrections are named where made. ASSUMED and UNVERIFIED labels and carried tiers remain the author's and are NOT independently confirmed (the carried sources are single-author results).",
+  "entries": [
+    {
+      "id": "w09-pwncollege-intro-cybersecurity",
+      "url": "https://pwn.college/intro-to-cybersecurity/",
+      "provider": "pwn.college",
+      "title": "Intro to Cybersecurity (dojo; dojo name inferred from the verified module paths of W02 and W04, the dojo page itself was not seen)",
+      "kind": "PATH",
+      "access": "UNKNOWN",
+      "access_note": "Checker 2026-11-18: tier not confirmed for this page (the page itself was not seen and no search could be run), so it is UNKNOWN; the author had recorded FREE_ACCOUNT from a platform-level statement only. Platform statement recorded by the W01 author (w01-pwncollege-linux-luminarium) and by the W02 author (w02-pwncollege-intercepting-communication, FREE_ACCOUNT): the pwn.college home page text says the platform is 'open, for free, to participation' and an account is needed to track progress. The W04 author recorded UNKNOWN for the sibling module w04-pwn-web-security ('No result on pwn.college stated the access conditions for this dojo module'), and the two module entries of this file are UNKNOWN on the same basis. Not re-seen for this page.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'pwn.college Intro to Cybersecurity dojo modules reverse engineering memory errors' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the sibling module addresses pwn.college/intro-to-cybersecurity/intercepting-communication/ (w02-pwncollege-intercepting-communication) and pwn.college/intro-to-cybersecurity/web-security/ (w04-pwn-web-security) were SEARCH_CHECKED by the W02 and W04 authors on 2026-11-18, so the dojo path exists (INFERRED); the dojo root page and its module list were not seen. Title and content not confirmed today.",
+      "version": "dojo module list not seen 2026-11-18",
+      "topics": [
+        "pwn.college dojo",
+        "reverse engineering",
+        "memory errors",
+        "hosted binary exercises"
+      ],
+      "suggested_days": [
+        "D42",
+        "D44"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w09-otw-leviathan",
+      "notes": "Entry point for the two module entries below (w09-pwncollege-reverse-engineering, w09-pwncollege-memory-errors). The plan lists pwn.college for assembly, binary exploitation and RE exercises; whether this dojo is the one that holds them today was not confirmed. Everything runs inside the platform's own environment. Do not publish flags or solutions. Open the dojo page first and pick the module by name; if a module address below does not resolve, record that in the day's troubleshooting."
+    },
+    {
+      "id": "w09-pwncollege-reverse-engineering",
+      "url": "https://pwn.college/intro-to-cybersecurity/reverse-engineering/",
+      "provider": "pwn.college",
+      "title": "Reverse Engineering (module of the Intro to Cybersecurity dojo; exact page title not seen)",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Not seen on this page. Platform statement recorded by the W01 author (w01-pwncollege-linux-luminarium): the pwn.college home page text says the platform is 'open, for free, to participation' and an account is needed to track progress. Not re-seen for this page.",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'pwn.college Intro to Cybersecurity Reverse Engineering module challenges' restricted to pwn.college. No result was seen, so the entry is UNVERIFIED. Recalled from training data (ASSUMED): the Intro to Cybersecurity dojo has a module of reverse-engineering challenges. The address follows the lower-case module-name pattern of the two verified sibling modules (W02, W04) and was not itself returned by any search.",
+      "version": "module and level list not seen 2026-11-18; address recalled",
+      "topics": [
+        "reverse engineering",
+        "x86-64 disassembly",
+        "decompiler use",
+        "crackme-style binaries",
+        "static and dynamic analysis"
+      ],
+      "suggested_days": [
+        "D42",
+        "D45"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w09-htb-intro-assembly-language",
+      "notes": "Hosted independent practice for D42 (reconstruct a function's input and output behaviour) and for the D45 unassisted analysis when the local lab is blocked. Use Ghidra and GDB from the learner's own analysis guest, not an in-browser tool. Do not publish flags or solutions. A solved challenge shows that the exercise was understood; it is not evidence of what a real binary does (plan boundary: artifacts support behaviour hypotheses, not attribution). Do not assign as the sole exercise before the address and the level list have been confirmed. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-pwncollege-memory-errors",
+      "url": "https://pwn.college/intro-to-cybersecurity/memory-errors/",
+      "provider": "pwn.college",
+      "title": "Memory Errors (module of the Intro to Cybersecurity dojo; exact page title not seen)",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Not seen on this page. Platform statement recorded by the W01 author (w01-pwncollege-linux-luminarium): the pwn.college home page text says the platform is 'open, for free, to participation' and an account is needed to track progress. Not re-seen for this page.",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'pwn.college Intro to Cybersecurity Memory Errors module buffer overflow challenges' restricted to pwn.college. No result was seen, so the entry is UNVERIFIED. Recalled from training data (ASSUMED): the Intro to Cybersecurity dojo has a module on memory errors in C programs. The address follows the lower-case module-name pattern of the two verified sibling modules (W02, W04) and was not itself returned by any search.",
+      "version": "module and level list not seen 2026-11-18; address recalled",
+      "topics": [
+        "memory corruption",
+        "stack buffer overflow",
+        "undefined behaviour",
+        "mitigations",
+        "crash triage"
+      ],
+      "suggested_days": [
+        "D44"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w09-otw-narnia",
+      "notes": "Hosted counterpart of the D44 controlled crash exercise when the local disposable VM is blocked. The challenges are exploitation exercises inside a platform-designated sealed environment; use them to name the defect class, the violated invariant and the patch, which is the gate of this week. Plan boundary: a crash is not a vulnerability and is not a remotely exploitable issue; a mitigation that is absent is not a proven exploit path. Do not publish flags or solutions. Do not assign as the sole exercise before the address has been confirmed. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-otw-leviathan",
+      "url": "https://overthewire.org/wargames/leviathan/",
+      "provider": "OverTheWire",
+      "title": "OverTheWire: Leviathan",
+      "kind": "WARGAME",
+      "access": "FREE",
+      "access_note": "As recorded by the W01 author (id w01-otw-leviathan): Page text in the search result: levels reached on leviathan.labs.overthewire.org through SSH on port 2223, starting login leviathan0/leviathan0; no account or payment mentioned.",
+      "verification": "ASSUMED",
+      "evidence": "Not re-searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The same URL is recorded SEARCH_CHECKED in WEEKS/W01/RESOURCES.json (id w01-otw-leviathan) on 2026-11-18 by another author; that record is quoted here, it was not seen by this author: Query 'OverTheWire wargames free how to play Leviathan wargame' on overthewire.org: result 'OverTheWire: Leviathan' at this URL; text gives difficulty 1/10, 8 levels, no programming knowledge required.",
+      "version": "as listed 2026-11-18 (by the W01 entry)",
+      "topics": [
+        "strings",
+        "ltrace",
+        "strace",
+        "unfamiliar program triage",
+        "setuid binaries",
+        "dynamic tracing of a benign program"
+      ],
+      "suggested_days": [
+        "D41",
+        "D43",
+        "D45"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": "1/10 (as stated on the page)",
+      "fallback": "w09-otw-narnia",
+      "notes": "Use in W09: unfamiliar-program triage on a hosted target (what does this small setuid program do, which library and system calls does it make, which inputs change its behaviour). It trains reading small Linux programs with strings, ltrace and strace, not malware analysis and not PE files. No walkthroughs; treat every level password as a spoiler. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Carried from w01-otw-leviathan; its own notes: Unguided hosted option for the Friday blind scenario when the local hardening lab is blocked. It trains reading of setuid programs, not hardening; it does not replace the plan's local troubleshooting scenario. The OverTheWire index recommends Bandit first. No walkthroughs."
+    },
+    {
+      "id": "w09-otw-narnia",
+      "url": "https://overthewire.org/wargames/narnia/",
+      "provider": "OverTheWire",
+      "title": "OverTheWire: Narnia (title pattern of the verified Bandit and Leviathan pages; this page was not seen)",
+      "kind": "WARGAME",
+      "access": "UNKNOWN",
+      "access_note": "This page was not seen. The Bandit and Leviathan pages of the same site publish a public SSH login and no account or payment (w01-otw-bandit, w01-otw-leviathan, SEARCH_CHECKED by the W01 author); the tier of this page is therefore expected to be free but is not recorded as FREE.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'OverTheWire Narnia wargame' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: OverTheWire is a long-standing public wargame site whose index lists Narnia next to Leviathan and Behemoth (recalled); the address pattern overthewire.org/wargames/<name>/ was SEARCH_CHECKED for bandit and leviathan by the W01 author. This page was not returned. Title and content not confirmed today.",
+      "version": "as recalled; level list not seen 2026-11-18",
+      "topics": [
+        "C source reading",
+        "memory corruption in C",
+        "stack and buffer layout",
+        "root cause of a crash"
+      ],
+      "suggested_days": [
+        "D44"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w09-pwncollege-memory-errors",
+      "notes": "Recalled (ASSUMED, not seen): a wargame of small C programs with memory-safety bugs, reached over SSH on an OverTheWire host. For W09 use only the parts that match the gate: read the source, name the defect class and the violated invariant, and write the patch. Whether the site's rule page forbids sharing level passwords was not checked today: treat every password as a spoiler and do not put it in the portfolio. No walkthroughs. A level solved on a hosted wargame is not evidence of real-world exploitability. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-htb-intro-assembly-language",
+      "url": "https://academy.hackthebox.com/course/preview/intro-to-assembly-language",
+      "provider": "HTB Academy",
+      "title": "Intro to Assembly Language (module name and address recalled, not seen)",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier of this module not seen today. Platform rule as recorded by the W07 author (w07-htb-yara-sigma, from help.hackthebox.com article 13677074 'Academy Subscriptions'): all Tier 0 modules are free, new accounts start with 200 Cubes, Tier I to IV unlock with Cubes (50, 100, 500, 1000) or with a subscription, and the Student plan unlocks up to Tier II.",
+      "verification": "UNVERIFIED",
+      "evidence": "Query attempted and refused ('web search budget used up'): 'Hack The Box Academy Intro to Assembly Language module' restricted to academy.hackthebox.com, hackthebox.com, help.hackthebox.com. No result was seen, so the entry is UNVERIFIED. Recalled from training data: an HTB Academy module on x86-64 assembly (registers, instructions, procedure calls, debugging with GDB). The address uses the same course/preview/<slug> pattern that the W02, W03, W07 and W08 authors confirmed for other modules.",
+      "version": "module not seen 2026-11-18; tier and section list unknown",
+      "topics": [
+        "x86-64 registers",
+        "instructions",
+        "stack",
+        "procedure calls",
+        "GDB"
+      ],
+      "suggested_days": [
+        "D42"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w09-pwncollege-reverse-engineering",
+      "notes": "Hosted guided alternative for the D42 assembly lesson when the local analysis guest is blocked. Select the sections that match the day (registers, calling convention, stack); do not assign the whole module. If the module turns out to be above the learner's Cube budget, use the pwn.college fallback and the vendor ABI documents (w09-sysv-x86-64-abi, w09-ms-x64-calling-convention). HTB rule (w08-htb-platform-rules, SEARCH_CHECKED by the W08 author): solutions, flags, hints or spoilers of ACTIVE content must not be published; write-ups are allowed only for retired content, Starting Point machines and Tier 0 Academy modules. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-htb-stack-bof-linux-x86",
+      "url": "https://academy.hackthebox.com/course/preview/stack-based-buffer-overflows-on-linux-x86",
+      "provider": "HTB Academy",
+      "title": "Stack-Based Buffer Overflows on Linux x86 (module name and address recalled, not seen)",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier of this module not seen today. Platform rule as recorded by the W07 author (w07-htb-yara-sigma, from help.hackthebox.com article 13677074 'Academy Subscriptions'): all Tier 0 modules are free, new accounts start with 200 Cubes, Tier I to IV unlock with Cubes (50, 100, 500, 1000) or with a subscription, and the Student plan unlocks up to Tier II.",
+      "verification": "UNVERIFIED",
+      "evidence": "Query attempted and refused ('web search budget used up'): 'Hack The Box Academy Stack-Based Buffer Overflows on Linux x86 module' restricted to academy.hackthebox.com, hackthebox.com, help.hackthebox.com. No result was seen, so the entry is UNVERIFIED. Recalled from training data: an HTB Academy module on stack buffer overflows in 32-bit Linux programs, including debugging with GDB.",
+      "version": "module not seen 2026-11-18; tier and section list unknown",
+      "topics": [
+        "stack layout",
+        "buffer overflow",
+        "GDB",
+        "memory corruption"
+      ],
+      "suggested_days": [
+        "D44"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w09-otw-narnia",
+      "notes": "Optional reading for the D44 memory-corruption lesson. It is exploit-development content and 32-bit (x86, not x86-64): use only the stack-layout and debugging sections to explain why a write past a buffer corrupts adjacent data. The week's gate is root cause, patch and regression test, not an exploit. Not an entry for the benign-parser exercise itself. HTB rule (w08-htb-platform-rules, SEARCH_CHECKED by the W08 author): solutions, flags, hints or spoilers of ACTIVE content must not be published; write-ups are allowed only for retired content, Starting Point machines and Tier 0 Academy modules. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-htb-yara-sigma",
+      "url": "https://academy.hackthebox.com/course/preview/yara--sigma-for-soc-analysts",
+      "provider": "HTB Academy",
+      "title": "YARA & Sigma for SOC Analysts Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "As recorded by the W07 author (id w07-htb-yara-sigma): Tier label not shown in the result. HTB help (help.hackthebox.com/en/articles/13677074-academy-subscriptions, FAQ academy.hackthebox.com/faq): all Tier 0 modules are free, new accounts start with 200 Cubes, Tier I to IV unlock with Cubes (50, 100, 500, 1000) or with a subscription; the Student plan (USD 10 per month, eligibility required) unlocks up to Tier II.",
+      "verification": "ASSUMED",
+      "evidence": "Not re-searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The same URL is recorded SEARCH_CHECKED in WEEKS/W07/RESOURCES.json (id w07-htb-yara-sigma) on 2026-11-18 by another author; that record is quoted here, it was not seen by this author: Query 'HTB Academy Windows Event Logs & Finding Evil module Sysmon' and 'HTB Academy SOC Analyst job role path modules' restricted to academy.hackthebox.com: result 'YARA & Sigma for SOC Analysts Course' at this URL; the path summary says it covers writing YARA rules and Sigma rules. Section list and difficulty were not shown.",
+      "version": "as listed 2026-11-18 (by the W07 entry)",
+      "topics": [
+        "YARA rules",
+        "rule writing",
+        "detection testing"
+      ],
+      "suggested_days": [
+        "D45"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w09-thm-yara",
+      "notes": "Use in W09: the YARA half only (writing and testing rules); the Sigma half belongs to week 7. HTB rule (w08-htb-platform-rules, SEARCH_CHECKED by the W08 author): solutions, flags, hints or spoilers of ACTIVE content must not be published; write-ups are allowed only for retired content, Starting Point machines and Tier 0 Academy modules. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Carried from w07-htb-yara-sigma; its own notes: Use the Sigma part for D33; the YARA part belongs to week 9. Requires Windows Event Logs & Finding Evil as a prerequisite per the result list. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w09-thm-yara",
+      "url": "https://tryhackme.com/room/yara",
+      "provider": "TryHackMe",
+      "title": "Yara (room name recalled; the result title field of TryHackMe pages is generic, so the name is not read from a result)",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Free or Premium not seen for this room. Platform statements recorded by other authors (w06-thm-lateral-movement-and-pivoting): tryhackme.com/free-rooms says 650+ rooms are free; free users get up to one hour of AttackBox per day or can use their own machine through VPN (help.tryhackme.com 'The AttackBox Explained').",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'TryHackMe room Yara rules tutorial' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: a long-standing, widely cited TryHackMe room whose slug has been stable; not seen in a result today, and rooms are revised from time to time. Title and content not confirmed today.",
+      "version": "room not seen 2026-11-18",
+      "topics": [
+        "YARA rule syntax",
+        "strings and conditions",
+        "scanning a file set",
+        "rule specificity"
+      ],
+      "suggested_days": [
+        "D45"
+      ],
+      "block": "B",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w09-yara-writing-rules",
+      "notes": "Hosted guided practice for D45 block B when the learner wants a second exercise or the local corpus is blocked. The room runs its own VM; keep any sample it provides inside that VM. The plan's instructor corpus (positive and negative files, precision and false-match tracking) is built from benign G9 fixtures and is not replaced by this room. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-thm-dissecting-pe-headers",
+      "url": "https://tryhackme.com/room/dissectingpeheaders",
+      "provider": "TryHackMe",
+      "title": "Dissecting PE Headers (room name and address recalled, not seen)",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Free or Premium not seen for this room. Platform statements recorded by other authors (w06-thm-lateral-movement-and-pivoting): tryhackme.com/free-rooms says 650+ rooms are free; free users get up to one hour of AttackBox per day or can use their own machine through VPN (help.tryhackme.com 'The AttackBox Explained').",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'TryHackMe room Dissecting PE Headers portable executable sections imports' restricted to tryhackme.com. No result was seen, so the entry is UNVERIFIED. Recalled from training data (not seen): a room on the PE header, section table and import table of Windows executables.",
+      "version": "room not seen 2026-11-18",
+      "topics": [
+        "PE headers",
+        "sections",
+        "import table",
+        "entropy",
+        "static triage"
+      ],
+      "suggested_days": [
+        "D41"
+      ],
+      "block": "B",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w09-ms-pe-format",
+      "notes": "Hosted guided practice for D41 block B. It is a Windows PE room: for ELF use w09-man7-elf and the learner's own readelf output on the local benign binaries. Confirm the address and that the room needs no Premium subscription before assigning. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-thm-malware-introductory",
+      "url": "https://tryhackme.com/room/malmalintroductory",
+      "provider": "TryHackMe",
+      "title": "MAL: Malware Introductory (room name and address recalled, not seen)",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Free or Premium not seen for this room. Platform statements recorded by other authors (w06-thm-lateral-movement-and-pivoting): tryhackme.com/free-rooms says 650+ rooms are free; free users get up to one hour of AttackBox per day or can use their own machine through VPN (help.tryhackme.com 'The AttackBox Explained').",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'TryHackMe room MAL Malware Introductory malware analysis' restricted to tryhackme.com. No result was seen, so the entry is UNVERIFIED. Recalled from training data (not seen): an introductory malware-analysis room that sits at the start of TryHackMe's malware-analysis rooms.",
+      "version": "room not seen 2026-11-18",
+      "topics": [
+        "malware analysis workflow",
+        "static and dynamic analysis terms",
+        "analysis lab setup",
+        "sandbox limits"
+      ],
+      "suggested_days": [
+        "D41",
+        "D43"
+      ],
+      "block": "A",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w09-remnux-docs",
+      "notes": "Optional hosted reading for the vocabulary of D41 and the sandbox-limits discussion of D43. Confirm the address and the tier before assigning. Do not carry any sample from a hosted room into the G9 guest. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-ghidra-site",
+      "url": "https://ghidra-sre.org/",
+      "provider": "Ghidra (National Security Agency open-source project)",
+      "title": "Ghidra",
+      "kind": "TOOL",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. Ghidra is released as open source under the Apache 2.0 licence (recalled, ASSUMED).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'Ghidra software reverse engineering framework download' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: address listed in plan section 4 (Ghidra, 'RE/decompilation of educational binaries'); the project is well known and the site is stable. Title and content not confirmed today.",
+      "version": "current release not confirmed 2026-11-18",
+      "topics": [
+        "disassembly",
+        "decompiler",
+        "control-flow graph",
+        "function reconstruction",
+        "project and analysis workflow"
+      ],
+      "suggested_days": [
+        "D42",
+        "D45"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Primary tool of D42 block B. Record the Ghidra version and the JDK it ran on in the lab record; the required JDK major version changes between releases, so read the installation notes of the downloaded release (not recalled here). Use only the benign G9 fixtures and the toy parser: load them in an analysis guest with no external network. The decompiler output is a hypothesis; the plan's D42 block D cross-checks it against execution. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-gdb-documentation",
+      "url": "https://sourceware.org/gdb/documentation/",
+      "provider": "GNU Project (sourceware.org)",
+      "title": "GDB Documentation",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'GDB documentation sourceware.org gdb' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the plan lists https://sourceware.org/gdb/ (GDB, 'Runtime debugging'); the documentation index under that site is stable and well known. Title and content not confirmed today.",
+      "version": "current GDB release not confirmed 2026-11-18",
+      "topics": [
+        "breakpoints",
+        "stepping",
+        "registers and memory inspection",
+        "backtrace",
+        "disassembly in GDB"
+      ],
+      "suggested_days": [
+        "D42",
+        "D44"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Reference for the D42 GDB trace and the D44 crash inspection. Recalled (ASSUMED, verify on the manual): GDB turns address-space randomisation off for the program it starts by default, so a stack address seen in GDB can differ from one seen outside it; record this next to any address you quote. The runtime in the lab is x86-64 Linux; the manual's sections on breakpoints, examining memory and registers are the ones used. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-binutils-docs",
+      "url": "https://sourceware.org/binutils/docs/",
+      "provider": "GNU Project (sourceware.org)",
+      "title": "GNU Binutils documentation (readelf, objdump, strings, nm)",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'GNU binutils documentation readelf objdump' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the binutils manuals are published at this stable address and are the reference for the ELF inspection commands of D41; not seen today. Title and content not confirmed today.",
+      "version": "current binutils release not confirmed 2026-11-18",
+      "topics": [
+        "readelf",
+        "objdump",
+        "strings",
+        "nm",
+        "section headers",
+        "dynamic symbols"
+      ],
+      "suggested_days": [
+        "D41",
+        "D42"
+      ],
+      "block": "B",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w09-man7-elf",
+      "notes": "Reference for the read-only ELF inspection commands of D41 block B (headers, sections, dynamic section, symbols, disassembly of the toy parser). All of them read a file and do not execute it, which keeps D41 inside the plan's no-execution boundary. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-man7-elf",
+      "url": "https://man7.org/linux/man-pages/man5/elf.5.html",
+      "provider": "Linux man-pages project (man7.org)",
+      "title": "elf(5) - Linux manual page",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. Other man7.org pages were SEARCH_CHECKED as public by the W01 and W08 authors (w01-man7-capabilities, w08-journalctl-man).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'elf(5) Linux manual page ELF format man7.org' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the man7.org page for elf(5) is the standard online copy of the Linux manual page; the address pattern man7.org/linux/man-pages/man<n>/<name>.<n>.html was SEARCH_CHECKED for other pages by the W01 and W08 authors. This page was not returned. Title and content not confirmed today.",
+      "version": "as recalled; man-pages release not checked",
+      "topics": [
+        "ELF header",
+        "program headers",
+        "section headers",
+        "dynamic linking",
+        "symbol tables"
+      ],
+      "suggested_days": [
+        "D41"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w09-binutils-docs",
+      "notes": "Canonical description of the ELF structures for the D41 lesson (sections versus segments, imports through the dynamic section). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-ms-pe-format",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/debug/pe-format",
+      "provider": "Microsoft Learn",
+      "title": "PE Format - Win32 apps",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. Other Microsoft Learn pages were SEARCH_CHECKED as public by the W03 and W07 authors.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'Microsoft Learn PE Format Win32 apps portable executable specification' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the PE format specification has been published at this Microsoft Learn address for years and is the standard reference; not returned by a search today. Title and content not confirmed today.",
+      "version": "as recalled; page revision date not seen",
+      "topics": [
+        "PE header",
+        "section table",
+        "import table",
+        "export table",
+        "timestamps",
+        "COFF"
+      ],
+      "suggested_days": [
+        "D41"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w09-thm-dissecting-pe-headers",
+      "notes": "Canonical description of the PE structures for D41 block A. The compile timestamp and the section names in a header are values the author of a binary controls: they are not proof of when or by whom it was built (supports the D41 block D question of what static properties do not prove). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-ms-x64-calling-convention",
+      "url": "https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention",
+      "provider": "Microsoft Learn",
+      "title": "x64 calling convention",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. Other Microsoft Learn pages were SEARCH_CHECKED as public by the W03 and W07 authors.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'Microsoft Learn x64 calling convention C++ build' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the x64 calling convention page is the standard Microsoft reference and has been stable; not returned by a search today. Title and content not confirmed today.",
+      "version": "as recalled; page revision date not seen",
+      "topics": [
+        "Windows x64 ABI",
+        "argument registers",
+        "shadow space",
+        "stack alignment",
+        "volatile and non-volatile registers"
+      ],
+      "suggested_days": [
+        "D42"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w09-sysv-x86-64-abi",
+      "notes": "Windows side of the D42 calling-convention lesson. The lab's x86-64 guest is Linux, which follows the System V convention (w09-sysv-x86-64-abi): the two conventions use different argument registers, so a reader who learns one must not apply it to the other. Read the register lists from the two documents, not from memory. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-sysv-x86-64-abi",
+      "url": "https://gitlab.com/x86-psABIs/x86-64-ABI",
+      "provider": "x86-64 psABI project",
+      "title": "x86-64 psABI (System V Application Binary Interface, AMD64 Architecture Processor Supplement)",
+      "kind": "STANDARD",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'x86-64 psABI System V AMD64 ABI gitlab x86-psABIs' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the psABI repository is the maintained home of the System V x86-64 ABI document (recalled); the address was not returned by a search today and the built PDF is hosted elsewhere. Title and content not confirmed today.",
+      "version": "current document revision not seen 2026-11-18",
+      "topics": [
+        "System V AMD64 ABI",
+        "calling convention",
+        "stack frame",
+        "red zone",
+        "register usage"
+      ],
+      "suggested_days": [
+        "D42"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w09-ms-x64-calling-convention",
+      "notes": "Linux side of the D42 calling-convention lesson; this is the convention of the lab's Linux guest and of the toy parser. The repository holds the document source; the learner needs the calling-convention and stack-frame chapters only. If the repository does not show a readable document, use a Linux distribution's ABI page and mark it as a substitute. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-intel-sdm",
+      "url": "https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html",
+      "provider": "Intel",
+      "title": "Intel 64 and IA-32 Architectures Software Developer Manuals",
+      "kind": "STANDARD",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'Intel 64 and IA-32 Architectures Software Developer Manuals' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: Intel's landing page for the manuals has been stable for years and is the vendor reference for instruction semantics; not returned by a search today. Title and content not confirmed today.",
+      "version": "current edition not seen 2026-11-18",
+      "topics": [
+        "instruction reference",
+        "registers",
+        "flags",
+        "addressing modes",
+        "control flow instructions"
+      ],
+      "suggested_days": [
+        "D42"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Lookup reference during D42 blocks A and B, not a document to read through. Use Volume 1 (basic architecture) for registers and flags and the instruction set reference volume to confirm what an instruction in the Ghidra listing does. The AMD manuals describe the same architecture and were not searched. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-clang-addresssanitizer",
+      "url": "https://clang.llvm.org/docs/AddressSanitizer.html",
+      "provider": "LLVM Project (Clang)",
+      "title": "AddressSanitizer - Clang documentation",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'Clang AddressSanitizer documentation fsanitize=address' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the plan's example invocation uses -fsanitize=address,undefined with Clang (plan section 5, week 9 controlled crash exercise); the Clang documentation page for AddressSanitizer is stable and well known; not returned by a search today. Title and content not confirmed today.",
+      "version": "Clang release of the lab guest not recorded; docs page not seen",
+      "topics": [
+        "AddressSanitizer",
+        "heap and stack buffer overflow",
+        "use-after-free",
+        "shadow memory",
+        "ASAN_OPTIONS",
+        "report reading"
+      ],
+      "suggested_days": [
+        "D44"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w09-gcc-instrumentation-options",
+      "notes": "Reference for reading the ASan report in D44 (error type, access size, allocation and free stacks, shadow bytes). Recalled (verify on the page): the page recommends -fno-omit-frame-pointer and a low optimisation level for readable stack traces, which is what the plan's example command does; ASan changes memory layout and timing, so a bug that ASan reports is a real memory-safety defect but the absence of a report is not proof of absence. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-clang-ubsan",
+      "url": "https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html",
+      "provider": "LLVM Project (Clang)",
+      "title": "UndefinedBehaviorSanitizer - Clang documentation",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'Clang UndefinedBehaviorSanitizer documentation fsanitize=undefined' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the plan's example invocation uses -fsanitize=address,undefined with Clang; the Clang documentation page for UBSan is stable and well known; not returned by a search today. Title and content not confirmed today.",
+      "version": "Clang release of the lab guest not recorded; docs page not seen",
+      "topics": [
+        "UndefinedBehaviorSanitizer",
+        "signed overflow",
+        "out-of-bounds index",
+        "null dereference",
+        "recover versus abort",
+        "checks list"
+      ],
+      "suggested_days": [
+        "D44"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w09-gcc-instrumentation-options",
+      "notes": "Reference for the undefined-behaviour checks of D44. Recalled (verify on the page): by default UBSan prints a diagnostic and lets the program continue; a regression test that must fail on a recurrence needs the page's option that turns a diagnostic into an abort. Decide which of the two the regression test uses and record it. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-gcc-instrumentation-options",
+      "url": "https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html",
+      "provider": "GNU Project (GCC)",
+      "title": "Program Instrumentation Options - Using the GNU Compiler Collection (GCC)",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'GCC Instrumentation Options fsanitize=address' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: GCC documents the same sanitizers on this stable page; kept as the fallback when the lab guest has GCC and no Clang; not returned by a search today. Title and content not confirmed today.",
+      "version": "GCC release of the lab guest not recorded; docs page not seen",
+      "topics": [
+        "-fsanitize=address",
+        "-fsanitize=undefined",
+        "-fstack-protector",
+        "compiler hardening options"
+      ],
+      "suggested_days": [
+        "D44"
+      ],
+      "block": "B",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Fallback for the compiler options of D44 if only GCC is installed in the disposable VM. It also lists the stack-protector options that D44 uses to discuss canaries (exploitability preconditions are taught, not assumed). The plan names Clang; a switch to GCC has to be stated in the lab record. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-aflpp-site",
+      "url": "https://aflplus.plus/",
+      "provider": "AFLplusplus project",
+      "title": "AFL++",
+      "kind": "TOOL",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. AFL++ is open source (recalled, ASSUMED).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'AFL++ coverage-guided fuzzer aflplus.plus' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: address listed in plan section 4 (AFL++, 'Coverage-guided local fuzzing'); the project site is well known and stable. Title and content not confirmed today.",
+      "version": "current AFL++ release not confirmed 2026-11-18",
+      "topics": [
+        "coverage-guided fuzzing",
+        "instrumentation",
+        "corpus and seeds",
+        "crash triage",
+        "afl-fuzz"
+      ],
+      "suggested_days": [
+        "D44"
+      ],
+      "block": "B",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Tool of the D44 'limited fuzzing corpus' step. Local only, on the disposable VM, against the toy parser, with a time limit set in the command (a bounded run, not an open-ended campaign). Recalled (ASSUMED, verify in the project docs): afl-fuzz checks how the kernel handles core dumps and may refuse to start until that setting is changed; changing it is a privileged host setting, so propose the exact command for the owner's approval and record how it is restored. A fuzzer that finds no crash proves nothing about absence of defects: record it as a disciplined negative result. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-aflpp-fuzzing-in-depth",
+      "url": "https://aflplus.plus/docs/fuzzing_in_depth/",
+      "provider": "AFLplusplus project",
+      "title": "Fuzzing with AFL++ (fuzzing_in_depth; page title recalled, not seen)",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE.",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'AFL++ fuzzing_in_depth documentation instrumentation corpus afl-fuzz' restricted to aflplus.plus. No result was seen, so the entry is UNVERIFIED. Recalled from training data: the AFL++ site keeps its documentation under /docs/ with a long guide named fuzzing_in_depth; the exact path was not seen in a result.",
+      "version": "docs path recalled, not seen 2026-11-18",
+      "topics": [
+        "instrumenting a target",
+        "seed corpus",
+        "running afl-fuzz",
+        "sanitizers with fuzzing",
+        "triage of findings"
+      ],
+      "suggested_days": [
+        "D44"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w09-aflpp-site",
+      "notes": "Canonical guide for the D44 fuzzing step if the path resolves; otherwise open the Documentation section of w09-aflpp-site. Use the parts on building the target with instrumentation plus ASan and on the seed corpus; skip distributed and persistent-mode tuning for this week. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-yara-writing-rules",
+      "url": "https://yara.readthedocs.io/en/stable/writingrules.html",
+      "provider": "YARA project (VirusTotal)",
+      "title": "Writing YARA rules - YARA documentation",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'YARA documentation writing YARA rules strings conditions' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the YARA manual on yara.readthedocs.io is the project's documentation and its 'writing rules' page is long-standing and stable; not returned by a search today. Title and content not confirmed today.",
+      "version": "stable docs of the YARA release current in November 2026 not checked",
+      "topics": [
+        "rule structure",
+        "text, hex and regex strings",
+        "conditions",
+        "modules (pe, elf)",
+        "private rules",
+        "performance"
+      ],
+      "suggested_days": [
+        "D45"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Syntax reference for D45. Rules are written against the benign G9 corpus only. YARA-X is the successor project (w09-yarax-site): when a rule is also run on YARA-X, record any difference in behaviour instead of assuming the two agree. A match is a statement about bytes, not about who built the file. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-yarax-site",
+      "url": "https://virustotal.github.io/yara-x/",
+      "provider": "VirusTotal (YARA-X project)",
+      "title": "YARA-X",
+      "kind": "TOOL",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. YARA-X is an open-source project (recalled, ASSUMED).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result. Query attempted and refused ('web search budget used up'): 'YARA-X VirusTotal documentation' restricted to virustotal.github.io and github.com. One WebFetch of https://virustotal.github.io/yara-x/ failed with 'getaddrinfo ENOTFOUND virustotal.github.io': the host is outside the session's allowed network domains (it would have to be allowed in the session's network settings). Recorded as ASSUMED: the address is listed in plan section 4 ('Malware pattern detection; check project status/version'). Status and version NOT checked.",
+      "version": "project status and current version NOT confirmed 2026-11-18",
+      "topics": [
+        "YARA-X",
+        "rule compatibility with YARA",
+        "command line",
+        "rule scanning"
+      ],
+      "suggested_days": [
+        "D45"
+      ],
+      "block": "B",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w09-yara-writing-rules",
+      "notes": "The plan asks the author to check the project status and version; that check failed (see plan_fact_checks). Recalled (ASSUMED, not seen): YARA-X is VirusTotal's rewrite of YARA in Rust that aims at compatibility with most YARA rules and documents its differences. Before D45, the day author must read the site's installation and compatibility pages, record the version installed in the guest, and run the same rule set on YARA and YARA-X against the same benign corpus. The source repository is github.com/VirusTotal/yara-x (recalled, not seen). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-remnux-docs",
+      "url": "https://docs.remnux.org/",
+      "provider": "REMnux project",
+      "title": "REMnux Documentation",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'REMnux documentation docs.remnux.org' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: address listed in plan section 4 (REMnux, 'Malware-analysis tooling, use isolated lab'); the documentation site is the project's official one. Title and content not confirmed today.",
+      "version": "current REMnux release not confirmed 2026-11-18",
+      "topics": [
+        "REMnux toolkit",
+        "analysis lab setup",
+        "static analysis tools",
+        "network isolation",
+        "tool catalogue"
+      ],
+      "suggested_days": [
+        "D41",
+        "D43"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Tool catalogue and setup guidance for the analysis guest of D41 and D43. Plan rules apply and override anything the site suggests: the malware workspace has no external network, any potentially hostile sample is kept non-executing, and only the benign G9 fixtures are used this week. Whether REMnux is installed as a VM or added to an existing Linux guest is decided in the lab record, with the owner's approval of the install commands. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-attack-persistence-tactic",
+      "url": "https://attack.mitre.org/tactics/TA0003/",
+      "provider": "MITRE",
+      "title": "Persistence, Tactic TA0003 - Enterprise (title composed from the tactic name and id, not read from a result)",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. The ATT&CK 'Updates' page was SEARCH_CHECKED as public by the W07 author (w07-attack-updates).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'MITRE ATT&CK Persistence tactic TA0003 enterprise' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: TA0003 is the long-standing id of the Persistence tactic and the address pattern attack.mitre.org/tactics/<id>/ is stable; the W07 author saw the v19 change that split Defense Evasion (w07-attack-updates) and did not report a change to Persistence (INFERRED, not checked). Title and content not confirmed today.",
+      "version": "ATT&CK v20.x as recorded by W07; the page's version not seen",
+      "topics": [
+        "persistence patterns",
+        "run keys and scheduled tasks",
+        "services",
+        "technique catalogue",
+        "detection mapping"
+      ],
+      "suggested_days": [
+        "D43"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Catalogue for the D43 persistence-pattern lesson and for mapping what the harmless simulation did to a technique id. Record the ATT&CK version number read on the live page next to every mapping. Map only techniques supported by observed evidence: a technique id is a label for an observation, not a verdict and not a family attribution. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-attack-updates",
+      "url": "https://attack.mitre.org/resources/updates/",
+      "provider": "MITRE ATT&CK",
+      "title": "Updates",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "As recorded by the W07 author (id w07-attack-updates): Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "ASSUMED",
+      "evidence": "Not re-searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The same URL is recorded SEARCH_CHECKED in WEEKS/W07/RESOURCES.json (id w07-attack-updates) on 2026-11-18 by another author; that record is quoted here, it was not seen by this author: Queries 'MITRE ATT&CK release v19 versions of ATT&CK 2026' and 'ATT&CK v20 October 2026 updates release notes' restricted to attack.mitre.org: result 'Updates' at this URL plus 'Changelog' (attack.mitre.org/resources/changelog.html) and 'Version History' (attack.mitre.org/resources/versions/). Text: v19.0 on 2026-04-28 split the Enterprise Defense Evasion tactic into Stealth and Defense Impairment; v19.1 on 2026-05-12; v19.2 (first Agile release) on 2026-08-06; v20.0 started 2026-10-13 (971 software, 182 groups, 61 campaigns); the changelog lists v20.1 dated 2026-11-05.",
+      "version": "v20.0 released 2026-10-13; v20.1 content release 2026-11-05 per the changelog (search result 2026-11-18). The results were not fully consistent: some cached pages still label v19.2 as current. (by the",
+      "topics": [
+        "ATT&CK versions",
+        "release notes",
+        "tactic changes"
+      ],
+      "suggested_days": [
+        "D43",
+        "D45"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w09-attack-persistence-tactic",
+      "notes": "Use in W09: read the current ATT&CK version before the D43 mapping and write it in the record. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Carried from w07-attack-updates; its own notes: Record the ATT&CK version next to every mapping in the coverage matrix and map only techniques supported by observed evidence (plan workflow step 10). Because v19 removed Defense Evasion as a tactic, older Sigma and Wazuh rule tags and older course material may use the old tactic name; do not mark that as an error without checking the version. Individual detection strategy pages exist (for example attack.mitre.org/detectionstrategies/DET0314/) and list Windows Security and Sysmon event codes; they were returned by search and are not registered. No official ATT&CK Navigator page appeared in search; see gaps. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w09-ms-process-monitor",
+      "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/procmon",
+      "provider": "Microsoft Learn",
+      "title": "Process Monitor - Sysinternals",
+      "kind": "TOOL",
+      "access": "FREE",
+      "access_note": "As recorded by the W03 author (id w03-ms-process-monitor): Sysinternals download page on Microsoft Learn, indexed without sign-in.",
+      "verification": "ASSUMED",
+      "evidence": "Not re-searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The same URL is recorded SEARCH_CHECKED in WEEKS/W03/RESOURCES.json (id w03-ms-process-monitor) on 2026-11-18 by another author; that record is quoted here, it was not seen by this author: Query: Microsoft Learn Sysinternals \"Process Explorer\" downloads AND \"Process Monitor\" procmon (learn.microsoft.com). Result title 'Process Monitor - Sysinternals' at this URL; result text: v4.13, 3.1 MB, monitors file system, Registry, process, thread and DLL activity in real time; runs on Windows 11 and Windows Server 2019 and later.",
+      "version": "v4.13, as listed 2026-11-18 (by the W03 entry)",
+      "topics": [
+        "Process Monitor",
+        "file and registry activity",
+        "process tree",
+        "filters",
+        "trace export"
+      ],
+      "suggested_days": [
+        "D43"
+      ],
+      "block": "B",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Use in W09: observe the file, registry, process and DLL activity of the plan's deliberately harmless simulation in the Windows lab guest and keep the filtered trace as evidence. Install only after the owner approves the exact command. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Carried from w03-ms-process-monitor; its own notes: Run only inside the Windows lab guest."
+    },
+    {
+      "id": "w09-ms-sysmon-events",
+      "url": "https://learn.microsoft.com/en-us/windows/security/operating-system-security/sysmon/sysmon-events",
+      "provider": "Microsoft Learn",
+      "title": "Sysmon events",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "As recorded by the W07 author (id w07-ms-sysmon-events): Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "ASSUMED",
+      "evidence": "Not re-searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The same URL is recorded SEARCH_CHECKED in WEEKS/W07/RESOURCES.json (id w07-ms-sysmon-events) on 2026-11-18 by another author; that record is quoted here, it was not seen by this author: Query 'Sysmon event ID 3 network connection disabled by default configuration' restricted to learn.microsoft.com: first result 'Sysmon events' at this URL; the result text says Event ID 3 (network connect) is disabled by default because of volume and should be enabled selectively, with Event ID 1 = process create; configuration entries enable hashing or enrichment but events still need rules under EventFiltering.",
+      "version": "as listed 2026-11-18 (by the W07 entry)",
+      "topics": [
+        "Sysmon event ids",
+        "host visibility",
+        "network connect event",
+        "configuration dependence"
+      ],
+      "suggested_days": [
+        "D43"
+      ],
+      "block": "D",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w09-ms-process-monitor",
+      "notes": "Use in W09: the D43 block D mapping of what a host sensor would and would not have recorded for the simulation (process create, network connect, file create, registry set, DNS query). Event ID 3 is off by default, so a missing network event is a configuration finding, not evidence that nothing happened. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Carried from w07-ms-sysmon-events; its own notes: Plan source for 'Event ID 3 needs enabling'. IDs 1, 3, 11 and 22 are the ones the plan's authoring expansion asks for; IDs 11 (file create), 13 (registry value set) and 22 (DNS query) were confirmed in the text of TryHackMe rooms returned by search, not in this page's result text. Companion pages returned by the same query: learn.microsoft.com/en-us/windows/security/operating-system-security/sysmon/sysmon-configuration-files and .../how-to-enable-sysmon. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w09-flare-floss",
+      "url": "https://github.com/mandiant/flare-floss",
+      "provider": "Mandiant (FLARE team)",
+      "title": "FLARE Obfuscated String Solver (FLOSS)",
+      "kind": "TOOL",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. FLOSS is an open-source project (recalled, ASSUMED).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'FLOSS FLARE Obfuscated String Solver github mandiant flare-floss' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: FLOSS is a well-known Mandiant open-source tool that REMnux's catalogue lists (recalled) and the repository path has been stable; not returned by a search today. Title and content not confirmed today.",
+      "version": "current release not confirmed 2026-11-18; repository ownership may have changed",
+      "topics": [
+        "strings extraction",
+        "static strings versus stack strings",
+        "string decoding",
+        "static triage"
+      ],
+      "suggested_days": [
+        "D41"
+      ],
+      "block": "B",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w09-binutils-docs",
+      "notes": "Optional D41 tool next to plain strings: compare what plain strings finds in a benign fixture with what FLOSS finds. Static only: it analyses the file and the plan's no-execution rule for unknown samples still applies; the benign G9 fixtures are the only inputs this week. Confirm the repository address and install route in the REMnux catalogue (w09-remnux-docs). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-capa",
+      "url": "https://github.com/mandiant/capa",
+      "provider": "Mandiant (FLARE team)",
+      "title": "capa",
+      "kind": "TOOL",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. capa is an open-source project (recalled, ASSUMED).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'capa Mandiant capabilities executable files github' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: capa is a well-known Mandiant open-source tool that REMnux's catalogue lists (recalled) and the repository path has been stable; not returned by a search today. Title and content not confirmed today.",
+      "version": "current release not confirmed 2026-11-18; repository ownership may have changed",
+      "topics": [
+        "capability detection",
+        "rule-based matching",
+        "static triage",
+        "ATT&CK mapping of capabilities"
+      ],
+      "suggested_days": [
+        "D41",
+        "D42"
+      ],
+      "block": "B",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Optional tool for D41 and D42: run it on the benign fixtures and compare its capability list with what the learner found by hand in Ghidra. Its output is a rule match hypothesis, never a verdict or a family attribution (plan boundary). Record the version of the tool and of its rule set. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w09-malware-traffic-analysis",
+      "url": "https://www.malware-traffic-analysis.net/training-exercises.html",
+      "provider": "malware-traffic-analysis.net",
+      "title": "Malware-Traffic-Analysis.net - training exercises",
+      "kind": "CHALLENGE",
+      "access": "FREE",
+      "access_note": "As recorded by the W07 author (id w07-malware-traffic-analysis-exercises): Public site; the search result describes each exercise as a downloadable zip of a pcap and shows no sign-in or payment wording. Licensing terms were not seen.",
+      "verification": "ASSUMED",
+      "evidence": "Not re-searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The same URL is recorded SEARCH_CHECKED in WEEKS/W07/RESOURCES.json (id w07-malware-traffic-analysis-exercises) on 2026-11-18 by another author; that record is quoted here, it was not seen by this author: Query 'malware-traffic-analysis.net training exercises pcap' restricted to malware-traffic-analysis.net: first result 'Malware-Traffic-Analysis.net - training exercises' at this URL; the result text says entries run from 2014 to 2026 with the newest 'The Lucky Turkey' (2026-11-10). Individual exercise pages returned: 2026-02-28 'Easy As 123' and 2026-01-31 'Lumma in the room-ah' (SOC-style scenario with report questions).",
+      "version": "as listed 2026-11-18 (by the W07 entry)",
+      "topics": [
+        "pcap analysis",
+        "network trace artifacts",
+        "timeline from a capture",
+        "host and network visibility"
+      ],
+      "suggested_days": [
+        "D43"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Use in W09: optional hosted source of 'provided trace artifacts' for the D43 independent block: analyse the capture as data in the isolated analysis guest (who talked to whom, which protocols, which timeline), never replay it on a live interface and never carve out and run any binary. Choose an exercise whose answers you have not read; do not copy captures into the portfolio. The plan's own trace fixtures from the G9 repository stay the primary source. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Carried from w07-malware-traffic-analysis-exercises; its own notes: Hosted-independent PCAP source for the D34 observation timeline: run Zeek and Suricata over the capture offline in the lab. The captures contain real malware traffic; keep them in the isolated analysis guest, never replay them on a live interface. Answers are posted as separate pages some days after an exercise, so choose an exercise whose answers you have not read. Some exercise pages carry alert files; check each page before using it. Redistribution and licensing terms were not checked: do not copy captures into the portfolio, cite the page. The estimate is the author's, not a provider figure. Checker addition (precaution, not a provider fact): before extracting any zip, read the exercise page; use only the capture and alert files, and if a page offers an executable, script or document, do not extract or open it (plan: no sample is executed this week)."
+    },
+    {
+      "id": "w09-kernel-sysctl-randomize-va-space",
+      "url": "https://www.kernel.org/doc/html/latest/admin-guide/sysctl/kernel.html",
+      "provider": "Linux kernel documentation",
+      "title": "Documentation for /proc/sys/kernel/",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'kernel.org admin-guide sysctl kernel randomize_va_space' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the kernel documentation page for /proc/sys/kernel/ is the upstream reference for randomize_va_space and has been stable; not returned by a search today. Title and content not confirmed today.",
+      "version": "'latest' kernel docs tree; the lab guest's kernel version not recorded",
+      "topics": [
+        "ASLR",
+        "randomize_va_space",
+        "kernel tunables",
+        "exploit mitigations"
+      ],
+      "suggested_days": [
+        "D44"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w09-gcc-instrumentation-options",
+      "notes": "Reference for the ASLR part of the D44 mitigation lesson (the plan asks for ASLR, NX, PIE, RELRO, canaries and exploitability preconditions). Read the randomize_va_space entry on the page. Reading the setting is read-only; changing it is a privileged change that needs the owner's approval inside the disposable VM. For NX, PIE, RELRO and canaries the compiler and linker documentation (w09-gcc-instrumentation-options, w09-binutils-docs) is the source; no separate verified page for NX or RELRO was found. A missing mitigation is not a proven exploit path. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    }
+  ],
+  "plan_fact_checks": [
+    {
+      "claim": "YARA-X (https://virustotal.github.io/yara-x/) is a current malware-pattern detection tool; the plan asks to 'check project status/version' (plan section 4).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Query 'YARA-X VirusTotal documentation' (virustotal.github.io, github.com) was refused: web search budget used up. One WebFetch of the plan's address failed with 'getaddrinfo ENOTFOUND virustotal.github.io' (host outside the session's allowed network domains). No status, release number or deprecation notice was seen. The learner must record the version installed in the guest; the day author must read the live site."
+    },
+    {
+      "claim": "Ghidra (https://ghidra-sre.org/) is the reference tool for disassembly and decompilation of educational binaries (plan section 4); the current release is the one the guest installs.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "No search ran (budget used up). Address recorded as ASSUMED in w09-ghidra-site. The current release number and its JDK requirement were not read."
+    },
+    {
+      "claim": "REMnux documentation (https://docs.remnux.org/) is the source for malware-analysis tooling, used in an isolated lab (plan section 4).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "No search ran (budget used up). Address recorded as ASSUMED in w09-remnux-docs. The current REMnux release and its install routes were not read."
+    },
+    {
+      "claim": "AFL++ (https://aflplus.plus/) is the coverage-guided local fuzzer of the week (plan section 4).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "No search ran (budget used up). Address recorded as ASSUMED in w09-aflpp-site; the docs sub-path is UNVERIFIED in w09-aflpp-fuzzing-in-depth. The current release was not read."
+    },
+    {
+      "claim": "The example invocation 'clang -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer training_parser.c -o training_parser_asan' uses documented Clang options (plan section 5, week 9).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "The Clang AddressSanitizer and UndefinedBehaviorSanitizer pages could not be searched (budget used up); they are recorded as ASSUMED (w09-clang-addresssanitizer, w09-clang-ubsan). From recall (not seen today) the options combine and are the usual way to build with both sanitizers. The command stays a proposal for the owner's approval on the disposable VM; the day author must confirm the options against the guest's Clang version."
+    },
+    {
+      "claim": "MITRE ATT&CK: review the October 2026 release (plan section 4).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Not searched in this file (budget used up). Other authors of the same run recorded it as CONFIRMED on 2026-11-18 in W03 and W07 (w07-attack-updates): ATT&CK v20.0 started 2026-10-13, the changelog lists a v20.1 content release dated 2026-11-05, and v19 (2026-04-28) split Defense Evasion into Stealth and Defense Impairment; the two sources did not agree on every date. Quoted here, not seen by this author. The learner records the version number read on the live site."
+    },
+    {
+      "claim": "Sysmon network connection Event ID 3 is disabled by default in standard configurations (plan sections 4 and 16 item 4); relevant to the D43 host and network visibility mapping.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Not searched in this file (budget used up). The W03 and W07 authors recorded it as CONFIRMED on 2026-11-18 from the Microsoft Learn page 'Sysmon events' (Event ID 3 is disabled by default because of volume and should be enabled selectively; w07-ms-sysmon-events). Quoted here, not seen by this author."
+    },
+    {
+      "claim": "pwn.college offers assembly, binary exploitation and reverse-engineering exercises (plan section 4).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "No pwn.college search ran in this file (budget used up). The platform and its free-with-account model are evidenced by the W01 and W02 authors (home page text 'open, for free, to participation'); the module path pwn.college/intro-to-cybersecurity/ is evidenced by the W02 and W04 authors, and the W04 author recorded the tier of its module as UNKNOWN (checker correction: the author's wording credited W04 with the free-with-account model). No result seen by any author lists a reverse-engineering, assembly or memory-errors module, so the two module entries of this file are UNVERIFIED."
+    }
+  ],
+  "gaps": [
+    "SEARCH PASS NOT DONE: the shared WebSearch budget was used up before weeks 9 and 10 were authored; no entry of this file is SEARCH_CHECKED. Entries are ASSUMED (well-known address) or UNVERIFIED (name and address recalled) or carried from another week's SEARCH_CHECKED record. A later pass must re-run, at least, the queries named in each entry's evidence field before any UNVERIFIED entry is assigned.",
+    "No tier or price was seen for any entry of this file; every access value is UNKNOWN except entries carried with another author's evidence (w09-otw-leviathan FREE, w09-ms-process-monitor FREE, w09-ms-sysmon-events FREE, w09-attack-updates FREE, w09-malware-traffic-analysis FREE) and the pwn.college dojo (FREE_ACCOUNT, platform-level statement).",
+    "pwn.college: the module addresses for reverse engineering and memory errors are recalled, not seen; an assembly module (recalled as part of a Computing 101 style dojo) and a Program Security dojo were not registered because their addresses are not trusted; level lists and the current dojo structure are unknown.",
+    "Hack The Box: no malware-analysis module, no reversing or fuzzing module and no Sherlock or retired Challenge about malware or binaries was found (the four HTB Academy queries were refused). Only two recalled Academy modules (Intro to Assembly Language, Stack-Based Buffer Overflows on Linux x86) and the carried YARA & Sigma module are registered. No HTB machine is named this week; if one is added later it must be retired or an official beginner track (rule recorded in w08-htb-platform-rules).",
+    "TryHackMe: no dynamic-analysis room, no Ghidra room and no x86-64 assembly room is registered; only Yara (ASSUMED), Dissecting PE Headers and MAL: Malware Introductory (both UNVERIFIED, addresses recalled) are listed. Free versus Premium is unknown for each.",
+    "CyberDefenders and LetsDefend: no malware, reverse-engineering, YARA or memory-safety lab or lesson was searched or recalled with a trustworthy address, so neither provider has an entry. LetsDefend is now part of Hack The Box (W03 and W07 evidence), so its malware lessons may have moved to HTB Academy.",
+    "Official documentation not registered because it was not searched: YARA-X pages (rules, command line, differences from YARA), the AFL++ docs other than fuzzing_in_depth, the Ghidra beginner course and cheat sheet, the GDB manual sections by name, Sysinternals Strings and Sigcheck, the REMnux tool catalogue page, CWE pages for out-of-bounds write and read and use-after-free, Windows mitigation documentation (DEP, ASLR, CFG), and any NX, PIE and RELRO reference other than the compiler and linker manuals.",
+    "Version facts not confirmed: YARA-X status and version, Ghidra release and JDK requirement, AFL++ release, REMnux release, the Clang and GCC versions that the lab guest installs, and the ATT&CK release (quoted from W07, not seen here).",
+    "No benign-sample source was verified. The plan's benign educational binaries and the instructor YARA corpus (positive and negative files) are authored in the G9 repository (LABS/fixtures with a MANIFEST); no public malware repository is recommended or registered, and none should be.",
+    "Hosted coverage by day (block C = independent, block B = guided or tool practice): D41 C w09-otw-leviathan (carried; trains small-program triage, not PE/ELF malware triage), D41 B w09-thm-dissecting-pe-headers (UNVERIFIED); D42 C w09-pwncollege-reverse-engineering (UNVERIFIED), D42 B w09-htb-intro-assembly-language (UNVERIFIED); D43 C w09-malware-traffic-analysis (carried), D43 B none hosted (local Windows guest with Process Monitor); D44 C w09-otw-narnia (ASSUMED) and w09-pwncollege-memory-errors (UNVERIFIED), D44 B none hosted (local build with sanitizers and AFL++); D45 B w09-thm-yara (ASSUMED) and w09-htb-yara-sigma (carried), D45 C w09-pwncollege-reverse-engineering (UNVERIFIED) and w09-otw-leviathan. Days with no verified hosted exercise rely on the plan's local lab: the day guide's 'Lab authorization' line should say so for D43 block B and D44 block B.",
+    "Hosted exercises do not replace the plan's week-9 gate (one comprehensible CFG or function reconstruction, a reproducible defect analysis or disciplined negative result, a regression test, and detection or remediation evidence); they are alternatives for when the local disposable VM is blocked.",
+    "Provider-stated durations and difficulty were not seen for any entry; every estimate_minutes is a registry planning figure sized to the block.",
+    "CHECKER PASS 2026-11-18 could not re-search either (search budget exhausted, every call refused): nothing was promoted to SEARCH_CHECKED, no entry was removed and no address was changed. The first gap above still stands: run, restricted to each provider's own domain, the queries named in the evidence fields (UNVERIFIED entries first) and confirm the exact URL path, the title and every non-UNKNOWN tier before any UNVERIFIED entry is assigned as a sole exercise. Hosted fallbacks of the UNVERIFIED hosted entries point at one another or at ASSUMED entries, so none of them yet has a verified hosted alternative; the local disposable lab of the plan is the only verified-by-design route for those blocks."
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "week": 3,
   "checked_on": "2026-11-18",
-  "method": "web search results only; pages were not opened from the authoring session",
+  "method": "web search results only; pages were not opened from the authoring session; second-pass review of 2026-11-18 by a separate checker: the independent re-search of SEARCH_CHECKED entries, tier claims and plan_fact_checks did NOT run (the shared WebSearch budget of the turn was exhausted before the first query), so every SEARCH_CHECKED label is the author's own and was not re-confirmed; the second pass only audited the recorded evidence, ids, days and fallback chains offline",
   "entries": [
     {
       "id": "w03-htb-windows-fundamentals",
@@ -138,8 +138,8 @@
       "block": "C",
       "estimate_minutes": 90,
       "difficulty": null,
-      "fallback": "w03-thm-ad-basic-enumeration",
-      "notes": "Official beginner track. For week 3 use Dancing (Windows, SMB; D13) and Archetype (Windows; D15); the machine names come from the HTB blog, their pages were not seen in a search result. Starting Point machines count as Retired Content for write-ups. Spoiler policy: the HTB Acceptable Use Policy (effective 2026-04-01) and help article 5188925 allow published solutions only for Retired Content (retired Machines, Sherlocks and Challenges, Starting Point machines, Tier 0 Academy modules and the named Mini Pro Labs). Solutions, flags, hints or spoilers of ACTIVE content must not be published. Confirm the 'retired' status on the platform before a write-up enters the portfolio. The estimate is a registry planning figure sized to the block, not a provider figure."
+      "fallback": "w03-thm-active-directory-basics",
+      "notes": "Official beginner track. For week 3 use Dancing (Windows, SMB; D13) and Archetype (Windows; D15); the machine names come from the HTB blog, their pages were not seen in a search result. Starting Point machines count as Retired Content for write-ups. Spoiler policy: the HTB Acceptable Use Policy (effective 2026-04-01) and help article 5188925 allow published solutions only for Retired Content (retired Machines, Sherlocks and Challenges, Starting Point machines, Tier 0 Academy modules and the named Mini Pro Labs). Solutions, flags, hints or spoilers of ACTIVE content must not be published. Confirm the 'retired' status on the platform before a write-up enters the portfolio. The estimate is a registry planning figure sized to the block, not a provider figure. Second pass: the fallback was changed from w03-thm-ad-basic-enumeration to w03-thm-active-directory-basics, because the two entries named each other and the chain never reached an entry the learner can open without a paid tier (w03-htb-machine-active led into the same loop); the chain now ends at w03-ms-adds-install."
     },
     {
       "id": "w03-htb-machine-active",
@@ -336,8 +336,8 @@
       "provider": "TryHackMe",
       "title": "Active Directory Basics",
       "kind": "ROOM",
-      "access": "FREE_ACCOUNT",
-      "access_note": "TryHackMe's 2026 guide (free-red-teaming-training-on-tryhackme-to-build-your-skills-in-2026) lists Active Directory Basics in its AD section and states that every room listed is free with a TryHackMe account. The guide's link target was not shown: two slugs exist (winadbasics, nine tasks; winadbasicsrevamp, twelve tasks), so confirm on the room page which one the free listing points to. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
+      "access": "UNKNOWN",
+      "access_note": "Second-pass check 2026-11-18: an independent re-search was not possible because the shared WebSearch budget of the turn was exhausted, so no tier in this file was re-confirmed; the access tier was changed from FREE_ACCOUNT to UNKNOWN because the free listing it rests on names a room called Active Directory Basics but its link target was not seen, and two slugs exist (winadbasics and winadbasicsrevamp), so the free claim cannot be tied to this URL. Check the provider's own page before assigning. Recorded basis, unchanged: TryHackMe's 2026 guide (free-red-teaming-training-on-tryhackme-to-build-your-skills-in-2026) lists Active Directory Basics in its AD section and states that every room listed is free with a TryHackMe account. The guide's link target was not shown: two slugs exist (winadbasics, nine tasks; winadbasicsrevamp, twelve tasks), so confirm on the room page which one the free listing points to. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
       "verification": "SEARCH_CHECKED",
       "evidence": "Query: TryHackMe room \"Active Directory Basics\" winadbasics (tryhackme.com). This URL was returned; result text: introduces the basic concepts and functionality of Active Directory in nine tasks (Windows domains, managing users and computers, Group Policies, authentication methods, trees, forests and trusts). The same search returned tryhackme.com/room/winadbasicsrevamp (twelve tasks; adds creating a new domain, domain-joining a computer and a foreign forest trust). The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
       "version": "as listed 2026-11-18; a revamped version exists under a second slug",
@@ -1009,7 +1009,7 @@
     "D15 independent block: no free, unguided Active Directory misconfiguration challenge was verified. The HTB retired machine Active needs VIP+ or HTB PRO; the TryHackMe module 'Active Directory Security Testing Basics' is said to end with two live challenges, but their names, URLs and tier were not seen.",
     "D15 blocks A and B are an examination and a review by the plan, so the only platform exercise assigned to them is a revisit of Active Directory Basics.",
     "HTB Academy tier not confirmed for Introduction to Active Directory, Introduction to Windows Command Line and Windows Event Logs & Finding Evil.",
-    "TryHackMe tier not confirmed for Windows PowerShell, Core Windows Processes, Intro to AD Authentication, AD: Basic Enumeration, Windows Event Logs and Windows Logging for SOC.",
+    "TryHackMe tier not confirmed for Active Directory Basics (the free listing's link target was not seen), Windows PowerShell, Core Windows Processes, Intro to AD Authentication, AD: Basic Enumeration, Windows Event Logs and Windows Logging for SOC.",
     "HTB Sherlocks Campfire-1 (Kerberos service ticket events) and Noxious (LLMNR poisoning, NTLM): retired status, canonical URL and tier not confirmed; Campfire-1 is recorded as UNVERIFIED, Noxious is not recorded.",
     "No official Microsoft Learn page that states how share permissions and NTFS permissions combine was found; the results were Microsoft Q&A threads and an Azure NetApp Files page.",
     "No official Microsoft page on LDAP in AD DS was searched for; the only LDAP resources seen are the HTB Academy module 'Active Directory LDAP' (tier unknown) and the port table of the TryHackMe room AD: Basic Enumeration.",

@@ -1,0 +1,1017 @@
+{
+  "week": 10,
+  "checked_on": "2026-11-18",
+  "method": "web search results only; pages were not opened from the authoring session. LIMITATION OF THIS FILE: the shared WebSearch budget of the run (200 calls per turn) was already used up when weeks 9 and 10 were authored. Every WebSearch call of this author returned 'web search budget used up' (5 queries tried: HTB Academy Intro to Assembly Language, HTB Academy Introduction to Malware Analysis, HTB Academy Stack-Based Buffer Overflows on Linux x86, HTB Academy fuzzing / binary exploitation / reverse engineering, YARA-X documentation) and one WebFetch (virustotal.github.io) failed because the host is outside the session's allowed network domains. No search result was seen for this file, so no entry is SEARCH_CHECKED. Every entry is ASSUMED (well-known stable address, reason given) or UNVERIFIED (name and address recalled, not seen today). Entries whose id says they are carried quote the SEARCH_CHECKED record of another week's file (made by another author on 2026-11-18); they are ASSUMED here because this author did not see the result. Re-run the search pass for this file before any entry is assigned as a sole exercise. CHECKER PASS 2026-11-18: every search call was refused (budget used up), so no entry was re-searched, none can be SEARCH_CHECKED and no page was opened. Offline checks only: JSON, keys, unique ids, fallbacks and quoted wNN ids resolve, days inside the week, carried entries compared with their source records in W03, W07 and W08 (HTB rule also W06) (tier, address and quote match). Corrections are named where made. ASSUMED and UNVERIFIED labels and carried tiers remain the author's and are NOT independently confirmed (the carried sources are single-author results).",
+  "entries": [
+    {
+      "id": "w10-htb-ad-bloodhound",
+      "url": "https://academy.hackthebox.com/course/preview/active-directory-bloodhound",
+      "provider": "HTB Academy",
+      "title": "Active Directory BloodHound (module name and address recalled, not seen)",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier of this module not seen today. Platform rule as recorded by the W07 author (w07-htb-yara-sigma, from help.hackthebox.com article 13677074 'Academy Subscriptions'): all Tier 0 modules are free, new accounts start with 200 Cubes, Tier I to IV unlock with Cubes (50, 100, 500, 1000) or with a subscription, and the Student plan unlocks up to Tier II.",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'HTB Academy Active Directory BloodHound module' restricted to academy.hackthebox.com. No result was seen, so the entry is UNVERIFIED. Recalled from training data (not seen): an HTB Academy module on collecting AD data and querying it as a graph in BloodHound. The W03 author's search returned the preview pages of 'Introduction to Active Directory' and 'Active Directory LDAP' (W03 plan fact check), which shows that an AD module family exists; it did not return this module. The address uses the course/preview/<slug> pattern that the W02, W03, W06, W07 and W08 authors confirmed for other modules; an ampersand in a module name appears as a double hyphen in the verified addresses (w07-htb-yara-sigma, w06-htb-documentation-reporting).",
+      "version": "module not seen 2026-11-18; tier, section list and BloodHound version unknown",
+      "topics": [
+        "BloodHound",
+        "graph data collection",
+        "attack path queries",
+        "effective permissions",
+        "ACL edges"
+      ],
+      "suggested_days": [
+        "D46"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w10-thm-enumerating-ad",
+      "notes": "Hosted guided alternative for D46 block B when the local BloodHound CE deployment is blocked. Select the sections on collection and on path queries; the module may use legacy BloodHound rather than CE (not seen): record which tool and version the module used, because edge names and queries differ. Scope: only the machines, rooms or lab networks that the platform itself provides for this exercise; nothing else is touched. The G9 local domain (corp.g9.test, 10.77.30.0/24) stays the primary lab of the week. HTB rule (w08-htb-platform-rules, SEARCH_CHECKED by the W08 author): solutions, flags, hints or spoilers of ACTIVE content must not be published; write-ups are allowed only for retired content, Starting Point machines and Tier 0 Academy modules. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-htb-ad-enum-attacks",
+      "url": "https://academy.hackthebox.com/course/preview/active-directory-enumeration--attacks",
+      "provider": "HTB Academy",
+      "title": "Active Directory Enumeration & Attacks (module name and address recalled, not seen)",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier of this module not seen today. Platform rule as recorded by the W07 author (w07-htb-yara-sigma, from help.hackthebox.com article 13677074 'Academy Subscriptions'): all Tier 0 modules are free, new accounts start with 200 Cubes, Tier I to IV unlock with Cubes (50, 100, 500, 1000) or with a subscription, and the Student plan unlocks up to Tier II.",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'HTB Academy Active Directory Enumeration & Attacks module' restricted to academy.hackthebox.com. No result was seen, so the entry is UNVERIFIED. Recalled from training data (not seen): a long offensive HTB Academy module on AD enumeration, roasting, ACL abuse, DCSync and related techniques inside the module's own lab. The address uses the course/preview/<slug> pattern that the W02, W03, W06, W07 and W08 authors confirmed for other modules; an ampersand in a module name appears as a double hyphen in the verified addresses (w07-htb-yara-sigma, w06-htb-documentation-reporting).",
+      "version": "module not seen 2026-11-18; tier, section list and length unknown",
+      "topics": [
+        "AD enumeration",
+        "Kerberoasting",
+        "AS-REP roasting",
+        "ACL abuse",
+        "DCSync",
+        "lateral movement"
+      ],
+      "suggested_days": [
+        "D46",
+        "D47",
+        "D49",
+        "D50"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w10-thm-attacktive-directory",
+      "notes": "Hosted independent practice for the D46, D47 and D49 challenges (and the D50 unassisted lab) when the local synthetic domain is blocked. Do not assign the whole module (the plan forbids promising a full path in 480 hours): choose the sections that match the day after reading the module's section list, and stop at the plan's scope, which is assessing exposure and verifying a fix, not persistence or lateral movement. Offensive steps run only against the module's own lab. Scope: only the machines, rooms or lab networks that the platform itself provides for this exercise; nothing else is touched. The G9 local domain (corp.g9.test, 10.77.30.0/24) stays the primary lab of the week. HTB rule (w08-htb-platform-rules, SEARCH_CHECKED by the W08 author): solutions, flags, hints or spoilers of ACTIVE content must not be published; write-ups are allowed only for retired content, Starting Point machines and Tier 0 Academy modules. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-htb-windows-attacks-defense",
+      "url": "https://academy.hackthebox.com/course/preview/windows-attacks--defense",
+      "provider": "HTB Academy",
+      "title": "Windows Attacks & Defense (module name and address recalled, not seen)",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier of this module not seen today. Platform rule as recorded by the W07 author (w07-htb-yara-sigma, from help.hackthebox.com article 13677074 'Academy Subscriptions'): all Tier 0 modules are free, new accounts start with 200 Cubes, Tier I to IV unlock with Cubes (50, 100, 500, 1000) or with a subscription, and the Student plan unlocks up to Tier II.",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'HTB Academy Windows Attacks & Defense module Kerberoasting DCSync detection' restricted to academy.hackthebox.com. No result was seen, so the entry is UNVERIFIED. Recalled from training data (not seen): an HTB Academy module that pairs Windows and AD attack techniques with the defensive measures and detections for them. The address uses the course/preview/<slug> pattern that the W02, W03, W06, W07 and W08 authors confirmed for other modules; an ampersand in a module name appears as a double hyphen in the verified addresses (w07-htb-yara-sigma, w06-htb-documentation-reporting).",
+      "version": "module not seen 2026-11-18; tier, section list and length unknown",
+      "topics": [
+        "Kerberoasting defence",
+        "AS-REP roasting defence",
+        "DCSync detection",
+        "delegation",
+        "hardening"
+      ],
+      "suggested_days": [
+        "D47",
+        "D48",
+        "D49"
+      ],
+      "block": "D",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w10-ms-best-practices-securing-ad",
+      "notes": "Hosted source for the defence half of D47, D48 and D49 (what to prefer, what to correlate, what to harden) if it matches its recalled description; otherwise use the Microsoft documents of this file. Choose the defence sections only. No absolute claims: record each detection with its assumptions and its false-positive causes (plan expansion point of week 10). Scope: only the machines, rooms or lab networks that the platform itself provides for this exercise; nothing else is touched. The G9 local domain (corp.g9.test, 10.77.30.0/24) stays the primary lab of the week. HTB rule (w08-htb-platform-rules, SEARCH_CHECKED by the W08 author): solutions, flags, hints or spoilers of ACTIVE content must not be published; write-ups are allowed only for retired content, Starting Point machines and Tier 0 Academy modules. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-htb-machine-forest",
+      "url": "https://www.hackthebox.com/machines/forest",
+      "provider": "Hack The Box",
+      "title": "Forest (machine name and address recalled, not seen)",
+      "kind": "MACHINE",
+      "access": "UNKNOWN",
+      "access_note": "Not seen on the machine page. Plan rule as recorded by the W03 and W06 authors from help.hackthebox.com article 7257535 'HTB Labs Subscriptions': the Free plan has 20 active Machines; all retired Machines, Challenges and Sherlocks need VIP+ (25 USD/month or 223 USD/year) or HTB PRO (49 USD/month or 490 USD/year). If this machine shows Retired, treat it as PAID.",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'hackthebox.com/machines/forest Forest retired machine Windows Active Directory' restricted to hackthebox.com. No result was seen, so the entry is UNVERIFIED. Recalled from training data (not seen): an Easy-rated Windows Active Directory machine released in 2020 whose path is commonly used to teach BloodHound-based permission paths. The address follows the hackthebox.com/machines/<name> pattern that the W01, W03 and W06 authors saw for Meow, Active, Nibbles, Jerry and Cap. Retired status was NOT confirmed today.",
+      "version": "retired status not confirmed 2026-11-18",
+      "topics": [
+        "AD enumeration",
+        "permission paths",
+        "BloodHound use",
+        "directory ACL review"
+      ],
+      "suggested_days": [
+        "D46",
+        "D49",
+        "D50"
+      ],
+      "block": "C",
+      "estimate_minutes": 240,
+      "difficulty": null,
+      "fallback": "w10-thm-attacktive-directory",
+      "notes": "Optional hosted independent challenge for D46 (find an excessive privilege path), D49 (assess excessive replication permission) or, only if the local lab is blocked and the learner has read no write-up, the D50 unassisted lab. Assign it only after the machine page shows RETIRED: a machine can be active and expired at once (W03 evidence). Do not read any write-up before the attempt, and never publish a solution unless the content is confirmed retired (a retired write-up stays out of the exam answer key). Offensive steps run only against the platform-provided machine. Retired machines need VIP+ or PRO per the access note, so the TryHackMe fallback is the lower-tier option. HTB rule (w08-htb-platform-rules, SEARCH_CHECKED by the W08 author): solutions, flags, hints or spoilers of ACTIVE content must not be published; write-ups are allowed only for retired content, Starting Point machines and Tier 0 Academy modules. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-htb-machine-active",
+      "url": "https://www.hackthebox.com/machines/active",
+      "provider": "Hack The Box",
+      "title": "Active (Easy)",
+      "kind": "MACHINE",
+      "access": "PAID",
+      "access_note": "As recorded by the W03 author (id w03-htb-machine-active): HTB Labs tiers as shown in search results for help article 7257535 'HTB Labs Subscriptions': the Free plan has 20 active Machines and 80+ active Challenges; all retired Machines, Challenges and Sherlocks need VIP+ (25 USD/month or 223 USD/year) or HTB PRO (49 USD/month or 490 USD/year). The help article also mentions Guided Mode for free users in the two weeks after a machine retires and on 'Free Retired Machines'; no result showed Active in such a window.",
+      "verification": "ASSUMED",
+      "evidence": "Not re-searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The same URL is recorded SEARCH_CHECKED in WEEKS/W03/RESOURCES.json (id w03-htb-machine-active) on 2026-11-18 by another author; that record is quoted here, it was not seen by this author: Query: hackthebox.com/machines/active \"Active\" retired machine Easy Windows (hackthebox.com). Result title 'Active (Easy)' at this URL; result text: Windows machine, released 28/07/2018, retired, 'features two very prevalent techniques to gain privileges within an Active Directory environment'.",
+      "version": "retired machine, released 2018-07-28, as listed 2026-11-18 (by the W03 entry)",
+      "topics": [
+        "service account exposure",
+        "Kerberos service tickets",
+        "retired HTB machine",
+        "AD privilege paths"
+      ],
+      "suggested_days": [
+        "D47",
+        "D50"
+      ],
+      "block": "C",
+      "estimate_minutes": 240,
+      "difficulty": "Easy",
+      "fallback": "w10-thm-attacktive-directory",
+      "notes": "Use in W10: optional hosted independent challenge for D47 (assess the conditions that permit ticket or credential exposure for a service account) when the local lab is blocked, and a pool candidate for the D50 unassisted lab only if the learner has read no write-up. W03 reserved the full attack chain for this week; here the deliverable is the exposure assessment, the evidence and the remediation, not a walkthrough. Scope: only the machines, rooms or lab networks that the platform itself provides for this exercise; nothing else is touched. The G9 local domain (corp.g9.test, 10.77.30.0/24) stays the primary lab of the week. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Carried from w03-htb-machine-active; its own notes: RETIRED machine: a write-up is allowed, but keep it out of the exam answer key. Optional stretch target for the D15 unknown identity-misconfiguration assessment; the full attack chain belongs to week 10, so in week 3 the deliverable is the access matrix and the remediation, not an exploitation walkthrough. Spoiler policy: the HTB Acceptable Use Policy (effective 2026-04-01) and help article 5188925 allow published solutions only for Retired Content (retired Machines, Sherlocks and Challenges, Starting Point machines, Tier 0 Academy modules and the named Mini Pro Labs). Solutions, flags, hints or spoilers of ACTIVE content must not be published. Confirm the 'retired' status on the platform before a write-up enters the portfolio. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-htb-platform-rules",
+      "url": "https://help.hackthebox.com/en/articles/12325897-hack-the-box-platform-rules",
+      "provider": "Hack The Box",
+      "title": "Hack The Box Platform Rules",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "As recorded by the W08 author (id w08-htb-platform-rules): Public HTB help-centre article; the search result shows no sign-in or payment wording.",
+      "verification": "ASSUMED",
+      "evidence": "Not re-searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The same URL is recorded SEARCH_CHECKED in WEEKS/W08/RESOURCES.json (id w08-htb-platform-rules) on 2026-11-18 by another author; that record is quoted here, it was not seen by this author: Query 'Hack The Box policy publishing walkthroughs writeups active machines Sherlocks retired only' restricted to help.hackthebox.com and hackthebox.com: result 'Hack The Box Platform Rules' at this URL, next to 'Streaming / Writeups / Walkthrough Guidelines' (help.hackthebox.com/en/articles/5188925-streaming-writeups-walkthrough-guidelines) and 'Legal & Compliance: ACCEPTABLE USE POLICY Effective: 01 April 2026' (resources.hackthebox.com/hubfs/Legal/AUP.pdf). Text: write-ups are allowed for retired Machines, retired Sherlocks, retired Challenges, Starting Point machines, Tier 0 Academy modules and a named set of Mini Pro Labs; sharing solutions for any other Pro Lab, active Machine, active Challenge or active Sherlock is prohibited; a machine can be active and expired at once, so confirm it is officially retired; enterprise content may be discussed only inside the company.",
+      "version": "as listed 2026-11-18; AUP effective 2026-04-01 (by the W08 entry)",
+      "topics": [
+        "spoiler policy",
+        "retired content",
+        "active content",
+        "write-up rules",
+        "portfolio evidence"
+      ],
+      "suggested_days": [
+        "D46",
+        "D47",
+        "D48",
+        "D49",
+        "D50"
+      ],
+      "block": "any",
+      "estimate_minutes": 20,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Use in W10: read once before the first HTB item of the week; it governs every HTB entry of this file. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Carried from w08-htb-platform-rules; its own notes: The rule behind the plan's 'no active-machine spoilers in portfolio'. HTB states it will take action against material that violates the terms. Portfolio entries for HTB work should name the exercise and state what was practised and which evidence was kept, never the solution, and only for content confirmed retired. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w10-thm-attacktive-directory",
+      "url": "https://tryhackme.com/room/attacktivedirectory",
+      "provider": "TryHackMe",
+      "title": "Attacktive Directory (room name recalled; the result title field of TryHackMe pages is generic, so the name is not read from a result)",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Free or Premium not seen for this room. Platform statements recorded by other authors (w06-thm-lateral-movement-and-pivoting): tryhackme.com/free-rooms says 650+ rooms are free; free users get up to one hour of AttackBox per day or can use their own machine through VPN (help.tryhackme.com 'The AttackBox Explained').",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'TryHackMe room Attacktive Directory' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: a long-standing, widely cited TryHackMe room on an intentionally vulnerable domain controller whose slug has been stable; not seen in a result today, and rooms are revised from time to time. Title and content not confirmed today.",
+      "version": "room not seen 2026-11-18",
+      "topics": [
+        "Kerberos enumeration",
+        "AS-REP roasting",
+        "service account exposure",
+        "directory credential extraction"
+      ],
+      "suggested_days": [
+        "D47"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w10-ms-best-practices-securing-ad",
+      "notes": "Hosted guided exercise on an intentionally vulnerable domain controller that the room provides (platform-designated target). It is guided, so it weakens the no-spoiler rule: use it as a second exercise or as the D47 substitute when the local lab is blocked, and pair it with the defensive question of what the domain controller would have logged and which setting would have prevented the exposure. Do not publish answers or flags. Scope: only the machines, rooms or lab networks that the platform itself provides for this exercise; nothing else is touched. The G9 local domain (corp.g9.test, 10.77.30.0/24) stays the primary lab of the week. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-thm-enumerating-ad",
+      "url": "https://tryhackme.com/room/adenumeration",
+      "provider": "TryHackMe",
+      "title": "Enumerating Active Directory (room name and address recalled, not seen)",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Free or Premium not seen for this room. Platform statements recorded by other authors (w06-thm-lateral-movement-and-pivoting): tryhackme.com/free-rooms says 650+ rooms are free; free users get up to one hour of AttackBox per day or can use their own machine through VPN (help.tryhackme.com 'The AttackBox Explained').",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'TryHackMe room Enumerating Active Directory BloodHound SharpHound' restricted to tryhackme.com. No result was seen, so the entry is UNVERIFIED. Recalled from training data (not seen): a room in TryHackMe's Active Directory modules on enumerating a domain with built-in tools, PowerShell and BloodHound with its SharpHound collector.",
+      "version": "room not seen 2026-11-18",
+      "topics": [
+        "AD enumeration",
+        "BloodHound",
+        "SharpHound",
+        "users groups and ACLs"
+      ],
+      "suggested_days": [
+        "D46"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w10-htb-ad-bloodhound",
+      "notes": "Hosted guided practice for D46 block B. Confirm the address, the tier and whether the room uses BloodHound CE or the legacy tool before assigning. The domain collected is the room's own, not the G9 domain. Scope: only the machines, rooms or lab networks that the platform itself provides for this exercise; nothing else is touched. The G9 local domain (corp.g9.test, 10.77.30.0/24) stays the primary lab of the week. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-thm-exploiting-ad",
+      "url": "https://tryhackme.com/room/exploitingad",
+      "provider": "TryHackMe",
+      "title": "Exploiting Active Directory (room name and address recalled, not seen)",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Free or Premium not seen for this room. Platform statements recorded by other authors (w06-thm-lateral-movement-and-pivoting): tryhackme.com/free-rooms says 650+ rooms are free; free users get up to one hour of AttackBox per day or can use their own machine through VPN (help.tryhackme.com 'The AttackBox Explained').",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'TryHackMe room Exploiting Active Directory permission delegation Kerberos delegation' restricted to tryhackme.com. No result was seen, so the entry is UNVERIFIED. Recalled from training data (not seen): a room on abusing delegated permissions, Kerberos delegation, group policy and trusts inside the room's own network.",
+      "version": "room not seen 2026-11-18",
+      "topics": [
+        "permission delegation",
+        "Kerberos delegation",
+        "ACL abuse",
+        "group policy abuse",
+        "domain trusts"
+      ],
+      "suggested_days": [
+        "D46",
+        "D49"
+      ],
+      "block": "B",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w10-htb-ad-enum-attacks",
+      "notes": "Hosted guided practice for the ACL part of D46 and the delegation part of D49. The room is offence-oriented: for each step the learner also records the telemetry and the correction (plan: do not treat collection or logging as proof of compromise). Confirm the address and the tier before assigning. Scope: only the machines, rooms or lab networks that the platform itself provides for this exercise; nothing else is touched. The G9 local domain (corp.g9.test, 10.77.30.0/24) stays the primary lab of the week. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-thm-persisting-ad",
+      "url": "https://tryhackme.com/room/persistingad",
+      "provider": "TryHackMe",
+      "title": "Persisting Active Directory (room name and address recalled, not seen)",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Free or Premium not seen for this room. Platform statements recorded by other authors (w06-thm-lateral-movement-and-pivoting): tryhackme.com/free-rooms says 650+ rooms are free; free users get up to one hour of AttackBox per day or can use their own machine through VPN (help.tryhackme.com 'The AttackBox Explained').",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'TryHackMe room Persisting Active Directory DCSync golden ticket' restricted to tryhackme.com. No result was seen, so the entry is UNVERIFIED. Recalled from training data (not seen): a room on how an attacker keeps access to a compromised domain, including replication-based credential extraction and forged tickets, inside the room's own network.",
+      "version": "room not seen 2026-11-18",
+      "topics": [
+        "identity persistence concepts",
+        "DCSync",
+        "forged tickets",
+        "replication rights"
+      ],
+      "suggested_days": [
+        "D49"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w10-ms-appendix-l-events",
+      "notes": "Optional hosted material for the D49 concepts (directory replication rights, identity persistence). The plan's boundary for this week is conceptual treatment plus assessment of a planted excessive permission: use the room to understand the mechanism, then do the D49 work on the local lab. Confirm the address and the tier before assigning. Scope: only the machines, rooms or lab networks that the platform itself provides for this exercise; nothing else is touched. The G9 local domain (corp.g9.test, 10.77.30.0/24) stays the primary lab of the week. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-thm-attacking-kerberos",
+      "url": "https://tryhackme.com/room/attackingkerberos",
+      "provider": "TryHackMe",
+      "title": "Attacking Kerberos (room name and address recalled, not seen)",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Free or Premium not seen for this room. Platform statements recorded by other authors (w06-thm-lateral-movement-and-pivoting): tryhackme.com/free-rooms says 650+ rooms are free; free users get up to one hour of AttackBox per day or can use their own machine through VPN (help.tryhackme.com 'The AttackBox Explained').",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'TryHackMe room Attacking Kerberos Kerberoasting AS-REP roasting pass the ticket' restricted to tryhackme.com. No result was seen, so the entry is UNVERIFIED. Recalled from training data (not seen): a room on Kerberos and its attack techniques (Kerberoasting, AS-REP roasting, ticket reuse, forged tickets) in the room's own VM.",
+      "version": "room not seen 2026-11-18",
+      "topics": [
+        "Kerberos",
+        "Kerberoasting",
+        "AS-REP roasting",
+        "ticket reuse",
+        "forged tickets"
+      ],
+      "suggested_days": [
+        "D47"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w10-ms-kerberos-overview",
+      "notes": "Hosted guided practice for D47 block B. The plan treats these techniques conceptually and through synthetic evidence; use the room's VM only for the guided steps and keep the offensive tooling out of the G9 guest. Confirm the address and the tier before assigning. Scope: only the machines, rooms or lab networks that the platform itself provides for this exercise; nothing else is touched. The G9 local domain (corp.g9.test, 10.77.30.0/24) stays the primary lab of the week. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-thm-credentials-harvesting",
+      "url": "https://tryhackme.com/room/credharvesting",
+      "provider": "TryHackMe",
+      "title": "Credentials Harvesting (room name and address recalled, not seen)",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Free or Premium not seen for this room. Platform statements recorded by other authors (w06-thm-lateral-movement-and-pivoting): tryhackme.com/free-rooms says 650+ rooms are free; free users get up to one hour of AttackBox per day or can use their own machine through VPN (help.tryhackme.com 'The AttackBox Explained').",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'TryHackMe room Credentials Harvesting credential access Windows' restricted to tryhackme.com. No result was seen, so the entry is UNVERIFIED. Recalled from training data (not seen): a room on where Windows and AD credentials live and how an attacker with access reads them, inside the room's own VM.",
+      "version": "room not seen 2026-11-18",
+      "topics": [
+        "credential storage",
+        "credential reuse",
+        "hash and ticket exposure",
+        "LSASS",
+        "directory database"
+      ],
+      "suggested_days": [
+        "D48"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w10-ms-credential-guard",
+      "notes": "Optional hosted reading for the D48 concepts (credential reuse, token abuse, hash and ticket risks). Concepts only: the plan's D48 lab uses test identities on the local Windows guest, and no credential material from a real system is handled. Confirm the address and the tier before assigning. Scope: only the machines, rooms or lab networks that the platform itself provides for this exercise; nothing else is touched. The G9 local domain (corp.g9.test, 10.77.30.0/24) stays the primary lab of the week. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-cd-kerberoasted",
+      "url": "https://cyberdefenders.org/blueteam-ctf-challenges/kerberoasted/",
+      "provider": "CyberDefenders",
+      "title": "Kerberoasted",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "As recorded by the W03 author (id w03-cd-kerberoasted): The tier of this lab was not shown. CyberDefenders help centre (search results): Free Labs are open to all users, selected Pro Labs are 'Trial' labs with a one-time total of 5 hours per account (article about two years old), other labs need a paid plan; the lab list marks some labs PREMIUM.",
+      "verification": "ASSUMED",
+      "evidence": "Not re-searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The same URL is recorded SEARCH_CHECKED in WEEKS/W03/RESOURCES.json (id w03-cd-kerberoasted) on 2026-11-18 by another author; that record is quoted here, it was not seen by this author: Query: cyberdefenders.org blueteam-ctf-challenges kerberoasted lab Threat Hunting Medium (cyberdefenders.org). This URL was returned with the page title 'Blue team CTF Challenges'; result text and the Threat Hunting track page name the lab 'Kerberoasted': Medium, 60 minutes, 9 questions, Splunk and ELK, investigate Kerberos logs and identify compromised accounts.",
+      "version": "as listed 2026-11-18 (by the W03 entry)",
+      "topics": [
+        "Kerberos logs",
+        "SIEM investigation",
+        "service ticket requests",
+        "multi-event correlation"
+      ],
+      "suggested_days": [
+        "D47"
+      ],
+      "block": "D",
+      "estimate_minutes": 60,
+      "difficulty": "Medium",
+      "fallback": "w10-ms-event-4769",
+      "notes": "Use in W10: defence and correlation exercise for D47 (investigate Kerberos logs in a SIEM, identify the affected accounts, state which events together support the conclusion and which single event does not). It needs the SIEM query skills of week 7. Do not open CyberDefenders' official walkthrough before the attempt. Provider-stated duration is 60 minutes; the estimate adds nothing to it. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Carried from w03-cd-kerberoasted; its own notes: Provider-stated duration 60 minutes. Stretch option: it assumes SIEM query skills that the plan teaches in week 7. CyberDefenders publishes official walkthroughs for some labs under cyberdefenders.org/walkthroughs/: do not open one during the independent block."
+    },
+    {
+      "id": "w10-bloodhound-docs",
+      "url": "https://bloodhound.specterops.io/",
+      "provider": "SpecterOps",
+      "title": "BloodHound documentation (BloodHound Community Edition; page title not seen)",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'BloodHound Community Edition documentation bloodhound.specterops.io' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: address listed in plan section 4 (BloodHound CE, 'Authorized AD graph reasoning; avoid blind attack-path conclusions'); it is the documentation site of the project's maintainer. Title and content not confirmed today.",
+      "version": "current BloodHound CE release not confirmed 2026-11-18",
+      "topics": [
+        "BloodHound CE",
+        "data collection",
+        "edge reference",
+        "Cypher queries",
+        "attack path analysis"
+      ],
+      "suggested_days": [
+        "D46"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Primary documentation for D46. Use the pages on getting started, data collection and the edge reference (names recalled, addresses not seen): for each edge the learner records what the edge means, which directory permission or relationship it comes from, and how to remove it. Plan caution: a path in the graph is a hypothesis about reachability, not a proven compromise and not a ranking of risk; it must be checked against effective permissions on the directory itself. Record the BloodHound CE version used. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-bloodhound-github",
+      "url": "https://github.com/SpecterOps/BloodHound",
+      "provider": "SpecterOps",
+      "title": "SpecterOps/BloodHound (BloodHound Community Edition source and releases; repository page not seen)",
+      "kind": "TOOL",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. Open source (recalled, ASSUMED).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'SpecterOps BloodHound Community Edition github repository releases' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: BloodHound CE is developed in this repository (recalled); the plan's registry gives the documentation site, not the repository; the address was not returned by a search today. Title and content not confirmed today.",
+      "version": "current release not confirmed 2026-11-18",
+      "topics": [
+        "BloodHound CE deployment",
+        "releases",
+        "containers",
+        "graph database",
+        "data ingest"
+      ],
+      "suggested_days": [
+        "D46"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w10-htb-ad-bloodhound",
+      "notes": "Source of the BloodHound CE release used in D46 block B. Recalled (ASSUMED, verify in the project's quickstart): CE is run as containers, so the lab guest needs a container runtime and the owner's approval of the install commands. Import only data collected from the synthetic corp.g9.test domain: collected data describes the whole directory and is sensitive even in a lab. Record the release tag and, if possible, the image digests. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-sharphound-github",
+      "url": "https://github.com/SpecterOps/SharpHound",
+      "provider": "SpecterOps",
+      "title": "SpecterOps/SharpHound (BloodHound data collector; repository page not seen)",
+      "kind": "TOOL",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. Open source (recalled, ASSUMED).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'SpecterOps SharpHound collector github' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: SharpHound is the Windows collector for BloodHound CE and is maintained by SpecterOps (recalled); the address was not returned by a search today. Title and content not confirmed today.",
+      "version": "current release not confirmed 2026-11-18; must match the BloodHound CE release",
+      "topics": [
+        "SharpHound",
+        "collection methods",
+        "LDAP and SMB enumeration",
+        "session and group data",
+        "collection footprint"
+      ],
+      "suggested_days": [
+        "D46"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w10-ms-activedirectory-module",
+      "notes": "Collector for D46 block B. Run only against the synthetic corp.g9.test domain, from the lab guest, after the owner approves the exact command. Its collection creates directory and host-enumeration traffic that is itself something a defender can see (INFERRED): note that in the D46 block D record next to the graph. A collector release has to match the BloodHound CE release (recalled, verify on the project page). Keep the collection archive inside the lab and delete it at rollback. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-ms-best-practices-securing-ad",
+      "url": "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices/best-practices-for-securing-active-directory",
+      "provider": "Microsoft Learn",
+      "title": "Best Practices for Securing Active Directory",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. Other pages under the same security-best-practices folder were SEARCH_CHECKED as public by the W03 and W07 authors (w03-ms-advanced-audit-policy).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'Microsoft Learn Best Practices for Securing Active Directory' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the page is the central Microsoft hardening guide for AD DS and sits in the same plan/security-best-practices folder as the Advanced Audit Policy page that the W03 author saw; the plan's registry lists the AD DS security area; this page was not returned by a search today. Title and content not confirmed today.",
+      "version": "page revision date not seen 2026-11-18",
+      "topics": [
+        "AD hardening",
+        "privileged accounts",
+        "tiering",
+        "domain controller security",
+        "audit and monitoring"
+      ],
+      "suggested_days": [
+        "D46",
+        "D47",
+        "D48",
+        "D50"
+      ],
+      "block": "D",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Backbone of the defensive AD audit checklist that the plan asks week 10 to add (checklist, service-account policy, replication-access assessment, event-correlation example). Cite the section for each checklist item. Microsoft's guidance is generic: a control on the checklist is a recommendation to evaluate in the G9 lab, not proof that the lab is safe. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-ms-appendix-l-events",
+      "url": "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/appendix-l--events-to-monitor",
+      "provider": "Microsoft Learn",
+      "title": "Appendix L - Events to Monitor",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "As recorded by the W07 author (id w07-ms-appendix-l-events): Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "ASSUMED",
+      "evidence": "Not re-searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The same URL is recorded SEARCH_CHECKED in WEEKS/W07/RESOURCES.json (id w07-ms-appendix-l-events) on 2026-11-18 by another author; that record is quoted here, it was not seen by this author: Queries '4624(S) An account was successfully logged on security event', '4698(S) A scheduled task was created; 4720 A user account was created' and '1102(S) The audit log was cleared event; 4719 system audit policy was changed' restricted to learn.microsoft.com: result 'Appendix L - Events to Monitor' at this URL each time. Result text: 4698 and 4720 rated Low potential criticality, 4719 High, 1102 medium to high.",
+      "version": "as listed 2026-11-18 (by the W07 entry)",
+      "topics": [
+        "events to monitor",
+        "4698 scheduled task",
+        "4720 account creation",
+        "1102 log cleared",
+        "4719 audit policy changed",
+        "prioritization"
+      ],
+      "suggested_days": [
+        "D47",
+        "D49",
+        "D50"
+      ],
+      "block": "D",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w10-ms-event-4769",
+      "notes": "Use in W10: pick the events that matter for each day (Kerberos ticket events on D47, directory service access and changes on D49) and write which audit subcategory produces them; an event that is not audited is a finding of block D, not a tool failure. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Carried from w07-ms-appendix-l-events; its own notes: One page for the whole synthetic ID set of the plan (4624, 4625, 4688, 4720, 4698) plus the log-cleared and audit-policy-changed events. Single-event references returned by search: 4698 (previous-versions/.../auditing/event-4698, 'A scheduled task was created', Audit Other Object Access Events), 4720 (previous-versions/.../auditing/event-4720, Audit User Account Management), 1102 and 4719 (same folder and learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4719). They are not registered separately; an author adds an entry if needed. The criticality ratings are Microsoft's, not a G9 priority policy. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w10-ms-event-4769",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4769",
+      "provider": "Microsoft Learn",
+      "title": "4769(S, F) A Kerberos service ticket was requested. - Windows 10",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "As recorded by the W07 author (id w07-ms-event-4769): Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "ASSUMED",
+      "evidence": "Not re-searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The same URL is recorded SEARCH_CHECKED in WEEKS/W07/RESOURCES.json (id w07-ms-event-4769) on 2026-11-18 by another author; that record is quoted here, it was not seen by this author: Query '4769(S, F) A Kerberos service ticket was requested ticket encryption type 0x17' restricted to learn.microsoft.com: first result '4769(S, F) A Kerberos service ticket was requested. - Windows 10' at this URL; the same result list holds 'Detect and Remediate RC4 Usage in Kerberos' (learn.microsoft.com/en-us/windows-server/security/kerberos/detect-remediate-rc4-kerberos). Text: Ticket Encryption Type 0x17 is RC4-HMAC; filtering 4769 for 0x17 reveals which accounts request RC4 tickets, whose usual cause is an account without AES keys or non-Windows clients.",
+      "version": "as listed 2026-11-18 (by the W07 entry)",
+      "topics": [
+        "event 4769",
+        "kerberos",
+        "rc4 0x17",
+        "false positives",
+        "kerberoasting caveat"
+      ],
+      "suggested_days": [
+        "D47"
+      ],
+      "block": "D",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w10-ms-rc4-detect-remediate",
+      "notes": "Use in W10: D47 correlation. Event 4769 alone, or ticket encryption type 0x17 alone, does not prove Kerberoasting (plan expansion point of week 10): list the benign causes and the second and third events that would turn the observation into a case. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Carried from w07-ms-event-4769; its own notes: Supports the plan's warning that 4769 or RC4 0x17 alone is not proof of Kerberoasting. Neither Microsoft page in the results discusses Kerberoasting itself, so the conclusion is INFERRED from the documented benign causes. Hack The Box also publishes a 'Kerberoasting attack detection' article (hackthebox.com/blog/kerberoasting-attack-detection), returned by search and not read. Use synthetic or fixture events only; Kerberoasting offence is week 10 content. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w10-ms-event-4662",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4662",
+      "provider": "Microsoft Learn",
+      "title": "4662(S, F) An operation was performed on an object. - Windows 10 (title pattern recalled from the 4769 page of W07; this page was not seen)",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. The sibling page for event 4769 was SEARCH_CHECKED as public by the W07 author (w07-ms-event-4769).",
+      "verification": "UNVERIFIED",
+      "evidence": "Planned query not run (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written): 'learn.microsoft.com 4662(S, F) An operation was performed on an object directory service access' restricted to learn.microsoft.com. No result was seen, so the entry is UNVERIFIED. The W07 author saw event 4769 under learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4769 and the W03 author saw event 4624 under learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4624; which of the two folders holds 4662 today was not seen, so the address above is a guess by pattern and the other folder may be the right one.",
+      "version": "page not seen 2026-11-18; folder uncertain",
+      "topics": [
+        "event 4662",
+        "directory service access auditing",
+        "SACL",
+        "control access rights",
+        "replication request events"
+      ],
+      "suggested_days": [
+        "D49"
+      ],
+      "block": "D",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w10-ms-appendix-l-events",
+      "notes": "Reference for the D49 auditing question: whether the lab produces an event when a replication-style request is made against the domain object, and under which audit setting and system access control entry. Recalled (verify on the page): the event needs the Audit Directory Service Access subcategory and a matching SACL on the object. The control-access-right GUIDs for replication must be copied by the day author from Microsoft's schema reference, not from memory. A logged event is an observation, not proof of compromise. If the address does not resolve, search learn.microsoft.com for the event number and register the page that is returned. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-ms-protected-users",
+      "url": "https://learn.microsoft.com/en-us/windows-server/security/credentials-protection-and-management/protected-users-security-group",
+      "provider": "Microsoft Learn",
+      "title": "Protected Users Security Group",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. Other Microsoft Learn pages were SEARCH_CHECKED as public by the W03 and W07 authors.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'Microsoft Learn Protected Users Security Group credentials protection and management' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the page is the Microsoft reference for the group, named in the week's topic list; the address is recalled with high confidence but was not returned by a search today. Title and content not confirmed today.",
+      "version": "page revision date not seen 2026-11-18",
+      "topics": [
+        "Protected Users",
+        "NTLM and weak Kerberos encryption restrictions",
+        "delegation restrictions",
+        "ticket lifetime",
+        "domain functional level"
+      ],
+      "suggested_days": [
+        "D48"
+      ],
+      "block": "B",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w10-ms-credential-guard",
+      "notes": "D48 guided credential-protection lab: add a TEST identity (never a real or service account) to the group in the synthetic domain, observe what Windows refuses for it, and remove it again as rollback. Read the list of restrictions and the prerequisites from the page, not from memory. Recalled (verify on the page): the page warns against making service and computer accounts members. Plan expansion point: no host or account protection universally prevents a technique; record what the negative test showed and what it did not cover. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-ms-credential-guard",
+      "url": "https://learn.microsoft.com/en-us/windows/security/identity-protection/credential-guard/",
+      "provider": "Microsoft Learn",
+      "title": "Credential Guard overview (page title recalled, not seen)",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. Other Microsoft Learn pages were SEARCH_CHECKED as public by the W03 and W07 authors.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'Microsoft Learn Credential Guard overview identity protection requirements default enablement' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the plan names Credential Guard in D48 block D ('validate relevant Credential Guard / host hardening prerequisites'); the Microsoft Learn overview is the vendor reference; not returned by a search today. Title and content not confirmed today.",
+      "version": "Windows release in the lab guest not recorded; page not seen",
+      "topics": [
+        "Credential Guard",
+        "virtualization-based security",
+        "requirements",
+        "default enablement",
+        "limits of protection"
+      ],
+      "suggested_days": [
+        "D48"
+      ],
+      "block": "D",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w10-ms-protected-users",
+      "notes": "Version-sensitive page: licensing, hardware and operating-system requirements and the default state differ by Windows release (recalled, NOT confirmed today: recent Windows 11 and Windows Server 2025 builds enable it by default when the requirements are met; read the 'requirements' and 'default enablement' sections and record the build tested). It depends on virtualization-based security; whether the KVM Windows guest can run it depends on nested virtualization and guest configuration (INFERRED), so a lab that cannot run it must record that as a lab limit, not as a pass. Record also what the page says the feature does not protect: those are residual risks. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-ms-gmsa-overview",
+      "url": "https://learn.microsoft.com/en-us/windows-server/security/group-managed-service-accounts/group-managed-service-accounts-overview",
+      "provider": "Microsoft Learn",
+      "title": "Group Managed Service Accounts Overview",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. Other Microsoft Learn pages were SEARCH_CHECKED as public by the W03 and W07 authors.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'Microsoft Learn Group Managed Service Accounts overview' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the page is the Microsoft reference for gMSA, named in the week's topic list (strong managed service accounts, D47 block D); not returned by a search today. Title and content not confirmed today.",
+      "version": "page revision date not seen 2026-11-18",
+      "topics": [
+        "gMSA",
+        "managed passwords",
+        "service account hygiene",
+        "requirements",
+        "Kerberoasting exposure"
+      ],
+      "suggested_days": [
+        "D47"
+      ],
+      "block": "D",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w10-ms-best-practices-securing-ad",
+      "notes": "D47 block D control: prefer managed service accounts over accounts with human-chosen passwords. Read the prerequisites from the page (recalled: a domain key for managed passwords must exist and the services must support gMSA); a service that cannot use a gMSA stays on the service-account policy with a long random password and an owner. A gMSA lowers the chance that an offline guess succeeds; it does not stop ticket requests, so the detection still matters (INFERRED). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-ms-constrained-delegation",
+      "url": "https://learn.microsoft.com/en-us/windows-server/security/kerberos/kerberos-constrained-delegation-overview",
+      "provider": "Microsoft Learn",
+      "title": "Kerberos Constrained Delegation Overview",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. The sibling Kerberos overview page was SEARCH_CHECKED as public by the W03 author (w03-ms-kerberos-overview).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'Microsoft Learn Kerberos Constrained Delegation Overview' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the page sits next to the Kerberos authentication overview that the W03 author saw (same .../security/kerberos/ folder) and is the Microsoft reference for delegation; not returned by a search today. Title and content not confirmed today.",
+      "version": "page revision date not seen 2026-11-18",
+      "topics": [
+        "delegation",
+        "constrained delegation",
+        "protocol transition",
+        "resource-based constrained delegation",
+        "service accounts"
+      ],
+      "suggested_days": [
+        "D49"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w10-ms-kerberos-overview",
+      "notes": "Canonical text for the D49 delegation lesson (constrained versus unconstrained delegation, what a delegation setting allows a service to do on a user's behalf). The unconstrained case and the Protected Users interaction are explained on other pages that were not searched; do not assert them from memory. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-ms-rc4-detect-remediate",
+      "url": "https://learn.microsoft.com/en-us/windows-server/security/kerberos/detect-remediate-rc4-kerberos",
+      "provider": "Microsoft Learn",
+      "title": "Detect and Remediate RC4 Usage in Kerberos",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE.",
+      "verification": "ASSUMED",
+      "evidence": "Not searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The address and title were returned as a related result by two searches of other authors on 2026-11-18, which this author did not see: the W03 author (w03-ms-kerberos-overview) records 'Related result: Detect and Remediate RC4 Usage in Kerberos (.../security/kerberos/detect-remediate-rc4-kerberos)' and the W07 author (w07-ms-event-4769) records the same title in the result list for the 4769 query, with the text that filtering 4769 for ticket encryption type 0x17 reveals which accounts request RC4 tickets and that usual causes are accounts without AES keys and non-Windows clients. Page content itself was not seen by any author. Recorded as ASSUMED.",
+      "version": "as listed 2026-11-18 (title and address by W03 and W07 records); content not seen",
+      "topics": [
+        "RC4 in Kerberos",
+        "ticket encryption types",
+        "event 4769 filtering",
+        "AES migration",
+        "remediation"
+      ],
+      "suggested_days": [
+        "D47"
+      ],
+      "block": "D",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w10-ms-event-4769",
+      "notes": "D47 block D: how to find and remove RC4 dependence, and why RC4 alone is not a Kerberoasting verdict (plan expansion point). W03 also recorded, from the Kerberos overview result, that Windows Server 2025 Kerberos no longer honours the legacy SupportedEncryptionTypes registry value: read this page for the current behaviour and the current timeline for RC4 defaults and record the Windows build tested; do not rely on older course text. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-ms-kerberos-overview",
+      "url": "https://learn.microsoft.com/en-us/windows-server/security/kerberos/kerberos-authentication-overview",
+      "provider": "Microsoft Learn",
+      "title": "Kerberos authentication overview in Windows Server",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "As recorded by the W03 author (id w03-ms-kerberos-overview): Public Microsoft Learn documentation page, indexed without sign-in.",
+      "verification": "ASSUMED",
+      "evidence": "Not re-searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The same URL is recorded SEARCH_CHECKED in WEEKS/W03/RESOURCES.json (id w03-ms-kerberos-overview) on 2026-11-18 by another author; that record is quoted here, it was not seen by this author: Query: Microsoft Learn \"Kerberos authentication overview\" Windows Server security kerberos (learn.microsoft.com). Result title 'Kerberos authentication overview in Windows Server' at this URL; result text: KDC on every domain controller, ticket-granting ticket then service ticket, Kerberos V5 with Microsoft extensions; in Windows Server 2025 Kerberos no longer honours the legacy SupportedEncryptionTypes registry value. Related result: 'Detect and Remediate RC4 Usage in Kerberos' (.../security/kerberos/detect-remediate-rc4-kerberos).",
+      "version": "as listed 2026-11-18; page metadata about two months old (by the W03 entry)",
+      "topics": [
+        "KDC",
+        "TGT",
+        "service tickets",
+        "encryption types",
+        "authentication versus authorization"
+      ],
+      "suggested_days": [
+        "D47",
+        "D49"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Use in W10: D47 block A (pre-authentication, TGT, service ticket) and the base for the D49 delegation text. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Carried from w03-ms-kerberos-overview; its own notes: Authoritative text for the gate question 'explain Kerberos versus authorization'."
+    },
+    {
+      "id": "w10-ms-access-control-lists",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/secauthz/access-control-lists",
+      "provider": "Microsoft Learn",
+      "title": "Access Control Lists - Win32 apps",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. The sibling page 'Access Tokens - Win32 apps' in the same secauthz folder was SEARCH_CHECKED as public by the W03 author (w03-ms-access-tokens).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'Microsoft Learn Access Control Lists Win32 apps secauthz DACL SACL' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the page is the Win32 reference for ACLs and sits in the same learn.microsoft.com/en-us/windows/win32/secauthz/ folder as the access-tokens page the W03 author saw; not returned by a search today. Title and content not confirmed today.",
+      "version": "page revision date not seen 2026-11-18",
+      "topics": [
+        "DACL",
+        "SACL",
+        "ACE",
+        "inheritance",
+        "security descriptor"
+      ],
+      "suggested_days": [
+        "D46"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w10-ms-how-dacls-control-access",
+      "notes": "Base reference for the D46 lesson on ACEs and ACLs; AD objects use the same security descriptor model (recalled, verify against the AD pages). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-ms-how-dacls-control-access",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/secauthz/how-dacls-control-access-to-an-object",
+      "provider": "Microsoft Learn",
+      "title": "How DACLs Control Access to an Object - Win32 apps",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. The sibling page 'Access Tokens - Win32 apps' in the same secauthz folder was SEARCH_CHECKED as public by the W03 author (w03-ms-access-tokens).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'Microsoft Learn How DACLs Control Access to an Object Win32 apps' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the page is the Microsoft reference for how an access check walks the ACEs of a DACL and sits in the same secauthz folder as the access-tokens page the W03 author saw; not returned by a search today. Title and content not confirmed today.",
+      "version": "page revision date not seen 2026-11-18",
+      "topics": [
+        "access check",
+        "ACE order",
+        "deny before allow",
+        "effective access",
+        "group nesting"
+      ],
+      "suggested_days": [
+        "D46"
+      ],
+      "block": "D",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w10-ms-access-control-lists",
+      "notes": "Reference for the D46 block D question 'what is the effective permission after the ACL is corrected': the learner computes effective access by hand from the ACEs and group memberships and compares the result with the graph and with an actual access test using the test identity. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-ms-windows-laps",
+      "url": "https://learn.microsoft.com/en-us/windows-server/identity/laps/laps-overview",
+      "provider": "Microsoft Learn",
+      "title": "Windows LAPS overview",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. Other Microsoft Learn pages were SEARCH_CHECKED as public by the W03 and W07 authors.",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'Microsoft Learn Windows LAPS overview local administrator password' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the Windows LAPS overview is the Microsoft reference for unique, rotated local administrator passwords, the control against local credential reuse (D48); not returned by a search today. Title and content not confirmed today.",
+      "version": "Windows LAPS versus legacy Microsoft LAPS state not checked 2026-11-18",
+      "topics": [
+        "local administrator password",
+        "credential reuse",
+        "password rotation",
+        "directory storage",
+        "access to the stored password"
+      ],
+      "suggested_days": [
+        "D48"
+      ],
+      "block": "D",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w10-ms-best-practices-securing-ad",
+      "notes": "D48 block D control for credential reuse across hosts. Version-sensitive: Windows LAPS (built into current Windows) and the older Microsoft LAPS are different products (recalled); read which one the lab guest can run and who may read the stored password, because that permission is itself an ACL to audit with the D46 method. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-ms-activedirectory-module",
+      "url": "https://learn.microsoft.com/en-us/powershell/module/activedirectory/?view=windowsserver2025-ps",
+      "provider": "Microsoft Learn",
+      "title": "ActiveDirectory Module",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "As recorded by the W03 author (id w03-ms-activedirectory-module): Public Microsoft Learn documentation page, indexed without sign-in.",
+      "verification": "ASSUMED",
+      "evidence": "Not re-searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The same URL is recorded SEARCH_CHECKED in WEEKS/W03/RESOURCES.json (id w03-ms-activedirectory-module) on 2026-11-18 by another author; that record is quoted here, it was not seen by this author: Query: Microsoft Learn ActiveDirectory PowerShell module Get-ADUser Get-ADGroupMember reference windowsserver2025-ps (learn.microsoft.com). Result title 'ActiveDirectory Module' at this URL; the same search returned 'Get-ADUser (ActiveDirectory)' and 'Get-ADGroupMember (ActiveDirectory)' under .../module/activedirectory/ with view=windowsserver2025-ps; result text: Get-ADGroupMember -Recursive returns nested members.",
+      "version": "view windowsserver2025-ps, as listed 2026-11-18 (by the W03 entry)",
+      "topics": [
+        "Get-ADUser",
+        "Get-ADGroupMember",
+        "group nesting",
+        "LDAP filters"
+      ],
+      "suggested_days": [
+        "D46",
+        "D49"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Use in W10: read-only queries of users, groups, nested membership and object attributes to confirm what the graph shows (D46) and the permissions and replication-related settings of the lab domain (D49). Run on the lab guest only. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Carried from w03-ms-activedirectory-module; its own notes: Reference for the account and group audit script (D14) and the domain access matrix (D15)."
+    },
+    {
+      "id": "w10-attack-t1558-003",
+      "url": "https://attack.mitre.org/techniques/T1558/003/",
+      "provider": "MITRE",
+      "title": "Steal or Forge Kerberos Tickets: Kerberoasting (T1558.003; title composed from the technique name and id, not read from a result)",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. The ATT&CK 'Updates' page was SEARCH_CHECKED as public by the W07 author (w07-attack-updates).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'MITRE ATT&CK T1558.003 Steal or Forge Kerberos Tickets: Kerberoasting' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the technique id T1558.003 for Kerberoasting is long-standing and attack.mitre.org/techniques/<id>/ pages are stable; not returned by a search today. Title and content not confirmed today.",
+      "version": "ATT&CK v20.x as recorded by W07; the page's version not seen",
+      "topics": [
+        "Kerberoasting",
+        "service principal names",
+        "service ticket requests",
+        "offline guessing",
+        "detection ideas"
+      ],
+      "suggested_days": [
+        "D47"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w10-ms-kerberos-overview",
+      "notes": "Record the ATT&CK version read on the live page (w10-attack-updates) next to the mapping; a technique id labels an observation, it is not a verdict and the page's detection text is not a guarantee that a given event catches the technique (plan expansion point of week 10). Title composed from the technique name and id, not read from a result. D47 vocabulary and detection mapping: explain the concept and the preconditions (a service account with an SPN and a guessable secret), then map synthetic evidence; do not execute the technique on any system outside the authorised lab. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-attack-t1558-004",
+      "url": "https://attack.mitre.org/techniques/T1558/004/",
+      "provider": "MITRE",
+      "title": "Steal or Forge Kerberos Tickets: AS-REP Roasting (T1558.004; title composed from the technique name and id, not read from a result)",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. The ATT&CK 'Updates' page was SEARCH_CHECKED as public by the W07 author (w07-attack-updates).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'MITRE ATT&CK T1558.004 Steal or Forge Kerberos Tickets: AS-REP Roasting' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the technique id T1558.004 for AS-REP roasting is long-standing and attack.mitre.org/techniques/<id>/ pages are stable; not returned by a search today. Title and content not confirmed today.",
+      "version": "ATT&CK v20.x as recorded by W07; the page's version not seen",
+      "topics": [
+        "AS-REP roasting",
+        "accounts without pre-authentication",
+        "offline guessing",
+        "detection ideas"
+      ],
+      "suggested_days": [
+        "D47"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w10-ms-kerberos-overview",
+      "notes": "Record the ATT&CK version read on the live page (w10-attack-updates) next to the mapping; a technique id labels an observation, it is not a verdict and the page's detection text is not a guarantee that a given event catches the technique (plan expansion point of week 10). Title composed from the technique name and id, not read from a result. D47 vocabulary: the precondition is an account that does not require Kerberos pre-authentication; the corrective control is to require it and to audit the flag. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-attack-t1003-006",
+      "url": "https://attack.mitre.org/techniques/T1003/006/",
+      "provider": "MITRE",
+      "title": "OS Credential Dumping: DCSync (T1003.006; title composed from the technique name and id, not read from a result)",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. The ATT&CK 'Updates' page was SEARCH_CHECKED as public by the W07 author (w07-attack-updates).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'MITRE ATT&CK T1003.006 OS Credential Dumping: DCSync' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the technique id T1003.006 for DCSync is long-standing and attack.mitre.org/techniques/<id>/ pages are stable; not returned by a search today. Title and content not confirmed today.",
+      "version": "ATT&CK v20.x as recorded by W07; the page's version not seen",
+      "topics": [
+        "DCSync",
+        "directory replication rights",
+        "domain controller replication",
+        "detection ideas"
+      ],
+      "suggested_days": [
+        "D49"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w10-ms-event-4662",
+      "notes": "Record the ATT&CK version read on the live page (w10-attack-updates) next to the mapping; a technique id labels an observation, it is not a verdict and the page's detection text is not a guarantee that a given event catches the technique (plan expansion point of week 10). Title composed from the technique name and id, not read from a result. D49: the permission to request replication is the exposure to assess; the defensive observations are replication requests that do not come from a domain controller and changes to who holds the right. Assess and correct the planted permission; do not run replication against anything outside the authorised lab. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-attack-t1550",
+      "url": "https://attack.mitre.org/techniques/T1550/",
+      "provider": "MITRE",
+      "title": "Use Alternate Authentication Material (T1550; title composed from the technique name and id, not read from a result)",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "Public documentation or open-source project page expected to need no account (INFERRED from the kind of site); no search result confirmed the tier today, so it is not recorded as FREE. The ATT&CK 'Updates' page was SEARCH_CHECKED as public by the W07 author (w07-attack-updates).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the planned query 'MITRE ATT&CK T1550 Use Alternate Authentication Material' could not run because the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written. Recorded as ASSUMED: the technique id T1550 (with sub-techniques for hashes and tickets) is long-standing and attack.mitre.org/techniques/<id>/ pages are stable; not returned by a search today. Title and content not confirmed today.",
+      "version": "ATT&CK v20.x as recorded by W07; the page's version not seen",
+      "topics": [
+        "pass the hash",
+        "pass the ticket",
+        "alternate authentication material",
+        "credential reuse",
+        "detection ideas"
+      ],
+      "suggested_days": [
+        "D48"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w10-ms-credential-guard",
+      "notes": "Record the ATT&CK version read on the live page (w10-attack-updates) next to the mapping; a technique id labels an observation, it is not a verdict and the page's detection text is not a guarantee that a given event catches the technique (plan expansion point of week 10). Title composed from the technique name and id, not read from a result. D48 concepts (plan: credential reuse, token abuse, hash and ticket risks conceptually): the sub-technique pages list hash and ticket reuse; read them as concept descriptions. Forged tickets are covered on the Steal or Forge Kerberos Tickets technique page (T1558), which was not registered separately. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w10-attack-updates",
+      "url": "https://attack.mitre.org/resources/updates/",
+      "provider": "MITRE ATT&CK",
+      "title": "Updates",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "As recorded by the W07 author (id w07-attack-updates): Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "ASSUMED",
+      "evidence": "Not re-searched in this file (the shared WebSearch budget of the run (200 calls per turn) was used up before this file was written). The same URL is recorded SEARCH_CHECKED in WEEKS/W07/RESOURCES.json (id w07-attack-updates) on 2026-11-18 by another author; that record is quoted here, it was not seen by this author: Queries 'MITRE ATT&CK release v19 versions of ATT&CK 2026' and 'ATT&CK v20 October 2026 updates release notes' restricted to attack.mitre.org: result 'Updates' at this URL plus 'Changelog' (attack.mitre.org/resources/changelog.html) and 'Version History' (attack.mitre.org/resources/versions/). Text: v19.0 on 2026-04-28 split the Enterprise Defense Evasion tactic into Stealth and Defense Impairment; v19.1 on 2026-05-12; v19.2 (first Agile release) on 2026-08-06; v20.0 started 2026-10-13 (971 software, 182 groups, 61 campaigns); the changelog lists v20.1 dated 2026-11-05.",
+      "version": "v20.0 released 2026-10-13; v20.1 content release 2026-11-05 per the changelog (search result 2026-11-18). The results were not fully consistent: some cached pages still label v19.2 as current. (by the",
+      "topics": [
+        "ATT&CK versions",
+        "release notes",
+        "tactic changes"
+      ],
+      "suggested_days": [
+        "D47",
+        "D49",
+        "D50"
+      ],
+      "block": "any",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Use in W10: read the current ATT&CK version before any technique mapping and write it in the record. estimate_minutes is a registry planning figure sized to the block, not a provider figure. Carried from w07-attack-updates; its own notes: Record the ATT&CK version next to every mapping in the coverage matrix and map only techniques supported by observed evidence (plan workflow step 10). Because v19 removed Defense Evasion as a tactic, older Sigma and Wazuh rule tags and older course material may use the old tactic name; do not mark that as an error without checking the version. Individual detection strategy pages exist (for example attack.mitre.org/detectionstrategies/DET0314/) and list Windows Security and Sysmon event codes; they were returned by search and are not registered. No official ATT&CK Navigator page appeared in search; see gaps. The estimate is the author's, not a provider figure."
+    }
+  ],
+  "plan_fact_checks": [
+    {
+      "claim": "MITRE ATT&CK: review the October 2026 release (plan section 4); used for the technique mappings of D47 to D49.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Not searched in this file (budget used up). Other authors of the same run recorded it as CONFIRMED on 2026-11-18 in W03 and W07 (w07-attack-updates): ATT&CK v20.0 started 2026-10-13, the changelog lists a v20.1 content release dated 2026-11-05, and v19 (2026-04-28) split Defense Evasion into Stealth and Defense Impairment; the two sources did not agree on every date. Quoted here, not seen by this author. Technique pages T1558.003, T1558.004, T1003.006 and T1550 were not checked against v20."
+    },
+    {
+      "claim": "BloodHound CE documentation is at https://bloodhound.specterops.io/ and describes the Community Edition used for authorised AD graph reasoning (plan section 4).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "No search ran (budget used up). Address recorded as ASSUMED in w10-bloodhound-docs. The current BloodHound CE and SharpHound versions, and whether the HTB and TryHackMe modules use CE or the legacy tool, were not read."
+    },
+    {
+      "claim": "Credential Guard prerequisites and default state: plan D48 block D asks to 'validate relevant Credential Guard / host hardening prerequisites'.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "The Microsoft Learn Credential Guard pages could not be searched (budget used up); w10-ms-credential-guard is ASSUMED. From recall (NOT seen today): recent Windows 11 and Windows Server 2025 builds enable it by default when licensing and hardware requirements are met, and it depends on virtualization-based security. Neither the default state nor the requirements are confirmed; whether the lab's KVM Windows guest can run it is unknown."
+    },
+    {
+      "claim": "Plan week 10 expansion point: no single Kerberos event, RC4 encryption type or host protection universally detects or prevents a technique.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Not searched in this file (budget used up). The W07 author recorded the Kerberos part as NOT_CONFIRMED (INFERRED) on 2026-11-18; only the entry w07-ms-event-4769 is SEARCH_CHECKED (checker correction: the author's text said CONFIRMED, which W07's fact check does not say): Microsoft documents ticket encryption type 0x17 as RC4-HMAC and says filtering 4769 for it finds accounts and services that still depend on RC4, with benign causes such as accounts without AES keys and non-Windows clients; the Microsoft pages do not mention Kerberoasting, so the conclusion is INFERRED (W07 wording). The W03 author recorded that in Windows Server 2025 Kerberos no longer honours the legacy SupportedEncryptionTypes registry value (w03-ms-kerberos-overview). The host-protection half (Credential Guard, Protected Users) was not checked."
+    },
+    {
+      "claim": "Microsoft AD DS security documentation (https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/) is the Windows directory and identity authority named as a core site for week 10 (plan sections 4 and 5).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "The W03 author recorded NOT_CONFIRMED for the hub page itself on 2026-11-18: it did not appear in a search result, only child pages under .../ad-ds/ did (deploy and manage/group-policy in the W03 fact check; plan/security-best-practices/advanced-audit-policy-configuration in the W03 and W07 entries; checker correction of the folder attribution). This file registers child pages (w10-ms-best-practices-securing-ad is ASSUMED, w10-ms-appendix-l-events is carried) and not the hub."
+    },
+    {
+      "claim": "HTB AD modules suitable for week 10 exist (plan section 5, core sites 'HTB AD modules').",
+      "result": "NOT_CONFIRMED",
+      "evidence": "No HTB search ran in this file (budget used up). The W03 author's searches on academy.hackthebox.com returned the preview pages of 'Introduction to Active Directory' and 'Active Directory LDAP' (W03 plan fact check). The three modules of this file (Active Directory BloodHound, Active Directory Enumeration & Attacks, Windows Attacks & Defense) are UNVERIFIED: names and addresses are recalled and no tier was seen."
+    },
+    {
+      "claim": "Solutions of ACTIVE Hack The Box machines, challenges and Sherlocks must not be published; only retired content may be (task rule); the HTB entries of this file name only recalled retired content.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Not searched in this file (budget used up). The W03, W06 and W08 authors recorded it as CONFIRMED on 2026-11-18 (w08-htb-platform-rules): write-ups are allowed for retired Machines, retired Sherlocks, retired Challenges, Starting Point machines, Tier 0 Academy modules and a few Mini Pro Labs; active content is off limits; retired Machines and Sherlocks need VIP+ or PRO. Quoted here, not seen by this author. The retired status of Forest (w10-htb-machine-forest) was NOT confirmed today; Active (w10-htb-machine-active) is carried as retired from the W03 search result."
+    }
+  ],
+  "gaps": [
+    "SEARCH PASS NOT DONE: the shared WebSearch budget was used up before weeks 9 and 10 were authored; no entry of this file is SEARCH_CHECKED. Entries are ASSUMED (well-known address) or UNVERIFIED (name and address recalled) or carried from another week's SEARCH_CHECKED record. A later pass must re-run, at least, the queries named in each entry's evidence field before any UNVERIFIED entry is assigned.",
+    "No tier or price was seen for any entry of this file; every access value is UNKNOWN except entries carried with another author's evidence (w10-htb-machine-active PAID, w10-htb-platform-rules FREE, w10-ms-appendix-l-events FREE, w10-ms-event-4769 FREE, w10-ms-kerberos-overview FREE, w10-ms-activedirectory-module FREE, w10-attack-updates FREE, w10-cd-kerberoasted UNKNOWN).",
+    "Hack The Box: only Forest (recalled, retired status not confirmed) and Active (carried, retired per W03) are named. No Sherlock is registered: Campfire-1 was UNVERIFIED in W03 (blog address, retired status unconfirmed) and is not carried; other AD-related Sherlocks (for example about extraction of the directory database) are recalled without a trusted address and were not registered. The HTB Academy modules DACL Attacks I and II, Active Directory LDAP and Active Directory PowerView, and any Kerberos-specific module, were not registered (addresses not trusted or not searched); Starting Point has no AD machine that was verified.",
+    "TryHackMe: six room addresses are recalled or ASSUMED (Attacktive Directory, Enumerating Active Directory, Exploiting Active Directory, Persisting Active Directory, Attacking Kerberos, Credentials Harvesting); free versus Premium is unknown for each. A TryHackMe room on AD hardening or on detecting Kerberos attacks was recalled but not registered because the address is not trusted. The AD Basics rooms of week 3 (w03-thm-active-directory-basics, FREE_ACCOUNT per W03) are the prerequisite review.",
+    "CyberDefenders and LetsDefend: only the carried Kerberoasted lab (w10-cd-kerberoasted, tier unknown) is registered. No lab or lesson about DCSync detection, ACL change detection, delegation or AD hardening was searched; LetsDefend is now part of Hack The Box (W03 and W07 evidence).",
+    "Detection coverage of hosted exercises: apart from Kerberoasted and the recalled Windows Attacks & Defense module, the hosted exercises of this file are offence-oriented. No verified hosted exercise exists for D46 block D (compare effective permissions after an ACL correction), D48 blocks B and C (credential-protection lab with Credential Guard and Protected Users, which needs virtualization-based security on the local Windows guest, and the controlled authentication-misconfiguration challenge) or D49 block D (remove the replication right and test intended account capability); D50 has only the optional retired-machine pool (Forest, Active) for the unassisted lab. These rely on the plan's local synthetic domain, and the day guides' 'Lab authorization' line should say so. Hosted coverage by day for block C: D46 w10-htb-ad-enum-attacks and w10-htb-machine-forest (UNVERIFIED), D47 w10-htb-machine-active (carried) and w10-thm-attacktive-directory (ASSUMED), D49 w10-htb-ad-enum-attacks and w10-htb-machine-forest (UNVERIFIED); for block A or B: D46 w10-htb-ad-bloodhound, w10-thm-enumerating-ad, w10-thm-exploiting-ad (all UNVERIFIED), D47 w10-thm-attacking-kerberos (UNVERIFIED), D48 w10-thm-credentials-harvesting (UNVERIFIED), D49 w10-thm-exploiting-ad and w10-thm-persisting-ad (UNVERIFIED).",
+    "Microsoft pages not registered because they were not searched: events 4768, 4738, 4742, 4670 and 5136 (directory service object changes), the AD extended-rights reference for the replication rights (DS-Replication-Get-Changes and its All variant), Get-Acl and Set-Acl, authentication policies and silos, the enterprise access model and privileged access workstations, KDS root key and gMSA setup, Microsoft Defender for Identity, and the Windows audit-policy pages for Directory Service Access.",
+    "Government or vendor guidance not registered: the joint CISA and ASD publication on detecting and mitigating Active Directory compromises (2024) is recalled but its address is not trusted; SpecterOps edge reference pages and the ADSecurity.org Kerberos and delegation articles were not searched.",
+    "ATT&CK pages for forged tickets (T1558.001, T1558.002), account manipulation (T1098), file and directory permission modification (T1222.001) and domain policy modification (T1484) were not registered; ATT&CK v20 content for the four registered technique pages was not checked.",
+    "Version facts not confirmed: BloodHound CE and SharpHound versions, the ATT&CK release (quoted from W07, not seen here), Credential Guard default state and requirements, the current Microsoft timeline for RC4 defaults and its effect on Kerberoasting evidence (W03 recorded only the Windows Server 2025 change to SupportedEncryptionTypes).",
+    "Retired status was not confirmed for any HTB machine named in this file by a page seen today; assign none before the platform page shows RETIRED, and keep write-ups of retired content out of the exam answer key.",
+    "Provider-stated durations and difficulty were not seen for any entry except the carried Kerberoasted lab (Medium, 60 minutes per W03); every other estimate_minutes is a registry planning figure sized to the block.",
+    "CHECKER PASS 2026-11-18 could not re-search either (search budget exhausted, every call refused): nothing was promoted to SEARCH_CHECKED, no entry was removed and no address was changed. The first gap above still stands: run, restricted to each provider's own domain, the queries named in the evidence fields (UNVERIFIED entries first) and confirm the exact URL path, the title and every non-UNKNOWN tier before any UNVERIFIED entry is assigned as a sole exercise. Hosted fallbacks of the UNVERIFIED hosted entries point at one another or at ASSUMED entries, so none of them yet has a verified hosted alternative; the local disposable lab of the plan is the only verified-by-design route for those blocks."
+  ]
+}

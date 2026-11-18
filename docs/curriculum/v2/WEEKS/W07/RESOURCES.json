@@ -1,0 +1,1014 @@
+{
+  "week": 7,
+  "checked_on": "2026-11-18",
+  "method": "web search results only; pages were not opened from the authoring session. Checker pass 2026-11-18: the search tool refused every call (the shared budget of 200 calls per turn was used up), so no entry was re-searched. Only internal consistency was checked (JSON, ids, fallbacks, day ranges, result and access labels against the author's own evidence text); the verification labels remain the author's.",
+  "entries": [
+    {
+      "id": "w07-wazuh-quickstart",
+      "url": "https://documentation.wazuh.com/current/quickstart.html",
+      "provider": "Wazuh",
+      "title": "Quickstart · Wazuh documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Wazuh quickstart all-in-one installation requirements 4 vCPU 8 GB RAM 50 GB disk 1-25 agents' restricted to documentation.wazuh.com: first result 'Quickstart · Wazuh documentation' at this URL; the result text gives the sizing table 4 vCPU / 8 GiB / 50 GB for 1-25 agents (storage covers 90 days of alerts), 8 vCPU / 8 GiB / 100 GB for 26-50 and 8 vCPU / 8 GiB / 200 GB for 51-100.",
+      "version": "as listed 2026-11-18; the installation guide in the results references Wazuh 4.14",
+      "topics": [
+        "wazuh",
+        "siem architecture",
+        "sizing",
+        "all-in-one deployment"
+      ],
+      "suggested_days": [
+        "D31"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Core site of the plan. The page deploys server, indexer and dashboard on one host through the installation assistant. The search result also reported that the Wazuh server page asks for at least 20 GB free on the volume holding /var/ossec before the first start (vulnerability database unpacking); that figure comes from the server page, not from the quickstart. The page metadata in the result looked old, so confirm the sizing table against the live page before the owner approves the Wazuh VM. A TryHackMe room description (tryhackme.com/room/wazuhcve202625769) states that CVE-2026-25769, an RCE in Wazuh cluster communication, affects 4.0.0 to 4.14.2 and is fixed in 4.14.3; this is second-hand and was not checked on a Wazuh advisory, so pin a version of 4.14.3 or later and read the advisory first. Deployment in the G9 lab is PROPOSED and needs the owner's approval (plan D31). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-wazuh-windows-agent",
+      "url": "https://documentation.wazuh.com/current/installation-guide/wazuh-agent/wazuh-agent-package-windows.html",
+      "provider": "Wazuh",
+      "title": "Deploying Wazuh agents on Windows endpoints - Wazuh agent",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Wazuh installing Wazuh agent on Windows endpoints' restricted to documentation.wazuh.com: first result 'Deploying Wazuh agents on Windows endpoints - Wazuh agent' at this URL; the text describes the MSI install with msiexec and WAZUH_MANAGER, starting the service (NET START WazuhSvc) and checking Agents management > Summary on the dashboard.",
+      "version": "as listed 2026-11-18; the example in the result uses agent MSI 4.14.10",
+      "topics": [
+        "wazuh agent",
+        "windows endpoint",
+        "enrollment",
+        "msiexec"
+      ],
+      "suggested_days": [
+        "D31"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Administrator rights are needed on the Windows guest. Omitting the deployment variables installs the agent without enrolling it. The agent version must not be newer than the manager version; check this before installing (INFERRED from general Wazuh practice, not read in the result). Agent files default to C:\\Program Files (x86)\\ossec-agent per the result. Local lab only; hosted alternative is w07-thm-exploring-wazuh. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-wazuh-localfile-eventchannel",
+      "url": "https://documentation.wazuh.com/current/user-manual/reference/ossec-conf/localfile.html",
+      "provider": "Wazuh",
+      "title": "localfile - Local configuration (ossec.conf) · Wazuh documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Wazuh documentation log data collection Windows event channel localfile eventchannel query' restricted to documentation.wazuh.com: result 'localfile - Local configuration (ossec.conf) · Wazuh documentation' at this URL; the text says the channel goes in location with log_format eventchannel, that the agent monitors the System, Application and Security channels by default, that other channels such as Sysmon can be added, and that a query element filters with XPath (for example Event/System[EventID=7040]).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "wazuh log collection",
+        "eventchannel",
+        "sysmon channel",
+        "xpath filter",
+        "ingestion check"
+      ],
+      "suggested_days": [
+        "D31",
+        "D32"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "This is the setting that decides whether the Sysmon channel (Microsoft-Windows-Sysmon/Operational) reaches Wazuh at all: enabling Sysmon on the guest is not enough. The same search returned Wazuh blog posts that use an eventchannel localfile block for Sysmon (for example wazuh.com/blog/detecting-psexec-usage-with-wazuh/); they were not opened. The plan's key workflow step 5 (check Wazuh ingestion) depends on this page. Companion page returned by the same query: documentation.wazuh.com/current/user-manual/capabilities/log-data-collection/configuration.html. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-wazuh-rules-syntax",
+      "url": "https://documentation.wazuh.com/current/user-manual/ruleset/ruleset-xml-syntax/rules.html",
+      "provider": "Wazuh",
+      "title": "Rules Syntax - Ruleset XML syntax · Wazuh documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Wazuh custom rules decoders documentation ruleset XML syntax' restricted to documentation.wazuh.com: result 'Rules Syntax - Ruleset XML syntax · Wazuh documentation' at this URL, next to 'Decoders Syntax' (.../ruleset-xml-syntax/decoders.html) and 'Custom decoders' (.../ruleset/decoders/custom.html). Text: rule level 0-16, id 1-999999, match/regex, decoded_as, if_sid, if_group; custom rules in /var/ossec/etc/rules/local_rules.xml; testing with wazuh-logtest.",
+      "version": "as listed 2026-11-18; the result marks this page as old, so option names may differ by release",
+      "topics": [
+        "wazuh rules",
+        "decoders",
+        "wazuh-logtest",
+        "backend-native rule",
+        "normalization"
+      ],
+      "suggested_days": [
+        "D31",
+        "D33",
+        "D35"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Use for the plan's workflow step 6 (author a Sigma or backend-native rule) and for the normalization part of D31 (pre-decoding, decoding). Test every custom rule with wazuh-logtest on the Wazuh VM and keep the output. Wazuh rules carry ATT&CK mapping in the rule; the page documentation.wazuh.com/current/user-manual/ruleset/mitre.html was returned but is not registered here. Local lab only. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-ms-sysmon",
+      "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon",
+      "provider": "Microsoft Learn",
+      "title": "Sysmon - Sysinternals",
+      "kind": "TOOL",
+      "access": "FREE",
+      "access_note": "Public Sysinternals download page on Microsoft Learn; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries 'Sysmon event ID 3 network connection disabled by default configuration' and 'Sysmon Sysinternals download current version Windows 11 optional feature built-in Sysmon' restricted to learn.microsoft.com: result 'Sysmon - Sysinternals' at this URL. The second result text lists Sysmon v15.22 published 2026-09-10, support for Windows 11 and Windows Server 2019 and higher, and says Sysmon is also a built-in optional feature of Windows 11 since February 2026 (page 'Sysmon in Windows' and a Windows Insider blog).",
+      "version": "v15.22, published 2026-09-10 (per search result, 2026-11-18)",
+      "topics": [
+        "sysmon",
+        "host telemetry",
+        "installation",
+        "event taxonomy"
+      ],
+      "suggested_days": [
+        "D32"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Install syntax in the results: sysmon -accepteula -i <config.xml>; update with sysmon -c <config.xml>; installing without a configuration records only a default subset and no network events (the last point is from a Microsoft Q&A answer, so treat it as INFERRED until tested). If the website build is already installed it must be uninstalled before the built-in optional feature is enabled (Windows Insider blog; preview wording). The plan asks for explicit verification that Event ID 3 is configured; see w07-ms-sysmon-events. Community configuration template returned by search: github.com/SwiftOnSecurity/sysmon-config (source version 74, dated 2021-07-08, needs Sysmon 13 or newer, CC BY 4.0, DNS section flagged noisy by its author); it is a starting point, not a standard. Sysmon runs on the Windows lab guest only after the owner approves the install. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-ms-sysmon-events",
+      "url": "https://learn.microsoft.com/en-us/windows/security/operating-system-security/sysmon/sysmon-events",
+      "provider": "Microsoft Learn",
+      "title": "Sysmon events",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Sysmon event ID 3 network connection disabled by default configuration' restricted to learn.microsoft.com: first result 'Sysmon events' at this URL; the result text says Event ID 3 (network connect) is disabled by default because of volume and should be enabled selectively, with Event ID 1 = process create; configuration entries enable hashing or enrichment but events still need rules under EventFiltering.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "sysmon event ids",
+        "event id 1",
+        "event id 3",
+        "event id 11",
+        "event id 22",
+        "eventfiltering"
+      ],
+      "suggested_days": [
+        "D32"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Plan source for 'Event ID 3 needs enabling'. IDs 1, 3, 11 and 22 are the ones the plan's authoring expansion asks for; IDs 11 (file create), 13 (registry value set) and 22 (DNS query) were confirmed in the text of TryHackMe rooms returned by search, not in this page's result text. Companion pages returned by the same query: learn.microsoft.com/en-us/windows/security/operating-system-security/sysmon/sysmon-configuration-files and .../how-to-enable-sysmon. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-ms-audit-policy-advanced",
+      "url": "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices/advanced-audit-policy-configuration",
+      "provider": "Microsoft Learn",
+      "title": "Advanced Audit Policy Configuration settings",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Advanced security audit policy settings Windows audit process creation 4688 command line' restricted to learn.microsoft.com: result 'Advanced Audit Policy Configuration settings' at this URL (also returned for the 4698/4720 query).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "windows security audit categories",
+        "advanced audit policy",
+        "subcategories",
+        "auditpol"
+      ],
+      "suggested_days": [
+        "D32"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Use for the audit-category half of D32 A. Result text from a neighbouring page states that basic audit policy can overwrite advanced settings (event 4719) and that audit policies from conflicting GPOs do not merge; test with auditpol on the lab guest before expecting events (INFERRED mechanism, from the search summary). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-ms-event-4688-cmdline",
+      "url": "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/component-updates/command-line-process-auditing",
+      "provider": "Microsoft Learn",
+      "title": "Command line process auditing",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Advanced security audit policy settings Windows audit process creation 4688 command line' restricted to learn.microsoft.com: first result 'Command line process auditing' at this URL; the summary says event 4688 needs Audit Process Creation (Detailed Tracking) and, separately, the administrative template 'Include command line in process creation events', which is not configured by default so the command line field stays empty. The 4688 reference page is learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4688.",
+      "version": "as listed 2026-11-18; the policy applies to Windows 10 2004 with KB5005101 and Windows 11 21H2 and later per the search summary",
+      "topics": [
+        "event 4688",
+        "process creation",
+        "command line logging",
+        "detailed tracking"
+      ],
+      "suggested_days": [
+        "D32"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Teaches the difference between a native Security event (4688) and Sysmon Event ID 1 (the plan's D32 D). Privacy: once command-line logging is on, anyone who can read the Security log can read arguments, which may hold secrets; use synthetic arguments only. A Microsoft Q&A thread reported missing 4688 events fixed by KB5020044 (anecdotal). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-ms-event-4624",
+      "url": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4624",
+      "provider": "Microsoft Learn",
+      "title": "4624(S) An account was successfully logged on. - Windows 10",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query '4624(S) An account was successfully logged on security event' restricted to learn.microsoft.com: first result '4624(S) An account was successfully logged on. - Windows 10' at this URL; text: logged on the destination machine, logon types (2 interactive, 3 network, 10 remote interactive), Subject versus New Logon fields. The failure counterpart 4625 is at learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4625 ('4625(F) An account failed to log on.'), also returned by search.",
+      "version": "as listed 2026-11-18; schema version 2 added the Logon Information section (Windows 10)",
+      "topics": [
+        "event 4624",
+        "event 4625",
+        "logon types",
+        "account logon correlation"
+      ],
+      "suggested_days": [
+        "D32"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Plan expansion asks for synthetic 4624/4625. Logon type 9 (NewCredentials) usually means a local alternate-credential session, not an incoming remote logon (Microsoft Q&A answer, anecdotal). The 4625 page lists status codes such as 0xC000006A (bad password) and 0xC0000064 (unknown user). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-ms-event-4769",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4769",
+      "provider": "Microsoft Learn",
+      "title": "4769(S, F) A Kerberos service ticket was requested. - Windows 10",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query '4769(S, F) A Kerberos service ticket was requested ticket encryption type 0x17' restricted to learn.microsoft.com: first result '4769(S, F) A Kerberos service ticket was requested. - Windows 10' at this URL; the same result list holds 'Detect and Remediate RC4 Usage in Kerberos' (learn.microsoft.com/en-us/windows-server/security/kerberos/detect-remediate-rc4-kerberos). Text: Ticket Encryption Type 0x17 is RC4-HMAC; filtering 4769 for 0x17 reveals which accounts request RC4 tickets, whose usual cause is an account without AES keys or non-Windows clients.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "event 4769",
+        "kerberos",
+        "rc4 0x17",
+        "false positives",
+        "kerberoasting caveat"
+      ],
+      "suggested_days": [
+        "D32",
+        "D33"
+      ],
+      "block": "D",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Supports the plan's warning that 4769 or RC4 0x17 alone is not proof of Kerberoasting. Neither Microsoft page in the results discusses Kerberoasting itself, so the conclusion is INFERRED from the documented benign causes. Hack The Box also publishes a 'Kerberoasting attack detection' article (hackthebox.com/blog/kerberoasting-attack-detection), returned by search and not read. Use synthetic or fixture events only; Kerberoasting offence is week 10 content. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-ms-appendix-l-events",
+      "url": "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/appendix-l--events-to-monitor",
+      "provider": "Microsoft Learn",
+      "title": "Appendix L - Events to Monitor",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries '4624(S) An account was successfully logged on security event', '4698(S) A scheduled task was created; 4720 A user account was created' and '1102(S) The audit log was cleared event; 4719 system audit policy was changed' restricted to learn.microsoft.com: result 'Appendix L - Events to Monitor' at this URL each time. Result text: 4698 and 4720 rated Low potential criticality, 4719 High, 1102 medium to high.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "events to monitor",
+        "4698 scheduled task",
+        "4720 account creation",
+        "1102 log cleared",
+        "4719 audit policy changed",
+        "prioritization"
+      ],
+      "suggested_days": [
+        "D32",
+        "D35"
+      ],
+      "block": "D",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "One page for the whole synthetic ID set of the plan (4624, 4625, 4688, 4720, 4698) plus the log-cleared and audit-policy-changed events. Single-event references returned by search: 4698 (previous-versions/.../auditing/event-4698, 'A scheduled task was created', Audit Other Object Access Events), 4720 (previous-versions/.../auditing/event-4720, Audit User Account Management), 1102 and 4719 (same folder and learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4719). They are not registered separately; an author adds an entry if needed. The criticality ratings are Microsoft's, not a G9 priority policy. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-ms-get-winevent",
+      "url": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.diagnostics/get-winevent?view=powershell-7.6",
+      "provider": "Microsoft Learn",
+      "title": "Get-WinEvent (Microsoft.PowerShell.Diagnostics) - PowerShell",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Get-WinEvent cmdlet FilterHashtable event log query' restricted to learn.microsoft.com: result 'Get-WinEvent (Microsoft.PowerShell.Diagnostics) - PowerShell' at this URL, next to 'Creating Get-WinEvent queries with FilterHashtable' (learn.microsoft.com/en-us/powershell/scripting/samples/creating-get-winevent-queries-with-filterhashtable?view=powershell-7.6).",
+      "version": "PowerShell 7.6 documentation view, as listed 2026-11-18",
+      "topics": [
+        "get-winevent",
+        "filterhashtable",
+        "security log",
+        "sysmon log",
+        "local record inspection"
+      ],
+      "suggested_days": [
+        "D31",
+        "D32"
+      ],
+      "block": "B",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Use to inspect the local record before checking the Wazuh copy (D31 D, D32 B). FilterHashtable keys include LogName, ID, StartTime and EndTime; Level must be numeric. Querying named event data fields needs PowerShell 6 or later (search summary). Read-only query; no side effects. Reused in week 8 (event logs, D37). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-sigma-rules-basics",
+      "url": "https://sigmahq.io/docs/basics/rules.html",
+      "provider": "SigmaHQ",
+      "title": "Rules",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Sigma rules specification detection selection condition logsource' restricted to sigmahq.io and sigmahq.github.io: first result 'Rules' at this URL, next to 'Modifiers' (sigmahq.io/docs/basics/modifiers.html), 'Filters' (sigmahq.io/docs/meta/filters.html) and 'Getting Started' (sigmahq.io/docs/guide/getting-started.html).",
+      "version": "as listed 2026-11-18; the site is the official SigmaHQ documentation",
+      "topics": [
+        "sigma",
+        "logsource",
+        "detection",
+        "selection",
+        "condition",
+        "modifiers"
+      ],
+      "suggested_days": [
+        "D33"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "A rule has a title, a logsource and a detection block; the condition combines named selections (for example 'selection and not filter'). Sigma is evaluated per record: no correlation or sequencing inside a single rule (stated in a 2026 arXiv paper returned by search, not on the SigmaHQ page), so state that limit in the D33 D negative-case analysis. The Sigma specification itself is at github.com/SigmaHQ/sigma-specification/blob/main/specification/sigma-rules-specification.md (returned by search; the specification repository has an open proposal for a rule-level specification version, issue 213, which is a proposal only). Distinguish a Sigma rule from an ATT&CK technique (plan W07-Q04). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-sigma-cli",
+      "url": "https://github.com/SigmaHQ/sigma-cli",
+      "provider": "SigmaHQ",
+      "title": "GitHub - SigmaHQ/sigma-cli: The Sigma command line interface based on pySigma · GitHub",
+      "kind": "TOOL",
+      "access": "FREE",
+      "access_note": "Public GitHub repository (open source) shown in the search result.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'sigma-cli pySigma convert Sigma rules backend pipeline documentation' restricted to sigmahq.io, sigmahq-pysigma.readthedocs.io and github.com: first result at this URL; companions pySigma docs (sigmahq-pysigma.readthedocs.io/en/latest/index.html) and 'Processing Pipelines' (sigmahq.io/docs/digging-deeper/pipelines.html). Text: 'sigma list' shows backends and pipelines, 'sigma plugin install splunk' installs a backend, -t selects the target and -p a pipeline.",
+      "version": "as listed 2026-11-18; no release number was read",
+      "topics": [
+        "sigma-cli",
+        "pysigma",
+        "rule validation",
+        "backend conversion",
+        "field mapping pipeline"
+      ],
+      "suggested_days": [
+        "D33"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Use to check and convert the two rules of D33 B against fixtures. Backends are plugins, so a plugin install needs network access to a package index: that conflicts with the no-internet lab rule, so the owner must approve an offline or staged install (PROPOSED). Field names and log-source differences belong in pipelines, not in the rule (pySigma docs). Conversion output is a query, not proof that the rule matches real telemetry: run the positive and negative fixtures. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-suricata-rules",
+      "url": "https://docs.suricata.io/en/latest/rules/intro.html",
+      "provider": "Suricata (OISF)",
+      "title": "8.1. Rules Format — Suricata 9.0.0-dev documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Suricata documentation writing signatures rules format eve.json' restricted to docs.suricata.io: first result '8.1. Rules Format — Suricata 9.0.0-dev documentation' at this URL; versioned copies for 8.0.3 (docs.suricata.io/en/suricata-8.0.3/rules/intro.html) and 7.0.12 were returned. Companion: 'Eve JSON Output' at docs.suricata.io/en/latest/output/eve/eve-json-output.html. Text: a rule has an action, a header (protocol, addresses, ports, direction) and options.",
+      "version": "latest = 9.0.0-dev docs; 8.0.x and 7.0.x versioned docs exist; use the version that matches the installed sensor",
+      "topics": [
+        "suricata",
+        "rule format",
+        "eve json",
+        "ids alerts",
+        "sensor placement"
+      ],
+      "suggested_days": [
+        "D34"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "The 'latest' URL is a development build; prefer the versioned page that matches the lab sensor. Rule options (msg, content, sid) and alert record fields were not in the result text. Pair with w07-thm-network-discovery-detection for scan detection from Zeek logs. Sensor placement and encryption limits belong in the D34 D coverage matrix. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-zeek-conn-log",
+      "url": "https://docs.zeek.org/en/lts/logs/conn.html",
+      "provider": "Zeek",
+      "title": "conn.log — Book of Zeek (8.0.10)",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Zeek documentation conn.log log files network security monitor' restricted to docs.zeek.org: first result 'conn.log — Book of Zeek (8.0.10)' at this URL; other results are the 'master' and 'v8.2.0' builds and the tutorial page 'Logs' (docs.zeek.org/en/master/tutorial/logs.html). Text: conn.log tracks TCP and UDP connections, uid links to other logs, the history field uses upper case for originator and lower case for responder, conn_state values such as S0 and OTH.",
+      "version": "Book of Zeek 8.0.10 (LTS); the results also showed 8.2.0, 9.0.0 and a 9.1.0 development build, so field lists can differ by release",
+      "topics": [
+        "zeek",
+        "conn.log",
+        "uid correlation",
+        "connection state",
+        "scan detection"
+      ],
+      "suggested_days": [
+        "D34"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "ip_proto in conn.log was added in Zeek 7.1 (search result text). Zeek writes tab-separated logs by default; JSON output is available; rotated logs are gzip-compressed. State the Zeek version used in the D34 timeline. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-attack-updates",
+      "url": "https://attack.mitre.org/resources/updates/",
+      "provider": "MITRE ATT&CK",
+      "title": "Updates",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Public documentation page; the search result shows no sign-in or payment wording.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries 'MITRE ATT&CK release v19 versions of ATT&CK 2026' and 'ATT&CK v20 October 2026 updates release notes' restricted to attack.mitre.org: result 'Updates' at this URL plus 'Changelog' (attack.mitre.org/resources/changelog.html) and 'Version History' (attack.mitre.org/resources/versions/). Text: v19.0 on 2026-04-28 split the Enterprise Defense Evasion tactic into Stealth and Defense Impairment; v19.1 on 2026-05-12; v19.2 (first Agile release) on 2026-08-06; v20.0 started 2026-10-13 (971 software, 182 groups, 61 campaigns); the changelog lists v20.1 dated 2026-11-05.",
+      "version": "v20.0 released 2026-10-13; v20.1 content release 2026-11-05 per the changelog (search result 2026-11-18). The results were not fully consistent: some cached pages still label v19.2 as current.",
+      "topics": [
+        "mitre att&ck",
+        "release versions",
+        "enterprise matrix",
+        "technique mapping",
+        "stealth and defense impairment"
+      ],
+      "suggested_days": [
+        "D34",
+        "D35"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Record the ATT&CK version next to every mapping in the coverage matrix and map only techniques supported by observed evidence (plan workflow step 10). Because v19 removed Defense Evasion as a tactic, older Sigma and Wazuh rule tags and older course material may use the old tactic name; do not mark that as an error without checking the version. Individual detection strategy pages exist (for example attack.mitre.org/detectionstrategies/DET0314/) and list Windows Security and Sysmon event codes; they were returned by search and are not registered. No official ATT&CK Navigator page appeared in search; see gaps. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-atomic-red-team-docs",
+      "url": "https://www.atomicredteam.io/docs/atomic-red-team",
+      "provider": "Red Canary (Atomic Red Team)",
+      "title": "Atomic Red Team™ Documentation",
+      "kind": "TOOL",
+      "access": "FREE",
+      "access_note": "Public documentation site and open-source repositories shown in the search result.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Atomic Red Team atomics tests documentation Invoke-AtomicRedTeam' restricted to atomicredteam.io and github.com: first result 'Atomic Red Team™ Documentation' at this URL; companions 'Invoke-AtomicRedTeam' (www.atomicredteam.io/docs/invoke-atomicredteam) and the wiki github.com/redcanaryco/invoke-atomicredteam/wiki/. Text: tests live in atomics/<technique id>/ as YAML plus Markdown; Invoke-AtomicTest runs by number, name or GUID with a default 120 second timeout; -ShowDetailsBrief lists commands and prerequisites without running them.",
+      "version": "as listed 2026-11-18; several wiki pages in the results were old, so command syntax needs checking against the repository",
+      "topics": [
+        "atomic red team",
+        "attack simulation",
+        "benign test",
+        "positive control",
+        "technique id"
+      ],
+      "suggested_days": [
+        "D33"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "This executes real technique behaviour (not just text). Local lab guest only, after the owner approves the exact test and the target guest; list the test with -ShowDetailsBrief first and choose only tests whose effect is reversible and documented. The installer does not download the atomics folder by default because antivirus tools flag it. Test GUIDs stay stable while numbers and names can change. Hosted alternative with no local execution: w07-ld-learn-sigma and w07-thm-sigma-language. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-malware-traffic-analysis-exercises",
+      "url": "https://www.malware-traffic-analysis.net/training-exercises.html",
+      "provider": "malware-traffic-analysis.net",
+      "title": "Malware-Traffic-Analysis.net - training exercises",
+      "kind": "CHALLENGE",
+      "access": "FREE",
+      "access_note": "Public site; the search result describes each exercise as a downloadable zip of a pcap and shows no sign-in or payment wording. Licensing terms were not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'malware-traffic-analysis.net training exercises pcap' restricted to malware-traffic-analysis.net: first result 'Malware-Traffic-Analysis.net - training exercises' at this URL; the result text says entries run from 2014 to 2026 with the newest 'The Lucky Turkey' (2026-11-10). Individual exercise pages returned: 2026-02-28 'Easy As 123' and 2026-01-31 'Lumma in the room-ah' (SOC-style scenario with report questions).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "pcap triage",
+        "zeek on pcap",
+        "suricata on pcap",
+        "incident report questions",
+        "ioc extraction"
+      ],
+      "suggested_days": [
+        "D34",
+        "D35"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w07-thm-zeek-exercises",
+      "notes": "Hosted-independent PCAP source for the D34 observation timeline: run Zeek and Suricata over the capture offline in the lab. The captures contain real malware traffic; keep them in the isolated analysis guest, never replay them on a live interface. Answers are posted as separate pages some days after an exercise, so choose an exercise whose answers you have not read. Some exercise pages carry alert files; check each page before using it. Redistribution and licensing terms were not checked: do not copy captures into the portfolio, cite the page. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-thm-exploring-wazuh",
+      "url": "https://tryhackme.com/room/exploringwazuh",
+      "provider": "TryHackMe",
+      "title": "Exploring Wazuh",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Per-room free or Premium flag not visible in the search result. TryHackMe's free-rooms page (tryhackme.com/free-rooms) says hundreds of rooms need only a free account (no card), free users get up to one hour per day of the browser AttackBox, and Premium unlocks the structured paths; whether this room is free was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe Wazuh room' restricted to tryhackme.com: result at this URL; the result text names the room 'Exploring Wazuh' (lab setup, agents, configuration assessment, vulnerability detection, logging, rules, custom log collection) and says the older room tryhackme.com/room/wazuhct carries a warning that it covers older Wazuh versions. The result's own title field was the generic 'TryHackMe'.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "wazuh",
+        "agents",
+        "rules",
+        "log collection",
+        "dashboard"
+      ],
+      "suggested_days": [
+        "D31"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w07-ld-wazuh",
+      "notes": "Hosted Wazuh when the local lab is blocked (the plan's substitution) or before the owner approves the Wazuh VM. Use the older 'Wazuh' room only if its version warning is read first. Related THM rooms returned: 'Custom Alert Rules in Wazuh' (tryhackme.com/room/customalertrulesinwazuh) for decoders and rule fine-tuning, and the module 'Wazuh for SOC and GRC' (tryhackme.com/module/wazuh-for-soc-grc); neither is registered. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-thm-windows-logging-soc",
+      "url": "https://tryhackme.com/room/windowsloggingforsoc",
+      "provider": "TryHackMe",
+      "title": "Windows Logging for SOC",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Per-room free or Premium flag not visible in the search result. TryHackMe's free-rooms page (tryhackme.com/free-rooms) says hundreds of rooms need only a free account (no card), free users get up to one hour per day of the browser AttackBox, and Premium unlocks the structured paths; whether this room is free was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe Sysmon room Windows event logs' restricted to tryhackme.com: first result at this URL; the result text names it 'Windows Logging for SOC' (Event Viewer, 4624 and 4625, default process-creation 4688 versus Sysmon Event ID 1, Sysmon log under Applications and Services Logs > Microsoft > Windows > Sysmon > Operational) and lists the Sysmon room as a recommended prerequisite. A dedicated THM Sysmon room page was not returned by two queries.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "windows event logs",
+        "event 4624",
+        "event 4625",
+        "event 4688",
+        "sysmon event id 1",
+        "event viewer"
+      ],
+      "suggested_days": [
+        "D32"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w07-ld-log-analysis-with-sysmon",
+      "notes": "Guided hosted practice for the native-versus-Sysmon distinction (D32 D). Related rooms returned: 'Intro to Endpoint Security' (tryhackme.com/room/introtoendpointsecurity; says Sysmon has 27 event types and names the SwiftOnSecurity configuration as an example), 'Detecting LSASS Memory Dumping' (Sysmon Event ID 10) and 'Detecting Persistent DLL Attacks'. Do not copy room answers into the portfolio. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-thm-sigma-language",
+      "url": "https://tryhackme.com/room/sigmalanguage",
+      "provider": "TryHackMe",
+      "title": "Sigma Language",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Per-room free or Premium flag not visible in the search result. TryHackMe's free-rooms page (tryhackme.com/free-rooms) says hundreds of rooms need only a free account (no card), free users get up to one hour per day of the browser AttackBox, and Premium unlocks the structured paths; whether this room is free was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe Sigma room detection rules' restricted to tryhackme.com: first result at this URL; the result text names the 'Sigma Language' room (anatomy of a rule, writing one, converting YAML to a SIEM query, rule tuning). Related results: 'Intro to Detection Engineering' (tryhackme.com/room/introtodetectionengineering) and 'Intro to Log Analysis' (a Sigma task on failed SSH logins).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "sigma",
+        "rule anatomy",
+        "query conversion",
+        "tuning"
+      ],
+      "suggested_days": [
+        "D33"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w07-ld-learn-sigma",
+      "notes": "Hosted guided practice before writing the two rules of D33 B. Uncoder.io conversion is used in a sibling room; online conversion tools receive the rule text, so use only synthetic rules there. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-thm-network-discovery-detection",
+      "url": "https://tryhackme.com/room/networkdiscoverydetection",
+      "provider": "TryHackMe",
+      "title": "Network Discovery Detection",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Per-room free or Premium flag not visible in the search result. TryHackMe's free-rooms page (tryhackme.com/free-rooms) says hundreds of rooms need only a free account (no card), free users get up to one hour per day of the browser AttackBox, and Premium unlocks the structured paths; whether this room is free was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe Zeek room Zeek Exercises network traffic' restricted to tryhackme.com: result at this URL; the result text names 'Network Discovery Detection' (identify horizontal and vertical scans and ping sweeps from Zeek connection logs).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "scan detection",
+        "zeek conn.log",
+        "ping sweep",
+        "port scan",
+        "nmap traffic"
+      ],
+      "suggested_days": [
+        "D34"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w07-malware-traffic-analysis-exercises",
+      "notes": "Matches the plan's 'examine Nmap/test traffic' (D34 B/C) from the defender side. Your own Nmap scan of the lab (week 2 skill) generates the local equivalent; the lab scan needs its own scope statement. Difficulty and duration were not shown. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-thm-zeek-exercises",
+      "url": "https://tryhackme.com/room/zeekbroexercises",
+      "provider": "TryHackMe",
+      "title": "Zeek Exercises",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Per-room free or Premium flag not visible in the search result. TryHackMe's free-rooms page (tryhackme.com/free-rooms) says hundreds of rooms need only a free account (no card), free users get up to one hour per day of the browser AttackBox, and Premium unlocks the structured paths; whether this room is free was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe Zeek room Zeek Exercises network traffic' restricted to tryhackme.com: first result at this URL; the result text names 'Zeek Exercises' (tasks Introduction, Anomalous DNS, Phishing, Log4J, Conclusion), a follow-up to the Zeek room tryhackme.com/room/zeekbro inside the module tryhackme.com/module/network-security-and-traffic-analysis.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "zeek",
+        "dns anomalies",
+        "network forensics",
+        "log4j traffic",
+        "cross-source timeline"
+      ],
+      "suggested_days": [
+        "D34"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w07-htb-working-with-idsips",
+      "notes": "Take the Zeek intro room first. Hosted practice for the D34 host/network timeline. Related result: 'Strange & Unusual Activity' (tryhackme.com/room/strangeunusualactivity, medium, Kibana over Zeek logs). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-thm-socl1-alert-triage",
+      "url": "https://tryhackme.com/room/socl1alerttriage",
+      "provider": "TryHackMe",
+      "title": "SOC L1 Alert Triage",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Per-room free or Premium flag not visible in the search result. TryHackMe's free-rooms page (tryhackme.com/free-rooms) says hundreds of rooms need only a free account (no card), free users get up to one hour per day of the browser AttackBox, and Premium unlocks the structured paths; whether this room is free was not seen.",
+      "verification": "UNVERIFIED",
+      "evidence": "Query 'TryHackMe SOC Simulator alert triage scenarios' restricted to tryhackme.com: result at this URL; the result text calls it 'the L1 alert triage room' (alert properties severity, status, verdict, and prioritisation from critical to low). The exact room title was not displayed, so the title field is the author's reading of the slug. Sibling results: 'socl1alertreporting' and 'socl2alerttriage'. Checker pass 2026-11-18: the title is the author's reading of the slug and could not be checked against the provider, so the entry is UNVERIFIED; the URL itself was seen in a tryhackme.com result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "alert triage",
+        "severity and verdict",
+        "prioritization",
+        "false positive",
+        "escalation"
+      ],
+      "suggested_days": [
+        "D35"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w07-malware-traffic-analysis-exercises",
+      "notes": "Supports the plan's D35 B (triage procedure) and the SOC prioritization point of the authoring expansion. TryHackMe's SOC Simulator (help article help.tryhackme.com/en/articles/10508054-soc-sim; room tryhackme.com/room/socsimulatorintroductiontophishing) is a points-driven alert queue with case reports; whether it is free was not seen and its scenario list was not returned, so it is not registered. The 14-module SOC Level 1 path is described in tryhackme.com/resources/blog/introducing-the-revamped-soc-level-1-learning-path; its path page URL did not appear in search. The estimate is the author's, not a provider figure. Fallback changed by the checker from w07-ld-wazuh (a D31 Wazuh lab: wrong day and topic) to w07-malware-traffic-analysis-exercises (D35, public, SOC-style report scenario; real malware traffic, isolated guest only). Confirm the room title on the platform before the day guide quotes it."
+    },
+    {
+      "id": "w07-htb-siem-fundamentals",
+      "url": "https://academy.hackthebox.com/course/preview/security-monitoring--siem-fundamentals",
+      "provider": "HTB Academy",
+      "title": "Security Monitoring & SIEM Fundamentals Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier not confirmed. A path-page summary labelled it Defensive, Easy, Tier II, but the extracted layout could misalign labels and the checker pass of 2026-11-18 could not re-run a search to confirm it on the module page. HTB help (help.hackthebox.com/en/articles/13677074-academy-subscriptions), as reported by the author's search: Tier II unlocks with 100 Cubes or a subscription and the Student plan covers Tier II; apply that only after the module page shows its tier.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'HTB Academy Security Monitoring & SIEM Fundamentals module' restricted to academy.hackthebox.com: first result 'Security Monitoring & SIEM Fundamentals Course' at this URL; text: SIEM and Elastic Stack overview, how a SOC works, ATT&CK link, KQL use-case development, 11 sections, skills assessment, Easy, part of the SOC Analyst path, recommended prerequisites Penetration Testing Process and Incident Handling Process.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "siem",
+        "elastic stack",
+        "kql",
+        "use-case development",
+        "soc operations",
+        "attack mapping"
+      ],
+      "suggested_days": [
+        "D31"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "Easy as stated by HTB",
+      "fallback": "w07-thm-exploring-wazuh",
+      "notes": "Hosted SIEM concepts and Elastic hands-on for D31 A. Another SIEM module returned: 'SIEM Basics, Installation and Configuration' (academy.hackthebox.com/course/preview/siem-basics-installation-and-configuration), not registered. Cubes are earned and spent per module; HTB's own estimate for the whole SOC path is in w07-htb-soc-analyst-path. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-htb-windows-event-logs-finding-evil",
+      "url": "https://academy.hackthebox.com/course/preview/windows-event-logs--finding-evil",
+      "provider": "HTB Academy",
+      "title": "Windows Event Logs & Finding Evil Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier label not shown in the result. HTB help (help.hackthebox.com/en/articles/13677074-academy-subscriptions, FAQ academy.hackthebox.com/faq): all Tier 0 modules are free, new accounts start with 200 Cubes, Tier I to IV unlock with Cubes (50, 100, 500, 1000) or with a subscription; the Student plan (USD 10 per month, eligibility required) unlocks up to Tier II.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'HTB Academy Windows Event Logs & Finding Evil module Sysmon' restricted to academy.hackthebox.com: first result 'Windows Event Logs & Finding Evil Course' at this URL; text: Medium, anatomy of Windows Event Logs, installing or updating Sysmon, detecting DLL hijacking, unmanaged PowerShell injection and credential dumping, ETW and Get-WinEvent, 13 exercises, recommended prerequisites Penetration Testing Process and Incident Handling Process. Described as a mini-module on the SOC Analyst path page.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "windows event logs",
+        "sysmon",
+        "get-winevent",
+        "etw",
+        "detection of dll hijacking",
+        "credential dumping detection"
+      ],
+      "suggested_days": [
+        "D32"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": "Medium as stated by HTB",
+      "fallback": "w07-thm-windows-logging-soc",
+      "notes": "HTB Academy counterpart of the Windows telemetry day. It is a prerequisite of several later HTB defensive modules (Introduction to Digital Forensics, Windows Attacks & Defense). Its Sysmon exercises run inside HTB's hosted targets, not the G9 lab. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-htb-yara-sigma",
+      "url": "https://academy.hackthebox.com/course/preview/yara--sigma-for-soc-analysts",
+      "provider": "HTB Academy",
+      "title": "YARA & Sigma for SOC Analysts Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier label not shown in the result. HTB help (help.hackthebox.com/en/articles/13677074-academy-subscriptions, FAQ academy.hackthebox.com/faq): all Tier 0 modules are free, new accounts start with 200 Cubes, Tier I to IV unlock with Cubes (50, 100, 500, 1000) or with a subscription; the Student plan (USD 10 per month, eligibility required) unlocks up to Tier II.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'HTB Academy Windows Event Logs & Finding Evil module Sysmon' and 'HTB Academy SOC Analyst job role path modules' restricted to academy.hackthebox.com: result 'YARA & Sigma for SOC Analysts Course' at this URL; the path summary says it covers writing YARA rules and Sigma rules. Section list and difficulty were not shown.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "sigma",
+        "yara",
+        "rule writing",
+        "detection engineering"
+      ],
+      "suggested_days": [
+        "D33"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w07-thm-sigma-language",
+      "notes": "Use the Sigma part for D33; the YARA part belongs to week 9. Requires Windows Event Logs & Finding Evil as a prerequisite per the result list. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-htb-working-with-idsips",
+      "url": "https://academy.hackthebox.com/course/preview/working-with-idsips",
+      "provider": "HTB Academy",
+      "title": "Working with IDS/IPS Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier label not shown in the result. HTB help (help.hackthebox.com/en/articles/13677074-academy-subscriptions, FAQ academy.hackthebox.com/faq): all Tier 0 modules are free, new accounts start with 200 Cubes, Tier I to IV unlock with Cubes (50, 100, 500, 1000) or with a subscription; the Student plan (USD 10 per month, eligibility required) unlocks up to Tier II.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'HTB Academy Intermediate Network Traffic Analysis Suricata Snort Zeek course' restricted to academy.hackthebox.com: result 'Working with IDS/IPS Course - HTB Academy - Hack The Box' at this URL; text: Medium, sections Suricata Fundamentals, Suricata rule development (two parts, one on encrypted traffic), Snort Fundamentals, Snort Rule Development, Zeek Fundamentals, Intrusion Detection With Zeek, skills assessments for each tool; prerequisites include Intro to Network Traffic Analysis and Intermediate Network Traffic Analysis.",
+      "version": "as listed 2026-11-18; 11 sections per the path page",
+      "topics": [
+        "suricata",
+        "snort",
+        "zeek",
+        "rule development",
+        "intrusion detection"
+      ],
+      "suggested_days": [
+        "D34"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": "Medium as stated by HTB",
+      "fallback": "w07-thm-zeek-exercises",
+      "notes": "The module that holds the Suricata and Zeek content for D34. An earlier search summary of the SOC path attributed Suricata, Snort and Zeek to Intermediate Network Traffic Analysis; the module text returned later shows that module (academy.hackthebox.com/course/preview/intermediate-network-traffic-analysis, Easy, 18 sections) is about web, DNS and link-layer anomalies, not IDS rules, so the IDS content is registered under Working with IDS/IPS. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-htb-detecting-windows-attacks-splunk",
+      "url": "https://academy.hackthebox.com/course/preview/detecting-windows-attacks-with-splunk",
+      "provider": "HTB Academy",
+      "title": "Detecting Windows Attacks with Splunk Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier label not shown in the result. HTB help (help.hackthebox.com/en/articles/13677074-academy-subscriptions, FAQ academy.hackthebox.com/faq): all Tier 0 modules are free, new accounts start with 200 Cubes, Tier I to IV unlock with Cubes (50, 100, 500, 1000) or with a subscription; the Student plan (USD 10 per month, eligibility required) unlocks up to Tier II.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries 'HTB Academy Windows Event Logs & Finding Evil module Sysmon' and 'HTB Academy Intermediate Network Traffic Analysis Suricata Snort Zeek course' restricted to academy.hackthebox.com: result 'Detecting Windows Attacks with Splunk Course' at this URL; text: Medium, uses Windows Event Logs and Zeek network logs, includes PCAP files, follows 'Understanding Log Sources & Investigating with Splunk' (academy.hackthebox.com/course/preview/understanding-log-sources--investigating-with-splunk).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "splunk",
+        "windows attack detection",
+        "zeek logs",
+        "pcap",
+        "cross-source correlation"
+      ],
+      "suggested_days": [
+        "D35"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": "Medium as stated by HTB",
+      "fallback": "w07-cd-starktech-apt41",
+      "notes": "Independent-block candidate for D35 once the learner has done the Splunk prerequisite module. It teaches attack detection with Windows and Active Directory attacks, so run it only on HTB's hosted targets. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-htb-soc-analyst-path",
+      "url": "https://academy.hackthebox.com/path/preview/soc-analyst",
+      "provider": "HTB Academy",
+      "title": "SOC Analyst Job Role Path",
+      "kind": "PATH",
+      "access": "UNKNOWN",
+      "access_note": "Tier mix not confirmed. The author's search results say Tier 0 modules are free, other modules unlock with Cubes or a subscription and the Student plan covers the path up to Tier II (help.hackthebox.com/en/articles/13677074-academy-subscriptions), but no per-module tier of this path was confirmed (the only labels came from a path-page summary whose layout may misalign them), and the checker pass of 2026-11-18 could not re-run a search; MIXED was therefore reset to UNKNOWN. The path must be completed 100% before the CDSA exam.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries 'HTB Academy SOC Analyst job role path modules' and 'HTB Academy modules and paths estimated hours Penetration Tester 342 SOC Analyst 189' (help.hackthebox.com article 12741910 'Academy Modules & Paths'): path page 'SOC Analyst Job Role Path' at this URL; 15 modules; the help article's estimate table gives SOC Analyst (CDSA) 23 days 5 hours = 189 hours (a day counts 8 hours) and Penetration Tester (CPTS) 42 days 6 hours = 342 hours.",
+      "version": "as listed 2026-11-18; point totals differed across cached pages (1150, 1180, 1220)",
+      "topics": [
+        "soc analyst path",
+        "path hours",
+        "cdsa",
+        "module sequence"
+      ],
+      "suggested_days": [
+        "D31",
+        "D32",
+        "D33",
+        "D34",
+        "D35"
+      ],
+      "block": "any",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w07-thm-socl1-alert-triage",
+      "notes": "Selection source only: the plan states that path estimates (HTB help article https://help.hackthebox.com/en/articles/12741910-academy-modules-paths) are platform averages, not course quotas, and that the 480 hours cannot hold the CPTS plus CDSA paths. Do not assign the whole path to a day. Modules found in this path and registered here: SIEM Fundamentals, Windows Event Logs & Finding Evil, YARA & Sigma, Working with IDS/IPS, Detecting Windows Attacks with Splunk. Others on the path (not registered): Incident Handling Process, Intro to Threat Hunting & Hunting With Elastic, Understanding Log Sources & Investigating with Splunk, Windows Attacks & Defense, Intro/Intermediate Network Traffic Analysis, Introduction to Malware Analysis, JavaScript Deobfuscation, Introduction to Digital Forensics, Security Incident Reporting."
+    },
+    {
+      "id": "w07-ld-wazuh",
+      "url": "https://app.letsdefend.io/training/lessons/wazuh",
+      "provider": "LetsDefend",
+      "title": "Wazuh - LetsDefend",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Hack The Box acquired LetsDefend. Search results (app.letsdefend.io/pricing, help.hackthebox.com articles 14961689 'LetsDefend Subscriptions' and 14945568 'Introduction to LetsDefend') say the Basic plan is free and includes Certificates of Completion, SOC environments, challenges and quizzes, with SOC analyst alerts limited and hands-on labs capped at 1 hour per month; free courses named were Windows Fundamentals, Malware Analysis Fundamentals and Introduction to Cryptology; premium needs a paid LetsDefend plan; LetsDefend courses and challenges are being added to HTB Academy and Labs, SOC alerts by the end of 2026. This item's own tier was not shown.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'LetsDefend training lessons Wazuh OR Sysmon OR Suricata OR Sigma' restricted to letsdefend.io and app.letsdefend.io: result 'Wazuh - LetsDefend' at this URL; text: lab installation, log collection and parsing, rules and correlations, attack detection, dashboard module and sample attack scenarios; Wazuh is also a module of the SIEM Engineer career path (app.letsdefend.io/path/siem-engineer-career-path).",
+      "version": "as listed 2026-11-18; the platform is migrating to HTB",
+      "topics": [
+        "wazuh",
+        "log collection",
+        "rules",
+        "correlation",
+        "attack scenarios"
+      ],
+      "suggested_days": [
+        "D31"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w07-thm-exploring-wazuh",
+      "notes": "Hosted Wazuh course used as the hosted counterpart of D31 C while the local lab is blocked. The lesson's scenarios are guided; for the independent block repeat a different scenario without the lesson text. Related LetsDefend blog: 'How to Install Wazuh Server on Ubuntu' (letsdefend.io/blog/how-to-install-wazuh-server-on-ubuntu), not registered. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-ld-log-analysis-with-sysmon",
+      "url": "https://app.letsdefend.io/challenge/log-analysis-with-sysmon",
+      "provider": "LetsDefend",
+      "title": "Log Analysis With Sysmon - LetsDefend",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "Hack The Box acquired LetsDefend. Search results (app.letsdefend.io/pricing, help.hackthebox.com articles 14961689 'LetsDefend Subscriptions' and 14945568 'Introduction to LetsDefend') say the Basic plan is free and includes Certificates of Completion, SOC environments, challenges and quizzes, with SOC analyst alerts limited and hands-on labs capped at 1 hour per month; free courses named were Windows Fundamentals, Malware Analysis Fundamentals and Introduction to Cryptology; premium needs a paid LetsDefend plan; LetsDefend courses and challenges are being added to HTB Academy and Labs, SOC alerts by the end of 2026. This item's own tier was not shown.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'LetsDefend challenges investigate challenge endpoint log forensic Windows' restricted to letsdefend.io and app.letsdefend.io: result 'Log Analysis With Sysmon - LetsDefend' at this URL; text: investigate a breach on an endpoint by analyzing its Sysmon logs, with Event Log Explorer suggested next to Event Viewer. The matching lesson 'Log Analysis with Sysmon' (app.letsdefend.io/training/lessons/log-analysis-with-sysmon) covers setup and detecting Mimikatz, pass-the-hash and privilege escalation; 'Threat Hunting with Sysmon' is at app.letsdefend.io/training/lessons/threat-hunting-with-sysmon.",
+      "version": "as listed 2026-11-18; the platform is migrating to HTB",
+      "topics": [
+        "sysmon log analysis",
+        "endpoint investigation",
+        "event log explorer",
+        "correlation of logons and process creation"
+      ],
+      "suggested_days": [
+        "D32",
+        "D35"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w07-thm-windows-logging-soc",
+      "notes": "Independent practice for D32 (correlate logons, process creation and service changes) and a D35 candidate. Do not open community write-ups before the attempt. Keep your own evidence table (event ID, time, field, conclusion). The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-ld-learn-sigma",
+      "url": "https://app.letsdefend.io/challenge/learn-sigma",
+      "provider": "LetsDefend",
+      "title": "Learn Sigma - LetsDefend",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "Hack The Box acquired LetsDefend. Search results (app.letsdefend.io/pricing, help.hackthebox.com articles 14961689 'LetsDefend Subscriptions' and 14945568 'Introduction to LetsDefend') say the Basic plan is free and includes Certificates of Completion, SOC environments, challenges and quizzes, with SOC analyst alerts limited and hands-on labs capped at 1 hour per month; free courses named were Windows Fundamentals, Malware Analysis Fundamentals and Introduction to Cryptology; premium needs a paid LetsDefend plan; LetsDefend courses and challenges are being added to HTB Academy and Labs, SOC alerts by the end of 2026. This item's own tier was not shown.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'LetsDefend training lessons Wazuh OR Sysmon OR Suricata OR Sigma' restricted to letsdefend.io and app.letsdefend.io: result 'Learn Sigma - LetsDefend' at this URL; text: review a Sigma rule built around a ransomware scenario that uses bitsadmin.exe and answer questions about its sections (selection, condition, logsource).",
+      "version": "as listed 2026-11-18; the platform is migrating to HTB",
+      "topics": [
+        "sigma",
+        "rule reading",
+        "selection and condition",
+        "logsource"
+      ],
+      "suggested_days": [
+        "D33"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w07-thm-sigma-language",
+      "notes": "A reading-and-explanation challenge, not rule authoring: pair it with the local task of writing the two D33 rules for supplied fixtures and with the local simulation w07-atomic-red-team-docs for the positive control. The estimate is the author's, not a provider figure."
+    },
+    {
+      "id": "w07-cd-starktech-apt41",
+      "url": "https://cyberdefenders.org/blueteam-ctf-challenges/starktech-incident-apt41/",
+      "provider": "CyberDefenders",
+      "title": "StarkTech Incident - APT41",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "CyberDefenders help (help.cyberdefenders.org/en/articles/8933649-cyberrange-free-vs-pro-labs and .../9544344-free-trial-labs): free labs are open to all users; Pro labs need a CyberRange Pro subscription; free users get limited trial access to some premium labs (one page about 742 days old says 5 hours once per account). The blueteam-ctf-challenges listing marks many challenges PREMIUM. This lab's own flag was not seen.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'CyberDefenders blue team lab SIEM Splunk investigation endpoint Sysmon logs' restricted to cyberdefenders.org: result 'Blue team CTF Challenges' at this URL; the result text names the lab 'StarkTech Incident - APT41' (Splunk; reconstruct a multi-stage attack timeline from Sysmon and Windows event logs; tools Event Log Explorer, Registry Explorer, Eric Zimmerman Tools). Same query also returned Midnight RDP (blueteam-ctf-challenges/midnight-rdp/, Splunk, Windows Event + Sysmon + PowerShell logs) and GoldenSpray (blueteam-ctf-challenges/goldenspray/, Elastic SIEM).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "splunk",
+        "sysmon",
+        "windows event logs",
+        "attack timeline",
+        "incident report"
+      ],
+      "suggested_days": [
+        "D35"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w07-ld-log-analysis-with-sysmon",
+      "notes": "Unassisted case for the Friday practical (D35 C): choose one of StarkTech, Midnight RDP or GoldenSpray whose official walkthrough you have not read (CyberDefenders publishes walkthroughs at cyberdefenders.org/walkthroughs/, which are spoilers). The lab uses a hosted Splunk or Elastic instance per the lab text (not confirmed). Difficulty was not shown in the result. The estimate is the author's, not a provider figure."
+    }
+  ],
+  "plan_fact_checks": [
+    {
+      "claim": "Plan section 3.1 and section 16 item 5: the Wazuh official small-deployment baseline is 4 vCPU, 8 GiB RAM, 50 GB for 1-25 agents; the 100 GiB disk of the lab VM is a planning reserve, not a verified requirement.",
+      "result": "CONFIRMED",
+      "evidence": "documentation.wazuh.com/current/quickstart.html in search results: sizing table 4 vCPU / 8 GiB / 50 GB for 1-25 agents (storage for 90 days of alerts), 8 vCPU / 8 GiB / 100 GB for 26-50 agents, 8 vCPU / 8 GiB / 200 GB for 51-100. The 100 GiB lab disk therefore exceeds the 1-25 agent baseline; the 4 vCPU and 8 GiB match. Caveats from the same results: the server page asks for 20 GB free on the /var/ossec volume before the first start, the quickstart metadata looked old, and the installation guide references Wazuh 4.14."
+    },
+    {
+      "claim": "Plan section 4, section 5 week 7 and section 16 item 4: Sysmon network connection Event ID 3 is not enabled by default; it must be verified and selectively configured.",
+      "result": "CONFIRMED",
+      "evidence": "learn.microsoft.com/en-us/windows/security/operating-system-security/sysmon/sysmon-events ('Sysmon events') in search results: Event ID 3 is disabled by default because of volume and should be enabled selectively. 'Enable and configure Sysmon in Windows' (how-to-enable-sysmon) says Sysmon itself produces nothing until installed and configured. A Microsoft Q&A answer states that installing without a configuration file does not capture network events (community answer, not official text)."
+    },
+    {
+      "claim": "Plan section 4, section 13 and section 16 item 1: HTB published path estimates are 342 hours for the Penetration Tester path and 189 hours for the SOC Analyst (CDSA) path (about 531 hours together), and are not course quotas; the SOC Analyst path must be completed before the CDSA exam.",
+      "result": "CONFIRMED",
+      "evidence": "help.hackthebox.com/en/articles/12741910-academy-modules-paths ('Academy Modules & Paths') in search results: Penetration Tester (CPTS) 42 days 6 hours = 342 hours; SOC Analyst (CDSA) 23 days 5 hours = 189 hours; HTB computes a day as an 8-hour study session; estimates are averages. The 'not course quotas' framing is the plan's own and is consistent with the article saying they are averages. The SOC Analyst path page (academy.hackthebox.com/path/preview/soc-analyst) lists 15 modules, and the CDSA certification page (academy.hackthebox.com/preview/certifications/htb-certified-defensive-security-analyst) says all modules of the path must be completed first (search summary). 342 + 189 = 531 hours, matching the plan's arithmetic."
+    },
+    {
+      "claim": "Plan section 4: MITRE ATT&CK 'review October 2026 release'.",
+      "result": "CONFIRMED",
+      "evidence": "attack.mitre.org/resources/updates/ and attack.mitre.org/resources/changelog.html in search results: ATT&CK v20.0 release started 2026-10-13 (971 software, 182 groups, 61 campaigns, new AI-related techniques for Enterprise); the changelog lists a v20.1 content release dated 2026-11-05; earlier releases v19.0 (2026-04-28, Defense Evasion split into Stealth and Defense Impairment), v19.1 (2026-05-12), v19.2 (2026-08-06, first Agile release). Some cached pages still label v19.2 as current. The v20.0 detailed change list was not in the results."
+    },
+    {
+      "claim": "Plan section 5 week 7: Windows Kerberos Event 4769 or RC4 type 0x17 alone is not proof of Kerberoasting.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "INFERRED, not confirmed by any source: no result states the claim. learn.microsoft.com 4769 reference and 'Detect and Remediate RC4 Usage in Kerberos' in search results: 0x17 is RC4-HMAC; Microsoft's guidance is to filter 4769 for 0x17 to find accounts and services that still depend on RC4, with causes such as accounts lacking AES keys and non-Windows clients. The Microsoft pages do not mention Kerberoasting, so the conclusion is INFERRED from the documented benign causes."
+    },
+    {
+      "claim": "Plan section 5 week 7 authoring expansion: Windows Security IDs 4624, 4625, 4688, 4720 and 4698 and Sysmon IDs 1, 3, 11, 22 depend on audit and Sysmon collection settings.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Partly confirmed only: the Windows Security IDs and Sysmon IDs 1 and 3 rest on Microsoft pages, but Sysmon IDs 11 and 22 appear in no Microsoft result (TryHackMe room text only), so the claim as worded is NOT_CONFIRMED. Microsoft Learn results: 4624 (logon, needs logon auditing), 4625 (failure), 4688 (needs Audit Process Creation under Detailed Tracking; the command line field needs a separate 'Include command line in process creation events' setting and is empty by default), 4698 (Audit Other Object Access Events subcategory), 4720 (Audit User Account Management). Sysmon ID 1 and 3 appear in the Microsoft 'Sysmon events' result text; IDs 11 (file create), 13 (registry value set) and 22 (DNS query) were seen only in TryHackMe room text returned by search (Windows Logging for SOC, Detecting Persistent DLL Attacks, RDP lateral movement analysis), not in a Microsoft result."
+    },
+    {
+      "claim": "Plan section 4: LetsDefend (letsdefend.io) provides guided SOC triage.",
+      "result": "CONFIRMED",
+      "evidence": "app.letsdefend.io/path/soc-analyst-learning-path, '/training/lessons/how-to-investigate-a-siem-alert' and app.letsdefend.io/pricing in search results show SOC alert investigation content. Changes the plan does not mention: Hack The Box acquired LetsDefend, accounts are linked to HTB accounts, annual subscription sales were discontinued, LetsDefend courses and challenges are being added to HTB Academy and Labs with SOC alerts following by the end of 2026, and on the free Basic plan SOC analyst alerts are limited and hands-on labs are capped at 1 hour per month (help.hackthebox.com articles 14961689, 14945568, 13179524). The sources are partly dated; confirm on the live site before assigning."
+    },
+    {
+      "claim": "Plan section 4: CyberDefenders (cyberdefenders.org/blueteam-ctf-challenges/) offers curated forensic, network and endpoint investigations.",
+      "result": "CONFIRMED",
+      "evidence": "Search results on cyberdefenders.org show labs with Splunk or Elastic SIEM and Sysmon evidence (StarkTech Incident - APT41, Midnight RDP, GoldenSpray, REvil - GOLD SOUTHFIELD, Boss Of The SOC v1 to v3). Access is mixed: free labs exist, many listings are marked PREMIUM, and the free trial allowance is small (help.cyberdefenders.org articles 8933649 and 9544344). No Wazuh lab was found. The Boss Of The SOC labs ship as VM images (for example bots1.ova) that run locally with Splunk on port 8000, which conflicts with the blocked local lab."
+    }
+  ],
+  "gaps": [
+    "The shared web-search budget of the authoring run (200 calls per turn) ran out before a last attempt to read TryHackMe's free-training blog posts for per-room free flags, so every TryHackMe entry stays UNKNOWN on access.",
+    "The TryHackMe SOC Level 1 path page (tryhackme.com/path/outline/soclevel1 or similar) did not appear in any search result; only blog posts describing the 14-module path did. No path entry was registered; modules and rooms are registered individually.",
+    "No dedicated TryHackMe Sysmon room appeared in two queries and no dedicated Suricata room appeared in one query. Rooms that use Suricata appeared (IDS Evasion tryhackme.com/room/idsevasion, Cactus tryhackme.com/room/cactus, Masterminds) but their content is mostly offensive or incident-specific and they were left out of this file.",
+    "THM, HTB Academy, LetsDefend and CyberDefenders per-item access flags (free account versus Premium, Tier 0 versus Tier I and above, VIP) were not visible in search results for most entries; those entries are UNKNOWN. The SOC Analyst path page labelled Security Monitoring & SIEM Fundamentals as Tier II, but the extracted layout can misalign labels.",
+    "LetsDefend SOC Analyst alert queues (the 'simulated case' of plan D35) were not seen as individual URLs; only lessons, challenges and learning paths were. LetsDefend has no Suricata lesson in the results.",
+    "No official ATT&CK Navigator page appeared in search (only third-party coverage tools), so the coverage-matrix task of D34 D has no registered Navigator entry; the plan's matrix can be a table.",
+    "Hack The Box Starting Point and retired machines were not searched for this week (the HTB options here are Academy modules); HTB Sherlocks suitable for SOC alert triage were not searched (week 8 registers DFIR Sherlocks).",
+    "Wazuh MITRE ATT&CK mapping page (documentation.wazuh.com/current/user-manual/ruleset/mitre.html) and the Wazuh blog posts on Sysmon detections were returned but not registered to stay within the entry limit; an author may add them under the same rules.",
+    "Single-event reference pages for 4698, 4720, 4719 and 1102 were returned by search and are covered by one registered page (Appendix L - Events to Monitor); the TryHackMe SOC Simulator and the CyberDefenders Boss Of The SOC labs were not registered (access unknown; local VM import required).",
+    "Checker pass 2026-11-18: independent re-verification of every SEARCH_CHECKED entry, every non-UNKNOWN access tier and every plan fact check was NOT RUN because the search budget was exhausted. SEARCH_CHECKED in this file still means the author's search result; a later pass should re-search each entry and each FREE claim on the provider's own domain."
+  ]
+}

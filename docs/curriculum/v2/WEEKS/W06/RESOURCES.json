@@ -1,0 +1,980 @@
+{
+  "week": 6,
+  "checked_on": "2026-11-18",
+  "method": "web search results only; pages were not opened from the authoring session. Independent re-check by a second agent on 2026-11-18: web search NOT RUN (the shared 200-search budget of the turn was already used up before the checker's first query), so no entry was re-searched, no access tier was re-confirmed, no ASSUMED or UNVERIFIED entry was resolved and no plan_fact_checks item was re-checked; every verification label, tier and result in this file is the author's. Offline checks done: JSON validity, registry rules of scripts/build_curriculum_v2.py, unique ids, fallback ids, suggested_days within D26 to D30, agreement with the same URLs in other week files (the quoted W01, W02 and W03 evidence of the five cross-referenced ASSUMED entries exists there), and transcription of the plan claims.",
+  "entries": [
+    {
+      "id": "w06-htb-penetration-testing-process",
+      "url": "https://academy.hackthebox.com/course/preview/penetration-testing-process",
+      "provider": "HTB Academy",
+      "title": "Penetration Testing Process Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "No search result showed this module's tier or cube cost. help.hackthebox.com 'Academy Subscriptions' (search result, 2026-11-18): Tier 0 modules are free with an account; Silver unlocks modules up to Tier II and Gold up to Tier III; single modules can also be unlocked with Cubes. Check the module page for 'Start Module (Free)'.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'HTB Academy Penetration Testing Process module course preview rules of engagement scoping pre-engagement' (academy.hackthebox.com). First result, title 'Penetration Testing Process Course' at this URL; result text (fragments): pre-engagement and the contract, a signed scope document listing URLs, IP addresses and CIDR ranges, stay inside scope, ask the client in writing before touching a host that is not listed. The same URL was returned by the Linux, Windows and pivoting queries.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "rules of engagement",
+        "scope",
+        "pre-engagement",
+        "penetration test process"
+      ],
+      "suggested_days": [
+        "D26"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w06-thm-pentesting-fundamentals",
+      "notes": "Use the pre-engagement and scope sections for D26. Related modules returned: Getting Started (academy.hackthebox.com/course/preview/getting-started), Vulnerability Assessment (.../vulnerability-assessment), Introduction to Penetration Testing (.../introduction-to-penetration-testing), Pentest in a Nutshell (.../pentest-in-a-nutshell); their tiers and text were not shown. HTB path: Penetration Tester Job Role Path (academy.hackthebox.com/path/preview/penetration-tester). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-thm-pentesting-fundamentals",
+      "url": "https://tryhackme.com/room/pentestingfundamentals",
+      "provider": "TryHackMe",
+      "title": "Pentesting Fundamentals",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium. tryhackme.com/free-rooms (search result 'Free Cyber Security Rooms & Labs') says 650+ rooms are free; help.tryhackme.com 'The AttackBox Explained': free users get up to one hour of AttackBox per day or can use their own machine through VPN. A TryHackMe 2026 blog on free red-team training (search summary) says the rooms it lists are free with an account but its room-to-URL mapping was not shown.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'TryHackMe room Pentesting Fundamentals rules of engagement penetration testing methodology' (tryhackme.com). First result at this URL; result text: the rules of engagement has three parts (permission, test scope, rules), methodology and a comparison of OSSTMM, OWASP and NIST CSF; page metadata showed several years of age. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "rules of engagement",
+        "permission",
+        "scope",
+        "methodology"
+      ],
+      "suggested_days": [
+        "D26"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w06-nist-sp-800-115",
+      "notes": "Hosted guided alternative for the ROE reading. The Red Team Engagements room (tryhackme.com/room/redteamengagements: Task 2 scope and objectives, Task 3 rules of engagement) in the Planning and Scoping module (tryhackme.com/module/planning-and-scoping) was returned by another query. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-nist-sp-800-115",
+      "url": "https://csrc.nist.gov/pubs/sp/800/115/final",
+      "provider": "NIST",
+      "title": "NIST Special Publication (SP) 800-115, Technical Guide to Information Security Testing and Assessment",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Public NIST publication page returned by the search on csrc.nist.gov; no sign-in indicated.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'NIST SP 800-115 Technical Guide to Information Security Testing and Assessment' (nist.gov, csrc.nist.gov). First result, title 'NIST Special Publication (SP) 800-115, Technical Guide to Information Security Testing and Assessment' at this URL; result text: 2008 guide, final, phases of planning, execution and post-execution, review techniques, target identification and analysis, target vulnerability validation, appendices include a rules-of-engagement template.",
+      "version": "SP 800-115 (2008), final per the CSRC page; whether a newer revision exists was not shown",
+      "topics": [
+        "rules of engagement template",
+        "assessment planning",
+        "vulnerability validation",
+        "reporting"
+      ],
+      "suggested_days": [
+        "D26",
+        "D30"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w06-thm-pentesting-fundamentals",
+      "notes": "Neutral standard for scope, ROE and the validate-before-report discipline. Use the ROE template appendix to write the scope statement for the lab; the plan's rule that the sole target is explicitly assigned maps to its planning phase. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-nmap-version-detection",
+      "url": "https://nmap.org/book/man-version-detection.html",
+      "provider": "Nmap Project",
+      "title": "Service and Version Detection",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; tier as recorded by the W02 entry w02-nmap-version-detection (search result without sign-in or price).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched in this file: the shared search budget of the run ended before the Week 6 documentation queries. The same URL and title are recorded SEARCH_CHECKED in WEEKS/W02/RESOURCES.json (id w02-nmap-version-detection) of the same run on 2026-11-18; that evidence is quoted here: query 'Nmap service and version detection --version-light --version-intensity reference guide' on nmap.org returned 'Service and Version Detection' at this URL; intensity 0 to 9, default 7.",
+      "version": "Nmap Reference Guide online as listed 2026-11-18 (by the W02 entry)",
+      "topics": [
+        "service detection",
+        "version detection",
+        "CVE match by version"
+      ],
+      "suggested_days": [
+        "D26"
+      ],
+      "block": "B",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "D26 block B: compare what discovery reports with the lab's ground truth; a version string is a hypothesis, not proof of exploitability (W06-Q02). Scan only the assigned lab range 10.77.x.0/24; see also w02-nmap-port-scanning-techniques in the W02 file. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-nvd",
+      "url": "https://nvd.nist.gov/",
+      "provider": "NIST",
+      "title": "National Vulnerability Database",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result was seen for this site, so the access tier is not evidenced (public reference site expected).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the shared search budget of the run ended before the planned query (NVD CVE record search). Well-known, stable address recorded as ASSUMED; title and content not confirmed today.",
+      "version": "service state, scoring and backlog in 2026 not checked",
+      "topics": [
+        "CVE records",
+        "CVSS",
+        "affected versions",
+        "CWE mapping"
+      ],
+      "suggested_days": [
+        "D26"
+      ],
+      "block": "any",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w06-cwe",
+      "notes": "Use for CVE preconditions (affected versions, configuration, vector). A CVE entry that matches a version string is a lead; exploitability on the lab target has to be demonstrated. Pair with the FIRST CVSS entry for the severity rationale. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-cwe",
+      "url": "https://cwe.mitre.org/",
+      "provider": "MITRE",
+      "title": "Common Weakness Enumeration",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result was seen for this site, so the access tier is not evidenced (public reference site expected).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the shared search budget of the run ended before the planned query (CWE weakness enumeration root page). Well-known, stable address recorded as ASSUMED; title and content not confirmed today.",
+      "version": "release not checked",
+      "topics": [
+        "weakness classes",
+        "root cause",
+        "CWE mapping"
+      ],
+      "suggested_days": [
+        "D26"
+      ],
+      "block": "any",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w06-nvd",
+      "notes": "Gives the root-cause vocabulary for the D26 finding (for example the CWE named by a CVE entry). Plan fact: the plan names CWE research on D26 without a URL. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-first-cvss-v4-specification",
+      "url": "https://www.first.org/cvss/v4.0/specification-document",
+      "provider": "FIRST",
+      "title": "CVSS v4.0 Specification Document",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Public standard page on first.org returned by the search; no sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'FIRST CVSS v4.0 specification document and user guide' (first.org). First result, title 'CVSS v4.0 Specification Document' at this URL; result text: metrics, formulas, qualitative scale and vector string; the PDF is document version 1.2 dated 2024-06-18; the user guide PDF is dated 2025-11-16 (first.org/cvss/v4-0/cvss-v40-user-guide.pdf); the FAQ says CVSS v4.0 was released on 2023-11-01.",
+      "version": "v4.0, spec document 1.2 (2024-06-18); user guide 2025-11-16",
+      "topics": [
+        "severity rating",
+        "asset impact",
+        "preconditions",
+        "report"
+      ],
+      "suggested_days": [
+        "D26",
+        "D30"
+      ],
+      "block": "D",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "The plan asks for a sample severity evaluation from asset impact and preconditions, not an automatic high label: use the score as one input and write the rationale. Calculator named in the search summary: first.org/cvss/calculator/v4-0 (URL not a result). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-mitre-attack",
+      "url": "https://attack.mitre.org/",
+      "provider": "MITRE",
+      "title": "MITRE ATT&CK",
+      "kind": "STANDARD",
+      "access": "UNKNOWN",
+      "access_note": "No search result was seen for this site, so the access tier is not evidenced (public knowledge base expected).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the shared search budget of the run ended before the planned query (MITRE ATT&CK latest release version October 2026 release notes). Well-known, stable address recorded as ASSUMED; title and content not confirmed today.",
+      "version": "release current in November 2026 NOT confirmed (see plan_fact_checks)",
+      "topics": [
+        "TTP mapping",
+        "privilege escalation",
+        "lateral movement",
+        "telemetry mapping"
+      ],
+      "suggested_days": [
+        "D26",
+        "D27",
+        "D28",
+        "D29"
+      ],
+      "block": "D",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Plan section 4 lists this URL and asks to review the October 2026 release; that review could not be done here. Use the tactic pages for Privilege Escalation and Lateral Movement to map each lab finding to telemetry, and record the ATT&CK version you used. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-thm-basic-pentesting",
+      "url": "https://tryhackme.com/room/basicpentestingjt",
+      "provider": "TryHackMe",
+      "title": "Basic Pentesting",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium. tryhackme.com/free-rooms (search result 'Free Cyber Security Rooms & Labs') says 650+ rooms are free; help.tryhackme.com 'The AttackBox Explained': free users get up to one hour of AttackBox per day or can use their own machine through VPN. A TryHackMe 2026 blog on free red-team training (search summary) says the rooms it lists are free with an account but its room-to-URL mapping was not shown.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'TryHackMe room Blue Kenobi Basic Pentesting Simple CTF Bounty Hacker beginner machines' (tryhackme.com). Result at this URL; result text: a machine for practising web app hacking and privilege escalation, tasks on brute forcing, hash cracking, service enumeration and Linux enumeration; TryHackMe recommends it as a guided first pentest; the free-offensive-security blog lists it among free boxes (pages over 1,000 days old). The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "enumeration",
+        "hypothesis validation",
+        "privilege escalation",
+        "hosted target"
+      ],
+      "suggested_days": [
+        "D26",
+        "D30"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w06-htb-machine-nibbles",
+      "notes": "Hosted alternative for the D26 independent validation of a lab vulnerability hypothesis. It is a guided room with task questions, so it is a poor fit for the D30 unknown-target rule unless the task text is hidden by the assigner. Do not read community write-ups. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-htb-linux-privilege-escalation",
+      "url": "https://academy.hackthebox.com/course/preview/linux-privilege-escalation",
+      "provider": "HTB Academy",
+      "title": "Linux Privilege Escalation Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "No search result showed this module's tier or cube cost. help.hackthebox.com 'Academy Subscriptions' (search result, 2026-11-18): Tier 0 modules are free with an account; Silver unlocks modules up to Tier II and Gold up to Tier III; single modules can also be unlocked with Cubes. Check the module page for 'Start Module (Free)'.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'HTB Academy Linux Privilege Escalation module course preview' (academy.hackthebox.com). First result, title 'Linux Privilege Escalation Course' at this URL; result text: Easy, prerequisites Introduction to Networking and Linux Fundamentals, sections include Environment Enumeration, Credential Hunting, Path Abuse, Sudo Rights Abuse, Capabilities, Cron Job Abuse, LXD, Docker, Kubernetes, Kernel Exploits, Shared Object Hijacking and Python Library Hijacking; only the introduction is a free preview; the listing was indexed about 4 years ago.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "sudo",
+        "capabilities",
+        "cron jobs",
+        "service trust",
+        "misconfiguration"
+      ],
+      "suggested_days": [
+        "D27"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "Easy",
+      "fallback": "w06-thm-linprivesc",
+      "notes": "Use the sudo, capabilities and cron sections for D27; kernel-exploit sections are not needed for the plan's boundary-misconfiguration focus. The Local Privilege Escalation Skills Path (academy.hackthebox.com/path/preview/local-privilege-escalation) was also returned. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-thm-linprivesc",
+      "url": "https://tryhackme.com/room/linprivesc",
+      "provider": "TryHackMe",
+      "title": "Linux PrivEsc",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium. tryhackme.com/free-rooms (search result 'Free Cyber Security Rooms & Labs') says 650+ rooms are free; help.tryhackme.com 'The AttackBox Explained': free users get up to one hour of AttackBox per day or can use their own machine through VPN. A TryHackMe 2026 blog on free red-team training (search summary) says the rooms it lists are free with an account but its room-to-URL mapping was not shown.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'TryHackMe room Linux Privilege Escalation sudo SUID cron capabilities' (tryhackme.com). First result at this URL; result text: separate tasks for sudo (including LD_PRELOAD with env_keep), SUID and SGID binaries, capabilities (getcap) and cron jobs; results older, content may have changed. The room name is taken from the result text; the result title field is the generic 'TryHackMe'.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "sudo",
+        "SUID",
+        "capabilities",
+        "cron"
+      ],
+      "suggested_days": [
+        "D27"
+      ],
+      "block": "B",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w06-thm-linux-privesc-arena",
+      "notes": "Guided lab scenario for block B. Other rooms returned: Linux Privilege Escalation: Basics (tryhackme.com/room/linprivbasics), Linux Privilege Escalation: Enumeration (tryhackme.com/room/linprivenum), Common Linux Privesc (tryhackme.com/room/commonlinuxprivesc, slug only). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-thm-linux-privesc-arena",
+      "url": "https://tryhackme.com/room/linuxprivescarena",
+      "provider": "TryHackMe",
+      "title": "Linux PrivEsc Arena",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium. tryhackme.com/free-rooms (search result 'Free Cyber Security Rooms & Labs') says 650+ rooms are free; help.tryhackme.com 'The AttackBox Explained': free users get up to one hour of AttackBox per day or can use their own machine through VPN. A TryHackMe 2026 blog on free red-team training (search summary) says the rooms it lists are free with an account but its room-to-URL mapping was not shown.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w06-thm-linprivesc (tryhackme.com). Result at this URL; result text: hands-on lab with separate tasks for sudo, SUID, capabilities and cron, including cron PATH and wildcard abuse. The room name is taken from the result text; the result title field is the generic 'TryHackMe'.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "sudo",
+        "SUID",
+        "capabilities",
+        "cron",
+        "planted misconfiguration"
+      ],
+      "suggested_days": [
+        "D27"
+      ],
+      "block": "C",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w06-thm-linprivesc",
+      "notes": "Hosted alternative for the independent block when the local lab (planted privilege boundary issue) is blocked. Record the boundary that fails and the least-privilege fix for block D; do not read write-ups. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-man7-capabilities",
+      "url": "https://www.man7.org/linux/man-pages/man7/capabilities.7.html",
+      "provider": "Linux man-pages project",
+      "title": "capabilities(7) - Linux manual page",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; tier as recorded by the W01 entry w01-man7-capabilities (search result without sign-in or price).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched in this file: the shared search budget of the run ended before the Week 6 documentation queries. The same URL and title are recorded SEARCH_CHECKED in WEEKS/W01/RESOURCES.json (id w01-man7-capabilities) of the same run on 2026-11-18; that evidence is quoted here: query 'capabilities(7) Linux manual page credentials(7) path_resolution' on man7.org returned 'capabilities(7) - Linux manual page' at this URL.",
+      "version": "Linux man-pages online copy as listed 2026-11-18 (by the W01 entry)",
+      "topics": [
+        "Linux capabilities",
+        "privilege boundary",
+        "file capabilities"
+      ],
+      "suggested_days": [
+        "D27"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Official reference for the capabilities half of D27 (what a file capability grants and how to remove it in the fix). No official sudoers or cron documentation was verified (see gaps). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-htb-windows-privilege-escalation",
+      "url": "https://academy.hackthebox.com/course/preview/windows-privilege-escalation",
+      "provider": "HTB Academy",
+      "title": "Windows Privilege Escalation Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "No search result showed this module's tier or cube cost. help.hackthebox.com 'Academy Subscriptions' (search result, 2026-11-18): Tier 0 modules are free with an account; Silver unlocks modules up to Tier II and Gold up to Tier III; single modules can also be unlocked with Cubes. Check the module page for 'Start Module (Free)'.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'HTB Academy Windows Privilege Escalation course preview' (academy.hackthebox.com). First result, title 'Windows Privilege Escalation Course' at this URL; result text: Medium, 33 sections per another result, tools, situational awareness, privileges such as SeImpersonate and SeDebugPrivilege, UAC, weak permissions, kernel exploits, vulnerable services, credential hunting, hardening; prerequisites Introduction to Networking and Windows Fundamentals; two skills assessment parts; RDP targets; listing indexed about 1,360 days ago.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "service permissions",
+        "tokens and privileges",
+        "weak permissions",
+        "hardening"
+      ],
+      "suggested_days": [
+        "D28"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "Medium",
+      "fallback": "w06-thm-windows-privesc",
+      "notes": "Use the weak-permissions, services and privileges sections for D28. Follow-on modules seen: Privilege Escalation Tradecraft Analysis (academy.hackthebox.com/course/preview/privilege-escalation-tradecraft-analysis) and the defensive Detecting Access Token Manipulation Attacks (academy.hackthebox.com/course/preview/detecting-access-token-manipulation-attacks). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-thm-windows-privesc",
+      "url": "https://tryhackme.com/room/windows10privesc",
+      "provider": "TryHackMe",
+      "title": "Windows PrivEsc",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium. tryhackme.com/free-rooms (search result 'Free Cyber Security Rooms & Labs') says 650+ rooms are free; help.tryhackme.com 'The AttackBox Explained': free users get up to one hour of AttackBox per day or can use their own machine through VPN. A TryHackMe 2026 blog on free red-team training (search summary) says the rooms it lists are free with an account but its room-to-URL mapping was not shown.",
+      "verification": "UNVERIFIED",
+      "evidence": "Queries: 'TryHackMe room Windows Privilege Escalation services unquoted service path tokens', 'TryHackMe \"Windows PrivEsc\" room tryhackme.com/room/windows10privesc Windows privilege escalation tasks' and 'TryHackMe Windows Privilege Escalation room tasks harvesting passwords scheduled tasks AlwaysInstallElevated service misconfigurations SeImpersonate' (tryhackme.com). This URL was the first result each time, but no result text was shown for it, and the result title field is the generic 'TryHackMe', so the room name and content are NOT confirmed; the name 'Windows PrivEsc' comes from the query and from a TryHackMe 2026 blog (tryhackme.com/resources/blog/free-red-teaming-training-on-tryhackme-to-build-your-skills-in-2026) whose search summary lists a room of that name and Windows rooms on service misconfigurations, DLL hijacking and token impersonation.",
+      "version": "URL returned 2026-11-18; content not confirmed",
+      "topics": [
+        "Windows privilege escalation",
+        "service misconfiguration",
+        "token impersonation"
+      ],
+      "suggested_days": [
+        "D28"
+      ],
+      "block": "B",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w06-htb-windows-privilege-escalation",
+      "notes": "Candidate hosted guided scenario for D28 block B and, with the Arena room below, for block C. Also returned (slug only): tryhackme.com/room/windowsprivescarena, tryhackme.com/room/windowsprivesc20, tryhackme.com/room/dllhijacking. Verify the room page before assigning; use only synthetic or room-provided credentials. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-ms-access-tokens",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/secauthz/access-tokens",
+      "provider": "Microsoft Learn",
+      "title": "Access Tokens - Win32 apps",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public Microsoft Learn documentation page; tier as recorded by the W03 entry w03-ms-access-tokens (indexed without sign-in).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched in this file: the shared search budget of the run ended before the Week 6 documentation queries. The same URL and title are recorded SEARCH_CHECKED in WEEKS/W03/RESOURCES.json (id w03-ms-access-tokens) of the same run on 2026-11-18; that evidence is quoted here: Microsoft Learn result titled 'Access Tokens - Win32 apps' at this URL; the system produces an access token at logon and every process has a primary token.",
+      "version": "as listed 2026-11-18 (by the W03 entry)",
+      "topics": [
+        "access tokens",
+        "privileges",
+        "security context"
+      ],
+      "suggested_days": [
+        "D28"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Official reference for the token half of W06-Q04. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-ms-service-security-access-rights",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/services/service-security-and-access-rights",
+      "provider": "Microsoft Learn",
+      "title": "Service Security and Access Rights",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result was seen for this page, so the access tier is not evidenced (public Microsoft Learn page expected).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the shared search budget of the run ended before the planned query (Microsoft Learn Service Security and Access Rights). Well-known, stable address recorded as ASSUMED; title and content not confirmed today. The exact page title is assumed from the URL.",
+      "version": "not checked",
+      "topics": [
+        "service ACLs",
+        "service access rights",
+        "weak service permissions"
+      ],
+      "suggested_days": [
+        "D28"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Reference for the service-ACL half of W06-Q04 (who may change a service configuration). Verify the address before it is cited in a day guide. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-ms-dll-search-order",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-search-order",
+      "provider": "Microsoft Learn",
+      "title": "Dynamic-link library search order",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result was seen for this page, so the access tier is not evidenced (public Microsoft Learn page expected).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the shared search budget of the run ended before the planned query (Microsoft Learn Dynamic-link library search order). Well-known, stable address recorded as ASSUMED; title and content not confirmed today. The exact page title is assumed from the URL.",
+      "version": "not checked",
+      "topics": [
+        "DLL search order",
+        "DLL hijacking preconditions",
+        "writable directories"
+      ],
+      "suggested_days": [
+        "D28"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Reference for the DLL search topic of D28. Verify the address before it is cited in a day guide. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-ms-sysmon-events",
+      "url": "https://learn.microsoft.com/en-us/windows/security/operating-system-security/sysmon/sysmon-events",
+      "provider": "Microsoft Learn",
+      "title": "Sysmon events",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public Microsoft Learn documentation page; tier as recorded by the W03 entry w03-ms-sysmon-events (indexed without sign-in).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched in this file: the shared search budget of the run ended before the Week 6 documentation queries. The same URL and title are recorded SEARCH_CHECKED in WEEKS/W03/RESOURCES.json (id w03-ms-sysmon-events) of the same run on 2026-11-18; that evidence is quoted here: Microsoft Learn result titled 'Sysmon events' at this URL; Event ID 3 (network connection) is disabled by default and should be enabled selectively.",
+      "version": "as listed 2026-11-18 (by the W03 entry)",
+      "topics": [
+        "Sysmon",
+        "process creation telemetry",
+        "network connection events"
+      ],
+      "suggested_days": [
+        "D28",
+        "D29"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "D28 block D: compare telemetry before and after the mitigation. Event ID 3 is off by default, so a missing network event is not proof that no connection happened. See also w03-ms-event-4624 and w03-ms-advanced-audit-policy in the W03 file. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-htb-pivoting-tunneling-port-forwarding",
+      "url": "https://academy.hackthebox.com/course/preview/pivoting-tunneling-and-port-forwarding",
+      "provider": "HTB Academy",
+      "title": "Pivoting, Tunneling, and Port Forwarding Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "No search result showed this module's tier or cube cost. help.hackthebox.com 'Academy Subscriptions' (search result, 2026-11-18): Tier 0 modules are free with an account; Silver unlocks modules up to Tier II and Gold up to Tier III; single modules can also be unlocked with Cubes. Check the module page for 'Start Module (Free)'.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'HTB Academy Pivoting, Tunneling, and Port Forwarding course preview' (academy.hackthebox.com). First result, title 'Pivoting, Tunneling, and Port Forwarding Course' at this URL; result text: Medium, pivoting terminology, proxychains, SSH tunnels, Meterpreter pivoting, local and remote port forwarding, AutoRoute, DNS and ICMP tunneling, socat, sshuttle, Chisel SOCKS5, Netsh; 18 sections per another result; listing indexed about 1,277 days ago.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "pivoting",
+        "port forwarding",
+        "tunneling",
+        "proxy chains"
+      ],
+      "suggested_days": [
+        "D29"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "Medium",
+      "fallback": "w06-thm-badbyte",
+      "notes": "Use the SSH tunnelling and port-forwarding sections for D29. Everything is done on the module's own lab or the G9 lab; no real-network pivoting (plan section 5, week 6 lab process). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-thm-lateral-movement-and-pivoting",
+      "url": "https://tryhackme.com/room/lateralmovementandpivoting",
+      "provider": "TryHackMe",
+      "title": "Lateral Movement and Pivoting",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium. tryhackme.com/free-rooms (search result 'Free Cyber Security Rooms & Labs') says 650+ rooms are free; help.tryhackme.com 'The AttackBox Explained': free users get up to one hour of AttackBox per day or can use their own machine through VPN. A TryHackMe 2026 blog on free red-team training (search summary) says the rooms it lists are free with an account but its room-to-URL mapping was not shown.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'TryHackMe room Lateral Movement and Pivoting tunneling port forwarding' (tryhackme.com). First result at this URL; result text: Windows lateral movement, tasks on WMI, remote process spawning, alternate authentication material and user-behaviour abuse, with Task 7 on port forwarding; the outline only, about 1,600 days old. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "lateral movement theory",
+        "port forwarding",
+        "Windows remote execution"
+      ],
+      "suggested_days": [
+        "D29"
+      ],
+      "block": "A",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w06-thm-badbyte",
+      "notes": "Guided theory and lab for block A; the Windows lateral-movement tasks need a corporate-style target, so use only the lab the room provides. Related room: Intro to AD Lateral Movement (tryhackme.com/room/introductiontoadlateralmovement: PsExec, WinRM, PtH, SSH tunnels). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-thm-badbyte",
+      "url": "https://tryhackme.com/room/badbyte",
+      "provider": "TryHackMe",
+      "title": "Badbyte",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium. tryhackme.com/free-rooms (search result 'Free Cyber Security Rooms & Labs') says 650+ rooms are free; help.tryhackme.com 'The AttackBox Explained': free users get up to one hour of AttackBox per day or can use their own machine through VPN. A TryHackMe 2026 blog on free red-team training (search summary) says the rooms it lists are free with an account but its room-to-URL mapping was not shown.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'TryHackMe room Lateral Movement and Pivoting tunneling port forwarding' (tryhackme.com). Result at this URL; result text: walks through SSH local forwarding with -L, dynamic forwarding with -D and proxychains, and the -R and -N flags. The room name is taken from the result text; the result title field is the generic 'TryHackMe'.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "SSH local forwarding",
+        "SSH dynamic forwarding",
+        "proxychains"
+      ],
+      "suggested_days": [
+        "D29"
+      ],
+      "block": "B",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w06-htb-pivoting-tunneling-port-forwarding",
+      "notes": "Block B: configure one permitted intermediate host and path, record each command and each temporary rule for the D29 teardown checklist. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-thm-wreath",
+      "url": "https://tryhackme.com/room/wreath",
+      "provider": "TryHackMe",
+      "title": "Wreath",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Tier unclear in the results: the room page text did not state free or Premium; an old TryHackMe blog (about 1,700 days, search summary) says a free network called Wreath was released; the network room guide (tryhackme.com/room/networkroomguide) says network VPNs can be used on the AttackBox only by Premium and MAX users and free users must connect from their own machine; the free-rooms page lists network simulations among Premium and MAX features.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries: 'TryHackMe room Lateral Movement and Pivoting tunneling port forwarding' and 'TryHackMe Wreath network room pivoting premium subscription' (tryhackme.com). Result at this URL; result text: pivot through a network by compromising a public-facing web machine and tunnelling traffic to other machines, tasks on enumeration, proxychains and FoxyProxy, SSH tunnelling, plink, socat, Chisel and sshuttle (tasks 7 to 16 of the outline). The room name is taken from the result text; the result title field is the generic 'TryHackMe'.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "multi-host network",
+        "pivoting",
+        "port forwarding",
+        "segment crossing"
+      ],
+      "suggested_days": [
+        "D29"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w06-thm-badbyte",
+      "notes": "Hosted multi-host option for the constrained cross-segment test. Student report PDFs for this network are hosted on assets.tryhackme.com and appeared in the results: do not read them before the time box ends. Use only the pivoting task range; cleanup of tunnels is part of the evidence. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-openbsd-ssh-man",
+      "url": "https://man.openbsd.org/ssh",
+      "provider": "OpenBSD",
+      "title": "ssh(1) - OpenBSD manual pages",
+      "kind": "DOCS",
+      "access": "UNKNOWN",
+      "access_note": "No search result was seen for this page, so the access tier is not evidenced (public manual page expected).",
+      "verification": "ASSUMED",
+      "evidence": "Not found in a search result: the shared search budget of the run ended before the planned query (ssh manual page OpenBSD -L -D -J ProxyJump). Well-known, stable address recorded as ASSUMED; title and content not confirmed today. The sibling page man.openbsd.org/sshd_config is recorded SEARCH_CHECKED in WEEKS/W01/RESOURCES.json (id w01-openssh-sshd-config); this client page follows the same address pattern.",
+      "version": "not checked",
+      "topics": [
+        "ssh -L",
+        "ssh -D",
+        "ProxyJump",
+        "port forwarding options"
+      ],
+      "suggested_days": [
+        "D29"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Official OpenSSH client reference for the forwarding flags used on D29. The server-side counterpart for turning forwarding off (AllowTcpForwarding) is in sshd_config(5), see the W01 entry. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-ubuntu-firewall",
+      "url": "https://documentation.ubuntu.com/security/security-features/network/firewall/",
+      "provider": "Ubuntu",
+      "title": "Firewall - Ubuntu security documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page; tier as recorded by the W02 entry w02-ubuntu-firewall (search result without sign-in or price).",
+      "verification": "ASSUMED",
+      "evidence": "Not searched in this file: the shared search budget of the run ended before the Week 6 documentation queries. The same URL and title are recorded SEARCH_CHECKED in WEEKS/W02/RESOURCES.json (id w02-ubuntu-firewall) of the same run on 2026-11-18; that evidence is quoted here: result 'Firewall - Ubuntu security documentation' at this URL; ufw is a front end that invokes the legacy iptables and ip6tables utilities and should not be mixed with native nftables rules.",
+      "version": "Ubuntu security documentation as listed 2026-11-18 (by the W02 entry)",
+      "topics": [
+        "firewall rules",
+        "ufw",
+        "nftables",
+        "rule removal"
+      ],
+      "suggested_days": [
+        "D29"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "D29 block D: remove every temporary route and rule and prove the segmentation is restored (W06-Q06): list the rules before, after and compare. Do not mix ufw with raw nftables rules in the same lab host. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-htb-documentation-reporting",
+      "url": "https://academy.hackthebox.com/course/preview/documentation--reporting",
+      "provider": "HTB Academy",
+      "title": "Documentation & Reporting Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "No search result showed this module's tier or cube cost. help.hackthebox.com 'Academy Subscriptions' (search result, 2026-11-18): Tier 0 modules are free with an account; Silver unlocks modules up to Tier II and Gold up to Tier III; single modules can also be unlocked with Cubes. Check the module page for 'Start Module (Free)'.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'HTB Academy Documentation & Reporting course preview penetration test report' (academy.hackthebox.com). First result, title 'Documentation & Reporting Course' at this URL; result text: Easy, note-taking, the components of a pentest report, writing up a finding in detail, an overview section naming the testing type, the testers and source IPs; the Resources tab ships a sample Internal Penetration Test report (Word and PDF) and an Obsidian notebook; prerequisite Penetration Testing Process.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "pentest report",
+        "finding write-up",
+        "executive summary",
+        "evidence organisation"
+      ],
+      "suggested_days": [
+        "D26",
+        "D30"
+      ],
+      "block": "D",
+      "estimate_minutes": 90,
+      "difficulty": "Easy",
+      "fallback": "w06-nist-sp-800-115",
+      "notes": "D30 block D input for the commercial-style report. Do not copy sample report text or findings into the learner's report. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-htb-cpts-certification",
+      "url": "https://academy.hackthebox.com/preview/certifications/htb-certified-penetration-testing-specialist",
+      "provider": "HTB Academy",
+      "title": "HTB Certified Penetration Testing Specialist - HTB Academy",
+      "kind": "STANDARD",
+      "access": "MIXED",
+      "access_note": "The certification page is public (search result). The exam needs a separate voucher: HTB help centre and blog (search summaries): an annual Academy subscription includes a voucher, on a monthly plan the voucher is bought separately, one voucher includes two exam attempts.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'HTB CPTS exam where to start requirements 100% Penetration Tester path completed before attempting exam rules' (academy.hackthebox.com, help.hackthebox.com, hackthebox.com). First result, title 'HTB Certified Penetration Testing Specialist - HTB Academy' at this URL; result text: the entire Penetration Tester job-role path (28 modules per this page) must be completed before the exam, each module ends with a skills assessment. Other results: the launch blog (hackthebox.com/blog/certified-penetration-testing-specialist-cpts) and 'Academy Certifications' (help.hackthebox.com/en/articles/12741732-academy-certifications): report as unencrypted PDF or ZIP up to 20 MB, 10 days to upload it after entering the exam. The plan's where-to-start URL was not a result.",
+      "version": "as listed 2026-11-18; module count and report rules differ between pages",
+      "topics": [
+        "CPTS",
+        "exam prerequisites",
+        "report requirements"
+      ],
+      "suggested_days": [
+        "D30"
+      ],
+      "block": "any",
+      "estimate_minutes": 20,
+      "difficulty": null,
+      "fallback": "w06-htb-academy-modules-paths",
+      "notes": "Exam rules differ from ordinary lab use and must be re-read on the live page before booking (plan section 13). The path module count is 28 on this page and 27 on a course page. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-htb-academy-modules-paths",
+      "url": "https://help.hackthebox.com/en/articles/12741910-academy-modules-paths",
+      "provider": "Hack The Box",
+      "title": "Academy Modules & Paths",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public help-centre article returned by the search; no sign-in indicated.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'HTB Academy Modules & Paths help article estimated hours Penetration Tester path 342 hours SOC Analyst 189 hours' (help.hackthebox.com, academy.hackthebox.com, hackthebox.com). First result, title 'Academy Modules & Paths' at this URL; result text: Penetration Tester (CPTS) path 342 estimated hours (42 days 6 hours), SOC Analyst (CDSA) path 189 hours (23 days 5 hours); an estimated 'day' is an 8-hour session.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "path hour estimates",
+        "Cubes",
+        "tiers"
+      ],
+      "suggested_days": [
+        "D30"
+      ],
+      "block": "any",
+      "estimate_minutes": 15,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Estimates are platform averages, not course quotas and not promises for this learner (plan section 16 item 1). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-offsec-oscp-exam-guide",
+      "url": "https://help.offsec.com/hc/en-us/articles/360040165632-OSCP-Exam-Guide",
+      "provider": "OffSec",
+      "title": "OSCP+ Exam Guide",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public help-centre article returned by the search; no sign-in indicated.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'OffSec OSCP+ exam guide help center scoring changes December 1 2026 equated scaled scoring' (help.offsec.com, offsec.com). Result title 'OSCP+ Exam Guide' at this URL; per the search summary the guide still lists the 60/40 point split (three standalone machines and one Active Directory set) while an older notice, 'OSCP Exam Change' (offsec.com/blog/oscp-exam-structure/), describes a 70/30 structure with a bonus; the exam text of the guide itself was not shown. Other results: 'OSCP+ Exam FAQ' (help.offsec.com/hc/en-us/articles/4412170923924-OSCP-Exam-FAQ) and 'OSCP+ Candidate Handbook' (help.offsec.com/hc/en-us/articles/40393367449108-OSCP-Candidate-Handbook).",
+      "version": "as listed 2026-11-18; the structure statements conflict between pages",
+      "topics": [
+        "OSCP+ exam rules",
+        "proctoring",
+        "report deadline"
+      ],
+      "suggested_days": [
+        "D30"
+      ],
+      "block": "any",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": "w06-offsec-oscp-scoring-faq",
+      "notes": "Re-read the live guide, FAQ and handbook before any exam booking; the plan notes AI chatbot and automation restrictions, which no search result here confirmed (see plan_fact_checks). Ordinary lab use on D30 is not bound by exam rules; the benchmark itself forbids AI assistance by the plan's own rule. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-offsec-oscp-scoring-faq",
+      "url": "https://help.offsec.com/hc/en-us/articles/54589877508884-OSCP-Equated-Scaled-Scoring-FAQ",
+      "provider": "OffSec",
+      "title": "OSCP+ Equated Scaled Scoring FAQ",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public help-centre article returned by the search; no sign-in indicated.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w06-offsec-oscp-exam-guide. Result title 'OSCP+ Equated Scaled Scoring FAQ' at this URL; result text (with the OffSec blog 'OSCP+ Scoring Update: What You Need to Know', offsec.com/blog/oscp-grading-update/): exams starting before 2026-12-01 08:00 GMT keep the fixed passing score of 70; exams starting on or after it pass at 400 on a scaled 100 to 500 range; the raw points needed for 400 depend on the exam set; past attempts are not rescored; point values, proof requirements, documentation standards, format, time limits, proctoring and the report deadline are unchanged.",
+      "version": "effective for exams starting on or after 2026-12-01 08:00 GMT",
+      "topics": [
+        "OSCP+ scoring",
+        "scaled score",
+        "exam date"
+      ],
+      "suggested_days": [
+        "D30"
+      ],
+      "block": "any",
+      "estimate_minutes": 20,
+      "difficulty": null,
+      "fallback": "w06-offsec-oscp-exam-guide",
+      "notes": "Do not use a fixed 70-point target for an exam on or after 2026-12-01 (plan section 4). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-htb-machine-nibbles",
+      "url": "https://www.hackthebox.com/machines/nibbles",
+      "provider": "Hack The Box",
+      "title": "Nibbles (Easy)",
+      "kind": "MACHINE",
+      "access": "PAID",
+      "access_note": "help.hackthebox.com 'HTB Labs Subscriptions' (search result, 2026-11-18): the Free plan covers 20 active Machines; retired Machines come with VIP+ (25 USD per month or 223 USD per year) or HTB PRO (49 USD per month or 490 USD per year). The machine page is marked retired in the search summary.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'hackthebox.com machines \"Legacy (Easy)\" OR \"Blue (Easy)\" OR \"Jerry (Easy)\" OR \"Nibbles (Easy)\" retired machine' (hackthebox.com). First result, title 'Nibbles (Easy)' at this URL; the page is marked retired; Linux.",
+      "version": "retired per the page label as seen 2026-11-18",
+      "topics": [
+        "unknown-target pool",
+        "Linux",
+        "full chain"
+      ],
+      "suggested_days": [
+        "D30"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": "Easy",
+      "fallback": "w06-thm-basic-pentesting",
+      "notes": "Midpoint rule from the plan: one unknown target, no AI assistance, no full spoilers; read no write-up before the time limit. The machine page description names the vulnerability class, so the assigner (not the learner) draws the target and the learner sees the name and operating system only. Never publish a solution. HTB rule (Hack The Box Platform Rules, help.hackthebox.com/en/articles/12325897-hack-the-box-platform-rules, and the Acceptable Use Policy effective 2026-04-01, resources.hackthebox.com/hubfs/Legal/AUP.pdf): solutions, flags and write-ups of ACTIVE machines, challenges and Sherlocks must not be published; only retired content, Starting Point machines and Tier 0 Academy modules may be written about; a machine can be both active and expired, so confirm the page says retired. This file names retired machines only. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-htb-machine-bashed",
+      "url": "https://www.hackthebox.com/machines/bashed",
+      "provider": "Hack The Box",
+      "title": "Bashed (Easy)",
+      "kind": "MACHINE",
+      "access": "PAID",
+      "access_note": "help.hackthebox.com 'HTB Labs Subscriptions' (search result, 2026-11-18): the Free plan covers 20 active Machines; retired Machines come with VIP+ (25 USD per month or 223 USD per year) or HTB PRO (49 USD per month or 490 USD per year). The machine page is marked retired in the search summary.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'hackthebox.com machines \"Bashed (Easy)\" OR \"Shocker (Easy)\" OR \"Cap (Easy)\" OR \"Knife (Easy)\" OR \"Optimum (Easy)\" retired machine' (hackthebox.com). Result title 'Bashed (Easy)' at this URL; the page is marked retired; Linux; released December 2017 per the summary.",
+      "version": "retired per the page label as seen 2026-11-18",
+      "topics": [
+        "unknown-target pool",
+        "Linux",
+        "full chain"
+      ],
+      "suggested_days": [
+        "D30"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": "Easy",
+      "fallback": "w06-thm-basic-pentesting",
+      "notes": "Midpoint rule from the plan: one unknown target, no AI assistance, no full spoilers; read no write-up before the time limit. The machine page description names the vulnerability class, so the assigner (not the learner) draws the target and the learner sees the name and operating system only. Never publish a solution. HTB rule (Hack The Box Platform Rules, help.hackthebox.com/en/articles/12325897-hack-the-box-platform-rules, and the Acceptable Use Policy effective 2026-04-01, resources.hackthebox.com/hubfs/Legal/AUP.pdf): solutions, flags and write-ups of ACTIVE machines, challenges and Sherlocks must not be published; only retired content, Starting Point machines and Tier 0 Academy modules may be written about; a machine can be both active and expired, so confirm the page says retired. This file names retired machines only. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-htb-machine-cap",
+      "url": "https://www.hackthebox.com/machines/Cap",
+      "provider": "Hack The Box",
+      "title": "Cap (Easy)",
+      "kind": "MACHINE",
+      "access": "PAID",
+      "access_note": "help.hackthebox.com 'HTB Labs Subscriptions' (search result, 2026-11-18): the Free plan covers 20 active Machines; retired Machines come with VIP+ (25 USD per month or 223 USD per year) or HTB PRO (49 USD per month or 490 USD per year). The machine page is marked retired in the search summary.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w06-htb-machine-bashed (hackthebox.com). Result title 'Cap (Easy)' at this URL (capital C as returned); the page is marked retired; Linux; released June 2021 per the summary.",
+      "version": "retired per the page label as seen 2026-11-18",
+      "topics": [
+        "unknown-target pool",
+        "Linux",
+        "full chain"
+      ],
+      "suggested_days": [
+        "D30"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": "Easy",
+      "fallback": "w06-thm-basic-pentesting",
+      "notes": "Midpoint rule from the plan: one unknown target, no AI assistance, no full spoilers; read no write-up before the time limit. The machine page description names the vulnerability class, so the assigner (not the learner) draws the target and the learner sees the name and operating system only. Never publish a solution. HTB rule (Hack The Box Platform Rules, help.hackthebox.com/en/articles/12325897-hack-the-box-platform-rules, and the Acceptable Use Policy effective 2026-04-01, resources.hackthebox.com/hubfs/Legal/AUP.pdf): solutions, flags and write-ups of ACTIVE machines, challenges and Sherlocks must not be published; only retired content, Starting Point machines and Tier 0 Academy modules may be written about; a machine can be both active and expired, so confirm the page says retired. This file names retired machines only. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-htb-machine-jerry",
+      "url": "https://www.hackthebox.com/machines/jerry",
+      "provider": "Hack The Box",
+      "title": "Jerry (Easy)",
+      "kind": "MACHINE",
+      "access": "PAID",
+      "access_note": "help.hackthebox.com 'HTB Labs Subscriptions' (search result, 2026-11-18): the Free plan covers 20 active Machines; retired Machines come with VIP+ (25 USD per month or 223 USD per year) or HTB PRO (49 USD per month or 490 USD per year). The machine page is marked retired in the search summary.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w06-htb-machine-nibbles (hackthebox.com). Result title 'Jerry (Easy)' at this URL; the page is marked retired; Windows.",
+      "version": "retired per the page label as seen 2026-11-18",
+      "topics": [
+        "unknown-target pool",
+        "Windows",
+        "full chain"
+      ],
+      "suggested_days": [
+        "D30"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": "Easy",
+      "fallback": "w06-thm-blue",
+      "notes": "Midpoint rule from the plan: one unknown target, no AI assistance, no full spoilers; read no write-up before the time limit. The machine page description names the vulnerability class, so the assigner (not the learner) draws the target and the learner sees the name and operating system only. Never publish a solution. Windows member of the pool; other retired pages seen in the same queries: Legacy (www.hackthebox.com/machines/legacy, Windows), Optimum (.../optimum, Windows), Lame (.../lame, Linux), Shocker (.../shocker, Linux). HTB rule (Hack The Box Platform Rules, help.hackthebox.com/en/articles/12325897-hack-the-box-platform-rules, and the Acceptable Use Policy effective 2026-04-01, resources.hackthebox.com/hubfs/Legal/AUP.pdf): solutions, flags and write-ups of ACTIVE machines, challenges and Sherlocks must not be published; only retired content, Starting Point machines and Tier 0 Academy modules may be written about; a machine can be both active and expired, so confirm the page says retired. This file names retired machines only. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w06-thm-blue",
+      "url": "https://tryhackme.com/room/blue",
+      "provider": "TryHackMe",
+      "title": "Blue",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium. tryhackme.com/free-rooms (search result 'Free Cyber Security Rooms & Labs') says 650+ rooms are free; help.tryhackme.com 'The AttackBox Explained': free users get up to one hour of AttackBox per day or can use their own machine through VPN. A TryHackMe 2026 blog on free red-team training (search summary) says the rooms it lists are free with an account but its room-to-URL mapping was not shown.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: 'TryHackMe room Blue Kenobi Basic Pentesting Simple CTF Bounty Hacker beginner machines' (tryhackme.com). Result at this URL; result text: a Windows room about leveraging common misconfigurations, described as an educational series for complete beginners and not a boot2root CTF. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "Windows",
+        "beginner machine",
+        "hosted target"
+      ],
+      "suggested_days": [
+        "D30"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w06-thm-basic-pentesting",
+      "notes": "Guided room (task questions and hints), so a weak fit for the unknown-target rule; use only when no HTB retired machine is accessible and hide the task text. Other beginner rooms returned: Simple CTF (tryhackme.com/room/easyctf) and slug-only Ice, Steel Mountain, Alfred, HackPark. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
+    }
+  ],
+  "plan_fact_checks": [
+    {
+      "claim": "HTB path duration estimates: Penetration Tester (CPTS) path 342 hours and SOC Analyst (CDSA) path 189 hours; they are platform averages, not course quotas (plan sections 4 and 16 item 1).",
+      "result": "CONFIRMED",
+      "evidence": "Query 'HTB Academy Modules & Paths help article estimated hours ...' (help.hackthebox.com): 'Academy Modules & Paths' lists Penetration Tester (CPTS) 342 total estimated hours (42 days 6 hours) and SOC Analyst (CDSA) 189 hours (23 days 5 hours), an estimated day being an 8-hour session. The 342 + 189 = 531 total used in plan section 13 follows from these two figures."
+    },
+    {
+      "claim": "HTB CPTS requires 100% of the Penetration Tester role path before the exam (plan sections 4, 13 and 16 item 2).",
+      "result": "CONFIRMED",
+      "evidence": "Query 'HTB CPTS exam where to start requirements ...': the certification page 'HTB Certified Penetration Testing Specialist - HTB Academy' says the entire Penetration Tester job-role path (28 modules on that page) must be completed; a voucher with two attempts is separate (annual subscription includes one); report as PDF or ZIP up to 20 MB, uploaded within 10 days of entering the exam. The plan's where-to-start URL itself was not returned. Module count differs: 28 on the certification page, 27 on a course page."
+    },
+    {
+      "claim": "OSCP+ scoring changes for exams on or after 2026-12-01 08:00 GMT: a scaled model replaces the fixed 70-point rule (plan sections 4, 13 and 16 item 3).",
+      "result": "CONFIRMED",
+      "evidence": "Query 'OffSec OSCP+ exam guide help center scoring changes December 1 2026 equated scaled scoring' (help.offsec.com, offsec.com): 'OSCP+ Scoring Update: What You Need to Know' (offsec.com/blog/oscp-grading-update/) and 'OSCP+ Equated Scaled Scoring FAQ': attempts starting before 2026-12-01 08:00 GMT keep the fixed pass mark of 70; attempts on or after pass at 400 on a 100 to 500 scale, with the raw points needed depending on the exam set; past attempts are not rescored; format, time limits, proctoring, rules and report deadline are unchanged. Note: the 'OSCP+ Exam Guide' still lists a 60/40 split and an older notice lists 70/30 with a bonus, so the exam structure must be re-read live."
+    },
+    {
+      "claim": "OSCP+ exam conditions restrict AI chatbot use and automation (plan sections 13 and 16 item 3).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "The OffSec results (exam guide, exam FAQ, candidate handbook, scoring FAQ) were returned, but none of the search summaries showed rule text on AI chatbots or automation, and the shared search budget ended before a dedicated query could be run. The statement is therefore neither confirmed nor contradicted; read the live guide and handbook."
+    },
+    {
+      "claim": "The MITRE ATT&CK release current in November 2026 (plan section 4: review the October 2026 release).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "The query 'MITRE ATT&CK latest release version October 2026 release notes updates' could not run because the shared web search budget of the run was used up; no result on attack.mitre.org was seen. The learner must record the ATT&CK version number used on the live site."
+    },
+    {
+      "claim": "HTB Penetration Tester path page exists at academy.hackthebox.com/path/preview/penetration-tester (plan section 5 week 6 core sites).",
+      "result": "CONFIRMED",
+      "evidence": "Query 'HTB Academy Penetration Tester job role path modules tier list ...' (academy.hackthebox.com, help.hackthebox.com, hackthebox.com): result 'Penetration Tester Job Role Path' at that URL; the CPTS page says Tier 0 modules of the path are free. The modules used this week (Penetration Testing Process, Linux Privilege Escalation, Windows Privilege Escalation, Pivoting, Tunneling, and Port Forwarding, Documentation & Reporting) are returned with Easy or Medium difficulty labels; their tiers were not shown."
+    },
+    {
+      "claim": "Solutions of ACTIVE Hack The Box machines, challenges and Sherlocks must not be published; only retired content may be (task rule for this file).",
+      "result": "CONFIRMED",
+      "evidence": "Query 'Hack The Box platform rules writeups walkthrough active machines challenges Sherlocks must not be published retired only' (help.hackthebox.com, hackthebox.com): 'Hack The Box Platform Rules' (help.hackthebox.com/en/articles/12325897-hack-the-box-platform-rules), 'Streaming / Writeups / Walkthrough Guidelines' (help.hackthebox.com/en/articles/5188925-streaming-writeups-walkthrough-guidelines) and the Acceptable Use Policy effective 2026-04-01: retired Machines, Sherlocks and Challenges, Starting Point machines and Tier 0 Academy modules may be published; active ones and other Pro Labs must not; a machine can be both active and expired, so check it is officially retired."
+    },
+    {
+      "claim": "Retired Hack The Box machines are not on the free plan (needed for the retired-machine pool of the unknown-target midpoint).",
+      "result": "CONFIRMED",
+      "evidence": "Query 'Hack The Box HTB Labs Subscriptions free plan active machines retired machines VIP+ PRO price' (help.hackthebox.com, hackthebox.com): 'HTB Labs Subscriptions' says the Free plan covers 20 active Machines; VIP+ (25 USD per month or 223 USD per year) adds retired Machines and Challenges; PRO (49 USD per month or 490 USD per year) adds flagship Pro Labs. Retired machine pages found: Lame, Legacy, Jerry, Nibbles, Optimum, Bashed, Shocker and Cap (hackthebox.com/machines/<name>); no HTB page was found for Blue or Knife. HTB Academy and Labs subscriptions are billed separately."
+    },
+    {
+      "claim": "Week 6 can draw the unknown target from pools of retired or beginner machines (plan section 5).",
+      "result": "CONFIRMED",
+      "evidence": "Eight retired HTB machine pages (Lame, Legacy, Jerry, Nibbles, Optimum, Bashed, Shocker, Cap) and TryHackMe beginner rooms (Basic Pentesting, Blue, Simple CTF) were returned. The HTB pool needs VIP+ (see the previous check); the TryHackMe rooms are guided, so they weaken the no-spoiler rule."
+    },
+    {
+      "claim": "NIST SP 800-115 provides a rules-of-engagement template and a plan, execute, post-execute assessment structure (supports W06-Q01).",
+      "result": "CONFIRMED",
+      "evidence": "Query 'NIST SP 800-115 Technical Guide to Information Security Testing and Assessment' (csrc.nist.gov): the 2008 final guide lists planning, execution and post-execution phases and appendices with a Rules of Engagement template. Whether a newer revision exists was not shown."
+    },
+    {
+      "claim": "CVSS v4.0 is the current CVSS version and the specification is version 1.2 (support for the severity rationale).",
+      "result": "CONFIRMED",
+      "evidence": "Query 'FIRST CVSS v4.0 specification document and user guide' (first.org): specification document 1.2 dated 2024-06-18, user guide dated 2025-11-16, FAQ states the current version is CVSS 4.0, released 2023-11-01; an examples PDF dated 2026-07-02 was also listed."
+    }
+  ],
+  "gaps": [
+    "The shared web search budget of the run ended during this week's queries. Not searched: NVD and CVE record pages, CWE, CISA Known Exploited Vulnerabilities, FIRST EPSS, Exploit-DB or searchsploit, PTES, GTFOBins, LOLBAS, sudoers and cron documentation, auditd documentation, OpenSSH ssh(1), Microsoft Learn service and DLL pages, NIST SP 800-41, CISA segmentation guidance, Chisel, Ligolo-ng, proxychains and socat documentation, Greenbone or Nessus documentation. The entries for NVD, CWE, MITRE ATT&CK, OpenBSD ssh(1) and the two Microsoft Learn pages are ASSUMED with their addresses unconfirmed today; those cross-referenced to the W01, W02 or W03 file are ASSUMED here and SEARCH_CHECKED there.",
+    "MITRE ATT&CK: the release current in November 2026 and the October 2026 release contents are not confirmed.",
+    "OSCP+ AI chatbot and automation restrictions are not confirmed by any search result seen.",
+    "Windows privilege escalation hosted scenario (D28, blocks B and C): the TryHackMe room name for tryhackme.com/room/windows10privesc is not confirmed (URL returned, no text); no free Windows-service-ACL scenario with a verified tier exists in this file; D28 block C therefore has no verified hosted exercise; the local G9 Windows VM is the primary route.",
+    "Segmentation theory (D29): no official segmentation or firewall-architecture reference (NIST SP 800-41, CISA) and no pivoting-tool documentation was verified; only the HTB module, three TryHackMe rooms and the Ubuntu firewall page are recorded.",
+    "Telemetry and defence blocks (D26 to D29): no CyberDefenders or LetsDefend exercise for privilege escalation, lateral movement or scanner false positives was searched; the only telemetry references are the Sysmon events page (W03 cross-reference) and the ATT&CK site (ASSUMED).",
+    "Scanner false positives (D26 block D): no Greenbone, Nessus or Nmap NSE documentation was verified.",
+    "HTB Academy tier is not shown for any of the six modules, so access is UNKNOWN; TryHackMe tier is not shown for any room (Wreath is described as possibly Premium because it is a network room).",
+    "Retired HTB machines need VIP+ or PRO; every pool entry is PAID. The free fallback is TryHackMe, whose rooms are guided and are weaker for the no-spoiler midpoint. No HTB page was found for Blue or Knife.",
+    "Hack The Box Sherlocks and HTB Starting Point machine pages are not used this week (only retired machines and an official beginner track may be named; Starting Point is recorded in W05 and earlier files).",
+    "HTB machine topics are deliberately not recorded (the page descriptions name the vulnerability class) so that the unknown-target draw stays blind; the assigner must read the machine page, the learner must not.",
+    "Provider-stated durations were not seen for any entry; every estimate is a planning figure.",
+    "INDEPENDENT RE-CHECK NOT RUN (2026-11-18): the checker could not run any web search because the shared 200-search budget of the turn was already used up. The 23 SEARCH_CHECKED labels, the access tiers (10 FREE, 4 PAID, 1 MIXED, 20 UNKNOWN) and the 11 plan_fact_checks results rest on the author's evidence only, and the 11 ASSUMED entries and the 1 UNVERIFIED entry (w06-thm-windows-privesc) are still unresolved. Re-run the checker with a fresh search budget before any day guide treats a URL, title, tier or fact check of this file as independently confirmed, and run the searches listed in the first gap (NVD, CWE, ATT&CK release, ssh(1), the two Microsoft Learn pages, the TryHackMe Windows PrivEsc room) first."
+  ]
+}
