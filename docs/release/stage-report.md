@@ -12,7 +12,7 @@ Owner requests: apply the "G9 Cybersecurity Mastery v2.0" plan, fill gaps only i
 |---|---|---|
 | Second structure profile `MASTERY_V2` next to `CT9_480`; manifest 1.1.0; import, plan, labels, desktop mock | ADR-0023; the five `mastery_v2` test files and `apps/desktop/src/ipc/transports/mock.test.ts` | TESTED (counts below) |
 | Courseware builder and its 460 tests; schemas for answer keys, resource registries and 60-day lesson sheets | `scripts/build_curriculum_v2.py`, `scripts/tests/test_gates_build_curriculum_v2.py`, `schemas/curriculum/` | TESTED |
-| Resource registries of 12 weeks (460 entries) | `docs/curriculum/v2/WEEKS/Wnn/RESOURCES.json` | SEARCH_CHECKED, ASSUMED or UNVERIFIED per entry; no page opened |
+| Resource registries of 12 weeks (460 entries) | `RESOURCES.json` in each week folder of `docs/curriculum/v2/WEEKS` | SEARCH_CHECKED, ASSUMED or UNVERIFIED per entry; no page opened |
 | Course documents (drafted), week 1 design files and 61 fixtures (SHA-256 match: VERIFIED), 2 of 60 day guides | `docs/curriculum/v2/` | DRAFT; no review pass run |
 | Doc-reference gate green again: 36 references to unwritten courseware allow-listed as `planned` | `scripts/doc_refs_allow.json` | TESTED (`check_doc_refs.py`: 0 broken) |
 | `--available` judges only weeks with all five day guides, so a partly written week does not fail the preflight | `scripts/build_curriculum_v2.py` | TESTED (460 builder tests) |
