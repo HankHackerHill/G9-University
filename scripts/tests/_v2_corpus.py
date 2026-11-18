@@ -30,6 +30,12 @@ VOCAB = (
     "limit target guest range network review step result trace mode path value source check claim fact limit group"
 ).split()
 
+# The words of the key bodies are not the words of the learner filler: the builder refuses a learner file that holds a run of eight
+# words of a key, and filler of a 30-word vocabulary would otherwise repeat one by chance.
+KEY_VOCAB = (
+    "observation recorded finding expected deviation scored marker outcome verdict criterion anomaly artefact severity rubric tally"
+).split()
+
 # competency -> (min, max) difficulty band, read from the packs at run time
 EXAM_COMPETENCIES = ["lab.authorization", "net.layers-addressing", "win.principals-services", "web.http-semantics"]
 
@@ -44,6 +50,18 @@ def prose(tag: str, words: int) -> str:
     out: list[str] = []
     for i in range(words):
         out.append(VOCAB[(start + 5 * i + i * i // 3) % len(VOCAB)])
+    sentences = []
+    for k in range(0, words, 11):
+        chunk = out[k : k + 11]
+        chunk[0] = chunk[0].capitalize()
+        sentences.append(" ".join(chunk) + ".")
+    return " ".join(sentences)
+
+
+def key_prose(tag: str, words: int) -> str:
+    """Like prose(), from the vocabulary of the keys (disjoint from the filler's)."""
+    start = int(hashlib.sha256(tag.encode()).hexdigest()[:8], 16)
+    out = [KEY_VOCAB[(start + 5 * i + i * i // 3) % len(KEY_VOCAB)] for i in range(words)]
     sentences = []
     for k in range(0, words, 11):
         chunk = out[k : k + 11]
@@ -195,7 +213,7 @@ def exam_distractors(w: int, q: int) -> str:
 
 
 def labs_key_body(w: int, name: str) -> str:
-    return prose(f"{name}key{w}", 30)
+    return key_prose(f"{name}key{w}", 30)
 
 
 def exam_answer(w: int, q: int) -> str:

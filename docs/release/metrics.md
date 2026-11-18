@@ -7,8 +7,8 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 | Metric | Value | Counted from |
 |---|---|---|
 | Workspace members (crates) | 15 (13 under `crates/`; 14 default members) | `Cargo.toml` |
-| Rust lines | 130,016 (src 94,386, tests 34,906, other 724) | the members' `.rs` files and `[[test]]` paths |
-| `#[test]` attributes | 1,177 | the same files |
+| Rust lines | 134,668 (src 95,487, tests 38,457, other 724) | the members' `.rs` files and `[[test]]` paths |
+| `#[test]` attributes | 1,229 | the same files |
 | Routed IPC operations | 53 | `OPERATIONS` in `crates/g9-app/src/ops.rs` |
 | PROPOSED IPC operations | 15 (analytics 3, executive 4, research 4, teaching 4) | `PROPOSED_OPERATIONS` of the modules `crates/g9-app/src/dispatch.rs` names |
 | Migrations | 15 (0001 to 0015) | `crates/g9-storage/src/migrations/` |
@@ -26,10 +26,10 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 
 | Crate | Path | Default member | Files | src lines | tests lines | other lines | `#[test]` |
 |---|---|---|---|---|---|---|---|
-| g9-domain | `crates/g9-domain` | yes | 19 | 2,782 | 145 | 0 | 37 |
+| g9-domain | `crates/g9-domain` | yes | 19 | 3,376 | 145 | 0 | 42 |
 | g9-policy | `crates/g9-policy` | yes | 11 | 4,892 | 3,211 | 0 | 87 |
-| g9-storage | `crates/g9-storage` | yes | 33 | 28,653 | 3,278 | 0 | 212 |
-| g9-curriculum | `crates/g9-curriculum` | yes | 10 | 2,546 | 1,266 | 0 | 32 |
+| g9-storage | `crates/g9-storage` | yes | 34 | 28,735 | 3,761 | 0 | 218 |
+| g9-curriculum | `crates/g9-curriculum` | yes | 12 | 2,838 | 2,334 | 0 | 46 |
 | g9-calendar | `crates/g9-calendar` | yes | 10 | 3,951 | 916 | 0 | 56 |
 | g9-evidence | `crates/g9-evidence` | yes | 9 | 3,756 | 369 | 0 | 40 |
 | g9-competency | `crates/g9-competency` | yes | 9 | 4,006 | 0 | 0 | 38 |
@@ -37,11 +37,11 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 | g9-retention | `crates/g9-retention` | yes | 7 | 952 | 0 | 0 | 11 |
 | g9-ai-adapter | `crates/g9-ai-adapter` | yes | 11 | 2,613 | 614 | 0 | 40 |
 | g9-skills | `crates/g9-skills` | yes | 15 | 4,499 | 1,423 | 0 | 63 |
-| g9-app | `crates/g9-app` | yes | 80 | 14,594 | 16,100 | 46 | 308 |
+| g9-app | `crates/g9-app` | yes | 82 | 14,657 | 17,618 | 46 | 327 |
 | g9-evaluation | `crates/g9-evaluation` | yes | 18 | 6,714 | 1,910 | 0 | 61 |
-| g9-cli | `apps/cli` | yes | 38 | 9,181 | 3,623 | 660 | 115 |
+| g9-cli | `apps/cli` | yes | 39 | 9,251 | 4,105 | 660 | 123 |
 | g9-mentor-desktop | `apps/desktop/src-tauri` | no | 4 | 1,592 | 0 | 18 | 23 |
-| Total | | | 288 | 94,386 | 34,906 | 724 | 1,177 |
+| Total | | | 294 | 95,487 | 38,457 | 724 | 1,229 |
 
 Rust files that no member builds: none.
 

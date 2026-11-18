@@ -59,7 +59,9 @@ pub struct ReconciliationSummary {
     pub added_in_candidate: u32,
     /// Top-level content fields that differ (`name`, `structure`, `weekday_blocks`,
     /// `saturday_blocks`, `weeks.count`, `weeks[i].title`, `weeks[i].week_number`,
-    /// `curriculum_id`). Provenance metadata (`provenance`, `provenance_note`,
+    /// `curriculum_id`). `structure` is compared whole, so a differing or absent
+    /// `assessment_day_of_week` (another structure profile, ADR-0023) is a
+    /// `structure` change. Provenance metadata (`provenance`, `provenance_note`,
     /// `version`, `reconciliation`, `manifest_schema_version`) is deliberately
     /// excluded: it is expected to differ between an original and its candidate.
     pub metadata_changes: Vec<String>,

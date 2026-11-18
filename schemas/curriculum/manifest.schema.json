@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://g9.local/schemas/curriculum/manifest",
-  "title": "G9 curriculum manifest (format v1.0.0)",
-  "description": "Machine-readable curriculum manifest (ARCHITECTURE.md M02; handoff section 8 'Structural contract' and Appendix A 'Importer proof obligations'). Mirrors the serde types in crates/g9-curriculum/src/manifest.rs (deny_unknown_fields at every level). The seed data/curriculum/g9-ct9-480.seed.v0.json is the reference instance. Structural constants are encoded directly: 12 weeks x 6 days x 3 objectives, 420-minute weekdays, 300-minute Saturdays, Sunday unscheduled. Cross-field rules the schema cannot express (day ids D01..D72 in order, objective ids <day>-O<seq>, block sums, Saturday = assessment day, canonical block lists per day type, duplicate ids) are enforced by g9_curriculum::validate and recomputed by scripts/check_curriculum_seed.py. Optional extensions absent in the seed: objective.competency_ids, day.resources, top-level reconciliation.",
+  "title": "G9 curriculum manifest (format v1.0.0 and v1.1.0)",
+  "description": "Machine-readable curriculum manifest (ARCHITECTURE.md M02; handoff section 8 'Structural contract' and Appendix A 'Importer proof obligations'; ADR-0023). Mirrors the serde types in crates/g9-curriculum/src/manifest.rs (deny_unknown_fields at every level). Two structure profiles are accepted (g9_domain::curriculum). CT9_480, the Appendix A shape, with data/curriculum/g9-ct9-480.seed.v0.json as its reference instance: 12 weeks x 6 days x 3 objectives, 420-minute weekdays, 300-minute Saturdays, days D01..D72. MASTERY_V2, declared by structure.assessment_day_of_week = 5 (format 1.1.0 only; the field is absent in every 1.0.0 manifest and absent means 6): 12 weeks x 5 days x 3 objectives, 480-minute days, Friday assessed, days D01..D60. Sunday is unscheduled in both. saturday_minutes and saturday_blocks keep their names in both formats and describe the assessment day. The constants of each profile are encoded directly ($defs shape_ct9_480 and shape_mastery_v2, selected by the declared assessment day). Cross-field rules the schema cannot express (day ids in order, objective ids <day>-O<seq>, block sums, which day is the assessment day, canonical block lists per day type, duplicate ids) are enforced by g9_curriculum::validate; scripts/check_curriculum_seed.py recomputes them for the Appendix A shape. Optional extensions absent in the seed: objective.competency_ids, day.resources, top-level reconciliation.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -19,8 +19,8 @@
   "properties": {
     "manifest_schema_version": {
       "type": "string",
-      "pattern": "^1\\.0\\.[0-9]+$",
-      "description": "Format version MAJOR.MINOR.PATCH; readers at 1.0 accept 1.0.x only."
+      "pattern": "^1\\.[01]\\.[0-9]+$",
+      "description": "Format version MAJOR.MINOR.PATCH; readers at 1.1 accept 1.0.x and 1.1.x. structure.assessment_day_of_week needs 1.1.x."
     },
     "curriculum_id": {
       "$ref": "#/$defs/slug_id",
@@ -42,17 +42,17 @@
     "structure": { "$ref": "#/$defs/structure" },
     "weekday_blocks": {
       "type": "array",
-      "minItems": 6,
+      "minItems": 5,
       "maxItems": 6,
       "items": { "$ref": "#/$defs/block_spec" },
-      "description": "Canonical weekday list: recall 15, theory 45, guided_lab 120, independent_lab 120, defense_verification 60, evidence_reporting 60."
+      "description": "Canonical block list of an ordinary day. CT9_480 (six blocks): recall 15, theory 45, guided_lab 120, independent_lab 120, defense_verification 60, evidence_reporting 60. MASTERY_V2 (five blocks): recall 30, theory 120, guided_lab 120, independent_lab 150, defense_verification 60."
     },
     "saturday_blocks": {
       "type": "array",
       "minItems": 4,
-      "maxItems": 4,
+      "maxItems": 5,
       "items": { "$ref": "#/$defs/block_spec" },
-      "description": "Canonical Saturday list: blind_practical 120, remediation 60, report 60, performance_review 60."
+      "description": "Canonical block list of the assessment day (the name is the format's). CT9_480 (Saturday, four blocks): blind_practical 120, remediation 60, report 60, performance_review 60. MASTERY_V2 (Friday, five blocks): recall 30, theory 120, performance_review 120, blind_practical 150, report 60."
     },
     "weeks": {
       "type": "array",
@@ -67,6 +67,32 @@
     "properties": { "provenance": { "enum": ["RECONCILED_CANDIDATE", "APPROVED_CANONICAL"] } }
   },
   "then": { "required": ["reconciliation"] },
+  "allOf": [
+    {
+      "description": "The declared assessment day selects the structure profile: 5 is MASTERY_V2; absent or any other value is held to CT9_480.",
+      "if": {
+        "required": ["structure"],
+        "properties": {
+          "structure": {
+            "required": ["assessment_day_of_week"],
+            "properties": { "assessment_day_of_week": { "const": 5 } }
+          }
+        }
+      },
+      "then": { "$ref": "#/$defs/shape_mastery_v2" },
+      "else": { "$ref": "#/$defs/shape_ct9_480" }
+    },
+    {
+      "description": "structure.assessment_day_of_week exists from format 1.1.0 on.",
+      "if": {
+        "required": ["structure"],
+        "properties": { "structure": { "required": ["assessment_day_of_week"] } }
+      },
+      "then": {
+        "properties": { "manifest_schema_version": { "pattern": "^1\\.1\\.[0-9]+$" } }
+      }
+    }
+  ],
   "$defs": {
     "slug_id": {
       "type": "string",
@@ -92,13 +118,104 @@
       ],
       "properties": {
         "weeks": { "type": "integer", "const": 12 },
-        "days_per_week": { "type": "integer", "const": 6 },
+        "days_per_week": { "type": "integer", "enum": [5, 6] },
         "objectives_per_day": { "type": "integer", "const": 3 },
-        "weekday_minutes": { "type": "integer", "const": 420 },
-        "saturday_minutes": { "type": "integer", "const": 300 },
+        "weekday_minutes": {
+          "type": "integer",
+          "enum": [420, 480],
+          "description": "Planned minutes of an ordinary day."
+        },
+        "saturday_minutes": {
+          "type": "integer",
+          "enum": [300, 480],
+          "description": "Planned minutes of the assessment day (Saturday in CT9_480, Friday in MASTERY_V2)."
+        },
         "weekly_minutes": { "type": "integer", "const": 2400 },
         "total_minutes": { "type": "integer", "const": 28800 },
-        "sunday": { "type": "string", "const": "unscheduled" }
+        "sunday": { "type": "string", "const": "unscheduled" },
+        "assessment_day_of_week": {
+          "type": "integer",
+          "enum": [5, 6],
+          "description": "Format 1.1.0 only. The assessed day of the week: 5 (Friday) declares MASTERY_V2; 6 (Saturday) is what an absent field means."
+        }
+      }
+    },
+    "shape_ct9_480": {
+      "description": "Constants of the Appendix A shape, applied to a manifest that does not declare assessment_day_of_week = 5.",
+      "properties": {
+        "structure": {
+          "properties": {
+            "days_per_week": { "const": 6 },
+            "weekday_minutes": { "const": 420 },
+            "saturday_minutes": { "const": 300 }
+          }
+        },
+        "weekday_blocks": { "minItems": 6, "maxItems": 6 },
+        "saturday_blocks": { "minItems": 4, "maxItems": 4 },
+        "weeks": {
+          "items": {
+            "properties": {
+              "days": {
+                "minItems": 6,
+                "maxItems": 6,
+                "items": {
+                  "properties": {
+                    "planned_minutes": { "enum": [420, 300] },
+                    "blocks": { "minItems": 4, "maxItems": 6 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "shape_mastery_v2": {
+      "description": "Constants of the owner's v2.0 plan (ADR-0023), applied to a manifest that declares assessment_day_of_week = 5.",
+      "properties": {
+        "structure": {
+          "properties": {
+            "days_per_week": { "const": 5 },
+            "weekday_minutes": { "const": 480 },
+            "saturday_minutes": { "const": 480 }
+          }
+        },
+        "weekday_blocks": { "minItems": 5, "maxItems": 5 },
+        "saturday_blocks": { "minItems": 5, "maxItems": 5 },
+        "weeks": {
+          "items": {
+            "properties": {
+              "days": {
+                "minItems": 5,
+                "maxItems": 5,
+                "items": {
+                  "properties": {
+                    "day_id": { "pattern": "^D(0[1-9]|[1-5][0-9]|60)$" },
+                    "day_of_week": { "maximum": 5 },
+                    "planned_minutes": { "const": 480 },
+                    "objectives": {
+                      "items": {
+                        "properties": {
+                          "objective_id": { "pattern": "^D(0[1-9]|[1-5][0-9]|60)-O[1-3]$" }
+                        }
+                      }
+                    },
+                    "blocks": {
+                      "minItems": 5,
+                      "maxItems": 5,
+                      "items": {
+                        "properties": {
+                          "seq": { "maximum": 5 },
+                          "minutes": { "maximum": 150 }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "block_name": {
@@ -134,9 +251,10 @@
         "title": { "type": "string", "minLength": 1, "maxLength": 200 },
         "days": {
           "type": "array",
-          "minItems": 6,
+          "minItems": 5,
           "maxItems": 6,
-          "items": { "$ref": "#/$defs/day" }
+          "items": { "$ref": "#/$defs/day" },
+          "description": "Six days in CT9_480, five in MASTERY_V2 (see the shape definitions)."
         }
       }
     },
@@ -158,9 +276,9 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 6,
-          "description": "1 = Monday .. 6 = Saturday; Sunday (7) is unscheduled and not allowed."
+          "description": "1 = Monday .. 6 = Saturday (.. 5 = Friday in MASTERY_V2); Sunday (7) is unscheduled and not allowed."
         },
-        "planned_minutes": { "type": "integer", "enum": [420, 300] },
+        "planned_minutes": { "type": "integer", "enum": [420, 300, 480] },
         "objectives": {
           "type": "array",
           "minItems": 3,

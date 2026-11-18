@@ -12,6 +12,13 @@
 //! * `curriculum.daily_plan` reads the stored structure of the active version.
 //!   An objective's `status` is derived from the study sessions linked to it
 //!   (`objective_status`; app-7), never a constant and never `VERIFIED`.
+//!
+//! Two curriculum shapes are accepted (ADR-0023, `g9_domain::curriculum`): the
+//! Appendix A shape (`CT9_480`: six days a week, Saturday assessed) and the
+//! owner's v2.0 plan (`MASTERY_V2`: five days a week, Friday assessed). The
+//! shape of a stored version is the profile its validation report names
+//! (`CurriculumVersionRow::structure_profile`); which dates have a training day,
+//! which day is assessed and what a block is called come from that profile.
 
 use super::{decode, parse_id, rc, tail, to_value};
 use crate::context::{AppContext, Services};
@@ -22,8 +29,8 @@ use g9_curriculum::{
     CivilDate, Manifest, PromotionBlocked, ReconciliationReport, ValidationReport,
 };
 use g9_domain::{
-    Classification, CommandMeta, CommandOutcome, CurriculumVersionId, DataDomain, G9Error,
-    ManifestProvenance, ResourceKind, ResourceRef, SessionState,
+    Classification, CommandMeta, CommandOutcome, CurriculumId, CurriculumVersionId, DataDomain,
+    G9Error, ManifestProvenance, ResourceKind, ResourceRef, SessionState, StructureProfile,
 };
 use g9_storage::repos::curriculum::{
     self as repo, CurriculumVersionRow, NewCurriculumVersion, ProvenanceApproval, TrainingDayRow,
@@ -41,7 +48,9 @@ fn parse(value: &Value, what: &str) -> Result<Manifest, G9Error> {
         let kind = if e.is_data() { "shape" } else { "syntax" };
         G9Error::invalid_input(
             "curriculum.manifest_unparseable",
-            format!("{what} does not match the curriculum manifest format v1.0.0 ({kind})"),
+            format!(
+                "{what} does not match the curriculum manifest format (v1.0.0 or v1.1.0) ({kind})"
+            ),
         )
     })
 }
@@ -62,19 +71,27 @@ fn violations(report: &ValidationReport) -> Vec<Value> {
     out
 }
 
-/// The version daily plans and objective links read: the current
-/// `APPROVED_CANONICAL` version of the configured curriculum, otherwise the
-/// most recently imported version (callers label non-canonical results).
+/// The version daily plans and objective links read (`repo::active_version`): the current
+/// `APPROVED_CANONICAL` version, otherwise the most recently imported version (callers label
+/// non-canonical results). It is not bound to `AppConfig::curriculum_id`: two curricula can share
+/// a database (ADR-0023), and the program the operator imported or promoted last is the one in use.
 pub(crate) fn active_version(
     conn: &Connection,
-    svc: &Services,
+    _svc: &Services,
 ) -> Result<Option<CurriculumVersionRow>, G9Error> {
-    if let Some(v) = repo::current_version(conn, &svc.config.curriculum_id)? {
-        return Ok(Some(v));
-    }
-    let mut versions = repo::list_versions(conn, &svc.config.curriculum_id)?;
-    versions.sort_by_key(|v| (v.imported_at, v.id.clone()));
-    Ok(versions.pop())
+    Ok(repo::active_version(conn)?)
+}
+
+/// The curriculum the program plan (the start Monday and the day start) belongs to: that of the
+/// active version, the configured one while nothing is imported.
+pub(crate) fn active_curriculum_id(
+    conn: &Connection,
+    svc: &Services,
+) -> Result<CurriculumId, G9Error> {
+    Ok(match active_version(conn, svc)? {
+        Some(version) => version.curriculum_id,
+        None => svc.config.curriculum_id.clone(),
+    })
 }
 
 /// The Monday of week 1: the bridge's override (`AppConfig::program_start`, the CLI's
@@ -86,15 +103,17 @@ pub(crate) fn effective_program_start(
     if let Some(start) = svc.config.program_start {
         return Ok(Some(start));
     }
-    match repo::get_program_plan(conn, &svc.config.curriculum_id)? {
+    match repo::get_program_plan(conn, &active_curriculum_id(conn, svc)?)? {
         Some(plan) => Ok(Some(parse_date(&plan.start_monday)?)),
         None => Ok(None),
     }
 }
 
-/// The training day of the active version that falls on `date`: the program runs Monday to
-/// Saturday of each week counted from the program start. `None` for a Sunday, a date outside the
-/// weeks the version holds and a day the version does not define.
+/// The training day of the active version that falls on `date`: the program runs on the training
+/// days of the version's structure profile (Monday to Saturday in `CT9_480`, Monday to Friday in
+/// `MASTERY_V2`) of each week counted from the program start. `None` for a day the profile does not
+/// train on (a Sunday; a Saturday of a `MASTERY_V2` version), a date outside the weeks the version
+/// holds and a day the version does not define.
 pub(crate) fn training_day_on(
     conn: &Connection,
     svc: &Services,
@@ -112,10 +131,11 @@ pub(crate) fn training_day_on(
             "the program start date (Monday of week 1) is not configured",
         )
     })?;
+    let profile = version.structure_profile()?;
     let index = date.to_days() - start.to_days();
     let week = index.div_euclid(7) + 1;
     let weekday = index.rem_euclid(7) + 1;
-    if weekday > 6 {
+    if !is_training_weekday(profile, weekday) {
         return Ok(None);
     }
     let Some(week_row) = repo::list_weeks(conn, &version.id)?
@@ -128,6 +148,11 @@ pub(crate) fn training_day_on(
         .into_iter()
         .find(|d| d.week_id == week_row.id && i64::from(d.day_of_week.get()) == weekday);
     Ok(day.map(|d| (version, week_row, d)))
+}
+
+/// Whether `weekday` (1 = Monday .. 7 = Sunday) is a training day of `profile`.
+fn is_training_weekday(profile: &StructureProfile, weekday: i64) -> bool {
+    u8::try_from(weekday).is_ok_and(|d| profile.is_training_day(d))
 }
 
 /// The minute of the day a planned day starts when the operator set no other (09:00).
@@ -184,12 +209,17 @@ pub fn program(
             let curriculum = match active_version(env.conn, env.svc)? {
                 None => Value::Null,
                 Some(version) => {
+                    let profile = version.structure_profile()?;
                     let days = repo::list_training_days(env.conn, &version.id)?;
                     json!({
                         "version_id": version.id,
                         "name": repo::curriculum_title(env.conn, &version.curriculum_id)?,
                         "version_label": version.version_label,
                         "provenance": version.provenance,
+                        // The structure profile the version was imported under (ADR-0023) and its
+                        // training days a week (6, or 5 in MASTERY_V2).
+                        "profile": profile.id,
+                        "days_per_week": profile.days_per_week(),
                         "weeks": repo::list_weeks(env.conn, &version.id)?.len(),
                         "days": days.len(),
                         "objectives": repo::count_objectives(env.conn, &version.id)?,
@@ -198,7 +228,10 @@ pub fn program(
                     })
                 }
             };
-            let start = match repo::get_program_plan(env.conn, &env.svc.config.curriculum_id)? {
+            let start = match repo::get_program_plan(
+                env.conn,
+                &active_curriculum_id(env.conn, env.svc)?,
+            )? {
                 Some(plan) => json!({
                     "monday": plan.start_monday,
                     "day_start": format_day_start(plan.day_start_minute),
@@ -245,11 +278,12 @@ pub fn set_program_start(
     if date.iso_weekday() != 1 {
         return Err(G9Error::invalid_input(
             "program.start_not_a_monday",
-            "the program starts on a Monday: week 1 runs Monday to Saturday",
+            "the program starts on a Monday: each program week begins on its Monday",
         ));
     }
     let minute = parse_day_start(req.day_start.as_deref().unwrap_or("09:00"))?;
-    let curriculum_id = ctx.svc.config.curriculum_id.clone();
+    // The plan belongs to the curriculum of the active version (ADR-0023), not to the configured one.
+    let curriculum_id = active_curriculum_id(ctx.database().conn(), &ctx.svc)?;
     let resource = ResourceRef::new(ResourceKind::Curriculum, curriculum_id.as_str());
     pipeline::execute(
         ctx,
@@ -262,7 +296,7 @@ pub fn set_program_start(
         |conn, svc| {
             let context = rc(DataDomain::Learning, Classification::Internal, false);
             Ok(
-                match repo::get_program_plan(conn, &svc.config.curriculum_id)? {
+                match repo::get_program_plan(conn, &active_curriculum_id(conn, svc)?)? {
                     Some(plan) => Facts::existing(context, plan.revision),
                     None => Facts::new_record(context),
                 },
@@ -275,9 +309,10 @@ pub fn set_program_start(
                     "no curriculum version is imported: import the curriculum first",
                 ));
             }
+            let program_curriculum = active_curriculum_id(env.conn, env.svc)?;
             let revision = repo::put_program_plan(
                 env.conn,
-                &env.svc.config.curriculum_id,
+                &program_curriculum,
                 &req.date,
                 minute,
                 None,
@@ -285,7 +320,7 @@ pub fn set_program_start(
             )?;
             Ok(Mutation::new(
                 json!({
-                    "curriculum_id": env.svc.config.curriculum_id,
+                    "curriculum_id": program_curriculum,
                     "monday": req.date,
                     "day_start": format_day_start(minute),
                 }),
@@ -293,7 +328,7 @@ pub fn set_program_start(
             )
             .with_event(EventSpec::learning(
                 "curriculum.program_start_set",
-                json!({ "curriculum_id": env.svc.config.curriculum_id, "monday": req.date }),
+                json!({ "curriculum_id": program_curriculum, "monday": req.date }),
             )))
         },
     )
@@ -694,6 +729,7 @@ pub fn daily_plan(
                     "the program start date (Monday of week 1) is not configured",
                 )
             })?;
+            let profile = version.structure_profile()?;
             let index = date.to_days() - start.to_days();
             let week = index.div_euclid(7) + 1;
             let weekday = index.rem_euclid(7) + 1;
@@ -713,7 +749,9 @@ pub fn daily_plan(
                     "curriculum.non_canonical: plan derived from a version that is not APPROVED_CANONICAL",
                 );
             }
-            let Some(week_row) = week_row.filter(|_| weekday <= 6) else {
+            // A day the profile does not train on (a Sunday; a Saturday of MASTERY_V2) is answered
+            // as a Sunday is: unscheduled, with the week it falls in.
+            let Some(week_row) = week_row.filter(|_| is_training_weekday(profile, weekday)) else {
                 m.result = empty(
                     week_row.map(|w| i64::from(w.week_number)),
                     week_row.map(|w| w.title.clone()),
@@ -746,6 +784,7 @@ pub fn daily_plan(
                 &ReadScope::domain(DataDomain::Learning),
                 &day.id,
             )?;
+            let assessment_day = profile.is_assessment_day(day.day_of_week.get());
             let blocks: Vec<Value> = repo::study_blocks(env.conn, &day.id)?
                 .into_iter()
                 .map(|b| {
@@ -753,7 +792,15 @@ pub fn daily_plan(
                         .iter()
                         .find(|s| s.study_block_id.as_deref() == Some(b.id.as_str()))
                         .map(|s| s.id.clone());
-                    json!({ "seq": b.ordinal, "block": b.block_code, "minutes": b.minutes, "session_id": session })
+                    // `label`: what the profile calls this block on this kind of day (the
+                    // code with spaces in CT9_480; "Core lesson", "Knowledge exam" ... in MASTERY_V2).
+                    json!({
+                        "seq": b.ordinal,
+                        "block": b.block_code,
+                        "label": profile.label_or_code(&b.block_code, assessment_day),
+                        "minutes": b.minutes,
+                        "session_id": session,
+                    })
                 })
                 .collect();
             let artifact = repo::deliverables(env.conn, &day.id)?
@@ -767,8 +814,9 @@ pub fn daily_plan(
                 "week_number": week_row.week_number,
                 "week_title": week_row.title,
                 "unscheduled": false,
-                // Saturday is the blind-practical day of the program structure (ARCHITECTURE §4).
-                "is_assessment_day": day.day_of_week.is_saturday(),
+                // The assessed day of the version's profile: the Saturday of the Appendix A
+                // structure (ARCHITECTURE §4), the Friday of MASTERY_V2.
+                "is_assessment_day": assessment_day,
                 "planned_minutes": day.planned_minutes,
                 "evidence_artifact": artifact,
                 "objectives": objectives,

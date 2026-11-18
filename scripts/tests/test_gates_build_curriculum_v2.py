@@ -28,8 +28,13 @@ Rules, one case each (CASES: label, mutation, message the rule names):
                 the practical section with the four score parts, the gate section
   week guide, labs, fixtures, evidence checklist
   registry      JSON, the keys, the id, the https address, the enums, a duplicate id, the week of the file, a fallback id
-  leaks         a line that begins with an answer marker; the answer text of a key in a learner file; a multiple-choice
-                answer is not a leak (the learner file lists the options by design)
+  leaks         key text (answer, marking, rationale, distractors, reference observations, fourth hint, overclaims, practical,
+                gate, lab key) in any learner file or in a registry string, of any week, by runs of eight words; a flag of a
+                key; a line that begins with an answer label in any of its forms or is a key line; a question that states or
+                marks its answer; a multiple-choice answer equal to its listed option is a leak only outside the option list
+  sensitive     key, token and private-key patterns, personal e-mail addresses, URLs with a password, IPv4 outside the lab
+  line endings  a CR (CRLF) is a hidden character; a generated file with CRLF is stale
+  outputs       a symbolic link or a folder in place of a generated file, a payload folder orphan, a stray week folder
   corpus        an identifier used twice; two questions with the same text
   generated     every generated file current (changed, missing, orphaned, source edited without regenerating)
 Not reachable through the inputs: the check "identifiers are unique across the corpus" cannot be reached with a valid
@@ -226,6 +231,12 @@ class TreeCase(GateTestCase):
 
     def build(self, *args: str):
         return run_gate(self.script, *args, cwd=self.root)
+
+    def fresh(self) -> None:
+        """Start again from the template (a test that tries several mutations one after the other)."""
+        shutil.rmtree(self.root)
+        shutil.copytree(_STATE[self.template], self.root)
+        self.tree = Tree(self.root)
 
     def run_case(self, mutate: Callable[[Tree], None], needles: list[str], args: tuple[str, ...] = ("--week", "1")) -> None:
         mutate(self.tree)
@@ -612,6 +623,183 @@ CASES: list[tuple[str, Callable[[Tree], None], list[str]]] = [
 ]
 
 
+# ---------------------------------------------------------------------------------------------------
+# review round: leaks by word shingles, answer labels, line endings, sensitive text, small rules
+# ---------------------------------------------------------------------------------------------------
+
+D1 = "DAY_01.md"
+LABS_IND = "LABS/INDEPENDENT_LAB.md"
+PART3 = "## Part 3 — Defensive validation (25 points)"
+KEY_D1 = "W01/ANSWER_KEYS/DAY_01_KEY.md"
+KEY_D2 = "W01/ANSWER_KEYS/DAY_02_KEY.md"
+KEY_AS = "W01/ANSWER_KEYS/ASSESSMENT_KEY.md"
+ANS_D2_R1 = corpus.day_answer(2, "W01D02-R1")
+Q01_ANSWER = corpus.exam_answer(1, 1)  # "B. <text>"
+Q01_OPTION_TEXT = Q01_ANSWER[3:]
+FLAG = "g9{synthetic-flag-0001}"
+LEAK_TAIL = "no learner file may hold key text"
+
+
+def paste(rel: str, text: str, before: str = BLOCK_D, week: int = 1) -> Callable[[Tree], None]:
+    """Put `text` as a paragraph of its own in front of the heading `before` (by default block D of a day guide)."""
+    return lambda t: t.sub(rel, before, text + "\n\n" + before, week=week)
+
+
+def paste_rules(text: str) -> Callable[[Tree], None]:
+    return lambda t: t.sub(AS, "## Rules\n", "## Rules\n" + text + "\n\n")
+
+
+def paste_end(rel: str, text: str) -> Callable[[Tree], None]:
+    return lambda t: t.append(rel, "\n" + text + "\n")
+
+
+def after_option_d(extra: str) -> Callable[[Tree], None]:
+    """A line after the last option of question 1 of the exam."""
+    return lambda t: t.sub(AS, "   D. Option delta for question 1 of week 1", "   D. Option delta for question 1 of week 1\n" + extra)
+
+
+def mark_option(letter: str, name: str, suffix: str) -> Callable[[Tree], None]:
+    line = f"   {letter}. Option {name} for question 1 of week 1"
+    return lambda t: t.sub(AS, line, line + suffix)
+
+
+def after_question_r1(extra: str) -> Callable[[Tree], None]:
+    """A line directly under the first recall question of day 2 (no blank line: it continues the question)."""
+    text = "[W01D02-R1] " + corpus.recall_text(2, 1)
+    return lambda t: t.sub(D2, text, text + "\n" + extra)
+
+
+def crlf(rel: str) -> Callable[[Tree], None]:
+    def mutate(t: Tree) -> None:
+        path = t.at(rel)
+        path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+
+    return mutate
+
+
+def leak_flag(t: Tree) -> None:
+    t.sub(K2, "- Answer: " + ANS_D2_R1, "- Answer: " + FLAG)
+    t.sub(D3, BLOCK_D, f"Submit {FLAG} as the proof.\n\n" + BLOCK_D)
+
+
+def distractors_without_option_a(t: Tree) -> None:
+    t.sub(AK, "A is wrong because it names the wrong owner in question 1;", "A wrong owner is named in question 1;")
+
+
+def fixture_swapped_hashes(t: Tree) -> None:
+    b = t.at("LABS/fixtures/b.log")
+    write_text(b, "Sample (synthetic): Nov 16 10:00:01 guest sshd[2]: Failed password for synthetic-user-b from 10.77.10.6\n")
+    ha, hb = corpus.sha256_file(t.at("LABS/fixtures/auth.log")), corpus.sha256_file(b)
+    rows = ["# Fixtures of the week", "", "| File | SHA-256 | Description |", "|---|---|---|", f"| `auth.log` | {hb} | Synthetic failed-login lines. |", f"| `b.log` | {ha} | More synthetic lines. |", ""]
+    write_text(t.at("LABS/fixtures/MANIFEST.md"), "\n".join(rows))
+
+
+def labs_key_headings_only(t: Tree) -> None:
+    t.put("ANSWER_KEYS/LABS_KEY.md", "# Instructor key — G9 W01 labs\n\nInstructor only.\n\n## GUIDED_LAB: reference observations and scoring\n\n## INDEPENDENT_LAB: reference observations and scoring\n\n## FRIDAY_PRACTICAL: reference observations and scoring\n")
+
+
+def friday_c_part_2_only(t: Tree) -> None:
+    t.sub(D5, " The scored practical is in ASSESSMENT.md, Parts 2 and 3.", " The scored practical is in ASSESSMENT.md, Part 2.")
+
+
+# forms of an answer label at the start of a line of any learner file (the finding listed 14 of 27 that passed)
+DAY_LABEL_FORMS = [
+    "- **Answer:** x", "**Answer**: x", "- **Answer**: x", "_Answer_: x", "+ Answer: x", "1. Answer: x", "2) Answer: x",
+    "- Correct answer is x", "The answer is x", "The correct answer is x", "Answer - x", "Answer = x", "Answer \u2013 x",
+    "Answer\uff1a x", "Ans: x", "Solution: x", "Solutions: x", "Flag: g9{synthetic-flag-0002}", "(Answer: x)", "> Answer: x",
+    "* Answer: x", "ANSWER: X", "Model answer: x", "Reference answer: x", "Answer key: x", "`Answer`: x", '"Answer": x', "    Answer: x",
+    "Answer B",
+]  # fmt: skip
+# key lines of an instructor file
+KEY_LINE_FORMS = ["- Marking: one point for the record", "- Source: w01-synthetic-docs", "- Why: because the owner decides", "- Distractors: A is wrong", "- **Why:** x", "* Marking: x", "1. Source: x"]
+# forms after an exam question (the finding listed 11 of 14 that passed)
+EXAM_LABEL_FORMS = [
+    "**Answer**: B", "Correct: B", "Correct option: B", "Key: B", "(B)", "B is correct", "Answer - B", "Solution: B", "Ans: B", "ANSWER = B", "_Answer_: B",
+    "Expected: B", "[B]", "B", "B)", "Right answer: B", "The correct option is B", "B - correct", "- Marking: one point", "- Why: because", "Answer B",
+]  # fmt: skip
+OPTION_MARKS = [("B", "bravo", " (correct)"), ("B", "bravo", " [correct]"), ("B", "bravo", " (right)"), ("B", "bravo", " \u2713"), ("B", "bravo", " \u2714"), ("B", "bravo", " \u2705"), ("B", "bravo", " - correct"), ("B", "bravo", " (answer)"), ("A", "alpha", " (wrong)"), ("A", "alpha", " \u2717"), ("A", "alpha", " \u274c"), ("A", "alpha", " (incorrect)")]
+QUIZ_LINE_FORMS = ["- Marking: one point for the record", "- Source: w01-synthetic-docs", "- Why: because", "Correct: the owner decides", "Key: the owner decides", "Solution: the owner", "Expected answer: x", "(correct)", "\u2713", "- **Why:** x"]
+# text that must not be taken for a credential, a real host or an answer
+AWS = "AKIA" + "ABCDEFGHIJKLMNOP"
+GITHUB = "gh" + "p_" + "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8"
+SLACK = "xo" + "xb-" + "1234567890-abcdefghij"
+GOOGLE = "AI" + "za" + "SyA1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q"
+PEM = "-----BEGIN " + "RSA PRIVATE KEY-----"
+EMAIL = "jane.doe" + "@" + "gmail.com"
+SENSITIVE_FORMS = [
+    ("aws_access_key_id", f"The key is {AWS} in the profile.", "looks like an AWS access key id"),
+    ("github_token", f"Use the token {GITHUB} for the push.", "looks like a GitHub token"),
+    ("slack_token", f"The bot token is {SLACK}.", "looks like a Slack token"),
+    ("google_api_key", f"The key {GOOGLE} is in the file.", "looks like a Google API key"),
+    ("private_key_header", PEM, "looks like a private key header"),
+    ("personal_email", f"Write to {EMAIL} for the report.", "an e-mail address at gmail.com"),
+    ("public_dns_as_a_target", "Scan 8.8.8.8 from the RED guest.", "IPv4 address 8.8.8.8 is not a lab address"),
+    ("public_site_address", "The site answers on 93.184.216.34 today.", "IPv4 address 93.184.216.34 is not a lab address"),
+    ("home_network_range", "Scan the range 192.168.7.0/24 from the RED guest.", "IPv4 address 192.168.7.0 is not a lab address"),
+    ("home_network_host", "The router is 192.168.1.1 in the lab.", "IPv4 address 192.168.1.1 is not a lab address"),  # a host of the LAN the plan names is not named by the plan
+    ("lab_lookalike_range", "The target is 10.78.1.1.", "IPv4 address 10.78.1.1 is not a lab address"),
+    ("url_with_password", "Open `http://admin:Sup3rS3cret@10.77.20.5/login` first.", "a URL with a user name and password"),
+]  # fmt: skip
+
+LEAK_CASES: list[tuple[str, Callable[[Tree], None], list[str]]] = [
+    ("leak_hint4_in_a_day_block", paste(D1, corpus.day_hint4(1)), [f"W01/DAY_01.md: holds the hint 4 text of W01D01 ({KEY_D1})", LEAK_TAIL]),
+    ("leak_challenge_in_a_day_block", paste(D1, corpus.day_challenge(1)), [f"W01/DAY_01.md: holds the challenge text of W01D01 ({KEY_D1})"]),
+    ("leak_overclaims_in_a_day_block", paste(D1, corpus.DAY_OVERCLAIM), [f"W01/DAY_01.md: holds the overclaims text of W01D01 ({KEY_D1})"]),
+    ("leak_marking_in_a_day_block", paste(D1, corpus.DAY_MARKING), ["W01/DAY_01.md: holds the marking text of W01D01-R1 ("]),
+    ("leak_practical_in_part_2", paste(AS, corpus.PRACTICAL_KEY, PART3), [f"W01/ASSESSMENT.md: holds the practical text of V2-W01-EXAM ({KEY_AS})"]),
+    ("leak_gate_in_submission", paste_end(AS, corpus.GATE_KEY), [f"W01/ASSESSMENT.md: holds the gate text of V2-W01-EXAM ({KEY_AS})"]),
+    ("leak_exam_why_in_rules", paste_rules(corpus.exam_why(1, 1)), ["W01/ASSESSMENT.md: holds the why text of W01X-Q01 ("]),
+    ("leak_exam_distractors_in_rules", paste_rules(corpus.exam_distractors(1, 1)), ["W01/ASSESSMENT.md: holds the distractors text of W01X-Q01 ("]),
+    ("leak_labs_key_in_the_independent_lab", paste_end(LABS_IND, corpus.labs_key_body(1, "INDEPENDENT_LAB")), ["W01/LABS/INDEPENDENT_LAB.md: holds the lab key text of "]),
+    ("leak_first_sixty_characters_of_an_answer", paste(D3, ANS_D2_R1[:60]), ["W01/DAY_03.md: holds the answer text of W01D02-R1 ("]),
+    ("leak_mcq_answer_text_in_part_2", paste(AS, Q01_OPTION_TEXT, PART3), ["W01/ASSESSMENT.md: holds the answer text of W01X-Q01 ("]),
+    ("leak_mcq_answer_and_letter_in_part_2", paste(AS, Q01_ANSWER, PART3), ["W01/ASSESSMENT.md: holds the answer text of W01X-Q01 ("]),
+    ("leak_mcq_answer_in_a_checklist", paste_end("EVIDENCE_CHECKLIST.md", Q01_ANSWER), ["W01/EVIDENCE_CHECKLIST.md: holds the answer text of W01X-Q01 ("]),
+    ("leak_in_the_registry_evidence", lambda t: t.registry(lambda d: d["plan_fact_checks"][0].update({"evidence": ANS_D2_R1})), ["W01/RESOURCES.json: holds the answer text of W01D02-R1 ("]),
+    ("leak_in_a_registry_note", registry_entry(lambda e: e.update({"notes": ANS_D2_R1})), ["W01/RESOURCES.json: holds the answer text of W01D02-R1 ("]),
+    ("leak_in_the_week_guide", paste_end("WEEK_GUIDE.md", corpus.day_hint4(3)), ["W01/WEEK_GUIDE.md: holds the hint 4 text of W01D03 ("]),
+    ("leak_of_a_flag", leak_flag, [f"W01/DAY_03.md: holds the flag of W01D02-R1 ({KEY_D2})"]),
+    ("hidden_cr_in_a_day_block", lambda t: t.sub(D2, "Without notes", "Without\rnotes"), ["W01/DAY_02.md:", "hidden or control character U+000D"]),
+]
+CASES += LEAK_CASES
+
+# every file the builder reads: a CR (CRLF line endings) is a hidden character, as it is in the v1 builder's HIDDEN
+CASES += [
+    (f"hidden_crlf_{rel.replace('/', '_').replace('.', '_').lower()}", crlf(rel), [f"W01/{rel}", "hidden or control character U+000D"])
+    for rel in (D2, K2, AS, AK, "WEEK_GUIDE.md", "LABS/GUIDED_LAB.md", "ANSWER_KEYS/LABS_KEY.md", "EVIDENCE_CHECKLIST.md", "LABS/fixtures/MANIFEST.md", "RESOURCES.json")
+]
+
+CASES += [(f"label_day_{i:02d}", paste(D2, form), ["W01/DAY_02.md:", "begins with 'Answer:', '- Answer:' or 'Correct answer'"]) for i, form in enumerate(DAY_LABEL_FORMS)]
+CASES += [(f"keyline_day_{i}", paste(D2, form), ["W01/DAY_02.md:", "is a key line ('- Marking:', '- Source:', '- Why:', '- Distractors:')"]) for i, form in enumerate(KEY_LINE_FORMS)]
+CASES += [
+    ("keyline_in_the_week_guide", paste_end("WEEK_GUIDE.md", "- Marking: one point"), ["W01/WEEK_GUIDE.md:", "is a key line"]),
+    ("keyline_in_a_lab", paste_end("LABS/GUIDED_LAB.md", "- Why: because"), ["W01/LABS/GUIDED_LAB.md:", "is a key line"]),
+    ("label_in_a_lab_with_emphasis", paste_end("LABS/GUIDED_LAB.md", "- **Answer:** the second guest"), ["W01/LABS/GUIDED_LAB.md:", "begins with 'Answer:'"]),
+]
+CASES += [(f"label_exam_{i:02d}", after_option_d(form), ["Part 1: W01X-Q01: a line of the question states or marks the answer"]) for i, form in enumerate(EXAM_LABEL_FORMS)]
+CASES += [(f"mark_exam_option_{i:02d}", mark_option(letter, name, suffix), ["Part 1: W01X-Q01: a line of the question states or marks the answer"]) for i, (letter, name, suffix) in enumerate(OPTION_MARKS)]
+CASES += [(f"label_quiz_line_{i:02d}", after_question_r1(form), ["quiz: W01D02-R1: line 2 of the question is an answer or key line"]) for i, form in enumerate(QUIZ_LINE_FORMS)]
+CASES += [(f"sensitive_{name}", paste(D2, text), ["W01/DAY_02.md:", needle]) for name, text, needle in SENSITIVE_FORMS]
+CASES += [
+    ("sensitive_in_a_key_file", lambda t: t.append(K2, f"\nSecret: {AWS}\n"), ["W01/ANSWER_KEYS/DAY_02_KEY.md:", "looks like an AWS access key id"]),
+    ("sensitive_in_a_lab", paste_end("LABS/FRIDAY_PRACTICAL.md", EMAIL), ["W01/LABS/FRIDAY_PRACTICAL.md:", "an e-mail address at gmail.com"]),
+    ("sensitive_in_the_assessment", paste(AS, "Target 8.8.4.4 for the scan.", PART3), ["W01/ASSESSMENT.md:", "IPv4 address 8.8.4.4 is not a lab address"]),
+    ("sensitive_in_the_registry", registry_entry(lambda e: e.update({"notes": f"Contact {EMAIL} to get access."})), ["W01/RESOURCES.json:", "an e-mail address at gmail.com"]),
+    ("sensitive_token_in_the_registry", registry_entry(lambda e: e.update({"notes": GITHUB})), ["W01/RESOURCES.json:", "looks like a GitHub token"]),
+    ("sensitive_url_userinfo_in_the_registry", registry_entry(lambda e: e.update({"url": "https://user:pass@example.com/x"})), ["W01/RESOURCES.json:", "a URL with a user name and password"]),
+]
+CASES += [
+    ("friday_block_c_names_part_2_only", friday_c_part_2_only, ["block C of a Friday refers to 'ASSESSMENT.md' and 'Part 2'", "missing: ['Part 3']"]),
+    ("labs_key_with_headings_only", labs_key_headings_only, ["W01/ANSWER_KEYS/LABS_KEY.md: the heading of the lab 'GUIDED_LAB.md' has 0 words under it (minimum 20)"]),
+    ("link_text_wrapped_over_two_lines", paste(D2, "See [the\npage](https://example.com/x) for details."), ["W01/DAY_02.md:", "Markdown link or image '[the page](https://example.com/x)'"]),
+    ("link_reference_style", paste(D2, "See [the page][ref] for details."), ["W01/DAY_02.md:", "Markdown link or image (reference style) '[the page][ref]'"]),
+    ("link_reference_definition", paste(D2, "[ref]: https://example.com/x"), ["W01/DAY_02.md:", "Markdown link or image (reference definition) '[ref]: https://example.com/x'"]),
+    ("link_wrapped_in_the_assessment", paste(AS, "See [the\npage](https://example.com/x).", PART3), ["W01/ASSESSMENT.md:", "Markdown link or image"]),
+    ("distractors_name_a_by_the_article_only", distractors_without_option_a, ["[W01X-Q01]: '- Distractors: ' says why each other option is wrong; not named: A"]),
+    ("fixture_hashes_swapped_between_two_files", fixture_swapped_hashes, ["W01/LABS/fixtures/MANIFEST.md: the line of 'auth.log' holds the SHA-256 of another fixture", "the line of 'b.log' holds the SHA-256 of another fixture"]),
+]
+
+
 class OneWeek(TreeCase):
     """`--week 1` on a synthetic week 1: the control passes; every case of CASES breaks one rule."""
 
@@ -701,15 +889,147 @@ class OneWeek(TreeCase):
         self.assertNotIn("| 1 |", self.read(f"{WEEKS_REL}/W01/{D5}").split("## Commands proposed for review")[1].split("## Offense")[0])
         self.assertExit(self.build("--week", "1"), 0)
 
-    def test_answer_of_a_multiple_choice_question_in_a_learner_file_is_not_a_leak(self) -> None:
-        self.tree.append("EVIDENCE_CHECKLIST.md", "\n" + corpus.exam_answer(1, 1) + "\n")
-        self.assertExit(self.build("--week", "1"), 0)
-
     def test_short_answer_text_is_not_a_leak(self) -> None:
         # the rule compares answers of 40 normalized characters or more
         self.tree.sub(K2, "- Answer: " + corpus.day_answer(2, "W01D02-R1"), "- Answer: a dated listing")
         self.tree.append("EVIDENCE_CHECKLIST.md", "\na dated listing\n")
         self.assertExit(self.build("--week", "1"), 0)
+
+    def test_seven_words_of_an_answer_are_not_a_leak_and_eight_are(self) -> None:
+        # the rule compares runs of eight words; the answers of week 1 all hold "listing of the synthetic guest with owner and"
+        self.tree.append("EVIDENCE_CHECKLIST.md", "\nlisting of the synthetic guest with owner\n")
+        self.assertExit(self.build("--week", "1"), 0)
+        self.fresh()
+        self.tree.append("EVIDENCE_CHECKLIST.md", "\nlisting of the synthetic guest with owner and\n")
+        self.assertRule(self.build("--week", "1"), "W01/EVIDENCE_CHECKLIST.md: holds the answer text of W01D")
+
+    def test_a_listed_option_is_not_a_leak_where_it_is_listed_and_is_one_elsewhere(self) -> None:
+        # an answer of a multiple-choice question may be the text of its option; Part 1 lists the options by design
+        option = "Option bravo for question 1 of week 1 which names the owner of the boundary"
+        self.tree.sub(AS, "   B. Option bravo for question 1 of week 1", "   B. " + option)
+        self.tree.sub(AK, "- Answer: " + Q01_ANSWER, "- Answer: B. " + option)
+        self.assertExit(self.build("--week", "1"), 0)
+        paste(AS, option, PART3)(self.tree)
+        self.assertRule(self.build("--week", "1"), "W01/ASSESSMENT.md: holds the answer text of W01X-Q01 (")
+
+    def test_an_option_line_hides_the_text_of_its_own_question_only(self) -> None:
+        # the answer of question 9 (not multiple choice) put in as option D of question 1 is a leak: the exemption is per question
+        self.tree.sub(AS, "   D. Option delta for question 1 of week 1", "   D. " + corpus.exam_answer(1, 9))
+        self.assertRule(self.build("--week", "1"), "W01/ASSESSMENT.md: holds the answer text of W01X-Q09 (")
+
+    def test_a_flag_placeholder_is_not_a_leak_of_a_key_flag(self) -> None:
+        self.tree.sub(K2, "- Answer: " + ANS_D2_R1, "- Answer: " + FLAG)
+        paste(D3, "Submit the flag in the form `g9{...}` when the task asks for one.")(self.tree)
+        self.assertExit(self.build("--week", "1"), 0)
+
+    def test_a_week_one_answer_in_a_week_two_guide_is_a_leak(self) -> None:
+        corpus.write_week(self.root, PLAN, 2)
+        paste("DAY_07.md", ANS_D2_R1, week=2)(self.tree)
+        self.assertRule(self.build("--week", "1", "--week", "2"), f"W02/DAY_07.md: holds the answer text of W01D02-R1 ({KEY_D2})")
+
+    def test_the_keys_of_a_week_that_is_not_selected_are_read_for_leaks(self) -> None:
+        corpus.write_week(self.root, PLAN, 2)
+        paste("DAY_07.md", ANS_D2_R1, week=2)(self.tree)
+        self.assertRule(self.build("--week", "2"), f"W02/DAY_07.md: holds the answer text of W01D02-R1 ({KEY_D2})")
+
+    def test_a_broken_key_of_a_week_that_is_not_selected_is_not_judged(self) -> None:
+        corpus.write_week(self.root, PLAN, 2)
+        key_drop_entry(self.tree)
+        self.assertExit(self.build("--week", "2"), 0)
+
+    def test_answer_label_guards_do_not_flag_ordinary_lines(self) -> None:
+        lines = [
+            "Answer the questions in your own words.", "Flags: 0x018 (PSH, ACK)", "Correct model: the owner of the boundary decides.", "Key points: read the listing twice.",
+            "Keys are instructor files and are not in this folder.", "Why does the mode matter? Read the listing.", "Why: the kernel enforces it.", "Source of the sample: generated here.",
+            "Source: the lab image.", "Solution architecture is out of scope.", "The answer to this question is not in the file; derive it from the sample.",
+            "Expected: the listing shows the owner and the mode.", "Flag-based filtering is out of scope.", "Answer-based scoring is not used here.", "Marking: see the rubric of the week.",
+            "The solution is to remove the permission from the directory.", "Answers are graded on the evidence kept.", "An answer is accepted when it cites the listing.",
+        ]  # fmt: skip
+        for line in lines:
+            paste(D2, line)(self.tree)
+        self.assertExit(self.build("--week", "1"), 0)
+
+    def test_a_key_line_in_a_fixture_manifest_is_not_a_leak(self) -> None:
+        self.tree.append("LABS/fixtures/MANIFEST.md", "\n- Source: generated by hand for the tests\n")
+        self.assertExit(self.build("--week", "1"), 0)
+
+    def test_friday_block_c_may_name_the_parts_in_other_words(self) -> None:
+        for words in ("Part 2 and Part 3", "Parts 2, 3", "Parts 2 to 3", "Parts 2-3", "Parts 2 & 3"):
+            with self.subTest(words=words):
+                self.fresh()
+                self.tree.sub(D5, "Parts 2 and 3", words)
+                self.assertExit(self.build("--week", "1"), 0)
+
+    def test_distractors_may_name_the_options_in_other_words(self) -> None:
+        old = "A is wrong because it names the wrong owner in question 1; C is wrong because it skips the record; D is wrong because it claims too much."
+        for words in (
+            "A: names the wrong owner; C: skips the record; D: claims too much.", "Option A names the wrong owner; option C skips the record; option D claims too much.",
+            "(A) names the wrong owner; (C) skips the record; (D) claims too much.", "A, C and D are wrong because each names the wrong owner.",
+            "A - names the wrong owner; C - skips the record; D - claims too much.",
+        ):  # fmt: skip
+            with self.subTest(words=words):
+                self.fresh()
+                self.tree.sub(AK, old, words)
+                self.assertExit(self.build("--week", "1"), 0)
+
+    def test_a_fixture_manifest_with_two_files_and_the_right_hashes_passes(self) -> None:
+        b = self.tree.at("LABS/fixtures/b.log")
+        write_text(b, "Sample (synthetic): Nov 16 10:00:01 guest sshd[2]: Failed password for synthetic-user-b from 10.77.10.6\n")
+        ha, hb = corpus.sha256_file(self.tree.at("LABS/fixtures/auth.log")), corpus.sha256_file(b)
+        table = ["# Fixtures", "", "| File | SHA-256 |", "|---|---|", f"| `auth.log` | {ha} |", f"| `b.log` | {hb} |", ""]
+        write_text(self.tree.at("LABS/fixtures/MANIFEST.md"), "\n".join(table))
+        self.assertExit(self.build("--week", "1"), 0)
+        headings = ["# Fixtures", "", "### auth.log", f"SHA-256: {ha}", "", "### b.log", f"SHA-256: {hb}", ""]
+        write_text(self.tree.at("LABS/fixtures/MANIFEST.md"), "\n".join(headings))
+        self.assertExit(self.build("--week", "1"), 0)
+        headings[3], headings[6] = headings[6], headings[3]
+        write_text(self.tree.at("LABS/fixtures/MANIFEST.md"), "\n".join(headings))
+        self.assertRule(self.build("--week", "1"), "holds the SHA-256 of another fixture")
+
+    def test_text_that_looks_like_a_credential_but_is_not_one_passes(self) -> None:
+        lines = [
+            "`ssh student@10.77.10.5` reaches the RED guest.", "The synthetic account is student@corp.g9.test.", "Mail to admin@example.com is never sent.",
+            "`git clone git@github.com:org/repo.git` is shown only as text.", "`http://admin:<synthetic-password>@10.77.20.5/` is the form of the address.",
+            "The mask is 255.255.255.0 and the wildcard 0.0.0.255.", "Bind to 0.0.0.0 or 127.0.0.1 only inside the guest.",
+            "The documentation ranges are 192.0.2.1, 198.51.100.9 and 203.0.113.7.", "The private blocks are 10.0.0.0/8, 172.16.0.0/12 and 192.168.0.0/16.",
+            "The metadata address is 169.254.169.254 inside the cloud lab.", "The key id AKIAIOSFODNN7EXAMPLE is the documented example.",
+            "The lab net is 10.77.10.0/24 and the DMZ 10.77.20.0/24.", "The OID 1.3.6.1.4.1.9 names a branch.", "Version 3.11.4 of the tool is assumed.",
+            "The plan names the host LAN 192.168.1.0/24 and the Docker bridge 172.17.0.0/16 as networks to keep a guest off.",
+        ]  # fmt: skip
+        for line in lines:
+            paste(D2, line)(self.tree)
+        self.assertExit(self.build("--week", "1"), 0)
+
+    def test_a_week_folder_with_another_name_is_refused(self) -> None:
+        for name in ("W1", "W13", "w01", "W00", "W01-old"):
+            with self.subTest(name=name):
+                self.fresh()
+                (self.root / WEEKS_REL / name).mkdir()
+                for args in (("--week", "1"), ("--available",)):
+                    self.assertRule(self.build(*args), f"WEEKS/{name}: unexpected entry: a week folder is named W01 to W12")
+
+    def test_a_stray_file_in_the_weeks_folder_is_refused_but_a_dotfile_is_not(self) -> None:
+        write_text(self.root / WEEKS_REL / ".DS_Store", "x")
+        self.assertExit(self.build("--week", "1"), 0)
+        write_text(self.root / WEEKS_REL / "README.md", "Notes.\n")
+        self.assertRule(self.build("--week", "1"), "WEEKS/README.md: unexpected entry")
+
+    def test_a_symlink_in_a_week_folder_is_refused(self) -> None:
+        outside = self.tmp / "outside-day.md"
+        write_text(outside, read_text(self.tree.at(D3)))
+        self.tree.at(D3).unlink()
+        self.tree.at(D3).symlink_to(outside)
+        self.assertRule(self.build("--week", "1"), "W01/DAY_03.md: is a symbolic link")
+
+    def test_a_symlinked_week_folder_is_refused(self) -> None:
+        shutil.move(str(self.root / WEEKS_REL / "W01"), str(self.tmp / "moved-w01"))
+        (self.root / WEEKS_REL / "W01").symlink_to(self.tmp / "moved-w01")
+        self.assertRule(self.build("--week", "1"), "WEEKS/W01: unexpected entry")
+
+    def test_a_fixture_with_a_cr_is_refused(self) -> None:
+        path = self.tree.at("LABS/fixtures/auth.log")
+        path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+        self.assertRule(self.build("--week", "1"), "W01/LABS/fixtures/auth.log:1: hidden or control character U+000D")
 
     def test_registry_of_a_week_that_is_not_selected_is_not_judged(self) -> None:
         write_text(self.root / WEEKS_REL / "W07" / "RESOURCES.json", "{broken")
@@ -802,6 +1122,13 @@ class SeedParser(TreeCase):
 
     def test_seed_text_too_long(self) -> None:
         self.plan_case(lambda text: text.replace("| **05 Fri 20** | Closed-book Linux knowledge test", "| **05 Fri 20** | " + "x" * 501 + " Closed-book Linux knowledge test"), ["seed text of column A is 5", "characters (maximum 500)"])
+
+    def test_a_row_numbered_beyond_day_60_is_refused(self) -> None:
+        def add(text: str) -> str:
+            row = next(line for line in text.split("\n") if line.startswith("| **60 Fri 05**"))
+            return text.replace(row, row + "\n| **61 Mon 08** | a | b | c | d |")
+
+        self.plan_case(add, ["day row 61 is outside days 01 to 60"])
 
     def test_row_outside_section_five_is_not_a_seed_row(self) -> None:
         # a table row of another section that looks like a day row is not read
@@ -1279,6 +1606,50 @@ class FullCorpus(TreeCase):
             words += len(read_text(self.root / WEEKS_REL / f"W{(n - 1) // 5 + 1:02d}" / f"DAY_{n:02d}.md").split())
         self.assertEqual(int(m.group(1)), words)
 
+    def test_a_generated_file_with_crlf_line_endings_is_stale(self) -> None:
+        path = self.root / QUIZ_D1
+        path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+        self.assertRule(self.build(), stale(QUIZ_D1))
+        self.assertExit(self.build("--write"), 0)
+        self.assertNotIn(b"\r", (self.root / QUIZ_D1).read_bytes())
+
+    def test_an_orphan_in_the_payload_folder_is_stale_whatever_it_is(self) -> None:
+        for name in ("V2-W99-EXTRA.JSON", "NOTES.md", ".hidden"):
+            with self.subTest(name=name):
+                self.fresh()
+                write_text(self.root / ASSESSMENTS / name, "x\n")
+                self.assertRule(self.build(), stale(f"{ASSESSMENTS}/{name}"))
+                self.assertExit(self.build("--write"), 0)
+                self.assertFalse((self.root / ASSESSMENTS / name).exists())
+                self.assertExit(self.build(), 0)
+
+    def test_a_folder_in_the_payload_folder_is_refused_and_not_removed(self) -> None:
+        (self.root / ASSESSMENTS / "old").mkdir()
+        write_text(self.root / ASSESSMENTS / "old" / "keep.json", "{}\n")
+        for args in ((), ("--write",)):
+            self.assertRule(self.build(*args), f"FAIL  {ASSESSMENTS}/old: is a folder: remove it by hand")
+        self.assertTrue((self.root / ASSESSMENTS / "old" / "keep.json").exists())
+
+    def test_a_generated_looking_file_that_is_no_longer_an_output_is_stale_but_an_authored_sibling_is_not(self) -> None:
+        # docs/curriculum/v2/ASSESSMENTS/ also holds the owner's hand-written files (plan section 0.1)
+        write_text(self.root / V2 / "ASSESSMENTS" / "ENTRY_DIAGNOSTIC.md", "# Entry diagnostic\n\nWritten by hand.\n")
+        self.assertExit(self.build(), 0)
+        old = f"{V2}/ASSESSMENTS/OLD_BANK.md"
+        write_text(self.root / old, "Generated by `scripts/build_curriculum_v2.py` from the old files. Do not edit by hand; run `python3 -I scripts/build_curriculum_v2.py --write`.\n\n# Old\n")
+        self.assertRule(self.build(), stale(old))
+        self.assertExit(self.build("--write"), 0)
+        self.assertFalse((self.root / old).exists())
+        self.assertTrue((self.root / V2 / "ASSESSMENTS" / "ENTRY_DIAGNOSTIC.md").exists())
+
+    def test_an_answer_in_the_registry_is_not_copied_into_the_learner_index(self) -> None:
+        # the finding: an answer in plan_fact_checks[0].evidence of W05 was written by --write into RESOURCE_REGISTRY.md
+        before = (self.root / REGISTRY_MD).read_bytes()
+        answer = corpus.day_answer(21, "W05D21-R1")
+        self.tree.registry(lambda d: d["plan_fact_checks"][0].update({"evidence": answer}), week=5)
+        proc = self.build("--write")
+        self.assertRule(proc, "W05/RESOURCES.json: holds the answer text of W05D21-R1 (W05/ANSWER_KEYS/DAY_21_KEY.md)")
+        self.assertEqual((self.root / REGISTRY_MD).read_bytes(), before)
+
 
 def _generated_or_none(root: Path) -> dict[str, bytes] | None:
     try:
@@ -1358,10 +1729,131 @@ class FullCorpusRules(TreeCase):
         self.tree.registry(lambda d: d["entries"][1].update({"fallback": "w09-synthetic-docs"}), week=2)
         self.assertExit(self.build("--week", "2"), 0)
 
-    def test_leak_of_a_week_two_answer_in_week_two_only(self) -> None:
-        # the rule is per week: an answer of week 1 in a learner file of week 2 is not a leak of week 2
+    def test_a_week_one_answer_in_a_week_two_checklist_is_a_leak_of_the_corpus(self) -> None:
+        # the keys of every week are forbidden text in every learner file (ADR-0023 decision 6), not only those of the same week
         self.tree.append("EVIDENCE_CHECKLIST.md", "\n" + corpus.day_answer(2, "W01D02-R1") + "\n", week=2)
-        self.assertExit(self.build("--week", "1", "--week", "2"), 0)
+        for args in ((), ("--week", "2"), ("--week", "1", "--week", "2")):
+            self.assertRule(self.build(*args), "W02/EVIDENCE_CHECKLIST.md: holds the answer text of W01D02-R1 (W01/ANSWER_KEYS/DAY_02_KEY.md)")
+
+
+class Environment(TreeCase):
+    """A broken competency pack is an environment error (exit 2, one line), not a traceback."""
+
+    template = "one"
+
+    def pack(self) -> Path:
+        return sorted((self.root / PACKS_REL).glob("*/pack.json"))[0]
+
+    def assertEnvironmentError(self, proc, needle: str) -> None:
+        self.assertExit(proc, 2)
+        out = output_of(proc)
+        self.assertNotIn("Traceback", out)
+        self.assertIn(needle, out)
+        self.assertEqual(len([line for line in out.split("\n") if line.strip()]), 1, out)
+
+    def test_pack_that_is_not_json(self) -> None:
+        write_text(self.pack(), "{not json")
+        self.assertEnvironmentError(self.build("--week", "1"), "error: competency pack data/competency-packs/")
+
+    def test_pack_that_is_not_utf8(self) -> None:
+        self.pack().write_bytes(b"\xff\xfe{}")
+        self.assertEnvironmentError(self.build("--week", "1"), "error: competency pack data/competency-packs/")
+
+    def test_pack_that_is_not_an_object(self) -> None:
+        write_text(self.pack(), "[]\n")
+        self.assertEnvironmentError(self.build("--week", "1"), "error: competency pack data/competency-packs/")
+
+    def test_pack_without_competencies(self) -> None:
+        edit_json(self.pack(), lambda d: d.pop("competencies"))
+        self.assertEnvironmentError(self.build("--week", "1"), "error: competency pack data/competency-packs/")
+
+    def test_pack_without_an_id(self) -> None:
+        edit_json(self.pack(), lambda d: d.pop("pack_id"))
+        self.assertEnvironmentError(self.build("--week", "1"), "error: competency pack data/competency-packs/")
+
+    def test_competency_without_a_difficulty_band(self) -> None:
+        edit_json(self.pack(), lambda d: d["competencies"][0].pop("difficulty_band"))
+        self.assertEnvironmentError(self.build("--week", "1"), "error: competency pack data/competency-packs/")
+
+    def test_competency_with_a_band_that_is_not_two_numbers(self) -> None:
+        edit_json(self.pack(), lambda d: d["competencies"][0].update({"difficulty_band": {"min": "low", "max": 2}}))
+        self.assertEnvironmentError(self.build("--week", "1"), "error: competency pack data/competency-packs/")
+
+    def test_competency_that_is_not_an_object(self) -> None:
+        edit_json(self.pack(), lambda d: d["competencies"].append("lab.nothing"))
+        self.assertEnvironmentError(self.build("--week", "1"), "error: competency pack data/competency-packs/")
+
+    def test_a_missing_pack_folder_is_still_exit_2(self) -> None:
+        shutil.rmtree(self.root / PACKS_REL)
+        self.assertExit(self.build("--week", "1"), 2)
+
+
+class OutputPaths(TreeCase):
+    """The builder writes the generated files it names and nothing else: never through a symbolic link, never outside the tree."""
+
+    template = "twelve"
+
+    def outside(self) -> Path:
+        folder = self.tmp / "outside"
+        folder.mkdir()
+        return folder
+
+    def test_a_generated_file_that_is_a_symlink_is_refused_and_not_written_through(self) -> None:
+        target = self.outside() / "keys.json"
+        write_text(target, "OUTSIDE\n")
+        link = self.root / KEYS_JSON
+        link.unlink()
+        link.symlink_to(target)
+        for args in (("--write",), ()):
+            proc = self.build(*args)
+            self.assertRule(proc, f"FAIL  {KEYS_JSON}: is a symbolic link: a generated file is written in place, never through a link")
+            self.assertEqual(read_text(target), "OUTSIDE\n")
+            self.assertTrue(link.is_symlink())
+
+    def test_a_dangling_symlink_is_refused_and_nothing_is_created(self) -> None:
+        target = self.outside() / "not-there.json"
+        link = self.root / SHEETS_JSON
+        link.unlink()
+        link.symlink_to(target)
+        self.assertRule(self.build("--write"), f"FAIL  {SHEETS_JSON}: is a symbolic link")
+        self.assertFalse(target.exists())
+
+    def test_an_output_folder_that_is_a_symlink_is_refused_and_nothing_is_created_or_removed(self) -> None:
+        outside = self.outside() / "assessments"
+        shutil.move(str(self.root / ASSESSMENTS), str(outside))
+        (self.root / ASSESSMENTS).symlink_to(outside)
+        stray = outside / "keep-me.json"
+        write_text(stray, "{}\n")
+        (outside / "V2-W03-EXAM.json").unlink()
+        before = sorted(p.name for p in outside.iterdir())
+        proc = self.build("--write")
+        self.assertRule(proc, f"FAIL  {ASSESSMENTS}: is a symbolic link")
+        self.assertEqual(sorted(p.name for p in outside.iterdir()), before)
+        self.assertTrue(stray.exists())
+
+    def test_a_parent_folder_that_is_a_symlink_is_refused(self) -> None:
+        outside = self.outside() / "assessments-md"
+        shutil.move(str(self.root / V2 / "ASSESSMENTS"), str(outside))
+        (self.root / V2 / "ASSESSMENTS").symlink_to(outside)
+        write_text(self.root / RECALL, read_text(self.root / RECALL) + "tampered\n")  # stale, through the link: --write would repair it
+        before = {p.name: p.read_bytes() for p in outside.iterdir()}
+        proc = self.build("--write")
+        self.assertRule(proc, f"FAIL  {V2}/ASSESSMENTS: is a symbolic link")
+        self.assertEqual(before, {p.name: p.read_bytes() for p in outside.iterdir()})
+
+    def test_a_generated_file_that_is_a_folder_is_refused(self) -> None:
+        (self.root / SCHEDULE).unlink()
+        (self.root / SCHEDULE).mkdir()
+        self.assertRule(self.build("--write"), f"FAIL  {SCHEDULE}: is not a regular file")
+
+    def test_nothing_is_written_when_one_output_is_refused(self) -> None:
+        link = self.root / KEYS_JSON
+        link.unlink()
+        link.symlink_to(self.outside() / "keys.json")
+        append_to(SHEETS_JSON)(self.tree)
+        stale_sheets = read_text(self.root / SHEETS_JSON)
+        self.assertRule(self.build("--write"), "is a symbolic link")
+        self.assertEqual(read_text(self.root / SHEETS_JSON), stale_sheets)
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -1404,6 +1896,18 @@ class Schemas(TreeCase):
     def test_the_assessment_payloads_validate(self) -> None:
         for path in sorted((self.root / ASSESSMENTS).glob("*.json")):
             self.assertEqual(self.errors("schemas/ipc/assessment.define.request.schema.json", load_json_file(path)), [], path.name)
+
+    def test_the_generated_manifests_validate_against_the_manifest_schema(self) -> None:
+        # ADR-0023 decision 3: format 1.1.0 is the platform task's. Until the schema admits it this test cannot run: NOT RUN, said so.
+        schema = json.loads(read_text(REPO / "schemas" / "curriculum" / "manifest.schema.json"))
+        pattern = schema["properties"]["manifest_schema_version"].get("pattern", "")
+        if not re.search(pattern, "1.1.0"):
+            self.skipTest("NOT RUN: schemas/curriculum/manifest.schema.json still pins manifest_schema_version to 1.0.x (ADR-0023 decision 3, the platform task)")
+        for rel in (SEED_JSON, DRAFT_JSON):
+            self.assertEqual(self.errors("schemas/curriculum/manifest.schema.json", load_json_file(self.root / rel)), [], rel)
+        proc = run_gate(REPO / "scripts" / SCRIPT, "--print-seed", cwd=REPO)
+        self.assertExit(proc, 0)
+        self.assertEqual(self.errors("schemas/curriculum/manifest.schema.json", json.loads(proc.stdout)), [], "the seed of the real plan")
 
     def test_the_synthetic_registries_validate(self) -> None:
         for w in range(1, 13):
@@ -1591,7 +2095,7 @@ class RealTree(GateTestCase):
                 imports |= {alias.name.split(".")[0] for alias in node.names}
             elif isinstance(node, ast.ImportFrom) and node.module:
                 imports.add(node.module.split(".")[0])
-        stdlib = {"__future__", "argparse", "datetime", "hashlib", "json", "re", "sys", "pathlib", "typing"}
+        stdlib = {"__future__", "argparse", "datetime", "hashlib", "json", "re", "sys", "pathlib", "typing", "unicodedata"}
         self.assertEqual(imports - stdlib, set())
 
 

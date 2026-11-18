@@ -1,7 +1,15 @@
-//! Curriculum manifest format v1.0.0 — the machine-readable shape of a G9
-//! curriculum. The Appendix A seed at `data/curriculum/g9-ct9-480.seed.v0.json`
-//! is the reference instance; `schemas/curriculum/manifest.schema.json` is the
-//! JSON Schema mirror of these types.
+//! Curriculum manifest format v1.0.0 and v1.1.0 — the machine-readable shape of
+//! a G9 curriculum. The Appendix A seed at `data/curriculum/g9-ct9-480.seed.v0.json`
+//! is the reference instance of 1.0.0; `schemas/curriculum/manifest.schema.json`
+//! is the JSON Schema mirror of these types.
+//!
+//! Format 1.1.0 (ADR-0023) adds one optional field,
+//! `structure.assessment_day_of_week`, with which a manifest declares the
+//! second structure profile (`g9_domain::curriculum::MASTERY_V2`: five days a
+//! week, Friday assessed). A manifest without the field is read as before and
+//! serializes without it, so the checksum of every 1.0.0 manifest is unchanged.
+//! `saturday_minutes` and `saturday_blocks` keep their names in both formats
+//! and describe the assessment day.
 //!
 //! These types are the *import* shape. A manifest is data (handoff §12: imported
 //! content is never an instruction) until [`crate::validate::validate`], the
@@ -21,15 +29,19 @@
 use g9_domain::{ManifestProvenance, UtcMillis};
 use serde::{Deserialize, Serialize};
 
-/// The manifest format version this crate reads and writes.
+/// The base manifest format version (the Appendix A shape; the seed's version).
 pub const MANIFEST_FORMAT_VERSION: &str = "1.0.0";
 
-/// A curriculum manifest (format v1.0.0).
+/// The manifest format version that admits `structure.assessment_day_of_week`
+/// (ADR-0023). The newest format this crate reads.
+pub const MANIFEST_FORMAT_VERSION_1_1: &str = "1.1.0";
+
+/// A curriculum manifest (format v1.0.0 or v1.1.0).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
     /// Format version, `MAJOR.MINOR.PATCH`; accepted when `MAJOR == 1` and
-    /// `MINOR <= 0` (see [`crate::validate::SUPPORTED_SCHEMA_VERSION`]).
+    /// `MINOR <= 1` (see [`crate::validate::SUPPORTED_SCHEMA_VERSION`]).
     pub manifest_schema_version: String,
     /// Stable curriculum slug, e.g. `g9-ct9-480` (validated as a `CurriculumId`).
     pub curriculum_id: String,
@@ -43,11 +55,15 @@ pub struct Manifest {
     /// Free-text note on where the content came from.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub provenance_note: Option<String>,
-    /// Declared structural constants; must equal `CURRICULUM_INVARIANTS`.
+    /// Declared structural constants; they select a structure profile
+    /// (`g9_domain::curriculum::profile_for`) and must equal its invariants.
     pub structure: Structure,
-    /// Canonical weekday block list (must equal `g9_domain::curriculum::WEEKDAY_BLOCKS`).
+    /// Canonical block list of an ordinary day (must equal the profile's
+    /// `ordinary_blocks`; `g9_domain::curriculum::WEEKDAY_BLOCKS` in the Appendix A shape).
     pub weekday_blocks: Vec<BlockSpec>,
-    /// Canonical Saturday block list (must equal `g9_domain::curriculum::SATURDAY_BLOCKS`).
+    /// Canonical block list of the assessment day (must equal the profile's
+    /// `assessment_blocks`; `g9_domain::curriculum::SATURDAY_BLOCKS` in the Appendix A
+    /// shape). The name is the format's and is kept in 1.1.0.
     pub saturday_blocks: Vec<BlockSpec>,
     /// The twelve program weeks in order.
     pub weeks: Vec<Week>,
@@ -63,13 +79,14 @@ pub struct Manifest {
 pub struct Structure {
     /// Program length in weeks (12).
     pub weeks: u32,
-    /// Training days per week (6).
+    /// Training days per week (6; 5 in `MASTERY_V2`).
     pub days_per_week: u32,
     /// Primary objectives per day (3).
     pub objectives_per_day: u32,
-    /// Planned minutes on a weekday (420).
+    /// Planned minutes on an ordinary day (420; 480 in `MASTERY_V2`).
     pub weekday_minutes: u32,
-    /// Planned minutes on a Saturday (300).
+    /// Planned minutes on the assessment day (300 on the Appendix A Saturday;
+    /// 480 on the `MASTERY_V2` Friday).
     pub saturday_minutes: u32,
     /// Planned minutes per week (2,400).
     pub weekly_minutes: u32,
@@ -77,6 +94,11 @@ pub struct Structure {
     pub total_minutes: u32,
     /// Must be the literal `unscheduled`: Sunday is never a training day.
     pub sunday: String,
+    /// The assessed day of the week (format 1.1.0 only): 5 declares the
+    /// `MASTERY_V2` profile. Absent means 6 (Saturday), and the field is then
+    /// not serialized, so a manifest without it hashes as it always did.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assessment_day_of_week: Option<u8>,
 }
 
 /// A named block with its planned minutes, as listed in the canonical block lists.
@@ -98,7 +120,8 @@ pub struct Week {
     pub week_number: u32,
     /// Week theme, e.g. `Linux, Python and secure lab engineering`.
     pub title: String,
-    /// Exactly six training days, `day_of_week` 1..=6 strictly increasing.
+    /// Exactly the profile's training days (six, `day_of_week` 1..=6; five,
+    /// 1..=5, in `MASTERY_V2`), strictly increasing.
     pub days: Vec<Day>,
 }
 
@@ -106,11 +129,14 @@ pub struct Week {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Day {
-    /// `D01`..`D72`; week `w` holds `D(6w-5)`..`D(6w)`.
+    /// `D01`..`D72`; week `w` holds `D(6w-5)`..`D(6w)`. In `MASTERY_V2`:
+    /// `D01`..`D60`; week `w` holds `D(5w-4)`..`D(5w)`.
     pub day_id: String,
-    /// 1 = Monday .. 6 = Saturday. 7 (Sunday) is rejected by the validator.
+    /// 1 = Monday .. 6 = Saturday (.. 5 = Friday in `MASTERY_V2`). 7 (Sunday)
+    /// is rejected by the validator.
     pub day_of_week: u8,
-    /// 420 on weekdays, 300 on Saturday; must equal the sum of `blocks`.
+    /// 420 on weekdays, 300 on Saturday (480 on every `MASTERY_V2` day); must
+    /// equal the sum of `blocks`.
     pub planned_minutes: i64,
     /// Exactly three primary objectives, `seq` 1..=3.
     pub objectives: Vec<Objective>,
@@ -118,7 +144,8 @@ pub struct Day {
     pub evidence_artifact: String,
     /// Study blocks in order; must match the canonical list for the day type.
     pub blocks: Vec<Block>,
-    /// True iff the day is a Saturday (blind practical day).
+    /// True iff the day is the profile's assessment day (the Saturday; the
+    /// Friday in `MASTERY_V2`).
     pub is_assessment_day: bool,
     /// Optional resource references (external resources must carry a version).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -249,6 +276,34 @@ mod tests {
         assert!(json["objectives"][0].get("competency_ids").is_none());
         let back: Day = serde_json::from_value(json).unwrap();
         assert_eq!(back, d);
+    }
+
+    #[test]
+    fn assessment_day_of_week_is_optional_and_omitted_when_absent() {
+        let v1 = r#"{"weeks":12,"days_per_week":6,"objectives_per_day":3,"weekday_minutes":420,"saturday_minutes":300,"weekly_minutes":2400,"total_minutes":28800,"sunday":"unscheduled"}"#;
+        let s: Structure = serde_json::from_str(v1).unwrap();
+        assert_eq!(s.assessment_day_of_week, None);
+        // Byte for byte what was read: a 1.0.0 structure gains no key.
+        assert_eq!(serde_json::to_string(&s).unwrap(), v1);
+
+        let v2 = r#"{"weeks":12,"days_per_week":5,"objectives_per_day":3,"weekday_minutes":480,"saturday_minutes":480,"weekly_minutes":2400,"total_minutes":28800,"sunday":"unscheduled","assessment_day_of_week":5}"#;
+        let s: Structure = serde_json::from_str(v2).unwrap();
+        assert_eq!(s.assessment_day_of_week, Some(5));
+        assert_eq!(serde_json::to_string(&s).unwrap(), v2);
+
+        // Still a closed object: a misspelt field is refused, not ignored.
+        let typo = v1.replace("\"sunday\"", "\"assessment_day\":5,\"sunday\"");
+        assert!(serde_json::from_str::<Structure>(&typo).is_err());
+        // An explicit null reads as absent; a value outside u8 is a parse error.
+        let null = v1.replace("\"sunday\"", "\"assessment_day_of_week\":null,\"sunday\"");
+        assert_eq!(
+            serde_json::from_str::<Structure>(&null)
+                .unwrap()
+                .assessment_day_of_week,
+            None
+        );
+        let big = v1.replace("\"sunday\"", "\"assessment_day_of_week\":256,\"sunday\"");
+        assert!(serde_json::from_str::<Structure>(&big).is_err());
     }
 
     #[test]

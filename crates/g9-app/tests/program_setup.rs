@@ -66,6 +66,9 @@ fn program_reports_nothing_before_an_import_and_the_whole_curriculum_after() {
     // 480 hours.
     assert_eq!(c["planned_minutes"], 28_800);
     assert_eq!(c["provenance"], "PROPOSED_SEED");
+    // The structure profile (ADR-0023): the Appendix A shape of six days a week.
+    assert_eq!(c["profile"], "CT9_480");
+    assert_eq!(c["days_per_week"], 6);
     assert!(c["name"].as_str().unwrap().len() > 3);
     assert_eq!(after["program_start"], Value::Null);
 }
@@ -187,6 +190,22 @@ fn planning_a_day_links_one_session_to_each_block_in_the_blocks_mode() {
     let blocks = blocks_of(&mut h, "2026-11-03");
     assert_eq!(blocks.len(), 6);
     assert!(blocks.iter().all(|b| b["session_id"].is_null()));
+    // The profile's label of a block: its code with spaces in the Appendix A shape (ADR-0023).
+    let labels: Vec<&str> = blocks
+        .iter()
+        .map(|b| b["label"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        labels,
+        [
+            "recall",
+            "theory",
+            "guided lab",
+            "independent lab",
+            "defense verification",
+            "evidence reporting"
+        ]
+    );
 
     let planned = h
         .call("session.plan_day", json!({ "date": "2026-11-03" }))

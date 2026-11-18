@@ -770,8 +770,12 @@ struct PlanDayRequest {
 
 /// `session.plan_day`: one PLANNED session for each block of the program day that falls on
 /// `date`, linked to its training day, objective and block, in the mode the curriculum gives the
-/// block, laid out back to back from the time the operator set for a day to start (09:00 by
-/// default) in the configured zone. Each session gets its calendar event (a study block, or an
+/// block, laid out from the time the operator set for a day to start (09:00 by default) in the
+/// configured zone: back to back in the Appendix A structure, and with the pauses of the version's
+/// profile in the v2.0 structure (`MASTERY_V2`: 15 minutes after the second block, 60 after the
+/// third; from 08:00 that is 08:00-08:30, 08:30-10:30, 10:45-12:45, 13:45-16:15, 16:15-17:15). A
+/// calendar event is titled with the profile's label of the block. Each session gets its
+/// calendar event (a study block, or an
 /// assessment for the blind practical; source SCHEDULER, so the operator cannot edit it and the
 /// scheduler plans reviews around it). A block that already has a session is left as it is, so
 /// the call can be repeated: it plans what is still missing.
@@ -800,13 +804,15 @@ pub fn plan_day(
             )))
         },
         |env| {
-            let (_, _, day) = super::curriculum::training_day_on(env.conn, env.svc, date)?
+            let (version, _, day) = super::curriculum::training_day_on(env.conn, env.svc, date)?
                 .ok_or_else(|| {
                     G9Error::not_found(
                         "curriculum.no_training_day",
                         "the program has no training day on this date",
                     )
                 })?;
+            let profile = version.structure_profile()?;
+            let assessment_day = profile.is_assessment_day(day.day_of_week.get());
             let blocks = curriculum_repo::study_blocks(env.conn, &day.id)?;
             if blocks.is_empty() {
                 return Err(G9Error::not_found(
@@ -817,7 +823,7 @@ pub fn plan_day(
             let scope = ReadScope::domain(g9_domain::DataDomain::Learning);
             let existing = repo::list_sessions_for_day(env.conn, &scope, &day.id)?;
             let day_start_minute =
-                curriculum_repo::get_program_plan(env.conn, &env.svc.config.curriculum_id)?
+                curriculum_repo::get_program_plan(env.conn, &version.curriculum_id)?
                     .map_or(super::curriculum::DEFAULT_DAY_START_MINUTE, |p| {
                         p.day_start_minute
                     });
@@ -836,15 +842,21 @@ pub fn plan_day(
             let mut skipped = Vec::new();
             for block in &blocks {
                 let start = cursor;
+                let overflow = |_| {
+                    G9Error::invalid_input(
+                        "session.planned_end_invalid",
+                        "the planned end overflows",
+                    )
+                };
                 let end = start
                     .checked_add(DurationMs::from_minutes_u32(block.minutes))
-                    .map_err(|_| {
-                        G9Error::invalid_input(
-                            "session.planned_end_invalid",
-                            "the planned end overflows",
-                        )
-                    })?;
-                cursor = end;
+                    .map_err(overflow)?;
+                // The next block starts after the profile's pause, if any, that follows this one.
+                cursor = end
+                    .checked_add(DurationMs::from_minutes_u32(
+                        profile.pause_after(block.ordinal),
+                    ))
+                    .map_err(overflow)?;
                 if let Some(linked) = existing
                     .iter()
                     .find(|s| s.study_block_id.as_deref() == Some(block.id.as_str()))
@@ -866,7 +878,7 @@ pub fn plan_day(
                         title: format!(
                             "{} {}",
                             tail(day.day_code.as_str()),
-                            block.block_code.replace('_', " ")
+                            profile.label_or_code(&block.block_code, assessment_day)
                         ),
                         kind: if block.mode == g9_domain::InteractionMode::Exam {
                             CalendarEventKind::Assessment

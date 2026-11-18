@@ -36,7 +36,9 @@ pub use actor::{Actor, ActorKind};
 pub use assessment::{BaselineRubric, GradeSource, RubricCriterion, PASS_THRESHOLD};
 pub use competency::{AssistanceLevel, Confidence, Difficulty, LearningDimension};
 pub use curriculum::{
-    CurriculumCounts, DayOfWeek, InvariantViolation, ManifestProvenance, CURRICULUM_INVARIANTS,
+    profile_for, CurriculumCounts, CurriculumInvariants, DayOfWeek, DayPause, InvariantViolation,
+    ManifestProvenance, ProfileBlock, StructureProfile, StructureProfileId, CT9_480,
+    CURRICULUM_INVARIANTS, MASTERY_V2, STRUCTURE_PROFILES,
 };
 pub use envelope::{
     CommandMeta, CommandOutcome, CommandResult, ErrorCategory, G9Error, ResourceRef, SchemaVersion,

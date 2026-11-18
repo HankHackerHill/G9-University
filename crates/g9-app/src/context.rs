@@ -48,7 +48,10 @@ pub struct AppConfig {
     pub app_version: String,
     /// Operator time zone for civil dates (daily plan, session dates).
     pub zone: IanaZone,
-    /// Curriculum the daily plan reads.
+    /// The curriculum assumed while nothing is imported. Once a version is imported the
+    /// application works in the active version, which can belong to another curriculum
+    /// (ADR-0023: the Appendix A shape `g9-ct9-480` and the v2.0 plan `g9-cyber-mastery-480`
+    /// can share a database; `commands::curriculum::active_version`).
     pub curriculum_id: CurriculumId,
     /// Monday of program week 1 (operator setting); `None` until configured.
     pub program_start: Option<g9_curriculum::CivilDate>,

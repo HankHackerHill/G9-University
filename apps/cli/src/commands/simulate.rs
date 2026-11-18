@@ -20,6 +20,11 @@
 //! sequential as well, so the step table is byte-for-byte reproducible
 //! (backend-generated ids live in `artifacts` only).
 //!
+//! The week is the Appendix A shape (six days, a Saturday blind practical). A version of the
+//! owner's v2.0 plan (structure profile `MASTERY_V2`, ADR-0023: five days, no Saturday) is
+//! answered with `PRECONDITION_FAILED cli.appendix_a_required` at step `resolve:curriculum` (or
+//! `load:manifest` for a manifest not yet imported), and the verdict is `FAIL`.
+//!
 //! Verdict (`result`): `PASS` only when every step ran and every check passed;
 //! `INCOMPLETE` when nothing failed but at least one step answered
 //! `PRECONDITION_FAILED <area>.not_implemented` (recorded `NOT RUN (PROPOSED)`,
@@ -507,6 +512,16 @@ fn ensure_curriculum(sim: &mut Sim, o: &SimulateOptions) -> Result<(), Halt> {
             ))
         }
     };
+    // The scripted week is the Appendix A shape (it looks for a Saturday): a manifest of the
+    // owner's v2.0 plan is refused before it is imported, not half-run.
+    if let Err(e) = seed::require_appendix_a_manifest(&manifest) {
+        return Err(sim.fail(
+            "load:manifest",
+            &e.category_str(),
+            &e.code,
+            json!({ "manifest": o.manifest, "message": e.message }),
+        ));
+    }
     let mut observed: Vec<(String, Result<Value, G9Error>)> = Vec::new();
     let imported = {
         let mut observe = |op: &str, res: &Result<Value, G9Error>| {
@@ -580,6 +595,16 @@ fn resolve_days(sim: &mut Sim, o: &SimulateOptions) -> Result<Vec<DayPlan>, Halt
             return Err(sim.fail("resolve:curriculum", &e.category_str(), &e.code, json!({})))
         }
     };
+    // The week has a Saturday blind practical: a version of another structure profile (the
+    // owner's v2.0 plan) answers PRECONDITION_FAILED here, before anything is seeded.
+    if let Err(e) = seed::require_appendix_a(&version) {
+        return Err(sim.fail(
+            "resolve:curriculum",
+            &e.category_str(),
+            &e.code,
+            json!({ "curriculum_version_id": version.id, "message": e.message }),
+        ));
+    }
     sim.artifacts
         .entry("curriculum_version_id")
         .or_insert_with(|| json!(version.id));

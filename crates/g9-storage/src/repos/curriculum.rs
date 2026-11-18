@@ -19,6 +19,13 @@
 //! `<version_id>:<day_id>:B<seq>`, `<version_id>:<day_id>:R<n>`,
 //! `<version_id>:<day_id>:EVIDENCE`.
 //!
+//! Two structure profiles (ADR-0023; `g9_domain::curriculum`): the tables admit both
+//! shapes without a migration (`day_number` 1..=72, `day_of_week` 1..=6, any block
+//! minutes). The report stored in `curriculum_versions.invariants_json` carries the
+//! profile id and its invariants next to the counts; [`CurriculumVersionRow::structure_profile`]
+//! reads the profile back. A row stored before profiles existed has no `profile`
+//! key (the whole report, or `{}` in fixtures) and is the Appendix A shape.
+//!
 //! Mapping decisions (INFERRED, documented here because the manifest format has
 //! no counterpart column): `study_blocks.mode` is derived from the block code
 //! ([`block_mode`]); `training_days.title` is the day id; a day's
@@ -34,10 +41,11 @@ use super::{
 };
 use crate::error::{StorageError, StorageResult};
 use crate::sql::{enum_from_text, enum_to_text, parse_id};
-use g9_curriculum::{Checksum, Manifest, ValidationReport};
+use g9_curriculum::{select_profile, Checksum, Manifest, ValidationReport};
 use g9_domain::{
     ActorId, ApprovalId, CurriculumId, CurriculumVersionId, DayId, DayOfWeek, InteractionMode,
-    LearningDimension, ManifestProvenance, ObjectiveId, Revision, UtcMillis,
+    LearningDimension, ManifestProvenance, ObjectiveId, Revision, StructureProfile,
+    StructureProfileId, UtcMillis, CT9_480,
 };
 use rusqlite::{params, Connection, Row};
 use serde::{Deserialize, Serialize};
@@ -114,6 +122,28 @@ pub struct CurriculumVersionRow {
     pub updated_at: UtcMillis,
 }
 
+impl CurriculumVersionRow {
+    /// The structure profile the version was imported under (ADR-0023), read from
+    /// the stored validation report. No `profile` key (a version imported before
+    /// profiles existed) is the Appendix A shape, the only one there was; a
+    /// `profile` this build does not know is `DATA_CORRUPTION` rather than a guess.
+    pub fn structure_profile(&self) -> RepoResult<&'static StructureProfile> {
+        match self.invariants.get("profile") {
+            None | Some(serde_json::Value::Null) => Ok(&CT9_480),
+            Some(serde_json::Value::String(text)) => StructureProfileId::parse(text)
+                .map(StructureProfileId::profile)
+                .ok_or_else(|| {
+                    RepoError::Storage(StorageError::RowDecode(
+                        "invariants_json: unknown structure profile".to_string(),
+                    ))
+                }),
+            Some(_) => Err(RepoError::Storage(StorageError::RowDecode(
+                "invariants_json: profile is not text".to_string(),
+            ))),
+        }
+    }
+}
+
 /// A `weeks` row.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WeekRow {
@@ -144,9 +174,9 @@ pub struct TrainingDayRow {
     pub curriculum_version_id: CurriculumVersionId,
     /// Manifest day id (`D01`).
     pub day_code: DayId,
-    /// 1..=72 within the version.
+    /// 1..=72 within the version (1..=60 in the `MASTERY_V2` profile).
     pub day_number: u32,
-    /// Monday = 1 .. Saturday = 6.
+    /// Monday = 1 .. Saturday = 6 (Monday .. Friday = 5 in `MASTERY_V2`).
     pub day_of_week: DayOfWeek,
     /// Planned minutes.
     pub planned_minutes: u32,
@@ -292,6 +322,15 @@ fn insert_version_statements(
         ))));
     }
     let manifest = input.manifest;
+    // The stored report names the profile the version is read under: it must be
+    // the one the manifest declares, never one a caller supplied for another shape.
+    let profile = select_profile(&manifest.structure);
+    if input.validation.profile != profile.id {
+        return Err(RepoError::Storage(StorageError::Precondition(format!(
+            "curriculum.import_blocked: the validation report is for profile {}, the manifest declares {}",
+            input.validation.profile, profile.id
+        ))));
+    }
     let curriculum_id: CurriculumId = parse_id(&manifest.curriculum_id)?;
     let now = ms(input.imported_at);
     let version_id = input.id.as_str();
@@ -318,7 +357,7 @@ fn insert_version_statements(
         ],
     )?;
 
-    let days_per_week = manifest.structure.days_per_week;
+    let days_per_week = profile.days_per_week();
     for week in &manifest.weeks {
         let week_id = format!("{version_id}:W{:02}", week.week_number);
         let planned: i64 = week.days.iter().map(|d| d.planned_minutes.max(0)).sum();
@@ -492,6 +531,46 @@ pub fn list_versions(
         &[&curriculum_id.as_str()],
         map_version,
     )
+}
+
+/// Every version of every curriculum, oldest import first. Two curricula can share a
+/// database (the Appendix A shape and the v2.0 plan, ADR-0023).
+pub fn list_all_versions(conn: &Connection) -> RepoResult<Vec<CurriculumVersionRow>> {
+    query_all(
+        conn,
+        &format!("SELECT {VERSION_COLUMNS} FROM curriculum_versions ORDER BY imported_at, id"),
+        &[],
+        map_version,
+    )
+}
+
+/// The current canonical version of each curriculum that has one, most recently
+/// approved first (`approved_at` descending, then id).
+pub fn current_versions(conn: &Connection) -> RepoResult<Vec<CurriculumVersionRow>> {
+    query_all(
+        conn,
+        &format!(
+            "SELECT {VERSION_COLUMNS} FROM curriculum_versions WHERE is_current = 1
+             ORDER BY approved_at DESC, id"
+        ),
+        &[],
+        map_version,
+    )
+}
+
+/// The version the application works in: the current `APPROVED_CANONICAL` version (the most
+/// recently approved one when several curricula have one), otherwise the most recently imported
+/// version. Two curricula can share a database (ADR-0023: the Appendix A shape `g9-ct9-480` and
+/// the owner's v2.0 plan `g9-cyber-mastery-480`), so the choice is not bound to one curriculum id:
+/// the program the operator imported or promoted last is the one in use. With one curriculum in
+/// the database this is the rule it always was. `g9-app` and the command-line driver read it here.
+pub fn active_version(conn: &Connection) -> RepoResult<Option<CurriculumVersionRow>> {
+    if let Some(v) = current_versions(conn)?.into_iter().next() {
+        return Ok(Some(v));
+    }
+    let mut versions = list_all_versions(conn)?;
+    versions.sort_by_key(|v| (v.imported_at, v.id.clone()));
+    Ok(versions.pop())
 }
 
 /// The current canonical version of a curriculum, if one was promoted.
@@ -1098,6 +1177,7 @@ mod tests {
                 weekly_minutes: 2400,
                 total_minutes: 2400,
                 sunday: "rest".into(),
+                assessment_day_of_week: None,
             },
             weekday_blocks: vec![BlockSpec {
                 block: "recall".into(),
@@ -1177,6 +1257,8 @@ mod tests {
 
     fn ok_report() -> ValidationReport {
         ValidationReport {
+            profile: StructureProfileId::Ct9480,
+            invariants: CT9_480.invariants,
             counts: CurriculumCounts::default(),
             violations: vec![],
             errors: vec![],

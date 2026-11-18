@@ -74,8 +74,10 @@ pub fn json_checksum(value: &Value) -> Checksum {
     Checksum(sha256_json(value))
 }
 
-/// Checksum of a manifest: it is serialized with serde (empty optional lists are
-/// omitted) and hashed in canonical form.
+/// Checksum of a manifest: it is serialized with serde (empty optional lists and
+/// an absent `structure.assessment_day_of_week` are omitted) and hashed in
+/// canonical form. A format 1.0.0 manifest therefore hashes exactly as it did
+/// before format 1.1.0 existed (pinned in `tests/mastery_v2.rs`).
 pub fn manifest_checksum(manifest: &Manifest) -> Result<Checksum, CurriculumError> {
     let value = serde_json::to_value(manifest).map_err(|_| CurriculumError::Serialization)?;
     Ok(json_checksum(&value))

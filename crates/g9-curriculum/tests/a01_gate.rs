@@ -86,8 +86,10 @@ fn error_mutations() -> Vec<Mutation> {
         (codes::SCHEMA_VERSION_UNSUPPORTED, |m| {
             m.manifest_schema_version = "2.0.0".into()
         }),
+        // ADR-0023: format 1.1.0 is read (one optional field); the first minor that is
+        // refused is now 1.2. (This mutation was "1.1.0" while 1.0 was the only format.)
         (codes::SCHEMA_VERSION_UNSUPPORTED, |m| {
-            m.manifest_schema_version = "1.1.0".into()
+            m.manifest_schema_version = "1.2.0".into()
         }),
         (codes::SCHEMA_VERSION_UNSUPPORTED, |m| {
             m.manifest_schema_version = "1.0".into()
@@ -103,6 +105,16 @@ fn error_mutations() -> Vec<Mutation> {
         (codes::STRUCTURE_MISMATCH, |m| {
             m.structure.objectives_per_day = 1
         }),
+        // The seed is format 1.0.0: the field that format 1.1.0 adds is refused in it,
+        // whatever its value (6 is what its absence means; 5 would declare the other profile).
+        (codes::STRUCTURE_ASSESSMENT_DAY_FORMAT, |m| {
+            m.structure.assessment_day_of_week = Some(6)
+        }),
+        (codes::STRUCTURE_ASSESSMENT_DAY_FORMAT, |m| {
+            m.structure.assessment_day_of_week = Some(5)
+        }),
+        // A five-day week without the field matches no profile: still the Appendix A check.
+        (codes::STRUCTURE_MISMATCH, |m| m.structure.days_per_week = 5),
         (codes::STRUCTURE_SUNDAY, |m| {
             m.structure.sunday = "optional".into()
         }),

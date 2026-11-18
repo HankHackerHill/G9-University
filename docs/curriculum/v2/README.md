@@ -2,33 +2,33 @@
 
 - Reader: the owner, who is both the learner and the instructor of this course.
 - Source of requirements: `docs/curriculum/v2/MASTER_PLAN_V2.0.md` (the owner's plan, a verbatim copy that is never edited). How it is applied in this repository: `docs/adr/ADR-0023-a-second-curriculum-shape-the-v2-plan-of-60-weekdays.md` (ADR-0023 below).
-- Written: 2026-11-18. Labels used in every file: PROPOSED, ASSUMED, INFERRED, VERIFIED (only with evidence in the repository), NOT RUN.
+- Written: 2026-11-18. Labels used in every file of the course: PROPOSED, ASSUMED, INFERRED, VERIFIED (only with evidence in the repository), NOT RUN.
 
 ## Status
 
-**Status line (2026-11-18):** `AUTHORING: IN PROGRESS | LAB TESTED: NO | LEARNER PASSED: NO | CERTIFICATION READY: NO`
+**Status line (2026-11-18):** `AUTHORING COMPLETE: NO (in progress) | LAB TESTED: NO | LEARNER PASSED: NO | CERTIFICATION READY: NO`
 
-The four states are independent (plan section 14.3). Each is set only by its own evidence, and none implies the next.
+The four states are independent (plan section 14.3). Each is set only by its own evidence, and none implies the next. The owner changes the line, and only when the evidence in the third column exists; no agent and no script changes it.
 
 | State | What it means | Evidence that sets it | Value on 2026-11-18 |
 |---|---|---|---|
-| AUTHORING COMPLETE | every file of the layout below exists, the courseware build check passes and the three audits (technical, adversarial, acceptance) are recorded with their defects and resolutions | the completion manifest and the audit records in `docs/curriculum/v2/AUDIT_REPORT.md` | not claimed by this file; the courseware is being written |
+| AUTHORING COMPLETE | every file of the layout below exists, the courseware build check passes, and the three audits (technical, adversarial, acceptance) are recorded with their defects and resolutions. A finished repository, not a finished training experience | the completion manifest and the audit records in `docs/curriculum/v2/AUDIT_REPORT.md` | NO. The courseware is being written; the audit report does not exist yet |
 | LAB TESTED | the lab was built on the G9 host with the owner's approval, the isolation acceptance tests of plan section 3.3 passed, and the lab steps were run and recorded | the owner's approved run records | NO. NOT RUN: nothing was deployed, installed, scanned or executed |
 | LEARNER PASSED | the learner took the scored attempts and met the gates (weekly 80 of 100, final 85 of 100, safety gate, evidence-integrity gate) | weekly scorecards and the application's grade decisions | NO. No attempt is recorded |
-| CERTIFICATION READY | the learner's artifacts were matched against every current official objective of one named certification and that body's own prerequisites are met (plan section 13) | a per-objective comparison made by the owner; never produced by this course alone | NO. Not a state this course can establish |
+| CERTIFICATION READY | the learner's artifacts were matched against every current official objective of one named certification, and that body's own prerequisites are met (plan section 13) | a per-objective comparison made by the owner; never produced by this course alone | NO. Not a state this course can establish |
 
-> **BLOCKER, Stage 00 (host readiness): unresolved.**
+> **BLOCKER, Stage 00 (host readiness): UNRESOLVED.**
 >
 > - Observation (owner-supplied, 2026-11-14, plan section 2.1): `virsh` could not connect because `/var/run/libvirt/libvirt-sock` does not exist. The CPU reports AMD-V; KVM acceleration is not verified. The route and IPv6 listings prove neither a VPN kill switch nor isolation.
 > - Consequence: no local lab exists. No guest, virtual network, router, domain, SIEM or cloud sandbox described in this course has been built, and isolation is not proven.
 > - The missing socket is a root-cause question (monolithic or modular daemon, socket activation, connection URI, permissions). It is not permission to install, enable or restart anything.
 > - Non-execution gate: writing these files authorized nothing in them. Every command in the course is proposed text. A command is run only after the owner has reviewed that exact command with its target, purpose, expected output, side effects, privilege, safe scope and rollback, and has approved it.
-> - Until the blocker is resolved: exercises that need the local lab are deferred or replaced by the hosted alternative the day guide names, the substitution is recorded, and no intrusive local test is made.
+> - Until the blocker is resolved: exercises that need the local lab are deferred or replaced by the hosted alternative the day guide names, the substitution is recorded, and no intrusive local test is made. A blocked lab is recorded as BLOCKED, never as passed.
 > - Where it is handled: `docs/curriculum/v2/HOST_READINESS.md` (read-only diagnostics and how to read their results), `docs/curriculum/v2/LAB_ARCHITECTURE.md` (topology and isolation acceptance tests), `docs/curriculum/v2/SAFETY_AUTHORIZATION.md` (scope, rules of engagement, incident procedure).
 
 ## What this is
 
-A 12-week apprenticeship of 60 weekdays at 8 accountable study hours a day: 480 hours. It is penetration-testing-first purple-team training: each offensive mechanism is followed by its defensive observation, a remediation and a retest. It is not equal-depth mastery of every security specialty (plan sections 1 and 12).
+A 12-week apprenticeship of 60 weekdays at 8 accountable study hours a day: 480 hours. It is penetration-testing-first purple-team training: each offensive mechanism is followed by its defensive observation, a remediation and a retest. It is not equal-depth mastery of every security specialty (plan sections 1 and 12), and it makes no promise of professional status or of a certification result (plan section 0.4, last rule).
 
 The working loop of every day: scope, hypothesis, reproduction on an authorized target, preserved evidence, root cause, telemetry, mitigation, retest, documented limits.
 
@@ -47,7 +47,22 @@ The working loop of every day: scope, hypothesis, reproduction on an authorized 
 | 11 | 2027-01-25 to 2027-01-29 | Cloud and DevSecOps (24 h), AI and agents (16 h) | 51 to 55 | day 55 | V2-W11-EXAM | `W11-Cloud-and-Agentic-AI-Security-Report.md` |
 | 12 | 2027-02-01 to 2027-02-05 | AI (8 h), integrated final assessment (32 h) | 56 to 60 | day 60 (final) | V2-W12-CAPSTONE | `W12-Final-Executive-and-Technical-Capstone.md` |
 
-The dates are the plan's original planning calendar, not a record of completion. On 2026-11-18 that calendar stands at day 3 and no day is recorded as done. 2026-12-25 and 2027-01-01 are planned training days. The owner may shift dates; the sequence, the 60 days and the 480 hours do not change.
+The dates are the plan's original planning calendar, not a record of completion. On 2026-11-18 that calendar stands at day 3 (a Wednesday) and no day is recorded as done. 2026-12-25 and 2027-01-01 are planned training days. The owner may shift dates; the sequence, the 60 days and the 480 hours do not change.
+
+### A day in one table
+
+| Local time (America/Chicago) | Counted | Block | Ordinary day | Friday |
+|---|---:|---|---|---|
+| 08:00 to 08:30 | 0.5 h | R | active recall, prior mistakes | active recall (1-day and 3-day questions) |
+| 08:30 to 10:30 | 2.0 h | A | core lesson and guided lab | closed-book knowledge exam (20 questions) |
+| 10:30 to 10:45 | 0 | break | not study | not study |
+| 10:45 to 12:45 | 2.0 h | B | tool practice, coding, lab preparation | the plan's review or planning task |
+| 12:45 to 13:45 | 0 | lunch | not study | not study |
+| 13:45 to 16:15 | 2.5 h | C | independent challenge | scored practical, no hints, no AI |
+| 16:15 to 17:15 | 1.0 h | D | defense, evidence, remediation, retest | scoring and report |
+| Day, week, course | 8.0 h | | 40 h a week, 480 h in 60 days | one assessment attempt, begun before the knowledge exam |
+
+Day 55 is the one Friday where block A is a lesson and the exam sits in block D (plan section 5, week 11: the AI mini-exam). The method behind the blocks is in `docs/curriculum/v2/STUDENT_GUIDE.md`.
 
 ## Prerequisites
 
@@ -58,7 +73,7 @@ The dates are the plan's original planning calendar, not a record of completion.
 | A written scope and rules of engagement for every target | every offensive exercise | PROPOSED | `docs/curriculum/v2/SAFETY_AUTHORIZATION.md` |
 | A host that runs the lab: KVM through libvirt, three isolated networks (`10.77.10.0/24` RED, `10.77.20.0/24` DMZ, `10.77.30.0/24` CORP, domain `corp.g9.test`), six guests configured at 16 vCPU, 31 GiB RAM and 390 GiB of thin disk in total (plan section 3.1) | every local-lab exercise | BLOCKED by Stage 00 | `docs/curriculum/v2/HOST_READINESS.md`, `docs/curriculum/v2/LAB_ARCHITECTURE.md` |
 | The isolation acceptance tests of plan section 3.3, passed and evidenced | any intrusive local test | NOT RUN | `docs/curriculum/v2/LAB_ARCHITECTURE.md` |
-| Accounts on the hosted platforms that the day guides name; the access tier differs by exercise | hosted exercises, and substitutions while the local lab is blocked | ASSUMED; each exercise carries its tier and how that tier was verified | `docs/curriculum/v2/RESOURCE_REGISTRY.md` |
+| Accounts on the hosted platforms that the day guides name; the access tier differs by exercise | hosted exercises, and substitutions while the local lab is blocked | ASSUMED; each exercise carries its tier and how that tier was checked | `docs/curriculum/v2/RESOURCE_REGISTRY.md` |
 | Evaluation licences for the Windows guests | the local directory lab from week 3 | ASSUMED; availability not checked | the week guide of week 3 |
 | An approved cloud sandbox with a billing limit and a destroy-and-verify checklist | the cloud lab of week 11; a hosted or no-cloud substitute is named for the case that none is approved | not approved | the week guide of week 11, `docs/curriculum/v2/SAFETY_AUTHORIZATION.md` |
 | The G9 MENTOR desktop application, built, with its first run done | using the course in the window | `docs/runbooks/first-run.md` records what was tested and what is NOT RUN (building and starting the window on the host) | `docs/runbooks/first-run.md` |
@@ -67,7 +82,7 @@ Nothing in this table is satisfied by reading it. No software is to be installed
 
 ## Layout
 
-The corpus lives in `docs/curriculum/v2/` (the plan's root name `G9-CYBERSECURITY-MASTERY/` is not used; see the departures table). The tree shows week 1 in full; weeks 2 to 12 have the same shape.
+The corpus lives in `docs/curriculum/v2/` (the plan's root name `G9-CYBERSECURITY-MASTERY/` is not used; see the departures table). The tree shows week 1 in full; weeks 2 to 12 have the same shape. The day files are numbered `DAY_01` to `DAY_60` across the course: week w holds days 5w-4 to 5w, so `WEEKS/W01/` holds `DAY_01` to `DAY_05` and `WEEKS/W12/` holds `DAY_56` to `DAY_60`.
 
 ```
 docs/curriculum/v2/
@@ -88,7 +103,7 @@ docs/curriculum/v2/
     W01/
       RESOURCES.json                    # the week's registry of labs and references
       WEEK_GUIDE.md                     # goals, prerequisites, tools, risks, pass conditions
-      DAY_01.md                         # day guides DAY_01 to DAY_05; the days are numbered 01 to 60 across the course
+      DAY_01.md                         # day guides DAY_01 to DAY_05
       LABS/
         GUIDED_LAB.md
         INDEPENDENT_LAB.md
@@ -103,7 +118,7 @@ docs/curriculum/v2/
         DAY_01_KEY.md
         ASSESSMENT_KEY.md
         LABS_KEY.md
-    W02/                                # W02 to W12: same shape; W12 holds DAY_56 to DAY_60
+    W02/                                # W02 to W12: same shape
   ASSESSMENTS/
     ENTRY_DIAGNOSTIC.md
     MIDPOINT_OFFENSIVE_BENCHMARK.md
@@ -111,6 +126,7 @@ docs/curriculum/v2/
     GRADING_RUBRICS.md                  # marking rubrics of the four score parts
     QUESTION_BANK.md                    # GENERATED: every learner question, without keys
     SPACED_RECALL.md                    # GENERATED: the recall queue of every day
+    ANSWER_KEY.md                       # GENERATED, INSTRUCTOR ONLY: every quiz and exam key collected
     INSTRUCTOR/                         # INSTRUCTOR ONLY: capstone fixture map and course-level keys
   TEMPLATES/
     LAB_RECORD.md
@@ -130,9 +146,10 @@ docs/curriculum/v2/
 
 | Kind of file | Rule |
 |---|---|
-| Hand-written source | edited by an author under `docs/curriculum/v2/AUTHORING.md`; the day guides, week guides, labs, assessments, keys, guides and templates |
-| GENERATED | produced by the courseware builder from the hand-written source; never edited by hand. The builder, its check and its regeneration command are described in the section Build of `docs/curriculum/v2/AUTHORING.md` |
-| INSTRUCTOR ONLY | every file below a folder named `ANSWER_KEYS` and everything in `docs/curriculum/v2/ASSESSMENTS/INSTRUCTOR/`: answers, rationales, fixture maps, reference observations, scoring keys. No learner file holds an answer, a flag, a solution path or a fixture map of an unsolved item |
+| Hand-written source | edited by an author under `docs/curriculum/v2/AUTHORING.md`: the day guides, week guides, labs, assessments, keys, guides and templates |
+| GENERATED | produced by the courseware builder `scripts/build_curriculum_v2.py` from the hand-written source; never edited by hand. The check and the regeneration command are in the section Build of `docs/curriculum/v2/AUTHORING.md`. Generated files named above: `SCHEDULE_60_DAYS.md`, `CURRICULUM_MAP.md`, `RESOURCE_REGISTRY.md`, every `QUIZZES/DAY_NN_QUIZ.md`, `ASSESSMENTS/QUESTION_BANK.md`, `ASSESSMENTS/SPACED_RECALL.md`, `ASSESSMENTS/ANSWER_KEY.md`. The builder also writes the importable manifests, lesson sheets, answer keys and one Friday payload per week into data/curriculum/ (see the window section below) |
+| INSTRUCTOR ONLY | every file below a folder named `ANSWER_KEYS`, everything in `docs/curriculum/v2/ASSESSMENTS/INSTRUCTOR/`, and the generated `docs/curriculum/v2/ASSESSMENTS/ANSWER_KEY.md`: answers, rationales, fixture maps, reference observations, scoring keys. No learner file holds an answer, a flag, a solution path or a fixture map of an unsolved item |
+| Readable by both | `docs/curriculum/v2/ASSESSMENTS/GRADING_RUBRICS.md` and `docs/curriculum/v2/INSTRUCTOR_GUIDE.md` describe how work is marked and how the course is run. They hold no answer and no fixture map of any item; a learner who reads them learns the scoring, not a solution |
 | Learner's own work | lab records, evidence, reports and scorecards are the learner's files. They are kept in the application (Learning Journal, attachments) or in a private folder, not written into the course source. A day guide's line `Status: PROPOSED` is part of the source and is not edited to record progress |
 
 The separation of instructor files prevents accidental exposure. It is not access control: learner and instructor are one person and the files are in one repository. The release rules are in `docs/curriculum/v2/INSTRUCTOR_GUIDE.md`.
@@ -167,7 +184,7 @@ State of this section: PROPOSED. It describes the application behaviour that ADR
 | 9 | Assessments | begins the attempt before the knowledge exam, submits it with the report, reviews the evidence, chooses a level 0 to 4 for each of six criteria, approves the final grade | one attempt per Friday. The application passes it only under its non-compensatory rule (ADR-0012), which differs from the plan's 80 of 100; the plan's 100-point score is recorded on the weekly scorecard. A grade decided by the learner is recorded as self-adjudicated and never validates a competency |
 | 10 | Retention Center | optional: reviews items created in the application | the application's own ladder (1, 3, 7, 21, 60 days) is unchanged. The course's 1, 3, 7 and 14-day recall is carried by the generated queue in each day's recall block |
 
-What the window does not do: it runs no lab command, scan or installation, reaches no network, and opens no hosted lab. Hosted exercises are done in a browser outside the application, under the scope written for that exercise. The folder named in step 8 and the curriculum manifest of step 1 are generated outputs of the courseware builder (ADR-0023, decisions 4 and 5).
+What the window does not do: it runs no lab command, scan or installation, reaches no network, and opens no hosted lab. Hosted exercises are done in a browser outside the application, under the scope written for that exercise. The folder named in step 8 and the curriculum manifest of step 1 are generated outputs of the courseware builder (ADR-0023, decisions 4 and 5); until the builder has written them, steps 1 and 8 cannot be done.
 
 ## Rules that hold in every file
 
@@ -187,7 +204,8 @@ What the window does not do: it runs no lab command, scan or installation, reach
 |---|---|---|
 | Root directory `G9-CYBERSECURITY-MASTERY/` | `docs/curriculum/v2/` of this repository | one source feeds the application and the check scripts (ADR-0023) |
 | `DAY_01.md` to `DAY_05.md` in every week folder | `DAY_01.md` to `DAY_60.md`; week w holds days 5w-4 to 5w | a day id is unique in the course; day 30 and day 60 keep the plan's numbers |
-| `ASSESSMENTS/FINAL_CAPSTONE_INSTRUCTOR.md` and `ASSESSMENTS/ANSWER_KEY.md` beside the learner files | instructor material of the course level is in `docs/curriculum/v2/ASSESSMENTS/INSTRUCTOR/` | instructor files are separable by path, so a leakage check can be made by folder |
+| `ASSESSMENTS/FINAL_CAPSTONE_INSTRUCTOR.md` beside the learner files | instructor material of the course level is in `docs/curriculum/v2/ASSESSMENTS/INSTRUCTOR/` | instructor files are separable by path, so a leakage check can be made by folder |
+| `ASSESSMENTS/ANSWER_KEY.md` as an authored file | generated from the week key files; it stays in `ASSESSMENTS/` and is marked instructor only | the collected key cannot drift from the week keys |
 | `QUIZZES/` as authored student files | generated from the day guides | each question has one source; the build check fails on a missing key or a reused identifier |
 | `CURRICULUM_MAP.md`, `RESOURCE_REGISTRY.md`, `SCHEDULE_60_DAYS.md`, the question bank and the spaced-recall plan as authored files | generated | the indexes cannot drift from the day guides |
 | No per-week registry and no format contract | `RESOURCES.json` in each week and `AUTHORING.md` added | a day guide may cite only registry entries; the build check needs fixed formats |

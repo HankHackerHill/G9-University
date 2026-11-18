@@ -1,12 +1,14 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used, clippy::panic))]
 //! # g9-curriculum — M02 Curriculum (ARCHITECTURE.md §3, §4; handoff §8; gate A01)
 //!
-//! Pure, I/O-free curriculum logic over the manifest format v1.0.0:
+//! Pure, I/O-free curriculum logic over the manifest format v1.0.0 and v1.1.0
+//! (two structure profiles, ADR-0023: the Appendix A shape `CT9_480` and the
+//! owner's v2.0 plan `MASTERY_V2`):
 //!
 //! | Module | Responsibility |
 //! |---|---|
 //! | [`manifest`] | serde types (`deny_unknown_fields`) for the manifest format; the seed at `data/curriculum/g9-ct9-480.seed.v0.json` is the reference instance |
-//! | [`validate`](mod@validate) | every importer proof obligation (12 × 6 × 3 = 216 objectives, 420/300 minutes, 2,400/week, 28,800 total, ids, blocks, deliverables, resources, provenance); reports, never corrects |
+//! | [`validate`](mod@validate) | every importer proof obligation against the profile the manifest declares (`CT9_480`: 12 × 6 × 3 = 216 objectives, 420/300 minutes; `MASTERY_V2`: 12 × 5 × 3 = 180 objectives, 480 minutes; both 2,400/week, 28,800 total; ids, blocks, deliverables, resources, provenance); reports, never corrects |
 //! | [`checksum`] | SHA-256 over canonical JSON (`g9_domain::hashing`) — the identity approvals bind to |
 //! | [`reconcile`](mod@reconcile) | day-by-day diff of a candidate against the operator-supplied original approved plan, with a human-readable report and the explicit approval request |
 //! | [`provenance`] | the promotion gate: `PROPOSED_SEED → RECONCILED_CANDIDATE → APPROVED_CANONICAL`; a seed is never canonical by itself (C01) |
@@ -32,7 +34,7 @@ pub use checksum::{
 pub use error::CurriculumError;
 pub use manifest::{
     Block, BlockSpec, Day, Manifest, Objective, Reconciliation, Resource, ResourceKind, Structure,
-    Week, MANIFEST_FORMAT_VERSION,
+    Week, MANIFEST_FORMAT_VERSION, MANIFEST_FORMAT_VERSION_1_1,
 };
 pub use plan::{
     daily_plan, program_timeline, CivilDate, DailyPlan, PlannedBlock, PlannedObjective,
@@ -44,7 +46,8 @@ pub use reconcile::{
     ReconciliationSummary,
 };
 pub use validate::{
-    codes, validate, ManifestError, ManifestWarning, ValidationReport, SUPPORTED_SCHEMA_VERSION,
+    codes, select_profile, validate, ManifestError, ManifestWarning, ValidationReport,
+    ASSESSMENT_DAY_SCHEMA_VERSION, SUPPORTED_SCHEMA_VERSION,
 };
 
 /// Parse manifest JSON text. Parse errors report position only, never content.

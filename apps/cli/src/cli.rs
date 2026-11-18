@@ -82,19 +82,19 @@ pub enum Command {
     },
     /// curriculum.validate then curriculum.import of the seed manifest as PROPOSED_SEED.
     ImportSeed {
-        /// Manifest path (default: data/curriculum/g9-ct9-480.seed.v0.json, the Appendix A skeleton; the curriculum that ships with the window is data/curriculum/g9-ct9-480.draft.v1.json).
+        /// Manifest path (default: data/curriculum/g9-ct9-480.seed.v0.json, the Appendix A skeleton; the Appendix A draft is data/curriculum/g9-ct9-480.draft.v1.json, and a manifest of the owner's v2.0 plan, structure profile MASTERY_V2, imports and validates the same way: data/curriculum/g9-cyber-mastery-480.draft.v2.json, ADR-0023).
         #[arg(long, value_name = "PATH")]
         manifest: Option<PathBuf>,
     },
     /// Compare a candidate curriculum manifest with the operator's original plan and print the diff with its checksums. With --write-candidate (and an explicit --candidate-version, --approved-by and --approved-at) it also writes the RECONCILED_CANDIDATE manifest and the request payloads of curriculum.import and curriculum.promote. It reads two files, opens no data directory and approves nothing.
     Reconcile(ReconcileArgs),
-    /// Deterministic scripted week (Stage 03 exit criterion): sessions, journal, Saturday assessment, backups, audit. Exit 0 only on PASS (INCOMPLETE/FAIL exit 2). Writes seed rows straight to storage: requires --scratch.
+    /// Deterministic scripted week (Stage 03 exit criterion): sessions, journal, Saturday assessment, backups, audit. Exit 0 only on PASS (INCOMPLETE/FAIL exit 2). Writes seed rows straight to storage: requires --scratch. It runs on the Appendix A shape (six days, a Saturday); a version of the owner's v2.0 plan (MASTERY_V2) is refused with PRECONDITION_FAILED cli.appendix_a_required.
     SimulateWeek(SimulateArgs),
     /// Prepare and start a session, then exit without completing it (simulated crash); run `g9 init` afterwards. Writes seed rows straight to storage: requires --scratch.
     CrashDrill(CrashDrillArgs),
     /// Offline restore: replace the live database with a verified backup snapshot; the old database is moved to <data dir>/quarantine, never deleted. Stop the application first. Prints the plan and exits 1 unless --confirm-replace-live-database is given.
     Restore(RestoreArgs),
-    /// Build the performance fixture (PERF-1): twelve months of use at the sizes of docs/ui/performance-budgets.md (72 days, 216 objectives, 1,700 sessions, 5,000 intervals, 2,000 notes with 3 revisions, 500 attempts, 20,000 observations, 50,000 audit rows) through the command pipeline where an operation exists, with a fixed clock, and print the counts and the checksum. Learning episodes and the observations no operation derives are SEEDED straight to storage: requires --scratch and a fresh --data-dir.
+    /// Build the performance fixture (PERF-1): twelve months of use at the sizes of docs/ui/performance-budgets.md (72 days, 216 objectives, 1,700 sessions, 5,000 intervals, 2,000 notes with 3 revisions, 500 attempts, 20,000 observations, 50,000 audit rows) through the command pipeline where an operation exists, with a fixed clock, and print the counts and the checksum. Learning episodes and the observations no operation derives are SEEDED straight to storage: requires --scratch and a fresh --data-dir. The sizes are the Appendix A shape's: a manifest of the owner's v2.0 plan is refused with PRECONDITION_FAILED cli.appendix_a_required.
     PerfFixture(PerfFixtureArgs),
     /// Copy a RETAINED backup to another directory (a USB drive, a NAS mount): the snapshot plus <id>.manifest.json, synced and re-hashed against the manifest. Reads only; the application may be running.
     CopyBackup(CopyBackupArgs),

@@ -3,7 +3,10 @@
 //!
 //! Both functions validate the manifest first and refuse an invalid one
 //! (`CurriculumError::Invalid`): a plan derived from a manifest that breaks the
-//! structural contract would silently misreport minutes or objectives.
+//! structural contract would silently misreport minutes or objectives. They
+//! work on either structure profile (ADR-0023): the days, minutes, blocks and
+//! assessment flags are read from the validated manifest, so a `MASTERY_V2`
+//! manifest yields five days a week, Friday assessed, and no Saturday.
 //!
 //! Date arithmetic is chrono-free: offsets are whole days from a Monday start,
 //! and civil dates are produced with the proleptic Gregorian day-count
@@ -163,9 +166,9 @@ pub struct DailyPlan {
     pub day_id: DayId,
     /// Validated day of week.
     pub day_of_week: DayOfWeek,
-    /// Planned study time for the day (420 or 300 minutes).
+    /// Planned study time for the day (420 or 300 minutes; 480 in `MASTERY_V2`).
     pub planned: DurationMs,
-    /// Saturday blind-practical day.
+    /// The profile's assessment day (the Saturday; the Friday in `MASTERY_V2`).
     pub is_assessment_day: bool,
     /// Deliverable for the day.
     pub evidence_artifact: String,
@@ -178,6 +181,9 @@ pub struct DailyPlan {
 }
 
 /// Resolve the plan for `week_number` / `day_of_week` from a valid manifest.
+/// A day of week the manifest's profile does not train on (a Saturday of a
+/// `MASTERY_V2` manifest) is `CurriculumError::DayNotFound`; a value outside
+/// 1..=6 is `CurriculumError::DayOfWeekOutOfRange`.
 pub fn daily_plan(
     manifest: &Manifest,
     week_number: u32,
@@ -286,7 +292,7 @@ pub struct TimelineDay {
     pub date: CivilDate,
     /// Planned study time for the day.
     pub planned: DurationMs,
-    /// Saturday blind-practical day.
+    /// The profile's assessment day (the Saturday; the Friday in `MASTERY_V2`).
     pub is_assessment_day: bool,
 }
 
@@ -299,7 +305,8 @@ pub struct ProgramTimeline {
     pub provenance: ManifestProvenance,
     /// Monday of week 1.
     pub start: CivilDate,
-    /// Last training day (Saturday of the final week).
+    /// Last training day (the assessment day of the final week: its Saturday,
+    /// or its Friday in `MASTERY_V2`).
     pub end: CivilDate,
     /// Calendar days spanned, start and end inclusive.
     pub span_days: u32,
@@ -308,7 +315,8 @@ pub struct ProgramTimeline {
 }
 
 /// Compute per-day calendar offsets from a Monday start date. Week `w`, day of
-/// week `d` lands on offset `7·(w−1) + (d−1)`; Sundays are never used.
+/// week `d` lands on offset `7·(w−1) + (d−1)`; Sundays are never used, and in
+/// `MASTERY_V2` neither are Saturdays.
 pub fn program_timeline(
     manifest: &Manifest,
     start: CivilDate,

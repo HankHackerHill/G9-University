@@ -923,6 +923,9 @@ pub fn build(
     boot.native_confirmation = false;
     boot.event_log = false;
     let manifest = import_seed::load_manifest(&options.manifest)?;
+    // The fixture is sized for the Appendix A shape (72 days, 216 objectives, a Saturday of
+    // blocks); the owner's v2.0 plan is refused before a data directory is written.
+    seed::require_appendix_a_manifest(&manifest)?;
     let blocks = manifest_blocks(&manifest);
     let slots = timeline(options.divisor, start, &blocks)?;
 

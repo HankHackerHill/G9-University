@@ -16,9 +16,9 @@ use g9_assessment::{AssessmentDefinition, AssessmentKind, AssessmentVersion, Rub
 use g9_competency::Competency;
 use g9_curriculum::CivilDate;
 use g9_domain::{
-    ActorId, AssessmentId, Classification, CompetencyId, CurriculumId, DataDomain, Difficulty,
-    DurationMs, EvidenceId, G9Error, IanaZone, InteractionMode, Revision, SessionId, SessionState,
-    UtcMillis,
+    ActorId, AssessmentId, Classification, CompetencyId, DataDomain, Difficulty, DurationMs,
+    EvidenceId, G9Error, IanaZone, InteractionMode, Revision, SessionId, SessionState,
+    StructureProfileId, UtcMillis,
 };
 use g9_storage::repos::assessment::{self as assessment_repo, AssessmentDefinitionRow};
 use g9_storage::repos::competency::{self as competency_repo, CompetencyRow};
@@ -30,7 +30,10 @@ use g9_storage::repos::ReadScope;
 use g9_storage::Database;
 use serde::Serialize;
 
-/// Curriculum id of the program (`AppConfig::new` uses the same).
+/// Curriculum id of the Appendix A program (`AppConfig::new` uses the same). The seed, the
+/// simulated week and the performance fixture are this shape; the owner's v2.0 plan
+/// (`g9-cyber-mastery-480`, structure profile `MASTERY_V2`, ADR-0023) imports and validates but
+/// is refused by the commands that need the Appendix A shape ([`require_appendix_a`]).
 pub const CURRICULUM_ID: &str = "g9-ct9-480";
 /// Id of the competency the simulated assessments evidence.
 pub const SIM_COMPETENCY_ID: &str = "sim-core-competency";
@@ -77,22 +80,60 @@ pub fn local_instant(date: CivilDate, hour: u8, zone: &IanaZone) -> Result<UtcMi
     Ok(g9_calendar::resolve_local(&civil, zone)?.instant)
 }
 
-/// The curriculum version the backend reads (same rule as `g9-app`: the
-/// current canonical version, else the newest import).
+/// The curriculum version the backend reads (the rule of `g9-app`, `repos::curriculum::active_version`:
+/// the current canonical version, else the newest import, across curricula).
 pub fn active_version(db: &Database) -> Result<Option<CurriculumVersionRow>, G9Error> {
-    let conn = db.conn();
-    let curriculum =
-        CurriculumId::parse(CURRICULUM_ID).map_err(|_| internal("cli.curriculum_id"))?;
-    if let Some(v) = curriculum_repo::current_version(conn, &curriculum)? {
-        return Ok(Some(v));
+    Ok(curriculum_repo::active_version(db.conn())?)
+}
+
+/// The error a command that needs the Appendix A shape gives for another structure profile.
+fn appendix_a_required(profile: StructureProfileId, what: &str) -> G9Error {
+    G9Error::precondition_failed(
+        "cli.appendix_a_required",
+        format!(
+            "{what} uses structure profile {profile}; this command works on the Appendix A shape \
+             ({}: six days a week, Saturday blind practical) only, and the shape is never converted",
+            StructureProfileId::Ct9480
+        ),
+    )
+}
+
+/// `Ok` when the stored version is the Appendix A shape (`CT9_480`); a version of another
+/// profile (the owner's v2.0 plan has no Saturday) is `PRECONDITION_FAILED`
+/// `cli.appendix_a_required`, never a panic and never a half-run.
+pub fn require_appendix_a(version: &CurriculumVersionRow) -> Result<(), G9Error> {
+    let profile = version.structure_profile()?.id;
+    if profile == StructureProfileId::Ct9480 {
+        Ok(())
+    } else {
+        Err(appendix_a_required(
+            profile,
+            "the active curriculum version",
+        ))
     }
-    let mut versions = curriculum_repo::list_versions(conn, &curriculum)?;
-    versions.sort_by_key(|v| (v.imported_at, v.id.clone()));
-    Ok(versions.pop())
+}
+
+/// [`require_appendix_a`] for a manifest that is not stored yet: its `structure` selects the
+/// profile. A manifest whose `structure` does not parse is left to the validator, which reports it.
+pub fn require_appendix_a_manifest(manifest: &serde_json::Value) -> Result<(), G9Error> {
+    let Some(structure) = manifest.get("structure") else {
+        return Ok(());
+    };
+    let Ok(structure) = serde_json::from_value::<g9_curriculum::Structure>(structure.clone())
+    else {
+        return Ok(());
+    };
+    let profile = g9_curriculum::select_profile(&structure).id;
+    if profile == StructureProfileId::Ct9480 {
+        Ok(())
+    } else {
+        Err(appendix_a_required(profile, "the manifest"))
+    }
 }
 
 /// Training day of `date` for a program starting on `program_start` (Monday of
-/// week 1); `None` on Sundays and outside the program.
+/// week 1); `None` on a day the version's profile does not train on (Sunday; a
+/// Saturday of the v2.0 plan) and outside the program.
 pub fn training_day(
     db: &Database,
     version: &CurriculumVersionRow,
@@ -100,10 +141,11 @@ pub fn training_day(
     date: CivilDate,
 ) -> Result<Option<TrainingDayRow>, G9Error> {
     let conn = db.conn();
+    let profile = version.structure_profile()?;
     let index = date.to_days() - program_start.to_days();
     let week = index.div_euclid(7) + 1;
     let weekday = index.rem_euclid(7) + 1;
-    if weekday > 6 || week < 1 {
+    if !u8::try_from(weekday).is_ok_and(|d| profile.is_training_day(d)) || week < 1 {
         return Ok(None);
     }
     let weeks = curriculum_repo::list_weeks(conn, &version.id)?;

@@ -24,7 +24,17 @@ Usage (stdlib only; run from anywhere):
     python3 -I scripts/build_curriculum_v2.py --seed-text D11  print the four seed texts of a day
     python3 -I scripts/build_curriculum_v2.py --print-seed     print the seed manifest (the plan alone) on standard output
 
-Exit codes: 0 valid (and current); 1 a rule is broken or a generated file is out of date; 2 usage or environment error.
+Exit codes: 0 valid (and current); 1 a rule is broken or a generated file is out of date; 2 usage or environment error
+(a missing plan or pack folder, a competency pack that cannot be read).
+
+Keys stay out of the learner's files (ADR-0023 decision 6): the text of every key field of every week (answer, marking, rationale,
+distractors, reference observations, fourth hint, overclaims, practical, gate, lab key) is compared, as runs of eight words, with every
+learner file and every string of a registry; a line that begins with an answer label in any of its forms, a key line, and a question that
+states or marks its answer are refused too. Not enforced: a key that is paraphrased, a word inserted into every run, an answer in a
+table cell ('| Answer | B |'), real host names, organizations or personal names. Credential-like tokens, personal e-mail addresses, URLs
+with a password and IPv4 addresses the plan does not name (its lab 10.77.0.0/16 and the host networks it says to avoid; loopback, netmasks,
+the documentation ranges and the reserved blocks by prefix are allowed too) are refused in every file of a week.
+Generated files are written in place only: a symbolic link, or a folder where a file belongs, stops the run before anything is written.
 
 Nothing is approved by building: the output is PROPOSED until the operator promotes it. Every command in the
 courseware is proposed text; this script reads files and writes the generated ones, and runs nothing else.
@@ -38,6 +48,7 @@ import hashlib
 import json
 import re
 import sys
+import unicodedata
 from pathlib import Path
 from typing import NamedTuple
 
@@ -128,9 +139,12 @@ MIN_COMMAND_ROWS = 3
 MAX_RESOURCE_ROWS = 8
 MIN_MULTIPLE_CHOICE = 8
 QUESTION_MIX = {"CONCEPT": 6, "INTERPRET": 6, "CONTROL": 4, "SYNTHESIS": 4}
-MIN_LEAK_CHARS = 40
+LEAK_SHINGLE_WORDS = 8  # key text in a learner file: any run of this many consecutive words (normalized) of a key field
+MIN_LEAK_CHARS = 40  # a key field shorter than one run is compared whole, from this many normalized characters (a shorter one is a word, not a leak)
+MAX_LEAK_REPORTS = 5  # key fields named for one learner file; the rest is counted
 MIN_WORDS_EXAM_SECTION = 20
 MIN_WORDS_SUPPORT_FILE = 40
+MIN_WORDS_LABS_KEY = 20  # words under the heading of each lab in LABS_KEY.md
 
 MAX_SEED_TEXT_CHARS = 500  # schemas/curriculum/manifest.schema.json: objective.text, evidence_artifact
 MAX_HAND_IN_CHARS = 500  # evidence_artifact
@@ -262,11 +276,72 @@ EXAM_ITEM_RE = re.compile(r"^(\d{1,2})\. \[([^\]\s]+)\] \(([A-Z]+)\) (.+)$")
 OPTION_RE = re.compile(r"^\s*([A-D])\. \S")
 KEY_HEAD_RE = re.compile(r"^\[([^\]\s]+)\]$")
 CODE_SPAN_RE = re.compile(r"(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)")
-LINK_RE = re.compile(r"!?\[[^\]\n]*\]\([^)\n]*\)")
 AUTOLINK_RE = re.compile(r"<[A-Za-z][A-Za-z0-9+.\-]{1,31}:[^\s<>]*>")
 HTML_RE = re.compile(r"<(?:/?[A-Za-z][A-Za-z0-9\-]*(?:\s[^<>]*)?/?>|!--|![A-Za-z]|\?[A-Za-z])")
-ANSWER_LINE_PREFIXES = ("answer:", "- answer:", "correct answer")
 SHA256_RE = re.compile(r"(?<![0-9a-f])[0-9a-f]{64}(?![0-9a-f])")
+
+# Answer labels. A learner file holds no answer, no key line and no marked option (AUTHORING.md line 21; ADR-0023 decision 6).
+# A line is first stripped of what decorates a label (list markers, numbering, emphasis, quotes, brackets, NFKC folding of
+# full-width forms); the label must then start it and be followed by a colon, '=', a dash or 'is'. 'Answer the question' and
+# 'Flags: 0x018' are ordinary lines and stay allowed: a bare 'Answer x' is only an answer label when x is an option letter.
+DECOR_RE = re.compile(r"^(?:[\s>#*_+\-\u2022\u00b7`'\"\u201c\u201d\u2018\u2019(\[{]|<!--|\d{1,3}[.)](?=\s))+")
+_ADJECTIVE = r"(?:(?:the|this|that|its|model|reference|right|expected|final|official|sample|suggested)\s+)*"
+_AFTER = r"[*_`'\")\]]*"
+_SEPARATOR = r"(?:\s*[:=]|\s*[\u2013\u2014]|\s+-+\s)"
+_SEPARATOR_IS = rf"(?:{_SEPARATOR}|\s+is\b)"
+ANSWER_LABEL_RE = re.compile(rf"^{_ADJECTIVE}(?:answers?(?:\s+key)?|ans){_AFTER}{_SEPARATOR_IS}")
+SOLUTION_LABEL_RE = re.compile(rf"^{_ADJECTIVE}solutions?{_AFTER}{_SEPARATOR}")  # 'The solution is ...' is ordinary teaching prose
+CORRECT_ANSWER_RE = re.compile(r"^(?:the\s+)?correct\s+(?:answers?|options?|choices?|responses?)\b")
+FLAG_LABEL_RE = re.compile(rf"^(?:the\s+)?flag{_AFTER}\s*[:=]\s*\S*\{{")
+ANSWER_LETTER_RE = re.compile(r"^(?i:answers?|ans|correct|key|solution)\s+\(?[A-D]\)?\W*$")
+# in the lines of a question only: the labels that are ordinary words elsewhere
+STRICT_LABEL_RE = re.compile(rf"^{_ADJECTIVE}(?:keys?|correct){_AFTER}{_SEPARATOR_IS}")
+FIELD_LABEL_RE = re.compile(rf"^(?:marking|source|why|distractors?){_AFTER}{_SEPARATOR}")
+EXPECTED_LETTER_RE = re.compile(r"^(?i:expected)[*_`'\")\]]*\s*[:=]\s*\(?[A-D]\)?\W*$")
+LETTER_ONLY_RE = re.compile(r"^[A-D][*_\])\.]*$")
+LETTER_IS_RE = re.compile(r"^[A-D]\s*(?:[:=\-\u2013\u2014]|\s+is|\s+are)\s*(?:the\s+)?(?:correct|right|true|best|answer|key)\b", re.IGNORECASE)
+OPTION_MARK_RE = re.compile(r"(?:[(\[]\s*(?:correct|right|answer|key|incorrect|wrong)\s*[)\]]|\s[-\u2013\u2014]\s*(?:correct|right|wrong|incorrect))\s*[.!]?\s*$", re.IGNORECASE)
+TICK_RE = re.compile("[\u2713\u2714\u2705\u2611\u2717\u2718\u274c\u274e\u2612]")
+# a key line of an instructor file ('- Marking: ...') in a learner file; a list marker is required (prose may say 'Why: ...')
+KEY_LINE_RE = re.compile(r"^\s*(?:>\s*)*(?:[-*+\u2022]|\d{1,3}[.)])\s+[*_`]*(?:marking|source|why|distractors?)[*_`]*\s*:", re.IGNORECASE)
+ANSWER_LABEL_MESSAGE = (
+    "a line of a learner file begins with 'Answer:', '- Answer:' or 'Correct answer' (or 'Ans:', 'Solution:', 'The answer is', 'Flag: g9{...}' "
+    "in any emphasis, numbering, bracket or quote form): answers live only under ANSWER_KEYS/"
+)
+KEY_LINE_MESSAGE = "a line of a learner file is a key line ('- Marking:', '- Source:', '- Why:', '- Distractors:'): key lines live only under ANSWER_KEYS/"
+LEAK_TAIL = "no learner file may hold key text (answers, marking, rationale, reference observations, hints, scoring): reword it"
+FLAG_TOKEN_RE = re.compile(r"\b[A-Za-z][A-Za-z0-9_]{1,11}\{([^{}\s]{4,})\}")
+FLAG_PLACEHOLDER_RE = re.compile(r"^(?:\.+|\u2026+|[xX*_-]+|<[^>]*>|flag)$")
+MCQ_LETTER_RE = re.compile(r"^\W{0,2}[A-D](?![A-Za-z0-9])\W*")
+OPTION_VERBS = "is|are|was|were|and|or|would|says|names|claims|treats|skips|ignores|confuses|fails|describes|reverses|assumes|proposes|measures|checks|mistakes|swaps"
+
+# Text that must not be in the courseware (AUTHORING.md: no real credentials, hosts or personal data; lab addresses from the plan).
+# Cheap patterns, not a scanner: they catch a pasted token, key, personal address or non-lab IPv4. Real host names, organizations and
+# personal names are NOT enforced.
+SENSITIVE_TOKENS: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY(?: BLOCK)?-----"), "looks like a private key header"),
+    (re.compile(r"\b(?:AKIA|ASIA|AGPA|AIDA|AROA|ANPA|ANVA|AIPA)[A-Z0-9]{16}\b"), "looks like an AWS access key id"),
+    (re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,})"), "looks like a GitHub token"),
+    (re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{10,}"), "looks like a Slack token"),
+    (re.compile(r"\bAIza[0-9A-Za-z_\-]{35}\b"), "looks like a Google API key"),
+    (re.compile(r"\b[sr]k_live_[0-9A-Za-z]{16,}"), "looks like a live payment key"),
+]
+EMAIL_RE = re.compile(r"(?<![\w.%+\-])([A-Za-z0-9._%+\-]+)@((?:[A-Za-z0-9\-]+\.)+[A-Za-z]{2,})\b")
+EMAIL_OK_DOMAINS = {"example.com", "example.org", "example.net", "example.edu"}  # and the local part "git" (git@github.com: a clone address, not a person)
+EMAIL_OK_SUFFIXES = (".test", ".example", ".invalid", ".localhost", ".local", ".internal", ".example.com", ".example.org", ".example.net")
+URL_USERINFO_RE = re.compile(r"\b[A-Za-z][A-Za-z0-9+.\-]*://([^\s/@:'\"`<>]+):([^\s/@'\"`]+)@")
+PASSWORD_PLACEHOLDER_RE = re.compile(r"^(?:<[^>]+>|\{[^}]+\}|\$\{?\w+\}?|\*+|[xX]+|REDACTED|redacted|password|changeme|synthetic[\w-]*)$")
+IPV4_RE = re.compile(r"(?<![\d.])(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?:/(\d{1,2}))?(?!\d|\.\d)")
+IPV4_DOC_NETS = {(192, 0, 2), (198, 51, 100), (203, 0, 113)}  # RFC 5737 documentation ranges
+IPV4_BLOCKS = {  # the reserved blocks, named by their prefix when a lesson teaches them (10.0.0.0/8, 192.168.0.0/16 ...)
+    ((10, 0, 0, 0), 8), ((172, 16, 0, 0), 12), ((192, 168, 0, 0), 16), ((169, 254, 0, 0), 16), ((100, 64, 0, 0), 10), ((127, 0, 0, 0), 8),
+    ((224, 0, 0, 0), 4), ((240, 0, 0, 0), 4), ((0, 0, 0, 0), 8), ((0, 0, 0, 0), 0),
+}  # fmt: skip
+IPV4_ENDS = {  # the first and last address of those blocks, as a lesson writes a range
+    (10, 0, 0, 0), (10, 255, 255, 255), (172, 16, 0, 0), (172, 31, 255, 255), (192, 168, 0, 0), (192, 168, 255, 255), (169, 254, 0, 0), (169, 254, 255, 255),
+    (100, 64, 0, 0), (100, 127, 255, 255),
+}  # fmt: skip
+IPV4_METADATA = {(169, 254, 169, 254), (169, 254, 170, 2), (168, 63, 129, 16), (100, 100, 100, 200)}  # cloud metadata endpoints, link-local, not hosts
 
 
 class Problems:
@@ -288,6 +363,21 @@ class Section(NamedTuple):
     title: str
     no: int
     body: list[Line]
+
+
+class KeyField(NamedTuple):
+    """One field of an instructor key: the text no learner file may hold."""
+
+    field: str  # answer, marking, why, distractors, challenge, hint 4, overclaims, practical, gate, lab key
+    ident: str  # the question id, the day, the exam code or the lab heading
+    where: str  # the key file
+    text: str
+
+
+class LeakIndex(NamedTuple):
+    windows: dict[str, KeyField]  # every run of LEAK_SHINGLE_WORDS normalized words of a key field
+    wholes: list[tuple[str, KeyField]]  # key fields shorter than one run, from MIN_LEAK_CHARS characters
+    flags: dict[str, KeyField]  # a flag (name{value}) written in a key
 
 
 # ---------------------------------------------------------------------------------------------
@@ -338,6 +428,124 @@ def cut(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 3].rstrip() + "..."
 
 
+def decor_stripped(line: str) -> str:
+    """A line without what decorates a label: list markers, numbering, emphasis, quotes, opening brackets; full-width forms folded."""
+    return DECOR_RE.sub("", unicodedata.normalize("NFKC", line)).strip()
+
+
+def answer_label(line: str, strict: bool = False) -> str | None:
+    """The answer label a line begins with ('Answer:', '**Answer**:', 'The answer is', 'Solution:', 'Flag: g9{...}' ...), or None.
+    `strict` is for the lines of a question, where more is refused: 'Correct: B', 'Key: B', '(B)', 'B is correct', a '- Marking:' line."""
+    s = decor_stripped(line)
+    low = s.lower()
+    m = ANSWER_LABEL_RE.match(low) or SOLUTION_LABEL_RE.match(low) or CORRECT_ANSWER_RE.match(low) or FLAG_LABEL_RE.match(low) or ANSWER_LETTER_RE.match(s)
+    if strict and not m:
+        m = STRICT_LABEL_RE.match(low) or FIELD_LABEL_RE.match(low) or EXPECTED_LETTER_RE.match(s) or LETTER_ONLY_RE.match(s) or LETTER_IS_RE.match(s)
+    return s[: max(m.end(), 1)].strip()[:40] if m else None
+
+
+def key_line(line: str) -> str | None:
+    """'- Marking: ...', '- Source: ...', '- Why: ...', '- Distractors: ...' (the field lines of an instructor key), or None."""
+    m = KEY_LINE_RE.match(unicodedata.normalize("NFKC", line))
+    return m.group(0).strip()[:40] if m else None
+
+
+def question_leak(line: str, code: bool = False) -> str | None:
+    """What in one line of a question states or marks its answer: a label, a key line, a tick or cross, '(correct)' after an option."""
+    label = answer_label(line, strict=not code)
+    if label or code:
+        return label
+    tick = TICK_RE.search(line)
+    if tick:
+        return tick.group(0)
+    mark = OPTION_MARK_RE.search(line)
+    return mark.group(0).strip() if mark else None
+
+
+def option_named(letter: str, text: str) -> bool:
+    """Whether a text names the option `letter` ('A:', 'A.', '(A)', 'Option A', 'A is wrong', 'A, C and D'); the English article 'A' does not."""
+    return re.search(rf"(?<![A-Za-z0-9])(?:(?i:options?)\s+|\()?{letter}(?:\)|\s*[:.,;/\u2013\u2014\]-]|\s*\(|\s+(?:{OPTION_VERBS})\b|\s*$)", text) is not None
+
+
+def parts_named(text: str) -> set[int]:
+    """The numbers of the parts of ASSESSMENT.md a text names: 'Part 2', 'Parts 2 and 3', 'Parts 2, 3', 'Parts 2 to 4', 'Parts 2-3'."""
+    out: set[int] = set()
+    for m in re.finditer(r"\bParts?\s+(\d(?:\s*(?:,|and|&|to|-|\u2013|\u2014)\s*(?:Part\s+)?\d)*)", text):
+        previous: int | None = None
+        span = False
+        for token in re.findall(r"\d|to|-|\u2013|\u2014", m.group(1)):
+            if token.isdigit():
+                k = int(token)
+                out.update(range(previous, k + 1) if span and previous is not None else [k])
+                previous, span = k, False
+            else:
+                span = True
+    return out
+
+
+_PLAN_ADDRESSES: set[tuple[int, ...]] | None = None
+
+
+def plan_addresses() -> set[tuple[int, ...]]:
+    """The IPv4 addresses the owner's plan names: the lab topology (10.77.x.x) and the host networks it says to avoid (its Docker bridges
+    and the host LAN). A lesson on isolation has to name them; they are the plan's facts, not hosts of the lesson."""
+    global _PLAN_ADDRESSES
+    if _PLAN_ADDRESSES is None:
+        text = PLAN.read_bytes().decode("utf-8", errors="replace") if PLAN.is_file() else ""
+        found = {tuple(int(x) for x in m.groups()[:4]) for m in IPV4_RE.finditer(text)}
+        _PLAN_ADDRESSES = {octets for octets in found if max(octets) <= 255}
+    return _PLAN_ADDRESSES
+
+
+def ipv4_allowed(octets: tuple[int, int, int, int], prefix: int | None) -> bool:
+    """The addresses a lesson may write: the lab (10.77.0.0/16) and the other addresses the plan names, loopback, the unspecified and
+    broadcast addresses, netmasks and wildcards, the documentation ranges, the reserved blocks by their prefix, and the cloud metadata
+    endpoints."""
+    a, b, c, _d = octets
+    n = (a << 24) | (b << 16) | (c << 8) | octets[3]
+    inverse = ~n & 0xFFFFFFFF
+    return (
+        (a, b) == (10, 77)
+        or a == 127
+        or n in (0, 0xFFFFFFFF)
+        or (a, b, c) in IPV4_DOC_NETS
+        or (inverse & (inverse + 1)) == 0  # a netmask: ones, then zeros
+        or (n & (n + 1)) == 0  # a wildcard mask: zeros, then ones
+        or (prefix is not None and (octets, prefix) in IPV4_BLOCKS)
+        or octets in IPV4_ENDS
+        or octets in IPV4_METADATA
+        or octets in plan_addresses()
+    )
+
+
+def sensitive_hits(text: str, ipv4: bool = True) -> list[tuple[int, str]]:
+    """(line, what) for each credential-like token, personal e-mail address, URL with a password and non-lab IPv4 address; once per kind and address."""
+    hits: dict[str, int] = {}
+
+    def add(offset: int, what: str) -> None:
+        hits.setdefault(what, text.count("\n", 0, offset) + 1)
+
+    for pattern, what in SENSITIVE_TOKENS:
+        for m in pattern.finditer(text):
+            if not (what == "looks like an AWS access key id" and m.group(0).endswith("EXAMPLE")):
+                add(m.start(), what)
+    for m in URL_USERINFO_RE.finditer(text):
+        if not PASSWORD_PLACEHOLDER_RE.match(m.group(2)):
+            add(m.start(), "a URL with a user name and password: use a synthetic placeholder such as <synthetic-password>")
+    for m in EMAIL_RE.finditer(text):
+        domain = m.group(2).lower()
+        if m.group(1).lower() != "git" and domain not in EMAIL_OK_DOMAINS and not domain.endswith(EMAIL_OK_SUFFIXES):
+            add(m.start(), f"an e-mail address at {domain}: personal data stays out of the courseware (write student@corp.g9.test or an example.com address)")
+    if ipv4:
+        for m in IPV4_RE.finditer(text):
+            octets = tuple(int(x) for x in m.groups()[:4])
+            if max(octets) > 255 or (m.group(5) is not None and int(m.group(5)) > 32):
+                continue
+            if not ipv4_allowed(octets, None if m.group(5) is None else int(m.group(5))):  # type: ignore[arg-type]
+                add(m.start(), f"IPv4 address {'.'.join(map(str, octets))} is not a lab address: lab addresses come from 10.77.0.0/16 and the networks the plan names (the documentation ranges are allowed)")
+    return sorted((no, what) for what, no in hits.items())
+
+
 def cell(text: str) -> str:
     """A text as one table cell: one line, a pipe written as \\|."""
     return re.sub(r"(?<!\\)\|", r"\\|", " ".join(text.split()))
@@ -362,9 +570,10 @@ def limit(problems: Problems, where: str, what: str, text: str, maximum: int) ->
 
 
 def read_source(path: Path, where: str, problems: Problems) -> str | None:
-    """The text of a source file; a hidden or control character is reported once, with its line."""
+    """The text of a source file; a hidden or control character is reported once, with its line. The bytes are decoded as they are:
+    reading in text mode would turn a CR into a line break before the check could see it."""
     try:
-        text = path.read_text(encoding="utf-8")
+        text = path.read_bytes().decode("utf-8")
     except UnicodeDecodeError:
         problems.add(where, "not valid UTF-8")
         return None
@@ -494,18 +703,42 @@ def labelled_fields(body: list[Line], labels: list[str]) -> tuple[list[tuple[str
     return [(label, "\n".join(parts).strip()) for label, parts in fields], stray
 
 
+LINK_RE = re.compile(r"!?\[[^\]]*\]\([^)\n]*\)")  # the text of a link may wrap over lines of one paragraph
+REF_LINK_RE = re.compile(r"!?\[[^\]\n]+\]\[[^\]\n]*\]")
+REF_DEFINITION_RE = re.compile(r"(?m)^ {0,3}\[[^\]\n]+\]:\s*\S+")
+
+
 def check_plain_markdown(lines: list[Line], where: str, problems: Problems) -> None:
-    """No link, image or HTML outside code: the window renders none of them (AUTHORING.md, rules for every file)."""
+    """No link, image or HTML outside code: the window renders none of them (AUTHORING.md, rules for every file).
+    A link is found in a paragraph, so that a text wrapped over two lines or a reference-style link does not pass."""
+    paragraph: list[Line] = []
+
+    def flush() -> None:
+        if not paragraph:
+            return
+        stripped = [CODE_SPAN_RE.sub(" ", ln.text) for ln in paragraph]
+        joined = "\n".join(stripped)
+        for pattern, kind in ((LINK_RE, ""), (REF_LINK_RE, " (reference style)"), (REF_DEFINITION_RE, " (reference definition)")):
+            m = pattern.search(joined)
+            if m:
+                no = paragraph[joined.count("\n", 0, m.start())].no
+                problems.add(f"{where}:{no}", f"Markdown link or image{kind} '{' '.join(m.group(0).split())[:60]}': write the address as inline code and list it in '## Resources'")
+                break
+        for ln, text in zip(paragraph, stripped):
+            m = AUTOLINK_RE.search(text)
+            if m:
+                problems.add(f"{where}:{ln.no}", f"Markdown link or image '{m.group(0)[:60]}': write the address as inline code and list it in '## Resources'")
+            m = HTML_RE.search(text)
+            if m:
+                problems.add(f"{where}:{ln.no}", f"HTML or an angle-bracket placeholder outside inline code '{m.group(0)[:40]}': no HTML; write a placeholder such as `<synthetic-password>` as inline code")
+        paragraph.clear()
+
     for ln in lines:
-        if ln.code:
-            continue
-        text = CODE_SPAN_RE.sub(" ", ln.text)
-        m = LINK_RE.search(text) or AUTOLINK_RE.search(text)
-        if m:
-            problems.add(f"{where}:{ln.no}", f"Markdown link or image '{m.group(0)[:60]}': write the address as inline code and list it in '## Resources'")
-        m = HTML_RE.search(text)
-        if m:
-            problems.add(f"{where}:{ln.no}", f"HTML or an angle-bracket placeholder outside inline code '{m.group(0)[:40]}': no HTML; write a placeholder such as `<synthetic-password>` as inline code")
+        if ln.code or not ln.text.strip():
+            flush()
+        else:
+            paragraph.append(ln)
+    flush()
 
 
 def check_structure(lines: list[Line], unclosed: bool, where: str, problems: Problems) -> None:
@@ -584,11 +817,12 @@ def parse_plan(text: str, problems: Problems) -> list[dict]:
             problems.add(at, "a day row before the first '## WEEK NN — <title>' heading")
             continue
         n = int(m.group(1))
+        if not 1 <= n <= 60:
+            problems.add(at, f"day row {n:02d} is outside days 01 to 60 (the plan has exactly 60 days)")
+            continue
         if n != expected:
             problems.add(at, f"day row {n:02d} is out of order (day {expected:02d} is expected)")
         expected = n + 1
-        if not 1 <= n <= 60:
-            continue
         w = weeks[-1]["number"]
         if week_of(n) != w:
             problems.add(at, f"day {n:02d} is not a day of week {w:02d} (days {5 * w - 4:02d} to {5 * w:02d})")
@@ -672,13 +906,24 @@ def seed_text_lines(plan: list[dict], n: int) -> list[str]:
 # ---------------------------------------------------------------------------------------------
 
 
+class PackError(Exception):
+    """A competency pack that cannot be read: an environment error (exit 2), not a rule of the courseware."""
+
+
 def load_competencies() -> dict[str, dict]:
-    """id -> {name, pack, band}."""
+    """id -> {name, pack, band}. A pack that is not valid JSON, lacks 'pack_id', 'competencies' or a difficulty band raises PackError."""
     info: dict[str, dict] = {}
     for path in sorted(PACKS.glob("*/pack.json")):
-        pack = json.loads(path.read_text(encoding="utf-8"))
-        for c in pack["competencies"]:
-            info[c["id"]] = {"name": c["name"], "pack": pack["pack_id"], "band": (c["difficulty_band"]["min"], c["difficulty_band"]["max"])}
+        try:
+            pack = json.loads(path.read_bytes().decode("utf-8"))
+            pack_id = pack["pack_id"]
+            for c in pack["competencies"]:
+                low, high = c["difficulty_band"]["min"], c["difficulty_band"]["max"]
+                if not isinstance(c["id"], str) or not isinstance(c["name"], str) or not all(isinstance(x, int) and not isinstance(x, bool) for x in (low, high)):
+                    raise ValueError("a competency needs a text id, a text name and a difficulty band of two whole numbers")
+                info[c["id"]] = {"name": c["name"], "pack": pack_id, "band": (low, high)}
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+            raise PackError(f"competency pack {rel(path)} is not usable ({type(exc).__name__}: {str(exc)[:80]})") from exc
     return info
 
 
@@ -855,9 +1100,10 @@ def parse_quiz_part(body: list[Line], expected: list[str], part: str, where: str
             continue
         m = QUIZ_ITEM_RE.match(ln.text)
         if m and not ln.code:
-            items.append({"number": int(m.group(1)), "id": m.group(2), "text": m.group(3).strip(), "no": ln.no})
+            items.append({"number": int(m.group(1)), "id": m.group(2), "text": m.group(3).strip(), "no": ln.no, "lines": [(ln.no, m.group(3).strip())]})
         elif items and not gap and not ln.code and not re.match(r"^\d+\. ", ln.text):
             items[-1]["text"] += " " + ln.text.strip()
+            items[-1]["lines"].append((ln.no, ln.text.strip()))
         else:
             problems.add(f"{where}:{ln.no}", f"quiz: a question is one paragraph 'K. [id] <question>'; found: {ln.text[:60]}")
         gap = False
@@ -868,7 +1114,11 @@ def parse_quiz_part(body: list[Line], expected: list[str], part: str, where: str
         if item["number"] != k or item["id"] != expected[k - 1]:
             problems.add(f"{where}:{item['no']}", f"quiz: {part} question {k} must be '{k}. [{expected[k - 1]}] <question>'; found '{item['number']}. [{item['id']}]'")
         lowered = item["text"].lower()
-        if "hint:" in lowered or "answer:" in lowered:
+        leaks = [(no, k_line, leak) for k_line, (no, text) in enumerate(item["lines"], start=1) if (leak := question_leak(text))]
+        if leaks:
+            no, k_line, leak = leaks[0]
+            problems.add(f"{where}:{no}", f"quiz: {item['id']}: line {k_line} of the question is an answer or key line ('{leak}'): answers and key lines live only under ANSWER_KEYS/")
+        elif "hint:" in lowered or "answer:" in lowered:
             problems.add(f"{where}:{item['no']}", f"quiz: {item['id']}: a question holds no answer and no 'hint:'")
         limit(problems, f"{where}:{item['no']}", f"quiz: question {item['id']}", item["text"], MAX_QUESTION_CHARS)
         out.append({"id": item["id"], "text": item["text"]})
@@ -1059,12 +1309,13 @@ def check_day(n: int, plan_day: dict, info: dict[str, dict], registry_index: dic
         day["blocks"][letter] = {"title": m.group(2) if m else letter, "markdown": markdown}
     if friday:
         exam_block = "D" if n == 55 else "A"  # day 55: block A is a lesson and the exam sits in block D (plan, week 11)
-        wanted = {exam_block: ["Part 1"], "C": ["Part 2"], "D": ["Part 4"] + (["Part 1"] if n == 55 else [])}
+        wanted = {exam_block: ["Part 1"], "C": ["Part 2", "Part 3"], "D": ["Part 4"] + (["Part 1"] if n == 55 else [])}
         for letter in ("A", "C", "D"):
             body_text = day["blocks"].get(letter, {}).get("markdown")
             if body_text is None or letter not in wanted:
                 continue
-            missing = [x for x in ["ASSESSMENT.md", *wanted[letter]] if not (x in body_text or (x.startswith("Part ") and x.replace("Part ", "Parts ") in body_text))]
+            named = parts_named(body_text)
+            missing = [x for x in ["ASSESSMENT.md", *wanted[letter]] if not (x in body_text if x == "ASSESSMENT.md" else int(x[-1]) in named)]
             if missing:
                 problems.add(where, f"block {letter} of a Friday refers to 'ASSESSMENT.md' and '{wanted[letter][0]}' (block {exam_block}: the knowledge exam, Part 1; C: the scored practical, Parts 2 and 3; D: scoring and the report, Part 4); missing: {missing}")
 
@@ -1313,13 +1564,15 @@ def check_assessment(w: int, info: dict[str, dict], problems: Problems) -> dict 
                 want = expected[k - 1] if k <= 20 else "id"
                 if not m or m.group(3) not in QUESTION_MIX:
                     problems.add(f"{where}:{ln.no}", f"Part 1: question {k} must be '{k}. [{want}] (CONCEPT|INTERPRET|CONTROL|SYNTHESIS) <question>': {ln.text[:60]}")
-                    items.append({"id": f"?{k}", "kind": "", "lines": [], "options": [], "no": ln.no})
+                    items.append({"id": f"?{k}", "kind": "", "lines": [], "nos": [], "codes": [], "options": [], "no": ln.no})
                     continue
                 if int(m.group(1)) != k or m.group(2) != want:
                     problems.add(f"{where}:{ln.no}", f"Part 1: question {k} must be '{k}. [{want}] ...'; found '{m.group(1)}. [{m.group(2)}]'")
-                items.append({"id": m.group(2), "kind": m.group(3), "lines": [m.group(4).strip()], "options": [], "no": ln.no})
+                items.append({"id": m.group(2), "kind": m.group(3), "lines": [m.group(4).strip()], "nos": [ln.no], "codes": [False], "options": [], "no": ln.no})
             elif items:
                 items[-1]["lines"].append(ln.text)
+                items[-1]["nos"].append(ln.no)
+                items[-1]["codes"].append(ln.code)
                 o = OPTION_RE.match(ln.text) if not ln.code else None
                 if o:
                     items[-1]["options"].append(o.group(1))
@@ -1333,7 +1586,10 @@ def check_assessment(w: int, info: dict[str, dict], problems: Problems) -> dict 
             if item["kind"] == "INTERPRET" and SAMPLE_MARK not in body_text:
                 problems.add(f"{where}:{item['no']}", f"Part 1: {item['id']}: an INTERPRET question gives what is to be interpreted in the question, marked '{SAMPLE_MARK}'")
             lowered = body_text.lower()
-            if "hint:" in lowered or re.search(r"(?<![a-z])answer:", lowered):
+            leaks = [(no, leak) for line_text, no, code in zip(item["lines"], item["nos"], item["codes"]) if (leak := question_leak(line_text, code))]
+            if leaks:
+                problems.add(f"{where}:{leaks[0][0]}", f"Part 1: {item['id']}: a line of the question states or marks the answer ('{leaks[0][1]}'): keys live only under ANSWER_KEYS/")
+            elif "hint:" in lowered or re.search(r"(?<![a-z])answer:", lowered):
                 problems.add(f"{where}:{item['no']}", f"Part 1: {item['id']}: a question holds no answer and no 'hint:'")
             limit(problems, f"{where}:{item['no']}", f"Part 1: question {item['id']}", body_text, MAX_EXAM_QUESTION_CHARS)
             exam["questions"].append({"id": item["id"], "kind": item["kind"], "text": body_text, "mcq": mcq})
@@ -1399,7 +1655,7 @@ def check_assessment_key(w: int, exam: dict | None, problems: Problems) -> dict 
             if not letter:
                 problems.add(f"{where}:{entry.no}", f"[{ident}]: the answer of a multiple-choice question starts with its option letter (A to D)")
             elif "Distractors" in values:
-                missing = [x for x in "ABCD" if x != letter.group(1) and not re.search(rf"(?<![A-Za-z0-9]){x}(?![A-Za-z0-9])", values["Distractors"])]
+                missing = [x for x in "ABCD" if x != letter.group(1) and not option_named(x, values["Distractors"])]
                 if missing:
                     problems.add(f"{where}:{entry.no}", f"[{ident}]: '- Distractors: ' says why each other option is wrong; not named: {', '.join(missing)}")
         for label in labels:
@@ -1477,13 +1733,16 @@ def check_labs(w: int, problems: Problems) -> None:
     wname = week_name(w)
     labs_key_where = f"{wname}/ANSWER_KEYS/LABS_KEY.md"
     labs_key = read_source(WEEKS_DIR / wname / "ANSWER_KEYS" / "LABS_KEY.md", labs_key_where, problems) if (WEEKS_DIR / wname / "ANSWER_KEYS" / "LABS_KEY.md").is_file() else None
-    key_headings: list[str] = []
+    key_headings: list[tuple[str, int]] = []  # (heading in lower case, words under it up to the next heading of its level or above)
     if labs_key is not None:
         key_lines, unclosed = scan(labs_key)
         check_structure(key_lines, unclosed, labs_key_where, problems)
         if not key_lines or key_lines[0].level != 1:
             problems.add(f"{labs_key_where}:1", "line 1 must be a '# ' title")
-        key_headings = [heading_text(ln).lower() for ln in key_lines if ln.level >= 2]
+        for i, ln in enumerate(key_lines):
+            if ln.level >= 2:
+                end = next((j for j in range(i + 1, len(key_lines)) if 1 <= key_lines[j].level <= ln.level), len(key_lines))
+                key_headings.append((heading_text(ln).lower(), words_of(key_lines[i + 1 : end])))
     for name, phrase in LAB_FILES:
         where = f"{wname}/LABS/{name}"
         path = WEEKS_DIR / wname / "LABS" / name
@@ -1516,8 +1775,32 @@ def check_labs(w: int, problems: Problems) -> None:
         if labs_key is not None:
             stem = name[: -len(".md")].lower()
             lab_title = heading_text(lines[0]).lower() if lines else ""
-            if not any(stem in h or phrase in h or (lab_title and lab_title in h) for h in key_headings):
+            named = [words for h, words in key_headings if stem in h or phrase in h or (lab_title and lab_title in h)]
+            if not named:
                 problems.add(labs_key_where, f"no heading names the lab '{name}': the reference observations and scoring of each lab stand under a heading with the lab's name ('{name[: -len('.md')]}', '{phrase}' or the title of the lab file)")
+            elif max(named) < MIN_WORDS_LABS_KEY:
+                problems.add(labs_key_where, f"the heading of the lab '{name}' has {max(named)} words under it (minimum {MIN_WORDS_LABS_KEY}): the reference observations and scoring of the lab stand under it")
+
+
+def fixture_hashes_by_name(text: str, names: list[str]) -> dict[str, set[str]]:
+    """The SHA-256 values the manifest attributes to each fixture. A value belongs to the last fixture named before it on its line (a table
+    row: the name, then the hash); with none before it, to the fixture named by the lines above it up to a blank line (a heading, then its
+    hash), else to the first one named after it."""
+    out: dict[str, set[str]] = {name: set() for name in names}
+    current: str | None = None
+    for line in text.lower().split("\n"):
+        if not line.strip():
+            current = None
+            continue
+        spots = sorted((m.start(), n) for n in names for m in re.finditer(rf"(?<![\w./-]){re.escape(n.lower())}(?![\w-]|\.\w)", line))
+        for h in SHA256_RE.finditer(line):
+            before = [n for pos, n in spots if pos < h.start()]
+            owner = before[-1] if before else (current or (spots[0][1] if spots else None))
+            if owner is not None:
+                out[owner].add(h.group(0))
+        if spots:
+            current = spots[0][1]
+    return out
 
 
 def check_fixtures(w: int, problems: Problems) -> None:
@@ -1536,11 +1819,16 @@ def check_fixtures(w: int, problems: Problems) -> None:
     lowered = text.lower()
     for value in sorted(set(SHA256_RE.findall(lowered)) - set(hashes.values())):
         problems.add(where, f"'{value[:16]}...' is not the SHA-256 of a file under LABS/fixtures/ (a stale hash or a missing fixture)")
+    attributed = fixture_hashes_by_name(text, list(hashes))
     recipe = re.search(r"\brecipe\b", lowered) is not None
     for name, value in hashes.items():
         if name not in text:
             problems.add(where, f"does not list the fixture '{name}': each fixture is listed with its SHA-256 or its generation recipe")
-        elif value not in lowered and not recipe:
+            continue
+        for other in sorted(h for h in attributed[name] if h in hashes.values() and h != value):
+            owners = sorted(n for n, v in hashes.items() if v == other)
+            problems.add(where, f"the line of '{name}' holds the SHA-256 of another fixture ({', '.join(owners)}): each fixture has its own hash")
+        if value not in attributed[name] and not recipe:
             problems.add(where, f"'{name}' has neither its SHA-256 ({value}) nor a generation recipe (the word 'recipe')")
 
 
@@ -1569,6 +1857,19 @@ def week_days(w: int) -> list[int]:
     return list(range(5 * w - 4, 5 * w + 1))
 
 
+def check_weeks_folder(problems: Problems) -> None:
+    """WEEKS/ holds W01 to W12, real folders, and nothing else (a week in a folder called W1 would be invisible to --available)."""
+    if not WEEKS_DIR.is_dir():
+        return
+    for path in sorted(WEEKS_DIR.iterdir()):
+        real = not path.is_symlink()
+        if real and path.is_dir() and re.fullmatch(r"W(?:0[1-9]|1[0-2])", path.name):
+            continue
+        if real and path.is_file() and path.name.startswith("."):
+            continue
+        problems.add(f"WEEKS/{path.name}", "unexpected entry: a week folder is named W01 to W12 (a real folder, not a link) and nothing else stands in WEEKS/")
+
+
 def week_has_day_file(w: int) -> bool:
     wdir = WEEKS_DIR / week_name(w)
     return wdir.is_dir() and any(re.fullmatch(r"DAY_\d{2}\.md", p.name) for p in wdir.iterdir() if p.is_file())
@@ -1594,6 +1895,9 @@ def check_week(w: int, plan_week: dict, info: dict[str, dict], registries: dict[
     for name in authored:
         if not (wdir / name).is_file():
             problems.add(wname, f"missing file '{name}'")
+    for p in sorted(wdir.rglob("*")):
+        if p.is_symlink():
+            problems.add(f"{wname}/{p.relative_to(wdir).as_posix()}", "is a symbolic link: a source file is a regular file of this tree")
     present = sorted(p.relative_to(wdir).as_posix() for p in wdir.rglob("*") if p.is_file())
     for name in present:
         if name not in authored and name not in generated and not name.startswith("LABS/fixtures/"):
@@ -1619,11 +1923,13 @@ def check_week(w: int, plan_week: dict, info: dict[str, dict], registries: dict[
     check_fixtures(w, problems)
     check_support_file(w, "EVIDENCE_CHECKLIST.md", problems)
 
-    # every other file of the week: no hidden character; then the leak rules over the learner files
+    # every other file of the week: no hidden character, no credential-like text; the learner files are kept for the leak rules
     parsed = {"RESOURCES.json", "WEEK_GUIDE.md", "ASSESSMENT.md", "EVIDENCE_CHECKLIST.md", "LABS/fixtures/MANIFEST.md", "ANSWER_KEYS/ASSESSMENT_KEY.md", "ANSWER_KEYS/LABS_KEY.md"}
     parsed |= {f"DAY_{n:02d}.md" for n in week_days(w)} | {f"ANSWER_KEYS/DAY_{n:02d}_KEY.md" for n in week_days(w)} | {f"LABS/{name}" for name, _p in LAB_FILES}
-    learner: dict[str, str] = {}
+    learner: list[tuple[str, str]] = []  # (file, text); a registry contributes each of its strings
     for name in present:
+        if name.startswith("QUIZZES/"):
+            continue  # generated from the day guides and compared byte for byte (full run); a source rule would block --write from repairing them
         quiet = Problems() if name in parsed else problems  # a parsed file already reported its hidden character
         text = read_source(wdir / name, f"{wname}/{name}", quiet)
         if text is None:
@@ -1632,27 +1938,25 @@ def check_week(w: int, plan_week: dict, info: dict[str, dict], registries: dict[
             if name.startswith("LABS/fixtures/"):
                 problems.items[-1] = f"{wname}/{name}: not UTF-8 text: a fixture is a synthetic text file (log, toy source, sample output); give a binary by its generation recipe in MANIFEST.md"
             continue
-        if not name.startswith("ANSWER_KEYS/") and name != "RESOURCES.json":
-            learner[name] = text
-    for name, text in learner.items():
-        for no, line in enumerate(text.split("\n"), start=1):
-            start = re.sub(r"^[\s>*_]+", "", line).lower()
-            if start.startswith(ANSWER_LINE_PREFIXES):
-                problems.add(f"{wname}/{name}:{no}", "a line of a learner file begins with 'Answer:', '- Answer:' or 'Correct answer': answers live only under ANSWER_KEYS/")
-    answers: list[tuple[str, str, str]] = []  # (question id, key file, normalized answer)
-    for key in week["keys"].values():
-        answers += [(ident, key["where"], normalize(entry["answer"])) for ident, entry in key["quiz"].items()]
-    if week["exam_key"]:
-        multiple = {q["id"] for q in (week["exam"] or {}).get("questions", []) if q["mcq"]}
-        # the answer of a multiple-choice question is an option the learner file lists by design
-        answers += [(ident, week["exam_key"]["where"], normalize(entry["answer"])) for ident, entry in week["exam_key"]["questions"].items() if ident not in multiple]
-    normalized = {name: normalize(text) for name, text in learner.items()}
-    for ident, key_where, answer in answers:
-        if len(answer) < MIN_LEAK_CHARS:
+        for no, what in sensitive_hits(text, ipv4=name != "RESOURCES.json"):
+            problems.add(f"{wname}/{name}:{no}", what)
+        if name == "RESOURCES.json":
+            try:
+                learner += [(name, s) for s in strings_of(json.loads(text))]
+            except ValueError:
+                pass  # reported by load_registry
+        elif not name.startswith("ANSWER_KEYS/"):
+            learner.append((name, text))
+    for name, text in learner:
+        if name == "RESOURCES.json":
             continue
-        for name, text in normalized.items():
-            if answer in text:
-                problems.add(f"{wname}/{name}", f"holds the answer text of {ident} ({key_where}): no learner file may hold an answer of its week")
+        for no, line in enumerate(text.split("\n"), start=1):
+            if answer_label(line):
+                problems.add(f"{wname}/{name}:{no}", ANSWER_LABEL_MESSAGE)
+            elif not name.startswith("LABS/fixtures/") and key_line(line):
+                problems.add(f"{wname}/{name}:{no}", KEY_LINE_MESSAGE)
+    week["learner"] = learner
+    week["labs_key"] = labs_key_fields(w)
 
     # each question has its key
     for day in week["days"]:
@@ -1664,6 +1968,168 @@ def check_week(w: int, plan_week: dict, info: dict[str, dict], registries: dict[
                 problems.add(key["where"], f"quiz key: no key for {q['id']}")
     week["registry"] = registries.get(w)
     return week
+
+
+# ---------------------------------------------------------------------------------------------
+# key text in learner files (ADR-0023 decision 6)
+# ---------------------------------------------------------------------------------------------
+
+
+def labs_key_fields(w: int) -> list[tuple[str, str]]:
+    """(heading, body) of each level-2 section of LABS_KEY.md: the reference observations and scoring of the labs."""
+    path = WEEKS_DIR / week_name(w) / "ANSWER_KEYS" / "LABS_KEY.md"
+    text = read_source(path, "", Problems()) if path.is_file() else None
+    if text is None:
+        return []
+    _preamble, sections = split_sections(scan(text)[0], 2)
+    return [(s.title, markdown_of(s.body)) for s in sections if nonblank(s.body)]
+
+
+def key_fields(week: dict) -> list[KeyField]:
+    """Every field of the keys of a week that no learner file may hold: answers (of a multiple-choice question: the text after the option
+    letter), marking, rationale, distractors, reference observations, the fourth hint, overclaims, the practical, the gate, the lab keys."""
+    w = week["number"]
+    wname = week_name(w)
+    out: list[KeyField] = []
+    for n in sorted(week["keys"]):
+        key = week["keys"][n]
+        for ident, entry in key["quiz"].items():
+            out += [KeyField("answer", ident, key["where"], entry["answer"]), KeyField("marking", ident, key["where"], entry["marking"])]
+        for field, label in (("challenge", "challenge"), ("hint4", "hint 4"), ("overclaims", "overclaims")):
+            out.append(KeyField(label, f"{wname}D{n:02d}", key["where"], key[field]))
+    exam_key = week.get("exam_key")
+    if exam_key:
+        exam = week.get("exam") or {}
+        multiple = {q["id"] for q in exam.get("questions", []) if q["mcq"]}
+        where = exam_key["where"]
+        for ident, entry in exam_key["questions"].items():
+            answer = MCQ_LETTER_RE.sub("", entry["answer"], count=1) if ident in multiple else entry["answer"]
+            out += [KeyField("answer", ident, where, answer), KeyField("why", ident, where, entry["why"])]
+            if entry["distractors"]:
+                out.append(KeyField("distractors", ident, where, entry["distractors"]))
+        code = exam.get("code") or exam_code(w)
+        out += [KeyField("practical", code, where, exam_key["practical"]), KeyField("gate", code, where, exam_key["gate"])]
+    out += [KeyField("lab key", heading, f"{wname}/ANSWER_KEYS/LABS_KEY.md", body) for heading, body in week.get("labs_key", [])]
+    return out
+
+
+def build_leak_index(fields: list[KeyField]) -> LeakIndex:
+    windows: dict[str, KeyField] = {}
+    wholes: dict[str, KeyField] = {}
+    flags: dict[str, KeyField] = {}
+    for f in fields:
+        words = normalize(f.text).split()
+        if len(words) >= LEAK_SHINGLE_WORDS:
+            for i in range(len(words) - LEAK_SHINGLE_WORDS + 1):
+                windows.setdefault(" ".join(words[i : i + LEAK_SHINGLE_WORDS]), f)
+        elif len(" ".join(words)) >= MIN_LEAK_CHARS:
+            wholes.setdefault(" ".join(words), f)
+        for m in FLAG_TOKEN_RE.finditer(f.text):
+            if not FLAG_PLACEHOLDER_RE.match(m.group(1)):
+                flags.setdefault(m.group(0), f)
+    return LeakIndex(windows, list(wholes.items()), flags)
+
+
+def option_owners(text: str) -> dict[int, str]:
+    """line -> question id, for the option lines 'A.' to 'D.' of Part 1 of an assessment. They list the answers by design: the answer or
+    the distractors of a multiple-choice question may equal its own options, and nothing else may be hidden there."""
+    out: dict[int, str] = {}
+    _preamble, sections = split_sections(scan(text)[0], 2)
+    for section in sections:
+        if section.title != EXAM_SECTIONS[1]:
+            continue
+        current: str | None = None
+        for ln in section.body:
+            if ln.code:
+                continue
+            if EXAM_ITEM_START_RE.match(ln.text):
+                m = EXAM_ITEM_RE.match(ln.text)
+                current = m.group(2) if m else None
+            elif current is not None and OPTION_RE.match(ln.text):
+                out[ln.no] = current
+    return out
+
+
+def leak_matches(index: LeakIndex, name: str, text: str) -> dict[tuple[KeyField, str], int]:
+    """(key field, 'text' or 'flag') -> first line, for each key field whose text (a run of words) or flag the learner text holds."""
+    options = option_owners(text) if name == "ASSESSMENT.md" else {}
+    words: list[str] = []
+    nos: list[int] = []
+    for no, line in enumerate(text.split("\n"), start=1):
+        found_words = normalize(line).split()
+        words += found_words
+        nos += [no] * len(found_words)
+
+    def own_option(first: int, last: int, owner: KeyField) -> bool:
+        """The words first..last are all in option lines of the question the key field is the answer or distractors of."""
+        question = options.get(nos[first])
+        return question is not None and owner.ident == question and owner.field in ("answer", "distractors") and all(options.get(nos[i]) == question for i in range(first, last + 1))
+
+    found: dict[tuple[KeyField, str], int] = {}
+    k = LEAK_SHINGLE_WORDS
+    for i in range(len(words) - k + 1):
+        owner = index.windows.get(" ".join(words[i : i + k]))
+        if owner is not None and not own_option(i, i + k - 1, owner):
+            found.setdefault((owner, "text"), nos[i])
+    if index.wholes:
+        padded = " " + " ".join(words) + " "
+        for whole, owner in index.wholes:
+            pos = padded.find(f" {whole} ")
+            if pos >= 0:
+                first = padded[: pos + 1].count(" ") - 1
+                if not own_option(first, first + len(whole.split()) - 1, owner):
+                    found.setdefault((owner, "text"), nos[first])
+    for flag, owner in index.flags.items():
+        pos = text.find(flag)
+        if pos >= 0:
+            found.setdefault((owner, "flag"), text.count("\n", 0, pos) + 1)
+    return found
+
+
+def quiet_week_keys(w: int, info: dict[str, dict], registry_index: dict[str, dict]) -> dict | None:
+    """The keys of a week that is not being checked, read without judging them: they are forbidden text in the learner files of the others."""
+    wdir = WEEKS_DIR / week_name(w)
+    if not wdir.is_dir():
+        return None
+    quiet = Problems()
+    week: dict = {"number": w, "keys": {}, "exam": None, "exam_key": None, "labs_key": labs_key_fields(w)}
+    for n in week_days(w):
+        if (wdir / "ANSWER_KEYS" / f"DAY_{n:02d}_KEY.md").is_file():
+            key = check_day_key(n, registry_index, quiet)
+            if key is not None:
+                week["keys"][n] = key
+    if (wdir / "ASSESSMENT.md").is_file():
+        week["exam"] = check_assessment(w, info, quiet)
+    if (wdir / "ANSWER_KEYS" / "ASSESSMENT_KEY.md").is_file():
+        week["exam_key"] = check_assessment_key(w, week["exam"], quiet)
+    return week
+
+
+def leak_checks(weeks: list[dict], info: dict[str, dict], registry_index: dict[str, dict], problems: Problems) -> None:
+    """No learner file of the weeks checked holds key text of any week (those not checked are read for their keys only)."""
+    if not weeks:
+        return
+    by_number = {week["number"]: week for week in weeks}
+    fields: list[KeyField] = []
+    for w in range(1, 13):
+        week = by_number.get(w) or quiet_week_keys(w, info, registry_index)
+        if week is not None:
+            fields += key_fields(week)
+    index = build_leak_index(fields)
+    for week in weeks:
+        wname = week_name(week["number"])
+        per_file: dict[str, dict[tuple[KeyField, str], int]] = {}
+        for name, text in week.get("learner", []):
+            for hit, no in leak_matches(index, name, text).items():
+                per_file.setdefault(name, {}).setdefault(hit, no)
+        for name, hits in per_file.items():
+            ordered = sorted(hits.items(), key=lambda kv: (kv[1], kv[0][0].ident, kv[0][0].field, kv[0][1]))
+            for (f, kind), no in ordered[:MAX_LEAK_REPORTS]:
+                what = f"holds the flag of {f.ident}" if kind == "flag" else f"holds the {f.field} text of {f.ident}"
+                at = "" if name == "RESOURCES.json" else f"; first match at line {no}"
+                problems.add(f"{wname}/{name}", f"{what} ({f.where}){at}: {LEAK_TAIL}")
+            if len(ordered) > MAX_LEAK_REPORTS:
+                problems.add(f"{wname}/{name}", f"and {len(ordered) - MAX_LEAK_REPORTS} more key fields held ({LEAK_TAIL})")
 
 
 # ---------------------------------------------------------------------------------------------
@@ -2053,6 +2519,53 @@ def build_outputs(plan: list[dict], weeks: list[dict], info: dict[str, dict], re
     return outputs
 
 
+GENERATED_MARK = f"Generated by `{SELF}`".encode()
+
+
+def generated_orphans(outputs: dict[Path, str]) -> list[Path]:
+    """Generated files that no source produces any more. The payload folder holds generated files only, so everything in it that is not
+    an output is one; elsewhere (docs/curriculum/v2/ and its ASSESSMENTS/ also hold the owner's hand-written documents, plan section 0.1)
+    only a Markdown file that says it was generated by this script is."""
+    found: list[Path] = []
+    if OUT_ASSESSMENTS.is_dir():
+        found += [p for p in sorted(OUT_ASSESSMENTS.iterdir()) if p not in outputs]
+    for folder in (V2_DIR, OUT_BANK.parent):
+        if not folder.is_dir():
+            continue
+        for p in sorted(folder.glob("*.md")):
+            if p not in outputs and p.is_file() and not p.is_symlink() and p.read_bytes()[: len(GENERATED_MARK)] == GENERATED_MARK:
+                found.append(p)
+    return found
+
+
+def unsafe_outputs(paths: list[Path]) -> list[str]:
+    """Why a generated path must not be written or removed: a symbolic link at the path or in a folder above it (below the repository),
+    a path that resolves outside the repository, a folder or other non-file where a file is written, or a folder that cannot be removed
+    by this script. Nothing is written while one such path stands."""
+    out: dict[str, None] = {}
+    root = REPO.resolve()
+    for path in paths:
+        links = []
+        here = path
+        while here != REPO and here != here.parent:
+            if here.is_symlink():
+                links.append(f"{rel(here)}: is a symbolic link: a generated file is written in place, never through a link")
+            here = here.parent
+        if links:
+            out.update(dict.fromkeys(links))
+            continue
+        try:
+            path.resolve().relative_to(root)
+        except ValueError:
+            out[f"{rel(path)}: resolves outside the repository"] = None
+            continue
+        if path.is_dir():
+            out[f"{rel(path)}: is a folder: remove it by hand" if path.parent == OUT_ASSESSMENTS else f"{rel(path)}: is not a regular file"] = None
+        elif path.exists() and not path.is_file():
+            out[f"{rel(path)}: is not a regular file"] = None
+    return list(out)
+
+
 # ---------------------------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------------------------
@@ -2120,7 +2633,11 @@ def main() -> int:
         sys.stdout.write(dump(build_seed(plan)))
         return 0
 
-    info = load_competencies()
+    try:
+        info = load_competencies()
+    except PackError as exc:
+        sys.stderr.write(f"error: {exc}\n")
+        return 2
     if args.week:
         selected = sorted(set(args.week))
     elif args.available:
@@ -2128,6 +2645,8 @@ def main() -> int:
     else:
         selected = list(range(1, 13))
     full = selected == list(range(1, 13)) and not args.week
+
+    check_weeks_folder(problems)
 
     # every registry that exists is read (a day may cite another week's entry); only the selected weeks' are judged
     registries: dict[int, dict] = {}
@@ -2142,6 +2661,7 @@ def main() -> int:
 
     weeks = [week for w in selected if (week := check_week(w, plan[w - 1], info, registries, registry_index, problems)) is not None]
     corpus_checks(weeks, registries, registry_index, selected, problems)
+    leak_checks(weeks, info, registry_index, problems)
 
     days = sum(len(week["days"]) for week in weeks)
     questions = sum(len(day["quiz"]["recall"]) + len(day["quiz"]["applied"]) for week in weeks for day in week["days"])
@@ -2162,21 +2682,26 @@ def main() -> int:
 
     outputs = build_outputs(plan, weeks, info, registry_index)
     write = args.write and not args.available
+    orphans = generated_orphans(outputs)
+    refused = unsafe_outputs([*outputs, *orphans])
+    if refused:
+        for message in refused:
+            print(f"FAIL  {message}")
+        print(f"\n{len(refused)} generated path(s) refused; nothing was written.")
+        return 1
     stale: list[Path] = []
     for path, content in outputs.items():
-        current = path.read_text(encoding="utf-8") if path.is_file() else None
-        if current != content:
+        data = content.encode("utf-8")
+        if not path.is_file() or path.read_bytes() != data:
             stale.append(path)
             if write:
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(content, encoding="utf-8")
-    # an assessment payload for a code that no longer exists is stale too
-    if OUT_ASSESSMENTS.is_dir():
-        for path in sorted(OUT_ASSESSMENTS.glob("*.json")):
-            if path not in outputs:
-                stale.append(path)
-                if write:
-                    path.unlink()
+                path.write_bytes(data)
+    # a generated file that no longer has a source is stale too (a payload for a code that no longer exists, an index of an older script)
+    for path in orphans:
+        stale.append(path)
+        if write:
+            path.unlink()
     if write:
         print(f"wrote {len(stale)} file(s)" if stale else "nothing to write: generated files are current")
         return 0

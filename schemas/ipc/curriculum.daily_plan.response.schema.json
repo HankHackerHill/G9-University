@@ -43,7 +43,8 @@
       "type": "boolean"
     },
     "is_assessment_day": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "True on the assessed day of the active version's structure profile: the Saturday in CT9_480, the Friday in MASTERY_V2."
     },
     "planned_minutes": {
       "type": "integer",
@@ -105,6 +106,11 @@
           },
           "block": {
             "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Always sent by the backend, not required of an interface that predates it. What the structure profile of the active version calls this block on this kind of day (ADR-0023): the block code with spaces in the Appendix A profile CT9_480 (`guided lab`); `Core lesson`, `Knowledge exam`, `Scored practical` ... in MASTERY_V2. A lesson sheet that names the block overrides it in the interface."
           },
           "minutes": {
             "type": "integer",

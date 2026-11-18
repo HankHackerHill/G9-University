@@ -1384,4 +1384,11 @@ fn daily_plan_reads_imported_structure_and_labels_non_canonical() {
         .unwrap();
     assert_eq!(saturday["result"]["planned_minutes"], 300);
     assert_eq!(saturday["result"]["is_assessment_day"], true);
+    // Every block carries the profile's label (the Appendix A profile prints the code with spaces).
+    for block in r["blocks"].as_array().unwrap() {
+        assert_eq!(
+            block["label"].as_str().unwrap(),
+            block["block"].as_str().unwrap().replace('_', " ")
+        );
+    }
 }
