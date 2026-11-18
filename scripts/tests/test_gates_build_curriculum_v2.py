@@ -61,7 +61,6 @@ from _gate_helpers import (
     copy_into,
     digest_inputs,
     edit_json,
-    load_json,
     output_of,
     read_text,
     replace_once,
@@ -392,7 +391,7 @@ def registry_drop_key(t: Tree) -> None:
 
 def registry_hidden_escape(t: Tree) -> None:
     def fn(doc: dict) -> None:
-        doc["entries"][0]["notes"] = "Hidden​ character written as a JSON escape."
+        doc["entries"][0]["notes"] = "Hidden\u200b character written as a JSON escape."
 
     t.registry(fn)
 
@@ -513,7 +512,7 @@ CASES: list[tuple[str, Callable[[Tree], None], list[str]]] = [
     # -- day guide: file-level -----------------------------------------------------------------------------------
     ("words_too_few", words_too_few, ["words (1,400 to 3,200 are required in the whole file)"]),
     ("words_too_many", lambda t: t.set_section(D2, BLOCK_D, corpus.prose("big", 2200)), ["words (1,400 to 3,200 are required in the whole file)"]),
-    ("hidden_zero_width_space", lambda t: t.sub(D2, "Without notes", "Without​ notes"), ["W01/DAY_02.md:", "hidden or control character U+200B"]),
+    ("hidden_zero_width_space", lambda t: t.sub(D2, "Without notes", "Without\u200b notes"), ["W01/DAY_02.md:", "hidden or control character U+200B"]),
     ("hidden_tag_character", lambda t: t.sub(D2, "Without notes", "Without\U000e0041 notes"), ["hidden or control character U+E0041"]),
     ("hidden_control_character", lambda t: t.sub(D2, "Without notes", "Without\x07 notes"), ["hidden or control character U+0007"]),
     ("markdown_link", lambda t: t.sub(D2, "Without notes", "See [the page](https://example.com/x) without notes"), ["Markdown link or image '[the page](https://example.com/x)'"]),

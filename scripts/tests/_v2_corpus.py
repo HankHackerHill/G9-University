@@ -169,6 +169,35 @@ def exam_options(w: int, q: int) -> str:
     return "".join(f"\n   {letter}. Option {name} for question {q} of week {w}" for letter, name in zip("ABCD", ["alpha", "bravo", "charlie", "delta"]))
 
 
+DAY_MARKING = "one point for the record, one for the limit, none for a claim without evidence"
+DAY_OVERCLAIM = "Claiming the guest is secure after one successful check."
+PRACTICAL_KEY = (
+    "Knowledge 20 points, practical 40 points, defensive validation 25 points, evidence and reporting 15 points; "
+    "bands are 0 to 49 percent, 50 to 79 percent and 80 to 100 percent of each part."
+)
+GATE_KEY = "Any action outside the written scope ends the attempt; any altered evidence fails the integrity gate."
+
+
+def day_challenge(n: int) -> str:
+    return f"The reference observations of day {n} are a dated listing and a denied read; score each out of five."
+
+
+def day_hint4(n: int) -> str:
+    return f"The mode on the directory of day {n} decides the read; explain it after the attempt."
+
+
+def exam_why(w: int, q: int) -> str:
+    return f"the owner of the boundary decides, as case {q} of week {w} shows."
+
+
+def exam_distractors(w: int, q: int) -> str:
+    return f"A is wrong because it names the wrong owner in question {q}; C is wrong because it skips the record; D is wrong because it claims too much."
+
+
+def labs_key_body(w: int, name: str) -> str:
+    return prose(f"{name}key{w}", 30)
+
+
 def exam_answer(w: int, q: int) -> str:
     if exam_is_mcq(q):
         return f"B. The statement bravo for question {q} of week {w} holds because the synthetic control owns the boundary."
@@ -299,19 +328,19 @@ def day_key(n: int) -> str:
         lines += [
             f"### [{ident}]",
             f"- Answer: {day_answer(n, ident)}",
-            "- Marking: one point for the record, one for the limit, none for a claim without evidence",
+            f"- Marking: {DAY_MARKING}",
             f"- Source: w{w:02d}-synthetic-docs",
             "",
         ]
     lines += [
         "## Independent challenge: reference observations and scoring",
-        f"The reference observations of day {n} are a dated listing and a denied read; score each out of five.",
+        day_challenge(n),
         "",
         "## Hint 4: instructor explanation",
-        f"The mode on the directory of day {n} decides the read; explain it after the attempt.",
+        day_hint4(n),
         "",
         "## Overclaims to reject",
-        "- Claiming the guest is secure after one successful check.",
+        f"- {DAY_OVERCLAIM}",
         "",
     ]
     return "\n".join(lines)
@@ -370,16 +399,16 @@ def assessment_key(w: int) -> str:
     lines = [f"# Instructor key — G9 {wn(w)} Friday assessment", "", "Instructor only. Not part of the learner's view.", ""]
     for q in range(1, 21):
         ident = f"W{w:02d}X-Q{q:02d}"
-        lines += [f"### [{ident}]", f"- Answer: {exam_answer(w, q)}", f"- Why: the owner of the boundary decides, as case {q} of week {w} shows."]
+        lines += [f"### [{ident}]", f"- Answer: {exam_answer(w, q)}", f"- Why: {exam_why(w, q)}"]
         if exam_is_mcq(q):
-            lines.append(f"- Distractors: A is wrong because it names the wrong owner in question {q}; C is wrong because it skips the record; D is wrong because it claims too much.")
+            lines.append(f"- Distractors: {exam_distractors(w, q)}")
         lines.append("")
     lines += [
         "## Practical: fixture map and scoring",
-        "Knowledge 20 points, practical 40 points, defensive validation 25 points, evidence and reporting 15 points; bands are 0 to 49 percent, 50 to 79 percent and 80 to 100 percent of each part.",
+        PRACTICAL_KEY,
         "",
         "## Safety and integrity gate",
-        "Any action outside the written scope ends the attempt; any altered evidence fails the integrity gate.",
+        GATE_KEY,
         "",
     ]
     return "\n".join(lines)
@@ -422,7 +451,7 @@ def lab(w: int, name: str) -> str:
 def labs_key(w: int) -> str:
     lines = [f"# Instructor key — G9 {wn(w)} labs", "", "Instructor only.", ""]
     for name in ("GUIDED_LAB", "INDEPENDENT_LAB", "FRIDAY_PRACTICAL"):
-        lines += [f"## {name}: reference observations and scoring", prose(f"{name}key{w}", 30), ""]
+        lines += [f"## {name}: reference observations and scoring", labs_key_body(w, name), ""]
     return "\n".join(lines)
 
 
