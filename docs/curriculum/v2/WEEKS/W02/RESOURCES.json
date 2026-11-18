@@ -1,0 +1,1009 @@
+{
+  "week": 2,
+  "checked_on": "2026-11-18",
+  "method": "web search results only; pages were not opened from the authoring session",
+  "entries": [
+    {
+      "id": "w02-htb-academy-intro-networking",
+      "url": "https://academy.hackthebox.com/course/preview/introduction-to-networking",
+      "provider": "HTB Academy",
+      "title": "Introduction to Networking Course",
+      "kind": "MODULE",
+      "access": "FREE_ACCOUNT",
+      "access_note": "HTB blog 'Learn cybersecurity for free: 5 beginner-friendly HTB Academy modules' (www.hackthebox.com/blog/learn-cybersecurity-for-free, search result) lists Introduction to Networking first and says the Fundamental modules named there are free when you register. The module's tier label was not shown in any result. help.hackthebox.com 'Academy Modules & Paths' (search result): Tier 0 modules cost 0 cubes, Tier I 50 cubes (10 returned on completion), Tier II 100 cubes (20 returned); new accounts start with 200 cubes. 'Academy Subscriptions': Silver and Student plans unlock modules up to Tier II.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'HTB Academy \"Introduction to Networking\" course preview \"Network Foundations\"' on academy.hackthebox.com: result 'Introduction to Networking Course' at this URL; text: Fundamental, 21 sections, topologies, proxies, OSI and TCP/IP models, IPv4 and IPv6 addressing, subnetting.",
+      "version": "as listed 2026-11-18 (21 sections in the result)",
+      "topics": [
+        "osi",
+        "tcp/ip",
+        "ipv4",
+        "ipv6",
+        "subnetting",
+        "mac addresses",
+        "network topologies"
+      ],
+      "suggested_days": [
+        "D06"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": "Fundamental",
+      "fallback": "w02-thm-networking-concepts",
+      "notes": "Primary guided provider for Day 6. A second module, 'Network Foundations Course' (/course/preview/network-foundations, Fundamental, 12 sections, covers ARP, DHCP, NAT and DNS resolution), was in the same result; its tier was not shown. The module is a listed prerequisite of 'Network Enumeration with Nmap'."
+    },
+    {
+      "id": "w02-htb-academy-nmap",
+      "url": "https://academy.hackthebox.com/course/preview/network-enumeration-with-nmap",
+      "provider": "HTB Academy",
+      "title": "Network Enumeration with Nmap Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Two searches returned the preview page; neither showed a tier label or a cube cost. help.hackthebox.com 'Academy Modules & Paths' (search result): Tier 0 modules cost 0 cubes, Tier I 50 cubes (10 returned on completion), Tier II 100 cubes (20 returned); new accounts start with 200 cubes. 'Academy Subscriptions': Silver and Student plans unlock modules up to Tier II.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'HTB Academy \"Network Enumeration with Nmap\" course preview' on academy.hackthebox.com: first result 'Network Enumeration with Nmap Course' at this URL; text: Easy, 12 sections, host discovery, port and service scanning, saving results, Nmap Scripting Engine, performance, firewall and IDS/IPS evasion, three hands-on labs; prerequisites Introduction to Networking and Linux Fundamentals.",
+      "version": "as listed 2026-11-18 (the cached preview was about three and a half years old)",
+      "topics": [
+        "nmap",
+        "host discovery",
+        "port states",
+        "service and version detection",
+        "timing",
+        "output formats"
+      ],
+      "suggested_days": [
+        "D08"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": "Easy",
+      "fallback": "w02-pwncollege-intercepting-communication",
+      "notes": "Primary provider for Day 8; the module's own labs are the hosted independent exercise when the local guest is blocked. Scanning and packet capture stay inside the platform's own lab network (its VPN or browser machine) or the approved G9 lab guest; never against any other address. The evasion sections are optional reading only: the plan restricts Week 2 to a limited -sT -sV --version-light scan of the owned guest. Part of the Penetration Tester path."
+    },
+    {
+      "id": "w02-htb-academy-intro-nta",
+      "url": "https://academy.hackthebox.com/course/preview/intro-to-network-traffic-analysis",
+      "provider": "HTB Academy",
+      "title": "Intro to Network Traffic Analysis Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "The results did not agree on a tier label for this module (one certification page showed 'Tier 0' near it, the catalogue showed no tier). help.hackthebox.com 'Academy Modules & Paths' (search result): Tier 0 modules cost 0 cubes, Tier I 50 cubes (10 returned on completion), Tier II 100 cubes (20 returned); new accounts start with 200 cubes. 'Academy Subscriptions': Silver and Student plans unlock modules up to Tier II.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'HTB Academy \"Intro to Network Traffic Analysis\" course preview tcpdump Wireshark tier' on academy.hackthebox.com: first result 'Intro to Network Traffic Analysis Course' at this URL; text: Medium, tcpdump fundamentals, tcpdump packet filtering, Wireshark analysis, guided traffic analysis lab.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "tcpdump",
+        "packet filters",
+        "wireshark",
+        "traffic analysis method"
+      ],
+      "suggested_days": [
+        "D07",
+        "D10"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": "Medium",
+      "fallback": "w02-letsdefend-network-packet-analysis",
+      "notes": "Hack The Box option for the Wireshark practice of Day 7 and the PCAP method of Day 10. Listed in the results as part of the Junior Cybersecurity Analyst and CREST CPSA/CRT paths and as a prerequisite of 'Intermediate Network Traffic Analysis'."
+    },
+    {
+      "id": "w02-htb-academy-intro-python3",
+      "url": "https://academy.hackthebox.com/course/preview/introduction-to-python-3",
+      "provider": "HTB Academy",
+      "title": "Introduction to Python 3 Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "No result showed this module's tier or cube cost. help.hackthebox.com 'Academy Modules & Paths' (search result): Tier 0 modules cost 0 cubes, Tier I 50 cubes (10 returned on completion), Tier II 100 cubes (20 returned); new accounts start with 200 cubes. 'Academy Subscriptions': Silver and Student plans unlock modules up to Tier II.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'HTB Academy \"Introduction to Python 3\" course preview' on academy.hackthebox.com: result 'Introduction to Python 3 Course' at this URL; text: easy module, about 14 sections ending with a Simple Bind Shell section.",
+      "version": "as listed 2026-11-18 (one cached copy of the preview was about four years old)",
+      "topics": [
+        "python 3",
+        "sockets",
+        "simple bind shell",
+        "modules"
+      ],
+      "suggested_days": [
+        "D09"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": "Easy",
+      "fallback": "w02-pwncollege-intercepting-communication",
+      "notes": "Only the socket-related final sections serve Day 9. The module does not cover timeouts, exception classes or IPv6; use w02-python-socket for those. Also registered in Week 1 as w01-htb-academy-intro-python3."
+    },
+    {
+      "id": "w02-htb-starting-point",
+      "url": "https://help.hackthebox.com/en/articles/6007919-introduction-to-starting-point",
+      "provider": "Hack The Box",
+      "title": "Introduction to Starting Point",
+      "kind": "PATH",
+      "access": "MIXED",
+      "access_note": "Help-centre text in the search result: Starting Point has three tiers and each mixes free and premium machines; premium machines need HTB VIP+ or PRO but do not block a free user's progress. 'HTB Labs Subscriptions' result: VIP+ $25.00 per month or $223.00 per year.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Hack The Box Starting Point Tier 0 Meow Fawn Dancing Redeemer free' on HTB domains: result 'Introduction to Starting Point' at this URL; text: Tier 0 teaches connecting to the VPN, basic enumeration of ports and services and interacting with the services found. The HTB blog on Starting Point names Meow, Fawn (Linux) and Dancing (Windows) in Tier 0.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "official beginner track",
+        "port and service enumeration",
+        "telnet",
+        "ftp",
+        "smb"
+      ],
+      "suggested_days": [
+        "D08"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": "Very Easy (Tier 0 machines, as shown for Meow)",
+      "fallback": "w02-pwncollege-intercepting-communication",
+      "notes": "Hosted target for the unassisted service inventory of Day 8 when the local guest is blocked. This URL is the help article because the application page of the track was not in any result; whether each Tier 0 machine is free was not stated. Scanning and packet capture stay inside the platform's own lab network (its VPN or browser machine) or the approved G9 lab guest; never against any other address. Spoiler policy: Hack The Box Platform Rules forbid sharing how any ACTIVE machine, challenge or Sherlock was solved; write-ups are allowed only for retired machines, retired Sherlocks, retired challenges, Starting Point machines and Tier 0 Academy modules, and the retired state must be confirmed before anything is published."
+    },
+    {
+      "id": "w02-htb-sherlocks-beginner-dfir",
+      "url": "https://www.hackthebox.com/blog/best-dfir-labs",
+      "provider": "Hack The Box",
+      "title": "Our top 5 DFIR labs for beginner analysts (to get good fast)",
+      "kind": "CHALLENGE",
+      "access": "MIXED",
+      "access_note": "An HTB blog post on Sherlocks returned by the search (www.hackthebox.com/blog/sherlocks was in the result list) says Sherlocks are divided into free and premium labs, with eight kept accessible on the free plan. 'HTB Labs Subscriptions' result: VIP+ ($25.00 per month) includes all retired Sherlocks. Which of the named Sherlocks is free today was not shown.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Hack The Box blog beginner Sherlocks Brutus retired free DFIR beginners' on HTB domains: first result with this title at this URL; text names five Sherlocks: Meerkat (PCAP and log data of the startup Forela), Bumblebee, Litter (suspicious network protocols and tunnelling), Logjammer and Tracer.",
+      "version": "blog list as indexed 2026-11-18; Sherlock pages themselves not seen",
+      "topics": [
+        "sherlocks",
+        "pcap triage",
+        "network forensics",
+        "dns tunnelling",
+        "log correlation"
+      ],
+      "suggested_days": [
+        "D10"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-cyberdefenders-psexec-hunt",
+      "notes": "Use Meerkat or Litter for the Day 10 independent PCAP triage. The page address, difficulty, tier and RETIRED state of each Sherlock were not confirmed in a search result: the owner checks them on the Sherlock page before the lab is assigned, and no solution is written down outside private notes until 'retired' is confirmed. Spoiler policy: Hack The Box Platform Rules forbid sharing how any ACTIVE machine, challenge or Sherlock was solved; write-ups are allowed only for retired machines, retired Sherlocks, retired challenges, Starting Point machines and Tier 0 Academy modules, and the retired state must be confirmed before anything is published. HTB's submission guide says a Very Easy Sherlock typically takes under 1 hour and an Easy one 2 to 4 hours."
+    },
+    {
+      "id": "w02-thm-networking-concepts",
+      "url": "https://tryhackme.com/room/networkingconcepts",
+      "provider": "TryHackMe",
+      "title": "Networking Concepts",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No result showed whether this room is free or Premium. TryHackMe free accounts: AttackBox limited to 1 hour per day and OpenVPN access is free (help.tryhackme.com 'The AttackBox Explained'); tryhackme.com/free-rooms says 650+ rooms are free.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe rooms \"What is Networking?\" \"Intro to LAN\" \"OSI Model\" \"Packets & Frames\" \"Extending Your Network\"' on tryhackme.com: first result at this URL; text: ISO OSI model, TCP/IP protocol suite, IP addressing, encapsulation; first of a series of four rooms (Networking Concepts, Networking Essentials, Networking Core Protocols, Networking Secure Protocols). The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "osi model",
+        "tcp/ip",
+        "ip addressing",
+        "encapsulation"
+      ],
+      "suggested_days": [
+        "D06"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-htb-academy-intro-networking",
+      "notes": "TryHackMe option for Day 6. Older Pre Security rooms on the same subject were also in the results (whatisnetworking, introtolan, osimodelzi, packetsframes, extendingyournetwork); TryHackMe's free-training blog lists 'What Is Networking?' among beginner rooms."
+    },
+    {
+      "id": "w02-thm-networking-essentials",
+      "url": "https://tryhackme.com/room/networkingessentials",
+      "provider": "TryHackMe",
+      "title": "Networking Essentials",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No result showed whether this room is free or Premium. TryHackMe free accounts: AttackBox limited to 1 hour per day and OpenVPN access is free (help.tryhackme.com 'The AttackBox Explained'); tryhackme.com/free-rooms says 650+ rooms are free.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe \"Networking Essentials\" room networkingessentials DHCP ARP NAT ICMP' on tryhackme.com: first result at this URL; text: Task 2 DHCP, Task 3 ARP, Task 4 ICMP: Troubleshooting Networks, Task 5 Routing, Task 6 NAT. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18 (the cached copy was about two years old)",
+      "topics": [
+        "dhcp",
+        "arp",
+        "icmp",
+        "routing",
+        "nat"
+      ],
+      "suggested_days": [
+        "D06"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-htb-academy-intro-networking",
+      "notes": "Covers the ARP, ICMP and routing mechanisms that Day 6 block B then captures in the owned lab."
+    },
+    {
+      "id": "w02-thm-networking-core-protocols",
+      "url": "https://tryhackme.com/room/networkingcoreprotocols",
+      "provider": "TryHackMe",
+      "title": "Networking Core Protocols",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No result showed whether this room is free or Premium. TryHackMe free accounts: AttackBox limited to 1 hour per day and OpenVPN access is free (help.tryhackme.com 'The AttackBox Explained'); tryhackme.com/free-rooms says 650+ rooms are free.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe rooms \"Networking Essentials\" \"Networking Core Protocols\" \"Networking Secure Protocols\" TLS DNS' on tryhackme.com: result at this URL; text: Task 2 'DNS: Remembering Addresses', plus WHOIS, HTTP(S), FTP and the email protocols. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "dns",
+        "whois",
+        "http",
+        "ftp",
+        "smtp",
+        "pop3",
+        "imap"
+      ],
+      "suggested_days": [
+        "D07"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-thm-dns-in-detail",
+      "notes": "Guided protocol room for the DNS and HTTP part of Day 7."
+    },
+    {
+      "id": "w02-thm-networking-secure-protocols",
+      "url": "https://tryhackme.com/room/networkingsecureprotocols",
+      "provider": "TryHackMe",
+      "title": "Networking Secure Protocols",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No result showed whether this room is free or Premium. TryHackMe free accounts: AttackBox limited to 1 hour per day and OpenVPN access is free (help.tryhackme.com 'The AttackBox Explained'); tryhackme.com/free-rooms says 650+ rooms are free.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w02-thm-networking-core-protocols: first result at this URL; text: Task 2 TLS, Task 3 HTTPS, Task 4 SMTPS, POP3S and IMAPS, Task 5 SSH, Task 6 SFTP and FTPS, Task 7 VPN. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "tls",
+        "https",
+        "ssh",
+        "sftp",
+        "vpn"
+      ],
+      "suggested_days": [
+        "D07"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-wireshark-tls-wiki",
+      "notes": "Only hosted item found that addresses TLS and SSH together for Day 7. X.509 certificate fields are not named in the task list; teach them from RFC 8446 and a local certificate."
+    },
+    {
+      "id": "w02-thm-dns-in-detail",
+      "url": "https://tryhackme.com/room/dnsindetail",
+      "provider": "TryHackMe",
+      "title": "DNS in Detail",
+      "kind": "ROOM",
+      "access": "FREE_ACCOUNT",
+      "access_note": "TryHackMe's own free learning roadmap (tryhackme.com/resources/blog/free_path, search result) lists 'DNS in Detail' and 'HTTP in Detail' in its Web level. The room page itself did not show a tier marker. TryHackMe free accounts: AttackBox limited to 1 hour per day and OpenVPN access is free (help.tryhackme.com 'The AttackBox Explained'); tryhackme.com/free-rooms says 650+ rooms are free.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe \"DNS in Detail\" room dnsindetail record types recursive resolver' on tryhackme.com: first result at this URL; text: Task 3 record types (A, AAAA, CNAME, MX, TXT), Task 4 request flow through recursive resolver and authoritative server. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "dns records",
+        "recursive resolver",
+        "authoritative server",
+        "ttl and caching"
+      ],
+      "suggested_days": [
+        "D07"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-htb-academy-intro-networking",
+      "notes": "Free guided room for the DNS mechanism. The sibling room 'HTTP in Detail' (https://tryhackme.com/room/httpindetail) was in the same result and is on the same free roadmap."
+    },
+    {
+      "id": "w02-thm-tcpdump",
+      "url": "https://tryhackme.com/room/tcpdump",
+      "provider": "TryHackMe",
+      "title": "Tcpdump: The Basics",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No result showed whether this room is free or Premium. TryHackMe free accounts: AttackBox limited to 1 hour per day and OpenVPN access is free (help.tryhackme.com 'The AttackBox Explained'); tryhackme.com/free-rooms says 650+ rooms are free.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe rooms \"Tcpdump: The Basics\" \"Python for Pentesters\" \"Firewall Fundamentals\" \"TShark: The Basics\"' on tryhackme.com: first result at this URL; text: 'Learn how to use Tcpdump to save, filter, and display packets', tasks on basic capture, filtering expressions, advanced filtering and displaying packets. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "tcpdump",
+        "capture",
+        "bpf filters",
+        "packet display"
+      ],
+      "suggested_days": [
+        "D06"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-letsdefend-network-packet-analysis",
+      "notes": "Hosted capture practice for Day 6 block B (ARP, ICMP, TCP handshake) when the local lab is blocked."
+    },
+    {
+      "id": "w02-thm-wireshark-basics",
+      "url": "https://tryhackme.com/room/wiresharkthebasics",
+      "provider": "TryHackMe",
+      "title": "Wireshark: The Basics",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No result showed whether this room is free or Premium. TryHackMe free accounts: AttackBox limited to 1 hour per day and OpenVPN access is free (help.tryhackme.com 'The AttackBox Explained'); tryhackme.com/free-rooms says 650+ rooms are free.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe rooms \"Wireshark: The Basics\" \"Wireshark: Packet Operations\" \"Wireshark: Traffic Analysis\"' on tryhackme.com: first result at this URL; text: tool overview, packet dissection, packet navigation, packet filtering. The module page tryhackme.com/module/wireshark lists the three rooms in sequence. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "wireshark",
+        "packet dissection",
+        "navigation",
+        "display filters"
+      ],
+      "suggested_days": [
+        "D06",
+        "D07"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-letsdefend-network-packet-analysis",
+      "notes": "First of three rooms; the second, 'Wireshark: Packet Operations' (https://tryhackme.com/room/wiresharkpacketoperations: statistics, protocol filters, advanced filtering), was in the same result and fits Day 7 block B."
+    },
+    {
+      "id": "w02-thm-wireshark-traffic-analysis",
+      "url": "https://tryhackme.com/room/wiresharktrafficanalysis",
+      "provider": "TryHackMe",
+      "title": "Wireshark: Traffic Analysis",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No result showed whether this room is free or Premium. TryHackMe free accounts: AttackBox limited to 1 hour per day and OpenVPN access is free (help.tryhackme.com 'The AttackBox Explained'); tryhackme.com/free-rooms says 650+ rooms are free.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w02-thm-wireshark-basics: result at this URL; text: Nmap scans, ARP poisoning and man-in-the-middle, identifying hosts through DHCP, NetBIOS and Kerberos, tunnelling over DNS and ICMP, cleartext FTP and HTTP analysis, decrypting HTTPS. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "pcap triage",
+        "scan detection",
+        "arp poisoning",
+        "dns and icmp tunnelling",
+        "https decryption"
+      ],
+      "suggested_days": [
+        "D10"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-cyberdefenders-psexec-hunt",
+      "notes": "Guided PCAP investigation method for Day 10 block B; it also shows how an Nmap scan looks in a capture, which links back to Day 8. Take it only after the closed-book exam of block A."
+    },
+    {
+      "id": "w02-thm-nmap-basics",
+      "url": "https://tryhackme.com/room/nmap",
+      "provider": "TryHackMe",
+      "title": "Nmap: The Basics",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "The room page was returned twice without a tier marker. The module page tryhackme.com/module/nmap carries a module-level 'accessible for free' flag, which does not settle the room. A related page (room/nmap02uv, 'Nmap Basic Port Scans') is marked Premium or Max only.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe rooms \"Nmap: The Basics\" \"Nmap Live Host Discovery\" \"Nmap Basic Port Scans\" nmap01 nmap02' on tryhackme.com: result at this URL; text: 'Learn how to use Nmap to discover live hosts, find open ports, and detect service versions', seven tasks covering host discovery, port scanning, version detection, timing and output. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "nmap",
+        "host discovery",
+        "port scanning",
+        "version detection",
+        "timing",
+        "output"
+      ],
+      "suggested_days": [
+        "D08"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-pwncollege-intercepting-communication",
+      "notes": "TryHackMe option for Day 8. Older four-room series also in the results: 'Nmap Live Host Discovery' (room/nmap01) and 'Nmap Basic Port Scans' (room/nmap02). Scanning and packet capture stay inside the platform's own lab network (its VPN or browser machine) or the approved G9 lab guest; never against any other address."
+    },
+    {
+      "id": "w02-thm-firewall-fundamentals",
+      "url": "https://tryhackme.com/room/firewallfundamentals",
+      "provider": "TryHackMe",
+      "title": "Firewall Fundamentals",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No result showed whether this room is free or Premium. TryHackMe free accounts: AttackBox limited to 1 hour per day and OpenVPN access is free (help.tryhackme.com 'The AttackBox Explained'); tryhackme.com/free-rooms says 650+ rooms are free.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w02-thm-tcpdump: result at this URL; text: purpose of a firewall, firewall types, rules, Windows Defender Firewall and Linux iptables, with hands-on work on the built-in firewalls. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "stateless and stateful firewalls",
+        "rules",
+        "iptables",
+        "windows defender firewall"
+      ],
+      "suggested_days": [
+        "D09"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-pwncollege-intercepting-communication",
+      "notes": "TryHackMe option for Day 9. The room teaches iptables; current Ubuntu uses the nftables backend (see w02-ubuntu-firewall), so the lesson must name which tool the guest really runs."
+    },
+    {
+      "id": "w02-thm-zeek",
+      "url": "https://tryhackme.com/room/zeekbro",
+      "provider": "TryHackMe",
+      "title": "Zeek",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No result showed whether this room is free or Premium. TryHackMe free accounts: AttackBox limited to 1 hour per day and OpenVPN access is free (help.tryhackme.com 'The AttackBox Explained'); tryhackme.com/free-rooms says 650+ rooms are free.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe rooms \"Zeek\" zeekbro \"Zeek Exercises\" zeekbroexercises network security monitoring' on tryhackme.com: first result at this URL; text: network security monitoring, Zeek logs, CLI log processing, signatures, scripts, frameworks and packages; part of the Network Security and Traffic Analysis module. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18 (the cached copy was about four years old)",
+      "topics": [
+        "zeek",
+        "conn.log",
+        "zeek-cut",
+        "signatures",
+        "zeek scripts"
+      ],
+      "suggested_days": [
+        "D10"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-zeek-docs",
+      "notes": "Guided Zeek room; the room text is old, so option names and log fields must be checked against the current Book of Zeek. No Hack The Box item on Zeek was verified."
+    },
+    {
+      "id": "w02-thm-zeek-exercises",
+      "url": "https://tryhackme.com/room/zeekbroexercises",
+      "provider": "TryHackMe",
+      "title": "Zeek Exercises",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No result showed whether this room is free or Premium. TryHackMe free accounts: AttackBox limited to 1 hour per day and OpenVPN access is free (help.tryhackme.com 'The AttackBox Explained'); tryhackme.com/free-rooms says 650+ rooms are free.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w02-thm-zeek: result at this URL; text: tasks Introduction, Anomalous DNS, Phishing, Log4J, Conclusion. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "zeek log analysis",
+        "anomalous dns",
+        "phishing traffic",
+        "log4j traffic"
+      ],
+      "suggested_days": [
+        "D10"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-cyberdefenders-xxe-infiltration",
+      "notes": "Independent Zeek practice; prerequisite w02-thm-zeek. Do not publish task answers."
+    },
+    {
+      "id": "w02-pwncollege-intercepting-communication",
+      "url": "https://pwn.college/intro-to-cybersecurity/intercepting-communication/",
+      "provider": "pwn.college",
+      "title": "Intercepting Communication",
+      "kind": "MODULE",
+      "access": "FREE_ACCOUNT",
+      "access_note": "pwn.college home page text in the search result: the platform is 'open, for free, to participation'; an account is needed to track progress.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'pwn.college Intro to Cybersecurity \"Intercepting Communication\" module networking challenges' on pwn.college: result 'Intercepting Communication' at this URL; text: 29 challenges from Connect, Send and Listen through Scan, Monitor, Firewall and Denial of Service, then Ethernet, IP, TCP, TCP Handshake, UDP, UDP Spoofing and ARP, ending with Intercept and Man-in-the-Middle; the hosts exist only inside the challenge environment.",
+      "version": "as listed 2026-11-18 (29 challenges in the result)",
+      "topics": [
+        "sockets",
+        "scan",
+        "monitor",
+        "firewall",
+        "ethernet",
+        "ip",
+        "tcp handshake",
+        "arp"
+      ],
+      "suggested_days": [
+        "D06",
+        "D08",
+        "D09"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-letsdefend-network-packet-analysis",
+      "notes": "Free hosted independent practice: Ethernet, IP, TCP Handshake and ARP challenges for Day 6, Scan for Day 8, Connect, Send, Listen and Firewall for Day 9. The module recommends Python over netcat for later challenges. The spoofing, denial-of-service and man-in-the-middle challenges at the end are outside the Week 2 objectives and are not assigned. Everything runs inside the platform's sealed environment. Do not publish flags."
+    },
+    {
+      "id": "w02-letsdefend-network-packet-analysis",
+      "url": "https://app.letsdefend.io/training/lessons/network-packet-analysis",
+      "provider": "LetsDefend",
+      "title": "Network Packet Analysis - LetsDefend",
+      "kind": "MODULE",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Course page text in the search result: listed as free and requires only a valid LetsDefend user. The letsdefend.io home page result lists a Basic plan at $0 (old cached copy).",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'LetsDefend network fundamentals course Wireshark PCAP analysis challenge free' on letsdefend.io: first result 'Network Packet Analysis - LetsDefend' at this URL; text: covers tcpdump, Wireshark, Tshark and NetworkMiner.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "tcpdump",
+        "wireshark",
+        "tshark",
+        "networkminer",
+        "packet analysis for soc"
+      ],
+      "suggested_days": [
+        "D06",
+        "D07",
+        "D10"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-wireshark-users-guide",
+      "notes": "Free guided alternative for the capture and filter practice of the week. The free course 'Network Fundamentals - LetsDefend' (app.letsdefend.io/training/lessons/network-fundamentals, Beginner) was in the same result and backs up Day 6 block A."
+    },
+    {
+      "id": "w02-letsdefend-pcap-analysis",
+      "url": "https://app.letsdefend.io/challenge/pcap-analysis",
+      "provider": "LetsDefend",
+      "title": "PCAP Analysis - LetsDefend",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "No result showed whether this challenge is on the free plan; one result for a sibling challenge mentioned both 'Free' and 'VIP'.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w02-letsdefend-network-packet-analysis: result 'PCAP Analysis - LetsDefend' at this URL; text: a traffic capture from a user's computer to analyse. Sibling challenges in the same result: 'Port Scan Activity - LetsDefend' (/challenge/port-scan-activity) and 'Http Basic Auth. - LetsDefend' (/challenge/http-basic-auth).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "pcap triage",
+        "wireshark",
+        "soc investigation"
+      ],
+      "suggested_days": [
+        "D10"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-cyberdefenders-psexec-hunt",
+      "notes": "LetsDefend option for the Day 10 independent triage. 'Port Scan Activity' gives the defender's view of a scan and fits Day 8 block D. Confirm the tier on the challenge page. Do not publish answers."
+    },
+    {
+      "id": "w02-cyberdefenders-psexec-hunt",
+      "url": "https://cyberdefenders.org/blueteam-ctf-challenges/psexec-hunt/",
+      "provider": "CyberDefenders",
+      "title": "PsExec Hunt",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "The lab page metadata in two search results marks it as free to access; downloading the lab files requires signing in. help.cyberdefenders.org 'CyberRange Free vs Pro Labs' (search result): free labs are open to all users at no cost, Pro labs need a subscription; signing in is required to download lab files.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries 'CyberDefenders blue team labs network forensics PCAP Wireshark easy lab free' and 'cyberdefenders.org blueteam-ctf-challenges webstrike psexec-hunt free lab access' on cyberdefenders.org: result at this URL (result title 'Blue team CTF Challenges'); text: Network Forensics, easy, SMB traffic analysis of PsExec lateral movement in a PCAP with Wireshark, about 30 minutes.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "pcap triage",
+        "smb",
+        "psexec",
+        "lateral movement",
+        "wireshark"
+      ],
+      "suggested_days": [
+        "D10"
+      ],
+      "block": "C",
+      "estimate_minutes": 30,
+      "difficulty": "Easy",
+      "fallback": "w02-cyberdefenders-xxe-infiltration",
+      "notes": "Primary free CyberDefenders network exercise for Day 10 (named by the plan as the provider). The estimate is the provider's figure from the search result. SMB and PsExec are Windows subjects taught in Week 3, so the triage is done at the level of hosts, ports, sessions and timeline. An official walkthrough page exists on the site and stays closed until the report is submitted. Do not publish answers."
+    },
+    {
+      "id": "w02-cyberdefenders-web-investigation",
+      "url": "https://cyberdefenders.org/blueteam-ctf-challenges/web-investigation/",
+      "provider": "CyberDefenders",
+      "title": "Web Investigation Lab - Blue team CTF Challenges",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "The lab page metadata in the search result marks it as free. help.cyberdefenders.org 'CyberRange Free vs Pro Labs' (search result): free labs are open to all users at no cost, Pro labs need a subscription; signing in is required to download lab files.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'cyberdefenders.org blueteam-ctf-challenges webstrike psexec-hunt free lab access' on cyberdefenders.org: result 'Web Investigation Lab - Blue team CTF Challenges' at this URL; an earlier result listed 'Web Investigation Lab Official Walkthrough' at cyberdefenders.org/walkthroughs/web-investigation/.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "http session reconstruction",
+        "pcap",
+        "wireshark",
+        "web attack traffic"
+      ],
+      "suggested_days": [
+        "D07",
+        "D10"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w02-cyberdefenders-xxe-infiltration",
+      "notes": "Independent HTTP session reconstruction for Day 7. The scenario details and difficulty were not shown in the results; the web attack itself belongs to Week 4, so Day 7 uses the lab only to rebuild requests and responses. The official walkthrough stays closed until the attempt is submitted."
+    },
+    {
+      "id": "w02-cyberdefenders-xxe-infiltration",
+      "url": "https://cyberdefenders.org/blueteam-ctf-challenges/xxe-infiltration/",
+      "provider": "CyberDefenders",
+      "title": "XXE Infiltration Lab - Blue team CTF Challenges",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "The lab page metadata in the search result marks it as free. help.cyberdefenders.org 'CyberRange Free vs Pro Labs' (search result): free labs are open to all users at no cost, Pro labs need a subscription; signing in is required to download lab files.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'CyberDefenders blue team labs network forensics PCAP Wireshark easy lab free' on cyberdefenders.org: result 'XXE Infiltration Lab - Blue team CTF Challenges' at this URL; text: PCAP analysis of XXE exploitation and web shell uploads with Wireshark and Brim, 45 minutes.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "pcap triage",
+        "http",
+        "wireshark",
+        "brim",
+        "zeek-style logs"
+      ],
+      "suggested_days": [
+        "D10"
+      ],
+      "block": "C",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w02-cyberdefenders-psexec-hunt",
+      "notes": "Second free CyberDefenders PCAP lab. The estimate is the provider's figure from the search result. XXE is a Week 4 subject; in Week 2 the lab is used for traffic triage only."
+    },
+    {
+      "id": "w02-cyberdefenders-webstrike",
+      "url": "https://cyberdefenders.org/blueteam-ctf-challenges/webstrike/",
+      "provider": "CyberDefenders",
+      "title": "WebStrike Lab - Blue team CTF Challenges",
+      "kind": "LAB",
+      "access": "PAID",
+      "access_note": "The lab page metadata in the search result marks it as not free. help.cyberdefenders.org 'CyberRange Free vs Pro Labs' (search result): free labs are open to all users at no cost, Pro labs need a subscription; signing in is required to download lab files. A trial of Pro labs gives free users 5 hours in total over the account's lifetime ('CyberRange Free Trial Labs').",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries 'CyberDefenders WebStrike lab PCAP Wireshark easy free network forensics duration' and 'cyberdefenders.org blueteam-ctf-challenges webstrike psexec-hunt free lab access' on cyberdefenders.org: result 'WebStrike Lab - Blue team CTF Challenges' at this URL; text: Network Forensics, easy, Wireshark, a suspicious file on a company web server captured in a PCAP.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "pcap triage",
+        "web server compromise",
+        "wireshark"
+      ],
+      "suggested_days": [
+        "D10"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": "Easy",
+      "fallback": "w02-cyberdefenders-psexec-hunt",
+      "notes": "Well-known beginner PCAP lab, registered so that it is not assigned by mistake as a free item. Use the fallback unless the learner has a Pro subscription. The official walkthrough (cyberdefenders.org/walkthroughs/webstrike/) stays closed until the attempt is submitted."
+    },
+    {
+      "id": "w02-nmap-port-scanning-basics",
+      "url": "https://nmap.org/book/man-port-scanning-basics.html",
+      "provider": "Nmap Project",
+      "title": "Port Scanning Basics",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Nmap Reference Guide man page \"Port Scanning Basics\" open closed filtered unfiltered' on nmap.org: first result 'Port Scanning Basics' at this URL; text: Nmap divides ports into six states (open, closed, filtered, unfiltered, open|filtered, closed|filtered) that describe how Nmap sees them; filtered means Nmap cannot determine whether the port is open because packet filtering prevents its probes from reaching the port.",
+      "version": "Nmap Reference Guide online as listed 2026-11-18 (usage text in results: Nmap 7.993SVN)",
+      "topics": [
+        "port states",
+        "open",
+        "closed",
+        "filtered",
+        "limits of scan evidence"
+      ],
+      "suggested_days": [
+        "D08"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Authority for the Day 8 rule that 'filtered' is not evidence that a service is absent. Book index: https://nmap.org/book/toc.html ('Nmap Network Scanning')."
+    },
+    {
+      "id": "w02-nmap-port-scanning-techniques",
+      "url": "https://nmap.org/book/man-port-scanning-techniques.html",
+      "provider": "Nmap Project",
+      "title": "Port Scanning Techniques",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Nmap reference guide port scanning techniques -sT TCP connect scan six port states' on nmap.org: result 'Port Scanning Techniques' at this URL; text describes the scan types Nmap supports, SYN scan as half-open, and that only the ACK scan yields the unfiltered state. The exact paragraph on -sT was not in the returned text.",
+      "version": "Nmap Reference Guide online as listed 2026-11-18",
+      "topics": [
+        "tcp connect scan",
+        "syn scan",
+        "udp scan",
+        "ack scan"
+      ],
+      "suggested_days": [
+        "D08"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Read for the conceptual contrast between -sT and the other modes. Only -sT -sV --version-light against the approved guest is run in Week 2."
+    },
+    {
+      "id": "w02-nmap-version-detection",
+      "url": "https://nmap.org/book/man-version-detection.html",
+      "provider": "Nmap Project",
+      "title": "Service and Version Detection",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Nmap service and version detection --version-light --version-intensity reference guide' on nmap.org: first result 'Service and Version Detection' at this URL; text: intensity ranges from 0 to 9 with default 7; --version-light is an alias for --version-intensity 2; --version-all is an alias for intensity 9.",
+      "version": "Nmap Reference Guide online as listed 2026-11-18",
+      "topics": [
+        "-sV",
+        "--version-light",
+        "version intensity",
+        "service probes"
+      ],
+      "suggested_days": [
+        "D08"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Explains why --version-light is faster and slightly less likely to identify a service; a service label from Nmap stays a hypothesis until the guest's own socket inventory confirms it."
+    },
+    {
+      "id": "w02-wireshark-users-guide",
+      "url": "https://www.wireshark.org/docs/wsug_html/",
+      "provider": "Wireshark Foundation",
+      "title": "Wireshark User’s Guide",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Wireshark User's Guide building display filter expressions follow TCP stream' on wireshark.org: first result 'Wireshark User’s Guide' at this URL; companion results '6.4. Building Display Filter Expressions' (www.wireshark.org/docs/wsug_html_chunked/ChWorkBuildDisplayFilterSection.html) and the PDF titled 'Wireshark User’s Guide: Version 5.1.0'.",
+      "version": "User's Guide; the PDF result is labelled Version 5.1.0",
+      "topics": [
+        "display filters",
+        "follow stream",
+        "capture",
+        "export"
+      ],
+      "suggested_days": [
+        "D06",
+        "D07",
+        "D10"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Plan-named reference. The guide tracks the newest Wireshark; menus on the guest's packaged version can differ, so the lesson names the installed version. Sample captures for a reproducible exercise: https://wiki.wireshark.org/SampleCaptures ('SampleCaptures - Wireshark Wiki', seen in results; files there are untrusted data)."
+    },
+    {
+      "id": "w02-wireshark-tls-wiki",
+      "url": "https://wiki.wireshark.org/TLS",
+      "provider": "Wireshark Foundation",
+      "title": "TLS - Wireshark Wiki",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Wireshark wiki TLS decryption SSLKEYLOGFILE what is visible handshake SNI' on wireshark.org: first result 'TLS - Wireshark Wiki' at this URL; text: decryption needs the session secrets; a key log file written when SSLKEYLOGFILE is set works even with Diffie-Hellman key exchange; since Wireshark 3.0 the key log can be embedded in a pcapng file.",
+      "version": "wiki page as listed 2026-11-18",
+      "topics": [
+        "tls in wireshark",
+        "key log file",
+        "what stays encrypted",
+        "handshake metadata"
+      ],
+      "suggested_days": [
+        "D07"
+      ],
+      "block": "D",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Supports the Day 7 task of separating observable metadata from encrypted content. The results did not state which handshake fields stay readable (for example the server name), so the lesson must show that from the learner's own capture, not from this page. A key log file is a secret: it is produced only for the owned lab client and never stored with the evidence."
+    },
+    {
+      "id": "w02-zeek-docs",
+      "url": "https://docs.zeek.org/en/current/",
+      "provider": "Zeek Project",
+      "title": "Zeek Documentation — Book of Zeek (9.0.0)",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'docs.zeek.org/en/current Book of Zeek current version quick start' on docs.zeek.org: result 'Zeek Documentation — Book of Zeek (9.0.0)' at this URL and 'Quick Start Guide — Book of Zeek (8.2.2)' at docs.zeek.org/en/current/quickstart.html. Other results: 'conn.log — Book of Zeek (8.0.10)' at docs.zeek.org/en/lts/logs/conn.html and 'Zeek Log Formats and Inspection — Book of Zeek (8.0.10)' at docs.zeek.org/en/lts/log-formats.html.",
+      "version": "'current' channel; cached titles range from 8.2.2 to 9.0.1, LTS channel shows 8.0.10",
+      "topics": [
+        "zeek",
+        "conn.log",
+        "dns.log",
+        "ssl.log",
+        "zeek-cut",
+        "json logs"
+      ],
+      "suggested_days": [
+        "D10"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Plan-named reference. The exact release behind 'current' could not be fixed from cached results; course evidence should cite the version printed by 'zeek --version' on the guest and link the matching versioned or LTS page. dns.log records only unencrypted DNS."
+    },
+    {
+      "id": "w02-python-socket",
+      "url": "https://docs.python.org/3/library/socket.html",
+      "provider": "Python Software Foundation",
+      "title": "socket — Low-level networking interface — Python 3.15.2 documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Python socket module documentation settimeout create_connection exceptions socket.timeout' on docs.python.org: first result at this URL with this title; text: socket.timeout is a deprecated alias of TimeoutError since 3.10; create_connection resolves both IPv4 and IPv6 and tries each address in turn; settimeout(0) means non-blocking. Companion result: 'ssl — TLS/SSL wrapper for socket objects — Python 3.15.2 documentation' (docs.python.org/3/library/ssl.html).",
+      "version": "Python 3.15.2 documentation (the /3/ address follows the newest release)",
+      "topics": [
+        "sockets",
+        "timeouts",
+        "TimeoutError",
+        "ConnectionRefusedError",
+        "ipv4 and ipv6",
+        "create_connection"
+      ],
+      "suggested_days": [
+        "D09"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Authority for the Day 9 TCP service checker and its error tests. Catch TimeoutError rather than socket.timeout in new code. The checker's IPv6 behaviour follows from create_connection trying every resolved address. The guest may run an older interpreter; name the tested version in the lesson."
+    },
+    {
+      "id": "w02-tcpdump-pcap-filter",
+      "url": "https://www.tcpdump.org/manpages/pcap-filter.7.html",
+      "provider": "The Tcpdump Group",
+      "title": "pcap-filter(7) man page",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'tcpdump man page pcap-filter manual' on tcpdump.org: first result 'pcap-filter(7) man page' at this URL; text: filter expressions are built from primitives with type, dir and proto qualifiers, for example 'tcp port 21'. The index www.tcpdump.org/manpages/ was also returned.",
+      "version": "online copy documents libpcap 1.11.0-PRE-GIT per the result text",
+      "topics": [
+        "capture filters",
+        "bpf syntax",
+        "tcpdump"
+      ],
+      "suggested_days": [
+        "D06",
+        "D07"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Capture-filter syntax (tcpdump, dumpcap), which differs from Wireshark display filters. The online page describes a development version; keywords such as vxlan are newer than the guest's libpcap, so the local man page takes precedence."
+    },
+    {
+      "id": "w02-ubuntu-firewall",
+      "url": "https://documentation.ubuntu.com/security/security-features/network/firewall/",
+      "provider": "Canonical (Ubuntu)",
+      "title": "Firewall - Ubuntu security documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Ubuntu Server documentation firewall ufw nftables how-to security' on ubuntu.com and documentation.ubuntu.com: first result 'Firewall - Ubuntu security documentation' at this URL; companion result 'nftables - Ubuntu security documentation' at .../firewall/nftables/; text: ufw is a front end that invokes the legacy iptables and ip6tables utilities and should not be used together with native nftables rules; 'nft list ruleset' lists all rules.",
+      "version": "Ubuntu security documentation as listed 2026-11-18",
+      "topics": [
+        "ufw",
+        "nftables",
+        "default deny",
+        "ipv4 and ipv6 rules",
+        "stateful filtering"
+      ],
+      "suggested_days": [
+        "D09"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Basis of the Day 9 before-and-after firewall test on the isolated guest. Pick ufw or native nftables, not both. The test must cover IPv6 as well as IPv4, because a rule set that filters only one family leaves the service reachable over the other."
+    },
+    {
+      "id": "w02-rfc8446",
+      "url": "https://www.rfc-editor.org/info/rfc8446/",
+      "provider": "IETF / RFC Editor",
+      "title": "RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Public RFC Editor page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'RFC 9293 Transmission Control Protocol RFC 8446 TLS 1.3 RFC 1035 domain names' on rfc-editor.org and datatracker.ietf.org: result 'RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3' at this URL; text: Proposed Standard, August 2018, obsoletes RFC 5246. Same result list: 'RFC 1035: Domain names - implementation and specification' (www.rfc-editor.org/info/rfc1035/, STD 13, November 1987) and the standards index naming RFC 9293 (TCP, STD 7, August 2022).",
+      "version": "RFC 8446, August 2018, Proposed Standard",
+      "topics": [
+        "tls 1.3 handshake",
+        "what is encrypted",
+        "certificates",
+        "dns standard",
+        "tcp standard"
+      ],
+      "suggested_days": [
+        "D06",
+        "D07"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Primary standard for the TLS explanation of Day 7; read the handshake overview only. The page of RFC 9293 (TCP) itself was not in a result list, so it is cited here by number only. Later updates to these RFCs were not checked."
+    }
+  ],
+  "plan_fact_checks": [
+    {
+      "claim": "Section 5, Week 2 lab specification: a limited Nmap scan uses '-sT -sV --version-light'.",
+      "result": "CONFIRMED",
+      "evidence": "nmap.org/book/man-version-detection.html ('Service and Version Detection') in search results: --version-light is an alias for --version-intensity 2 (default intensity 7), faster and slightly less likely to identify services. nmap.org/book/man-port-scanning-techniques.html ('Port Scanning Techniques') exists and Nmap's 'The Art of Port Scanning' result describes the TCP connect() scan; the exact -sT paragraph of the reference guide was not in the returned text."
+    },
+    {
+      "claim": "Section 5, Week 2: do not infer that a service is absent solely from the state 'filtered'.",
+      "result": "CONFIRMED",
+      "evidence": "nmap.org/book/man-port-scanning-basics.html ('Port Scanning Basics') in search results: filtered means Nmap cannot determine whether the port is open because packet filtering prevents its probes from reaching the port; the six states describe how Nmap sees a port, not an intrinsic property of it."
+    },
+    {
+      "claim": "Section 4 and Week 2 core sites: Zeek documentation is at https://docs.zeek.org/en/current/.",
+      "result": "CONFIRMED",
+      "evidence": "docs.zeek.org results: 'Zeek Documentation — Book of Zeek (9.0.0)' at /en/current/ and 'Quick Start Guide — Book of Zeek (8.2.2)' at /en/current/quickstart.html; the release label behind 'current' differs between cached copies (8.2.2 to 9.0.1). /en/lts/ shows 8.0.10 and /en/master/ shows 9.1.0-dev."
+    },
+    {
+      "claim": "Section 4 and Week 2 core sites: the Wireshark guide is at https://www.wireshark.org/docs/wsug_html/.",
+      "result": "CONFIRMED",
+      "evidence": "wireshark.org result 'Wireshark User’s Guide' at that address; the PDF result is titled 'Wireshark User’s Guide: Version 5.1.0'."
+    },
+    {
+      "claim": "Section 4 and Week 2 core sites: the Nmap manual is at https://nmap.org/book/.",
+      "result": "CONFIRMED",
+      "evidence": "nmap.org results under /book/: 'Nmap Network Scanning' (toc.html), 'Port Scanning Basics', 'Port Scanning Techniques', 'Service and Version Detection', 'Chapter 4. Port Scanning Overview'. The bare /book/ address itself was not a result."
+    },
+    {
+      "claim": "Section 4 and Week 2 Day 10: CyberDefenders (https://cyberdefenders.org/blueteam-ctf-challenges/) offers a network exercise for independent PCAP triage.",
+      "result": "CONFIRMED",
+      "evidence": "cyberdefenders.org results: 'Dive into Blue Team CTF Challenges - CyberDefenders' at that address and a 'Network Forensics Track'. Access differs per lab: page metadata marks PsExec Hunt, XXE Infiltration and Web Investigation as free and WebStrike and PacketDetective as not free; Openfire is listed as premium."
+    },
+    {
+      "claim": "Week 2 core sites: Python documentation at https://docs.python.org/3/ is the reference for sockets and exceptions (Day 9).",
+      "result": "CONFIRMED",
+      "evidence": "docs.python.org result 'socket — Low-level networking interface — Python 3.15.2 documentation' at /3/library/socket.html. Version-sensitive detail: socket.timeout is a deprecated alias of TimeoutError since Python 3.10, so lesson code and error tests should catch TimeoutError."
+    },
+    {
+      "claim": "Section 4: TryHackMe room availability must be verified before assignment.",
+      "result": "CONFIRMED",
+      "evidence": "All twelve TryHackMe rooms registered for Week 2 were returned by searches on tryhackme.com, but a tier marker was shown for none of them except by way of TryHackMe's free roadmap for 'DNS in Detail'; a page for 'Nmap Basic Port Scans' (room/nmap02uv) is marked Premium or Max only. The plan's instruction to verify stands and is not yet satisfied for tiers."
+    }
+  ],
+  "gaps": [
+    "The shared web-search budget of the authoring run ran out before three final checks (HTB Academy tier labels, Sherlock pages, Starting Point free machines); the affected entries are marked UNKNOWN or MIXED.",
+    "HTB Academy tier labels were not shown for 'Network Enumeration with Nmap', 'Intro to Network Traffic Analysis', 'Network Foundations' and 'Introduction to Python 3'; their access is UNKNOWN until the owner opens the module pages.",
+    "TryHackMe tier not shown for eleven of the twelve registered rooms; confirm on each room page. Free substitutes are named in each entry's fallback.",
+    "Hack The Box Sherlocks for PCAP triage (Meerkat, Litter) are known only from an HTB blog post: page addresses, difficulty, tier and retired state were not confirmed.",
+    "No Hack The Box item on Zeek was verified; Day 10 Zeek practice has a TryHackMe option (tier unknown) and the official documentation only.",
+    "No hosted exercise dedicated to subnetting drills was verified; subnetting is covered inside HTB Academy 'Introduction to Networking' and must be drilled with locally generated questions.",
+    "No hosted exercise on X.509 certificate inspection was verified; Day 7 certificate work stays local (a self-signed certificate on the owned guest).",
+    "No hosted exercise on a before-and-after firewall policy test with IPv6 was verified beyond the Firewall challenges of pwn.college; Day 9 block C stays local.",
+    "The RFC Editor page of RFC 9293 (TCP) and the Python ipaddress page for the current release were not in a result list (an ipaddress page for Python 3.13 was); they are not registered as entries.",
+    "LetsDefend challenge tiers (PCAP Analysis, Port Scan Activity, Http Basic Auth.) were not shown."
+  ]
+}

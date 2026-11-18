@@ -1,0 +1,1054 @@
+{
+  "week": 1,
+  "checked_on": "2026-11-18",
+  "method": "web search results only; pages were not opened from the authoring session",
+  "entries": [
+    {
+      "id": "w01-otw-bandit",
+      "url": "https://overthewire.org/wargames/bandit/",
+      "provider": "OverTheWire",
+      "title": "OverTheWire: Bandit",
+      "kind": "WARGAME",
+      "access": "FREE",
+      "access_note": "The Bandit pages returned by the search publish the SSH host (bandit.labs.overthewire.org, port 2220) and the starting login bandit0/bandit0; no account or payment appears anywhere in the results.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'OverTheWire Bandit wargame level 0 level 1' restricted to overthewire.org: first result 'OverTheWire: Bandit' at this URL.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "linux cli",
+        "ssh",
+        "files",
+        "permissions",
+        "pipes",
+        "text processing"
+      ],
+      "suggested_days": [
+        "D01",
+        "D02",
+        "D03"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w01-pwncollege-linux-luminarium",
+      "notes": "Independent block: hosted substitute on Day 1 when the local KVM lab is blocked (the plan's own substitution) and unassisted Bandit progress on Day 2. The guided ranges of block B are the entries w01-otw-bandit-levels-0-8 (Day 2) and w01-otw-bandit-levels-9-15 (Day 3). The site does not store level passwords: the learner keeps them in a private note, never in the portfolio. OverTheWire's own rule page on publishing solutions was not checked today; treat every level password as a spoiler."
+    },
+    {
+      "id": "w01-otw-bandit-levels-0-8",
+      "url": "https://overthewire.org/wargames/bandit/bandit0.html",
+      "provider": "OverTheWire",
+      "title": "Bandit Level 0",
+      "kind": "WARGAME",
+      "access": "FREE",
+      "access_note": "Level 0 page text in the search result: username bandit0, password bandit0, SSH on port 2220; no account needed.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries on overthewire.org returned 'Bandit Level 0' (bandit0.html), 'Bandit Level 0 → Level 1' (bandit1.html), 'Bandit Level 4 → Level 5' (bandit5.html), 'Bandit Level 5 → Level 6' (bandit6.html), 'Bandit Level 7 → Level 8' (bandit8.html) and 'Bandit Level 8 → Level 9' (bandit9.html). Pages bandit2, bandit3, bandit4 and bandit7 follow the same pattern but were not in a result list.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "ssh login",
+        "reading files",
+        "hidden and oddly named files",
+        "finding files by properties",
+        "text filtering"
+      ],
+      "suggested_days": [
+        "D02"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w01-pwncollege-linux-luminarium",
+      "notes": "Start page of the Day 2 range. File banditN.html describes the step from level N-1 to level N, so 'levels 0-8' ends with bandit9.html (Level 8 → Level 9). The estimate is the length of the plan's block B, not a provider figure. Block C of Day 2 continues the same range unassisted."
+    },
+    {
+      "id": "w01-otw-bandit-levels-9-15",
+      "url": "https://overthewire.org/wargames/bandit/bandit10.html",
+      "provider": "OverTheWire",
+      "title": "Bandit Level 9 → Level 10",
+      "kind": "WARGAME",
+      "access": "FREE",
+      "access_note": "Same public SSH game as w01-otw-bandit; no account or payment in the results.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries on overthewire.org returned 'Bandit Level 9 → Level 10' (bandit10.html), 'Level Goal: Bandit Level 10 → Level 11' (bandit11.html), 'Level Goal: Bandit Level 11 → Level 12' (bandit12.html), 'OverTheWire: Level Goal: Bandit Level 12 → Level 13' (bandit13.html), 'Level Goal: Bandit Level 14 → Level 15' (bandit15.html) and 'Bandit Level 15 → Level 16' (bandit16.html). bandit14.html was not in a result list.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "readable strings in binary data",
+        "encodings",
+        "compressed archives",
+        "ssh key login",
+        "network clients"
+      ],
+      "suggested_days": [
+        "D03"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w01-pwncollege-linux-luminarium",
+      "notes": "Start page of the Day 3 range. Whether the plan's 'Bandit 9-15' ends at bandit15.html or bandit16.html is not stated in the plan; the lesson author must say which. The estimate is the length of the plan's block B, not a provider figure."
+    },
+    {
+      "id": "w01-otw-leviathan",
+      "url": "https://overthewire.org/wargames/leviathan/",
+      "provider": "OverTheWire",
+      "title": "OverTheWire: Leviathan",
+      "kind": "WARGAME",
+      "access": "FREE",
+      "access_note": "Page text in the search result: levels reached on leviathan.labs.overthewire.org through SSH on port 2223, starting login leviathan0/leviathan0; no account or payment mentioned.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'OverTheWire wargames free how to play Leviathan wargame' on overthewire.org: result 'OverTheWire: Leviathan' at this URL; text gives difficulty 1/10, 8 levels, no programming knowledge required.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "setuid binaries",
+        "ltrace",
+        "strace",
+        "strings",
+        "basic unix commands"
+      ],
+      "suggested_days": [
+        "D05"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": "1/10 (as stated on the page)",
+      "fallback": "w01-otw-bandit",
+      "notes": "Unguided hosted option for the Friday blind scenario when the local hardening lab is blocked. It trains reading of setuid programs, not hardening; it does not replace the plan's local troubleshooting scenario. The OverTheWire index recommends Bandit first. No walkthroughs."
+    },
+    {
+      "id": "w01-pwncollege-linux-luminarium",
+      "url": "https://pwn.college/linux-luminarium/",
+      "provider": "pwn.college",
+      "title": "Linux Luminarium.",
+      "kind": "PATH",
+      "access": "FREE_ACCOUNT",
+      "access_note": "pwn.college home page text in the search result: the platform is 'open, for free, to participation'; an account is needed to track progress and an SSH key is linked to it (ssh hacker@dojo.pwn.college).",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'pwn.college Linux Luminarium dojo' on pwn.college: result 'Linux Luminarium.' at this URL; text lists 17 modules and 128 challenges, from Hello Hackers to Further Learning, including Processes and Jobs, Untangling Users, Perceiving Permissions and Chaining Commands.",
+      "version": "as listed 2026-11-18 (17 modules, 128 challenges in the result)",
+      "topics": [
+        "linux cli",
+        "paths",
+        "pipes",
+        "variables",
+        "processes",
+        "users",
+        "permissions",
+        "shell scripting"
+      ],
+      "suggested_days": [
+        "D01",
+        "D02",
+        "D03",
+        "D04",
+        "D05"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w01-otw-bandit",
+      "notes": "Free hosted alternative to every Week 1 TryHackMe or Hack The Box item. Module pages seen in results: /hello/, /commands/, /globbing/, /data/, /permissions/, /users/. The site says the dojo is very introductory and meant to be done in order. Do not publish flags."
+    },
+    {
+      "id": "w01-pwncollege-permissions",
+      "url": "https://pwn.college/linux-luminarium/permissions/",
+      "provider": "pwn.college",
+      "title": "Perceiving Permissions - Linux Luminarium.",
+      "kind": "MODULE",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Same evidence as w01-pwncollege-linux-luminarium (free, account needed to track progress).",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'pwn.college Linux Luminarium \"Perceiving Permissions\" \"Untangling Users\" \"Processes and Jobs\"' on pwn.college: result 'Perceiving Permissions - Linux Luminarium.' at this URL; text covers ls -l modes, chown, chgrp and chmod.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "file modes",
+        "owner group other",
+        "chown",
+        "chgrp",
+        "chmod",
+        "suid"
+      ],
+      "suggested_days": [
+        "D02"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w01-otw-bandit-levels-0-8",
+      "notes": "Independent practice for the Day 2 permission decisions. The sibling module 'Untangling Users' (https://pwn.college/linux-luminarium/users/, seen in the same result) covers su, sudo and the SUID bit and fits Day 3. Do not publish flags."
+    },
+    {
+      "id": "w01-htb-academy-linux-fundamentals",
+      "url": "https://academy.hackthebox.com/course/preview/linux-fundamentals",
+      "provider": "HTB Academy",
+      "title": "Linux Fundamentals Course - HTB Academy - Hack The Box",
+      "kind": "MODULE",
+      "access": "FREE_ACCOUNT",
+      "access_note": "HTB blog 'Learn cybersecurity for free: 5 beginner-friendly HTB Academy modules' (www.hackthebox.com/blog/learn-cybersecurity-for-free, search result) lists Linux Fundamentals and says the Fundamental modules named there are free when you register. The module's tier label (Tier 0/I/II) was not shown in any result. help.hackthebox.com 'Academy Modules & Paths' (search result): Tier 0 modules cost 0 cubes, Tier I 50 cubes (10 returned on completion), Tier II 100 cubes (20 returned); new accounts start with 200 cubes. 'Academy Subscriptions': Silver and Student plans unlock modules up to Tier II.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'HTB Academy Linux Fundamentals module' on academy.hackthebox.com: result 'Linux Fundamentals Course - HTB Academy - Hack The Box' at this URL; text: Fundamental level, 30 sections, no prerequisites, ends with a hands-on skills assessment.",
+      "version": "as listed 2026-11-18 (30 sections in the result; the cached preview may be older)",
+      "topics": [
+        "linux structure",
+        "shell",
+        "navigation",
+        "files",
+        "permissions",
+        "service management",
+        "users"
+      ],
+      "suggested_days": [
+        "D01",
+        "D02",
+        "D03",
+        "D05"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": "Fundamental",
+      "fallback": "w01-thm-linux-fundamentals-1",
+      "notes": "Primary guided provider for Days 1-3. The skills assessment at the end is a hosted option for Friday review after the diagnostic answers are submitted. Do not publish section answers or the skills-assessment solution unless the module is confirmed Tier 0 (see w01-htb-platform-rules)."
+    },
+    {
+      "id": "w01-htb-academy-setting-up",
+      "url": "https://academy.hackthebox.com/course/preview/setting-up",
+      "provider": "HTB Academy",
+      "title": "Setting Up Course - HTB Academy - Hack The Box",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "No result showed this module's tier or cube cost. help.hackthebox.com 'Academy Modules & Paths' (search result): Tier 0 modules cost 0 cubes, Tier I 50 cubes (10 returned on completion), Tier II 100 cubes (20 returned); new accounts start with 200 cubes. 'Academy Subscriptions': Silver and Student plans unlock modules up to Tier II.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'HTB Academy \"Setting Up\" module virtual machines lab environment preview fundamental' on academy.hackthebox.com: result 'Setting Up Course - HTB Academy - Hack The Box' at this URL; text: classified Fundamental, covers organizing resources, virtualization, containers, setting up Linux and Windows VMs, VPS and VPS hardening.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "virtualization",
+        "virtual machines",
+        "containers",
+        "lab organization",
+        "vps hardening"
+      ],
+      "suggested_days": [
+        "D01"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": "Fundamental",
+      "fallback": "w01-ubuntu-libvirt",
+      "notes": "General lab-building module; it is not specific to KVM/libvirt and does not replace the plan's Stage 00 diagnostics. The preview says it assumes working Linux command-line knowledge."
+    },
+    {
+      "id": "w01-htb-academy-intro-bash",
+      "url": "https://academy.hackthebox.com/course/preview/introduction-to-bash-scripting",
+      "provider": "HTB Academy",
+      "title": "Introduction to Bash Scripting Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "No result showed this module's tier or cube cost. help.hackthebox.com 'Academy Modules & Paths' (search result): Tier 0 modules cost 0 cubes, Tier I 50 cubes (10 returned on completion), Tier II 100 cubes (20 returned); new accounts start with 200 cubes. 'Academy Subscriptions': Silver and Student plans unlock modules up to Tier II.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'HTB Academy \"Introduction to Bash Scripting\" course preview' on academy.hackthebox.com: result 'Introduction to Bash Scripting Course' at this URL; text: Easy, 10 sections, prerequisites Linux Fundamentals and Web Requests, ends with a skills assessment.",
+      "version": "as listed 2026-11-18 (10 sections in the result)",
+      "topics": [
+        "bash",
+        "conditions",
+        "arguments",
+        "variables",
+        "arrays",
+        "loops",
+        "functions",
+        "debugging"
+      ],
+      "suggested_days": [
+        "D04"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": "Easy",
+      "fallback": "w01-pwncollege-linux-luminarium",
+      "notes": "A different module with a similar name exists: 'Introduction to Bash Scripting (LetsDefend) Course' at /course/preview/introduction-to-bash-scripting-letsdefend (Medium, 7 sections). Do not confuse the two."
+    },
+    {
+      "id": "w01-htb-academy-intro-python3",
+      "url": "https://academy.hackthebox.com/course/preview/introduction-to-python-3",
+      "provider": "HTB Academy",
+      "title": "Introduction to Python 3 Course",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "No result showed this module's tier or cube cost. help.hackthebox.com 'Academy Modules & Paths' (search result): Tier 0 modules cost 0 cubes, Tier I 50 cubes (10 returned on completion), Tier II 100 cubes (20 returned); new accounts start with 200 cubes. 'Academy Subscriptions': Silver and Student plans unlock modules up to Tier II.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'HTB Academy \"Introduction to Python 3\" course preview' on academy.hackthebox.com: result 'Introduction to Python 3 Course' at this URL; text: easy module, prerequisites Learning Process and Linux Fundamentals, about 14 sections from 'What is Python?' to a Simple Bind Shell section.",
+      "version": "as listed 2026-11-18 (one cached copy of the preview was about four years old)",
+      "topics": [
+        "python 3",
+        "variables",
+        "data structures",
+        "control flow",
+        "functions",
+        "classes",
+        "modules"
+      ],
+      "suggested_days": [
+        "D04"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": "Easy",
+      "fallback": "w01-thm-python-basics",
+      "notes": "A separate 'Introduction to Python Course' (/course/preview/introduction-to-python) is a different, Medium module. The module does not teach subprocess safety or JSON error handling; use w01-python-subprocess for that."
+    },
+    {
+      "id": "w01-htb-starting-point",
+      "url": "https://help.hackthebox.com/en/articles/6007919-introduction-to-starting-point",
+      "provider": "Hack The Box",
+      "title": "Introduction to Starting Point",
+      "kind": "PATH",
+      "access": "MIXED",
+      "access_note": "Help-centre text in the search result: Starting Point has three tiers and each mixes free and premium machines; premium machines need HTB VIP+ or PRO but do not block a free user's progress. 'HTB Labs Subscriptions' result: VIP+ $25.00 per month or $223.00 per year.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Hack The Box Starting Point Tier 0 Meow Fawn Dancing Redeemer free' on HTB domains: result 'Introduction to Starting Point' at this URL; text: Tier 0 covers connecting to the VPN, basic enumeration of ports and services and interacting with the services found.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "official beginner track",
+        "vpn",
+        "service enumeration",
+        "default credentials"
+      ],
+      "suggested_days": [
+        "D03",
+        "D05"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": "Very Easy (Tier 0 machines, as shown for Meow)",
+      "fallback": "w01-otw-bandit",
+      "notes": "Official beginner track of HTB Labs; this URL is the help article because the application page of the track was not in any result. Spoiler policy: Hack The Box Platform Rules forbid sharing how any ACTIVE machine, challenge or Sherlock was solved; write-ups are allowed only for retired machines, retired Sherlocks, retired challenges, Starting Point machines and Tier 0 Academy modules, and the retired state must be confirmed before anything is published. Starting Point machines are on the list of content that may be written up, but the portfolio should still record reasoning, not flags."
+    },
+    {
+      "id": "w01-htb-machine-meow",
+      "url": "https://www.hackthebox.com/machines/meow",
+      "provider": "Hack The Box",
+      "title": "Meow (Very Easy)",
+      "kind": "MACHINE",
+      "access": "UNKNOWN",
+      "access_note": "No result stated whether Meow itself is a free or a VIP+ Starting Point machine. The HTB blog on Starting Point names Meow, Fawn and Dancing in Tier 0; the help centre says each tier mixes free and premium machines.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w01-htb-starting-point: result 'Meow (Very Easy)' at this URL; text: very easy Linux machine that showcases a vulnerable Telnet service with default credentials.",
+      "version": "Starting Point Tier 0 machine, as listed 2026-11-18",
+      "topics": [
+        "telnet",
+        "default credentials",
+        "misconfigured remote access service"
+      ],
+      "suggested_days": [
+        "D03"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": "Very Easy",
+      "fallback": "w01-ubuntu-openssh-server",
+      "notes": "Hosted example of a misconfigured remote-access service for the Day 3 independent block when the local SSH lab is blocked. Prerequisite: HTB Labs account and the lab VPN or Pwnbox. Spoiler policy: Hack The Box Platform Rules forbid sharing how any ACTIVE machine, challenge or Sherlock was solved; write-ups are allowed only for retired machines, retired Sherlocks, retired challenges, Starting Point machines and Tier 0 Academy modules, and the retired state must be confirmed before anything is published. The fallback is the local lab built from the Ubuntu OpenSSH documentation."
+    },
+    {
+      "id": "w01-htb-platform-rules",
+      "url": "https://help.hackthebox.com/en/articles/12325897-hack-the-box-platform-rules",
+      "provider": "Hack The Box",
+      "title": "Hack The Box Platform Rules",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public help-centre article returned by the search.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Hack The Box rules active machines writeups not allowed retired content spoilers' on HTB domains: result 'Hack The Box Platform Rules' at this URL; text: members must not share how they hacked any active machine, challenge or Sherlock; publishable content is retired machines, retired Sherlocks, retired challenges, Starting Point machines, Tier 0 Academy modules and some Mini Pro Labs. Companion results: 'Streaming / Writeups / Walkthrough Guidelines' (help.hackthebox.com/en/articles/5188925-streaming-writeups-walkthrough-guidelines) and the Acceptable Use Policy effective 01 April 2026.",
+      "version": "as listed 2026-11-18; Acceptable Use Policy effective 2026-04-01",
+      "topics": [
+        "spoiler policy",
+        "write-up rules",
+        "academic integrity"
+      ],
+      "suggested_days": [
+        "D01"
+      ],
+      "block": "D",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Read once on Day 1 and apply to every Hack The Box item of the programme: no solutions, flags or hints of ACTIVE content in the portfolio, and the retired state is confirmed on the platform before any write-up is kept in a shareable document."
+    },
+    {
+      "id": "w01-thm-linux-fundamentals-1",
+      "url": "https://tryhackme.com/room/linuxfundamentalspart1",
+      "provider": "TryHackMe",
+      "title": "Linux Fundamentals Part 1",
+      "kind": "ROOM",
+      "access": "FREE_ACCOUNT",
+      "access_note": "The room page metadata in the search result marks it as accessible for free, and TryHackMe's free-path blog (tryhackme.com/resources/blog/free_path) lists it as a starting room. TryHackMe free accounts: AttackBox limited to 1 hour per day and OpenVPN access is free (help.tryhackme.com 'The AttackBox Explained'); tryhackme.com/free-rooms says 650+ rooms are free.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe Linux Fundamentals Part 1 room' on tryhackme.com: first result at this URL; text: in-browser Ubuntu machine, whoami, echo, ls, cd, cat, pwd, find, grep, shell operators. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "linux cli",
+        "navigation",
+        "find",
+        "grep",
+        "shell operators"
+      ],
+      "suggested_days": [
+        "D01",
+        "D02"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w01-letsdefend-linux-for-blue-team",
+      "notes": "Hosted guided alternative for Day 1 when the local lab is blocked. Do not publish task answers."
+    },
+    {
+      "id": "w01-thm-linux-fundamentals-2",
+      "url": "https://tryhackme.com/room/linuxfundamentalspart2",
+      "provider": "TryHackMe",
+      "title": "Linux Fundamentals Part 2",
+      "kind": "ROOM",
+      "access": "PAID",
+      "access_note": "The room page metadata in the search result marks it as not accessible for free (isAccessibleForFree: false), which on TryHackMe means a Premium or Max subscription.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe room Linux Fundamentals Part 2 Part 3 linuxfundamentalspart2 linuxfundamentalspart3' on tryhackme.com: result at this URL; text: SSH login, arguments, file management, common directories, permissions with users and groups. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "ssh",
+        "flags and arguments",
+        "filesystem",
+        "permissions",
+        "users and groups"
+      ],
+      "suggested_days": [
+        "D02"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w01-pwncollege-permissions",
+      "notes": "Paid; assign only when the learner already has a subscription. Free equivalent: the fallback."
+    },
+    {
+      "id": "w01-thm-linux-fundamentals-3",
+      "url": "https://tryhackme.com/room/linuxfundamentalspart3",
+      "provider": "TryHackMe",
+      "title": "Linux Fundamentals Part 3",
+      "kind": "ROOM",
+      "access": "PAID",
+      "access_note": "Room page text in the search result: the room is only available for Premium or Max subscribers.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w01-thm-linux-fundamentals-2 and a follow-up on access: result at this URL; text: terminal text editors, general utilities, processes, automation, package management, logs; metadata marks it beginner-level and not free. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "processes",
+        "systemd services",
+        "cron",
+        "package management",
+        "logs"
+      ],
+      "suggested_days": [
+        "D03"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": "beginner (page metadata)",
+      "fallback": "w01-pwncollege-linux-luminarium",
+      "notes": "Paid; the free fallback is the 'Processes and Jobs' module of the Linux Luminarium plus the systemd manual pages (w01-systemd-man-index)."
+    },
+    {
+      "id": "w01-thm-linux-system-hardening",
+      "url": "https://tryhackme.com/room/linuxsystemhardening",
+      "provider": "TryHackMe",
+      "title": "Linux System Hardening",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No result showed whether this room is free or Premium.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe room \"Linux System Hardening\" linuxsystemhardening' on tryhackme.com: result at this URL; text: 'Learn how to improve the security posture of your Linux systems', ten tasks including Firewall, Remote Access, Securing User Accounts, Software and Services, Audit and Log Configuration; part of the Network and System Security module. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "ssh hardening",
+        "user accounts",
+        "services",
+        "firewall",
+        "audit and logs"
+      ],
+      "suggested_days": [
+        "D03",
+        "D05"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w01-ubuntu-openssh-server",
+      "notes": "Closest hosted match found for the Day 3 'assess a misconfigured SSH or service lab' block. Confirm the tier on the room page before assigning. A room named 'Hardening Basics Part 2' (AppArmor) was searched for and not found."
+    },
+    {
+      "id": "w01-thm-bash-scripting",
+      "url": "https://tryhackme.com/room/bashscripting",
+      "provider": "TryHackMe",
+      "title": "Bash Scripting",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "Two searches returned the room page; neither showed a free or Premium marker.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe room \"Bash Scripting\" bashscripting' on tryhackme.com: result at this URL; text: walkthrough room covering bash syntax, variables, parameters, arrays and conditionals. The cached copy was several years old. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18 (old cached copy)",
+      "topics": [
+        "bash",
+        "variables",
+        "parameters",
+        "arrays",
+        "conditionals"
+      ],
+      "suggested_days": [
+        "D04"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w01-pwncollege-linux-luminarium",
+      "notes": "TryHackMe option next to w01-htb-academy-intro-bash. The room does not cover quoting pitfalls in depth; pair it with w01-gnu-bash-manual."
+    },
+    {
+      "id": "w01-thm-python-basics",
+      "url": "https://tryhackme.com/room/pythonbasics",
+      "provider": "TryHackMe",
+      "title": "Python Basics",
+      "kind": "ROOM",
+      "access": "FREE_ACCOUNT",
+      "access_note": "The room page metadata in the search result carries isAccessibleForFree: true. TryHackMe free accounts: AttackBox limited to 1 hour per day and OpenVPN access is free (help.tryhackme.com 'The AttackBox Explained'); tryhackme.com/free-rooms says 650+ rooms are free.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe room \"Python Basics\" pythonbasics' on tryhackme.com: first result at this URL; text: variables, loops, functions, data structures, if statements and files, with an in-browser code editor; part of the Scripting for Pentesters module. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18 (the cached copy was about five years old)",
+      "topics": [
+        "python",
+        "variables",
+        "loops",
+        "functions",
+        "files"
+      ],
+      "suggested_days": [
+        "D04"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w01-htb-academy-intro-python3",
+      "notes": "TryHackMe now also has a newer 'Python Scripting Basics' module (rooms pythonsimpledemo and pythoncoreconcepts were in the results); their tiers were not shown. The room 'Intro to Python' (introtopython) is Premium or Max only."
+    },
+    {
+      "id": "w01-thm-linux-strength-training",
+      "url": "https://tryhackme.com/room/linuxstrengthtraining",
+      "provider": "TryHackMe",
+      "title": "Linux Strength Training",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "The room page was returned twice; no free or Premium marker was shown.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'tryhackme.com/room/linuxstrengthtraining Linux Strength Training free room difficulty' on tryhackme.com: result at this URL; text: file handling, hash cracking, GPG-encrypted files, reading SQL databases and a final challenge. An earlier result described it as a guided beginner room that recommends the Linux Fundamentals rooms first. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "linux cli practice",
+        "file handling",
+        "final challenge"
+      ],
+      "suggested_days": [
+        "D05"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w01-otw-leviathan",
+      "notes": "Closest TryHackMe item for Friday independent practice; it is guided, so only its final challenge matches the plan's 'no walkthrough' rule. Parts on hash cracking are outside the Week 1 objectives."
+    },
+    {
+      "id": "w01-thm-linux-logs-investigations",
+      "url": "https://tryhackme.com/room/linuxlogsinvestigations",
+      "provider": "TryHackMe",
+      "title": "Linux Logs Investigations",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No result showed whether this room is free or Premium.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'TryHackMe free rooms page \"Linux Process Analysis\" \"Linux Logs Investigations\" \"Intro to Logs\" room' on tryhackme.com: result at this URL; text: logging levels, /var/log, syslog, journalctl, auditd, auth logs and application logs. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "/var/log",
+        "journalctl",
+        "auth logs",
+        "auditd"
+      ],
+      "suggested_days": [
+        "D03",
+        "D04"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w01-systemd-man-index",
+      "notes": "Supports the Day 4 task of parsing failed-authentication log lines and the Day 3 log annotation. Confirm the tier on the room page before assigning."
+    },
+    {
+      "id": "w01-thm-linux-process-analysis",
+      "url": "https://tryhackme.com/room/linuxprocessanalysis",
+      "provider": "TryHackMe",
+      "title": "Linux Process Analysis",
+      "kind": "ROOM",
+      "access": "FREE_ACCOUNT",
+      "access_note": "The search result for tryhackme.com/free-rooms ('Free Cyber Security Rooms & Labs') listed 'Linux Process Analysis' among the free rooms. The room page itself did not show a tier.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w01-thm-linux-logs-investigations: result at this URL; text: 'Perform thorough process and application analysis to identify an attacker's persistence methods'. The search result title for every tryhackme.com room page is the generic 'TryHackMe'; the room name was matched from the page text returned with the result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "processes",
+        "services",
+        "persistence",
+        "systemd units"
+      ],
+      "suggested_days": [
+        "D03"
+      ],
+      "block": "D",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w01-systemd-man-index",
+      "notes": "Defensive view of processes and services for the Day 3 documentation block. It is a forensics room; parts go beyond Week 1."
+    },
+    {
+      "id": "w01-letsdefend-linux-for-blue-team",
+      "url": "https://app.letsdefend.io/training/lessons/linux-for-blue-team",
+      "provider": "LetsDefend",
+      "title": "Linux for Blue Team - LetsDefend",
+      "kind": "MODULE",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Course page text in the search result: the course is free and needs only a LetsDefend account. The letsdefend.io home page result lists a Basic plan at $0 (old cached copy).",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'LetsDefend Linux for Blue Team course free Linux fundamentals SOC analyst' on letsdefend.io and HTB domains: result 'Linux for Blue Team - LetsDefend' at this URL; text: Beginner, file system, terminal commands, permissions, users and groups, processes, networking, packages, services, scheduled tasks, with a quiz.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "linux for defenders",
+        "permissions",
+        "users and groups",
+        "processes",
+        "services",
+        "scheduled tasks"
+      ],
+      "suggested_days": [
+        "D01",
+        "D02",
+        "D03"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": "Beginner",
+      "fallback": "w01-thm-linux-fundamentals-1",
+      "notes": "HTB Academy lists a version of the same course as 'Linux for Blue Team Course' (/course/preview/linux-for-blue-team); the help centre of Hack The Box has an 'Introduction to LetsDefend' article, so the two platforms are linked."
+    },
+    {
+      "id": "w01-cyberdefenders-hammered",
+      "url": "https://cyberdefenders.org/labs/42",
+      "provider": "CyberDefenders",
+      "title": "Hammered",
+      "kind": "LAB",
+      "access": "UNKNOWN",
+      "access_note": "No result showed whether this lab is free or Pro. help.cyberdefenders.org 'CyberRange Free vs Pro Labs' (search result): free labs are open to all users at no cost; Pro labs need a subscription.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'CyberDefenders Linux log analysis lab auth.log SSH brute force easy endpoint forensics' on cyberdefenders.org: result 'Hammered' at this URL; text: Endpoint Forensics, challenge files kern.log, auth.log, daemon.log, dmesg and apache2, 12 questions, published October 2020 by the Honeynet Project. The canonical /blueteam-ctf-challenges/ address of the lab was not in any result.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "auth.log",
+        "ssh brute force",
+        "grep",
+        "awk",
+        "sed",
+        "log timeline"
+      ],
+      "suggested_days": [
+        "D04"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Matches the Day 4 failed-authentication log parsing with real Linux logs. An official walkthrough exists at https://cyberdefenders.org/walkthroughs/hammered/ and must stay closed until the attempt is submitted. When the lab is not accessible, use the plan's local sample-log fixture; no free hosted equivalent was verified. Do not publish answers."
+    },
+    {
+      "id": "w01-libvirt-daemons",
+      "url": "https://libvirt.org/daemons.html",
+      "provider": "libvirt",
+      "title": "libvirt: Libvirt Daemons",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'libvirt daemons modular daemons virtqemud monolithic libvirtd sockets' on libvirt.org: result 'libvirt: Libvirt Daemons' at this URL; text: the monolithic daemon is libvirtd; modular daemons are named virt${DRIVER}d (virtqemud, virtnetworkd, virtnwfilterd); both are built by default. Companion result 'libvirt: virtqemud' (libvirt.org/manpages/virtqemud.html): sockets under /run/libvirt/ such as virtqemud-sock, socket-activated on systemd hosts.",
+      "version": "libvirt online documentation as listed 2026-11-18",
+      "topics": [
+        "libvirtd",
+        "virtqemud",
+        "modular daemons",
+        "unix sockets",
+        "systemd socket activation"
+      ],
+      "suggested_days": [
+        "D01"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Reference for the Day 1 task 'identify the libvirt failure mode'. A missing libvirtd socket is not proof that QEMU/KVM cannot work when virt-prefixed units are present."
+    },
+    {
+      "id": "w01-libvirt-formatnetwork",
+      "url": "https://libvirt.org/formatnetwork.html",
+      "provider": "libvirt",
+      "title": "libvirt: Network XML format",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'libvirt network XML format isolated network forward mode none' on libvirt.org: result 'libvirt: Network XML format' at this URL; text: when no forward element is present the network is isolated from any other network; guests can talk to each other and to the host OS but cannot reach other machines on the LAN. No 'mode=none' value is documented. Companion result 'libvirt: Firewall and network filtering in libvirt' (libvirt.org/firewall.html).",
+      "version": "libvirt online documentation as listed 2026-11-18",
+      "topics": [
+        "isolated network",
+        "forward element",
+        "bridge",
+        "dhcp",
+        "guest to host reachability"
+      ],
+      "suggested_days": [
+        "D01"
+      ],
+      "block": "C",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "An isolated libvirt network still lets guests reach the host and each other. The isolation acceptance tests of the plan (section 3.3) must therefore test guest-to-host paths as well; the XML alone is not a containment proof."
+    },
+    {
+      "id": "w01-ubuntu-libvirt",
+      "url": "https://ubuntu.com/server/docs/how-to/virtualisation/libvirt/",
+      "provider": "Canonical (Ubuntu)",
+      "title": "Libvirt - Ubuntu Server documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Ubuntu Server documentation libvirt virtualization how-to AppArmor OpenSSH server' on ubuntu.com and documentation.ubuntu.com: result 'Libvirt - Ubuntu Server documentation' at this URL; text: installing the packages, virsh, system mode versus session mode, per-guest AppArmor profiles under /etc/apparmor.d/libvirt/ in system mode.",
+      "version": "Ubuntu Server documentation as listed 2026-11-18",
+      "topics": [
+        "libvirt on ubuntu",
+        "virsh",
+        "system and session mode",
+        "apparmor confinement of guests"
+      ],
+      "suggested_days": [
+        "D01"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "The same documentation set is also served under documentation.ubuntu.com/server/ (the plan's URL): results showed 'Security - Ubuntu Server documentation' at documentation.ubuntu.com/server/how-to/security. Host changes stay gated by Stage 00."
+    },
+    {
+      "id": "w01-ubuntu-openssh-server",
+      "url": "https://ubuntu.com/server/docs/how-to/security/openssh-server/",
+      "provider": "Canonical (Ubuntu)",
+      "title": "OpenSSH server - Ubuntu Server documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w01-ubuntu-libvirt: result 'OpenSSH server - Ubuntu Server documentation' at this URL; text: openssh-server package, /etc/ssh/sshd_config and the sshd_config.d/ drop-in directory; the first value set wins, so drop-in files override the main file.",
+      "version": "Ubuntu Server documentation as listed 2026-11-18",
+      "topics": [
+        "sshd configuration",
+        "drop-in files",
+        "key authentication"
+      ],
+      "suggested_days": [
+        "D03",
+        "D05"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Basis of the local misconfigured-SSH fixture of Day 3 and of its remediation and retest."
+    },
+    {
+      "id": "w01-ubuntu-apparmor",
+      "url": "https://ubuntu.com/server/docs/security-apparmor",
+      "provider": "Canonical (Ubuntu)",
+      "title": "AppArmor - Ubuntu Server documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w01-ubuntu-libvirt: result 'AppArmor - Ubuntu Server documentation' at this URL; text: AppArmor is installed and loaded by default on Ubuntu, aa-status shows it, profile modes and common commands are explained, disabling it is flagged as a security risk.",
+      "version": "Ubuntu Server documentation as listed 2026-11-18 (this address is an older path and may redirect)",
+      "topics": [
+        "apparmor",
+        "profiles",
+        "enforce and complain mode",
+        "aa-status"
+      ],
+      "suggested_days": [
+        "D03",
+        "D05"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "No hosted platform exercise on AppArmor profile work was verified; AppArmor practice in Week 1 is local and read-only (status and profile reading) unless a guest VM is approved."
+    },
+    {
+      "id": "w01-openssh-sshd-config",
+      "url": "https://man.openbsd.org/sshd_config",
+      "provider": "OpenBSD (OpenSSH)",
+      "title": "sshd_config(5) - OpenBSD manual pages",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'sshd_config manual page OpenBSD PermitRootLogin PasswordAuthentication' on man.openbsd.org: first result 'sshd_config(5) - OpenBSD manual pages' at this URL; text: PermitRootLogin accepts yes, prohibit-password, forced-commands-only or no and defaults to prohibit-password; PasswordAuthentication defaults to yes.",
+      "version": "current OpenBSD manual page as listed 2026-11-18",
+      "topics": [
+        "sshd_config",
+        "PermitRootLogin",
+        "PasswordAuthentication",
+        "defaults"
+      ],
+      "suggested_days": [
+        "D03"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Upstream defaults; the Ubuntu package can ship different values, so the lesson must compare with the installed man page (man 5 sshd_config) and sshd -T on the guest."
+    },
+    {
+      "id": "w01-systemd-man-index",
+      "url": "https://www.freedesktop.org/software/systemd/man/latest/",
+      "provider": "systemd",
+      "title": "systemd.index",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'systemctl man page systemd.service journalctl systemd-analyze security' on freedesktop.org: result 'systemd.index' at this URL; the index lists systemctl(1). Results 'systemd.unit' and 'systemd.exec' were returned on freedesktop.org/software/systemd/man/.",
+      "version": "systemd manual, 'latest' channel, as listed 2026-11-18",
+      "topics": [
+        "systemctl",
+        "journalctl",
+        "unit files",
+        "systemd.exec sandboxing"
+      ],
+      "suggested_days": [
+        "D03",
+        "D04"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Index of the manual pages; the systemctl and journalctl pages themselves were not in a result list. The guest's own man pages match its installed systemd version and take precedence."
+    },
+    {
+      "id": "w01-systemd-analyze",
+      "url": "https://www.freedesktop.org/software/systemd/man/latest/systemd-analyze.html",
+      "provider": "systemd",
+      "title": "systemd-analyze",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as w01-systemd-man-index: first result 'systemd-analyze' at this URL; text: the 'security [UNIT...]' verb prints an exposure level from 0.0 to 10.0 per service, only analyses the sandboxing features systemd itself implements, and has --json= and --offline= modes.",
+      "version": "systemd manual, 'latest' channel, as listed 2026-11-18",
+      "topics": [
+        "systemd-analyze security",
+        "service exposure score",
+        "service hardening"
+      ],
+      "suggested_days": [
+        "D03",
+        "D05"
+      ],
+      "block": "D",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Read-only measurement for the toy service fixture before and after hardening. The manual warns that a high exposure score does not prove a service is vulnerable."
+    },
+    {
+      "id": "w01-man7-capabilities",
+      "url": "https://www.man7.org/linux/man-pages/man7/capabilities.7.html",
+      "provider": "Linux man-pages project",
+      "title": "capabilities(7) - Linux manual page",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'capabilities(7) Linux manual page credentials(7) path_resolution' on man7.org: result 'capabilities(7) - Linux manual page' at this URL; companions 'credentials(7) - Linux manual page' (man7.org/linux/man-pages/man7/credentials.7.html) and 'path_resolution(7) - Linux manual page' (www.man7.org/linux/man-pages/man7/path_resolution.7.html).",
+      "version": "Linux man-pages online copy as listed 2026-11-18",
+      "topics": [
+        "capabilities",
+        "credentials",
+        "uid and gid",
+        "DAC checks",
+        "CAP_DAC_OVERRIDE"
+      ],
+      "suggested_days": [
+        "D01",
+        "D02"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Mechanism reference for the Linux privilege model (Day 1) and for permission decisions (Day 2): permission checks use the filesystem UID, and CAP_DAC_OVERRIDE and CAP_DAC_READ_SEARCH bypass them."
+    },
+    {
+      "id": "w01-gnu-bash-manual",
+      "url": "https://www.gnu.org/software/bash/manual/bash.html",
+      "provider": "GNU Project",
+      "title": "Bash Reference Manual",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'GNU Bash Reference Manual quoting shell expansions redirections' on gnu.org: first result 'Bash Reference Manual' at this URL; the PDF result is labelled 'Reference Documentation for Bash Edition 5.3'.",
+      "version": "Bash Reference Manual, edition 5.3 per the PDF result title",
+      "topics": [
+        "quoting",
+        "expansions",
+        "redirections",
+        "pipelines",
+        "word splitting"
+      ],
+      "suggested_days": [
+        "D02",
+        "D04"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Authority for the shell-semantics lesson of Day 2 and the quoting lesson of Day 4."
+    },
+    {
+      "id": "w01-python-subprocess",
+      "url": "https://docs.python.org/3/library/subprocess.html",
+      "provider": "Python Software Foundation",
+      "title": "subprocess — Subprocess management — Python 3.15.2 documentation",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page returned by the search without any sign-in or price.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query 'Python subprocess module documentation security considerations shell=True shlex.quote' on docs.python.org: first result at this URL with this title; companion results 'shlex — Simple lexical analysis — Python 3.15.2 documentation' (docs.python.org/3/library/shlex.html) and 'json — JSON encoder and decoder — Python 3.15.2 documentation' (docs.python.org/3/library/json.html).",
+      "version": "Python 3.15.2 documentation (the /3/ address follows the newest release)",
+      "topics": [
+        "subprocess",
+        "shell=True risk",
+        "argument lists",
+        "shlex.quote",
+        "json.JSONDecodeError"
+      ],
+      "suggested_days": [
+        "D04"
+      ],
+      "block": "A",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "The /3/ address tracks the newest Python; the guest may run an older interpreter, so the lesson should name the interpreter version it was tested on. shlex.quote is documented as designed for Unix shells only. json.JSONDecodeError is a subclass of ValueError."
+    }
+  ],
+  "plan_fact_checks": [
+    {
+      "claim": "Section 5, Week 1: OverTheWire Bandit levels 0-8 (Day 2) and 9-15 (Day 3) are available at https://overthewire.org/wargames/bandit/.",
+      "result": "CONFIRMED",
+      "evidence": "Search results on overthewire.org listed 'OverTheWire: Bandit' and the level pages bandit0, 1, 5, 6, 8, 9, 10, 11, 12, 13, 15, 16, 17, 20 and 21 (file banditN.html is the step from level N-1 to N). Pages 2, 3, 4, 7 and 14 were not in a result list. Game server bandit.labs.overthewire.org, port 2220; the site does not save passwords."
+    },
+    {
+      "claim": "Section 16 item 9: the libvirt daemon guide describes modular virtqemud versus monolithic libvirtd, and an absent legacy socket is not proof that QEMU cannot work.",
+      "result": "CONFIRMED",
+      "evidence": "libvirt.org/daemons.html ('libvirt: Libvirt Daemons') and libvirt.org/manpages/virtqemud.html in search results: monolithic libvirtd and modular virt${DRIVER}d daemons are both built by default; virtqemud listens on /run/libvirt/virtqemud-sock and is socket-activated by systemd. The RPM deployment guidance result says new installations should use the modular daemons."
+    },
+    {
+      "claim": "Section 16 item 10: libvirt Network XML specifies isolated network semantics, and network XML is not proof of a complete containment boundary.",
+      "result": "CONFIRMED",
+      "evidence": "libvirt.org/formatnetwork.html ('libvirt: Network XML format') in search results: a network without a forward element is isolated from other networks, yet guests can talk to each other and to the host OS. Guest-to-host reachability remains, which supports the plan's caution and must be covered by the isolation tests."
+    },
+    {
+      "claim": "Section 5, Week 1 core sites: Ubuntu Server documentation is at https://documentation.ubuntu.com/server/.",
+      "result": "CONFIRMED",
+      "evidence": "Search results showed 'Security - Ubuntu Server documentation' at documentation.ubuntu.com/server/how-to/security and 'Virtual Machine Manager - Ubuntu Server documentation' at documentation.ubuntu.com/server/how-to/virtualisation/virtual-machine-manager/index.html. The same pages also appear under ubuntu.com/server/docs/. The root address itself was not a result."
+    },
+    {
+      "claim": "Section 4 and section 16 item 1: HTB Academy publishes path estimates of 342 hours (Penetration Tester) and 189 hours (SOC Analyst).",
+      "result": "CONFIRMED",
+      "evidence": "help.hackthebox.com/en/articles/12741910-academy-modules-paths ('Academy Modules & Paths') in search results: Penetration Tester 42 days 6 hours = 342 hours, SOC Analyst 23 days 5 hours = 189 hours, one day counted as an 8-hour study session."
+    },
+    {
+      "claim": "Section 16 item 2: CPTS requires the job-role path to be fully completed first.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "The address academy.hackthebox.com/preview/certifications/htb-certified-penetration-testing-specialist/where-to-start appeared in a result list with the title 'HTB Certified Penetration Testing Specialist - Hack The Box', but no result text stated the 100 percent path requirement. Not contradicted; not searched further before the search budget ran out."
+    },
+    {
+      "claim": "Section 4 access rule: no active-machine spoilers; confirm retired or live state before assigning Hack The Box content.",
+      "result": "CONFIRMED",
+      "evidence": "help.hackthebox.com 'Hack The Box Platform Rules' and 'Streaming / Writeups / Walkthrough Guidelines' in search results: sharing how any active machine, challenge or Sherlock was solved is forbidden; write-ups are allowed for retired machines, retired Sherlocks, retired challenges, Starting Point machines and Tier 0 Academy modules; the retired state must be confirmed before publishing. An Acceptable Use Policy effective 2026-04-01 was also returned."
+    },
+    {
+      "claim": "Section 4 and section 16 item 6: the OWASP GenAI LLM Top 10 2026 is the current list for LLM applications.",
+      "result": "CONFIRMED",
+      "evidence": "genai.owasp.org results: press release 'OWASP GenAI Security Project Unveils 2026 Top 10 for LLM Applications, New Agent Control Standard ...' under /2026/09/01/, and the resource address genai.owasp.org/resource/owasp-genai-llm-top-10-2026/ named in the result text. The release date differs between pages (June, August and September 2026). The 2025 edition (November 2024) is superseded; a separate Top 10 for Agentic Applications dates from 2025-12-09."
+    },
+    {
+      "claim": "Section 4: MITRE ATT&CK, review the October 2026 release.",
+      "result": "CONFIRMED",
+      "evidence": "attack.mitre.org/resources/versions/ ('Version History') in search results: ATT&CK v20.1 is the current version, starting 2026-10-13; v19.2 ran from 2026-04-28 to 2026-10-12. The website changelog result lists v20.1 with the date 2026-11-05, so the exact point-release date is not settled. v19 (April 2026) split Defense Evasion into Stealth and Defense Impairment."
+    },
+    {
+      "claim": "Section 4 and section 16 item 3: OSCP+ scaled scoring begins for exams on or after 2026-12-01 08:00 GMT; do not use a fixed 70-point target after that.",
+      "result": "CONFIRMED",
+      "evidence": "help.offsec.com 'OSCP+ Equated Scaled Scoring FAQ' (article 54589877508884) in search results: exams starting before 2026-12-01 08:00 GMT keep the fixed passing score of 70; from then on the passing score is 400 on a scaled range of 100 to 500 and the raw points needed vary by exam set."
+    },
+    {
+      "claim": "Section 4 and section 16 item 7: NIST SP 800-61 Rev. 3 is final, April 2025.",
+      "result": "CONFIRMED",
+      "evidence": "nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-61r3.pdf and the NIST news item of April 2025 in search results: 'Incident Response Recommendations and Considerations for Cybersecurity Risk Management: A CSF 2.0 Community Profile', final dated 2025-04-03, supersedes Rev. 2. The csrc.nist.gov result shown was the withdrawn initial public draft page (/r3/ipd); the /r3/final address was named in the result text only."
+    },
+    {
+      "claim": "Section 4 and section 16 item 8: OWASP WSTG stable release is 4.2.",
+      "result": "CONFIRMED",
+      "evidence": "owasp.org/projects/web-security-testing-guide and wstg.owasp.org in search results: the 'Stable' alias points to v4.2; version 5.0 is in development on the main branch and is not released."
+    },
+    {
+      "claim": "Section 4 and section 16 item 4: Sysmon network Event ID 3 is disabled by default.",
+      "result": "CONFIRMED",
+      "evidence": "learn.microsoft.com 'Sysmon events' and 'Sysmon - Sysinternals' in search results: the network connection event is disabled by default (because of volume) and must be enabled in the configuration. A newer page 'Enable and configure Sysmon in Windows' was also returned."
+    },
+    {
+      "claim": "Section 16 item 5: the Wazuh quickstart shows a small deployment starting at 4 vCPU, 8 GiB RAM and 50 GB.",
+      "result": "CONFIRMED",
+      "evidence": "documentation.wazuh.com/current/quickstart.html ('Quickstart · Wazuh documentation') in search results: 1-25 agents need 4 vCPU, 8 GiB RAM and 50 GB for 90 days; 26-50 agents 8 vCPU, 8 GiB, 100 GB; 51-100 agents 8 vCPU, 8 GiB, 200 GB. The figure applies to the smallest tier only."
+    }
+  ],
+  "gaps": [
+    "The shared web-search budget of the authoring run ran out before three final checks (HTB Academy tier labels, Sherlock pages, Starting Point free machines); the affected entries are marked UNKNOWN.",
+    "HTB Academy tier labels (Tier 0, I or II) were not shown for 'Setting Up', 'Introduction to Bash Scripting' and 'Introduction to Python 3'; their access is UNKNOWN until the module page is opened by the owner.",
+    "TryHackMe tier not shown for Bash Scripting, Linux System Hardening, Linux Strength Training and Linux Logs Investigations; confirm on each room page before assigning.",
+    "No hosted exercise on KVM or libvirt network isolation was found on any platform; Day 1 block C stays local, and when Stage 00 blocks it the plan's substitution applies (hosted Bandit plus a paper topology).",
+    "No hosted exercise on AppArmor profile work was verified (a TryHackMe room 'Hardening Basics Part 2' was searched for and not found; 'Container Hardening' has an AppArmor task but is container-specific and was not registered).",
+    "No hosted systemd service-hardening exercise was verified; TryHackMe 'Linux Fundamentals Part 3' covers processes and services but is Premium.",
+    "Day 4 block C has no verified Hack The Box option: the Sherlock 'Brutus' (auth.log and wtmp) was seen only in a forum thread and on user achievement pages; its page address, difficulty, tier and retired state were not confirmed, so it is not registered.",
+    "Day 5 blind hardening and troubleshooting scenario: no hosted challenge without a walkthrough that matches the objective was verified; OverTheWire Leviathan and TryHackMe Linux Strength Training are partial matches only.",
+    "The sudoers manual was found only at versioned addresses on sudo.ws (for example the 1.9.16 PDF); no stable unversioned address was seen, so it is not registered.",
+    "Whether Meow and the other Starting Point Tier 0 machines are free or VIP+ was not stated in any result."
+  ]
+}

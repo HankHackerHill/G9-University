@@ -1,0 +1,957 @@
+{
+  "week": 4,
+  "checked_on": "2026-11-18",
+  "method": "web search results only; pages were not opened from the authoring session",
+  "entries": [
+    {
+      "id": "w04-ps-path-server-side-vulnerabilities",
+      "url": "https://portswigger.net/web-security/learning-paths/server-side-vulnerabilities-apprentice",
+      "provider": "PortSwigger",
+      "title": "Server-side vulnerabilities - PortSwigger",
+      "kind": "PATH",
+      "access": "FREE_ACCOUNT",
+      "access_note": "portswigger.net/web-security (search result): 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries for the single labs below returned this learning path repeatedly (portswigger.net). Result title 'Server-side vulnerabilities - PortSwigger' at this URL; result text: Apprentice-level path that contains the SQL injection, path traversal, OS command injection, SSRF and file upload apprentice labs.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "path traversal",
+        "SQL injection",
+        "OS command injection",
+        "SSRF",
+        "file upload"
+      ],
+      "suggested_days": [
+        "D17",
+        "D18",
+        "D19"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "APPRENTICE",
+      "fallback": "w04-thm-sql-injection",
+      "notes": "Primary provider of the week. Topic-specific paths were also returned: learning-paths/sql-injection, learning-paths/path-traversal, learning-paths/ssrf-attacks and learning-paths/file-upload-vulnerabilities. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-ps-burp-getting-started",
+      "url": "https://portswigger.net/burp/documentation/desktop/getting-started",
+      "provider": "PortSwigger",
+      "title": "Getting started with Burp Suite Professional / Community Edition - PortSwigger",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page, indexed without sign-in. Burp Suite Community Edition is a free download (result 'Download Burp Suite Community Edition - PortSwigger', portswigger.net/burp/communitydownload); that page lists Burp Collaborator (OAST), automatic crawling and scanning as Professional features and Burp Intruder as a demo in Community.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: PortSwigger Burp Suite documentation \"Getting started with Burp Suite\" intercepting HTTP traffic with Burp Proxy AND \"Reissuing requests with Burp Repeater\" (portswigger.net). Result title 'Getting started with Burp Suite Professional / Community Edition - PortSwigger' at this URL; sibling results 'Intercepting HTTP traffic with Burp Proxy' (.../getting-started/intercepting-http-traffic) and 'Modifying requests in Burp Proxy'; the tutorial lists reissuing requests with Burp Repeater as step 5 of 6 and uses Web Security Academy labs. The pages were shown as about 6 days old.",
+      "version": "documentation as listed 2026-11-18; release page 'Professional / Community 2026.11' seen (portswigger.net/burp/releases/professional-community-2026-11, adds an Academy tab inside Burp)",
+      "topics": [
+        "Burp Proxy",
+        "Burp's browser",
+        "HTTP history",
+        "Repeater",
+        "target scope"
+      ],
+      "suggested_days": [
+        "D16"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w04-thm-burp-suite-basics",
+      "notes": "Set the target scope to the lab host before anything else. Labs that need Burp Collaborator (out-of-band interaction) are not assigned in this registry because Collaborator is listed as a Professional feature. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-ps-sqli-retrieve-hidden-data",
+      "url": "https://portswigger.net/web-security/sql-injection/lab-retrieve-hidden-data",
+      "provider": "PortSwigger",
+      "title": "Lab: SQL injection vulnerability in WHERE clause allowing retrieval of hidden data",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "portswigger.net/web-security (search result): 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: PortSwigger lab \"SQL injection vulnerability in WHERE clause allowing retrieval of hidden data\" APPRENTICE (portswigger.net). Result title identical to the lab title at this URL; result text: rated APPRENTICE, product category filter, goal is to display unreleased products.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "SQL injection",
+        "WHERE clause",
+        "query structure"
+      ],
+      "suggested_days": [
+        "D17"
+      ],
+      "block": "B",
+      "estimate_minutes": 30,
+      "difficulty": "APPRENTICE",
+      "fallback": "w04-thm-sql-injection",
+      "notes": "First of the two introductory SQL injection labs the plan asks for in D17 block B. Each lab page carries an official solution section: keep it closed during the independent block and record the root cause and the minimal request and response instead. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-ps-sqli-login-bypass",
+      "url": "https://portswigger.net/web-security/sql-injection/lab-login-bypass",
+      "provider": "PortSwigger",
+      "title": "Lab: SQL injection vulnerability allowing login bypass",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "portswigger.net/web-security (search result): 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: PortSwigger lab \"SQL injection vulnerability allowing login bypass\" APPRENTICE (portswigger.net). Result title identical to the lab title at this URL; result text: rated APPRENTICE, login function, goal is to log in as the administrator user; listed in the SQL injection and the server-side vulnerabilities learning paths.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "SQL injection",
+        "authentication logic",
+        "comment syntax"
+      ],
+      "suggested_days": [
+        "D17"
+      ],
+      "block": "B",
+      "estimate_minutes": 30,
+      "difficulty": "APPRENTICE",
+      "fallback": "w04-thm-sql-injection",
+      "notes": "Second introductory SQL injection lab of D17 block B. Each lab page carries an official solution section: keep it closed during the independent block and record the root cause and the minimal request and response instead. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-ps-sqli-union-number-of-columns",
+      "url": "https://portswigger.net/web-security/sql-injection/union-attacks/lab-determine-number-of-columns",
+      "provider": "PortSwigger",
+      "title": "Lab: SQL injection UNION attack, determining the number of columns returned by the query",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "portswigger.net/web-security (search result): 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: PortSwigger lab \"SQL injection UNION attack, determining the number of columns returned by the query\" PRACTITIONER (portswigger.net). Result title identical to the lab title at this URL; result text: listed as PRACTITIONER in the SQL injection learning path, first of the UNION attack labs.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "SQL injection",
+        "UNION attacks",
+        "column count"
+      ],
+      "suggested_days": [
+        "D17"
+      ],
+      "block": "C",
+      "estimate_minutes": 40,
+      "difficulty": "PRACTITIONER",
+      "fallback": "w04-ps-sqli-login-bypass",
+      "notes": "The 'additional' labs of D17 block C are PRACTITIONER level: PortSwigger has only the two apprentice SQL injection labs above in the results seen. The next lab of the section, 'Lab: SQL injection UNION attack, finding a column containing text' (.../union-attacks/lab-find-column-containing-text), was also returned. Each lab page carries an official solution section: keep it closed during the independent block and record the root cause and the minimal request and response instead. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-ps-sqli-union-other-tables",
+      "url": "https://portswigger.net/web-security/sql-injection/union-attacks/lab-retrieve-data-from-other-tables",
+      "provider": "PortSwigger",
+      "title": "Lab: SQL injection UNION attack, retrieving data from other tables",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "portswigger.net/web-security (search result): 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: PortSwigger lab \"SQL injection UNION attack, retrieving data from other tables\" OR ... (portswigger.net). Result title identical to the lab title at this URL; result text: listed as PRACTITIONER; retrieve the contents of the users table and log in as the administrator user.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "SQL injection",
+        "UNION attacks",
+        "data retrieval"
+      ],
+      "suggested_days": [
+        "D17"
+      ],
+      "block": "C",
+      "estimate_minutes": 50,
+      "difficulty": "PRACTITIONER",
+      "fallback": "w04-ps-sqli-union-number-of-columns",
+      "notes": "Do the number-of-columns lab first. Do not demand the whole SQL injection topic in one afternoon (plan, time feasibility). Also returned: 'Lab: SQL injection attack, querying the database type and version on MySQL and Microsoft' (.../examining-the-database/lab-querying-database-version-mysql-microsoft, PRACTITIONER). Each lab page carries an official solution section: keep it closed during the independent block and record the root cause and the minimal request and response instead. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-ps-path-traversal-simple",
+      "url": "https://portswigger.net/web-security/file-path-traversal/lab-simple",
+      "provider": "PortSwigger",
+      "title": "Lab: File path traversal, simple case",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "portswigger.net/web-security (search result): 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: PortSwigger lab \"File path traversal, simple case\" APPRENTICE file-path-traversal lab-simple (portswigger.net). Result title identical to the lab title at this URL; result text: listed as APPRENTICE; path traversal in the display of product images; goal is to read /etc/passwd of the lab server.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "path traversal",
+        "file handling"
+      ],
+      "suggested_days": [
+        "D18"
+      ],
+      "block": "B",
+      "estimate_minutes": 25,
+      "difficulty": "APPRENTICE",
+      "fallback": "w04-otw-natas",
+      "notes": "Each lab page carries an official solution section: keep it closed during the independent block and record the root cause and the minimal request and response instead. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-ps-path-traversal-absolute-path-bypass",
+      "url": "https://portswigger.net/web-security/file-path-traversal/lab-absolute-path-bypass",
+      "provider": "PortSwigger",
+      "title": "Lab: File path traversal, traversal sequences blocked with absolute path bypass",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "portswigger.net/web-security (search result): 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as the simple case (portswigger.net). Result title identical to the lab title at this URL; result text: the later labs of the path traversal series (blocked sequences, validated prefixes) are rated PRACTITIONER.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "path traversal",
+        "input filters",
+        "defence bypass reasoning"
+      ],
+      "suggested_days": [
+        "D18",
+        "D19"
+      ],
+      "block": "C",
+      "estimate_minutes": 35,
+      "difficulty": "PRACTITIONER",
+      "fallback": "w04-ps-path-traversal-simple",
+      "notes": "Sibling labs returned by the same search: 'validation of start of path', 'validation of file extension with null byte bypass', 'traversal sequences stripped with superfluous URL-decode'. Each lab page carries an official solution section: keep it closed during the independent block and record the root cause and the minimal request and response instead. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-ps-os-command-injection-simple",
+      "url": "https://portswigger.net/web-security/os-command-injection/lab-simple",
+      "provider": "PortSwigger",
+      "title": "Lab: OS command injection, simple case",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "portswigger.net/web-security (search result): 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: PortSwigger lab \"OS command injection, simple case\" APPRENTICE os-command-injection lab-simple (portswigger.net). Result title identical to the lab title at this URL; result text: APPRENTICE in the server-side learning path; product stock checker builds a shell command from user-supplied IDs; goal is to run whoami on the lab server.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "OS command injection",
+        "shell metacharacters",
+        "input-to-process flow"
+      ],
+      "suggested_days": [
+        "D18"
+      ],
+      "block": "B",
+      "estimate_minutes": 25,
+      "difficulty": "APPRENTICE",
+      "fallback": "w04-pwn-web-security",
+      "notes": "Topic page returned by the same search: 'What is OS command injection, and how to prevent it?' (portswigger.net/web-security/os-command-injection). Each lab page carries an official solution section: keep it closed during the independent block and record the root cause and the minimal request and response instead. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-ps-os-command-injection-blind-time-delays",
+      "url": "https://portswigger.net/web-security/os-command-injection/lab-blind-time-delays",
+      "provider": "PortSwigger",
+      "title": "Lab: Blind OS command injection with time delays",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "portswigger.net/web-security (search result): 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as the simple case (portswigger.net). Result title identical to the lab title at this URL. The difficulty label of this lab was not part of the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "blind OS command injection",
+        "timing as an oracle"
+      ],
+      "suggested_days": [
+        "D18"
+      ],
+      "block": "C",
+      "estimate_minutes": 40,
+      "difficulty": null,
+      "fallback": "w04-ps-os-command-injection-simple",
+      "notes": "Works without Burp Collaborator. The out-of-band siblings ('Blind OS command injection with out-of-band interaction' and '... out-of-band data exfiltration') need Collaborator and are not assigned. Each lab page carries an official solution section: keep it closed during the independent block and record the root cause and the minimal request and response instead. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-ps-ssrf-basic-local-server",
+      "url": "https://portswigger.net/web-security/ssrf/lab-basic-ssrf-against-localhost",
+      "provider": "PortSwigger",
+      "title": "Lab: Basic SSRF against the local server",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "portswigger.net/web-security (search result): 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: PortSwigger lab \"Basic SSRF against the local server\" AND \"Basic SSRF against another back-end system\" APPRENTICE (portswigger.net). Result title identical to the lab title at this URL; result text: APPRENTICE on the SSRF learning path; stock check feature fetches data from an internal system; goal is to reach the admin interface through the loopback address.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "SSRF",
+        "server-side trust",
+        "loopback admin interface"
+      ],
+      "suggested_days": [
+        "D19"
+      ],
+      "block": "B",
+      "estimate_minutes": 30,
+      "difficulty": "APPRENTICE",
+      "fallback": "w04-thm-intro-to-ssrf",
+      "notes": "Second apprentice SSRF lab returned by the same search: 'Lab: Basic SSRF against another back-end system' (.../ssrf/lab-basic-ssrf-against-backend-system); its official solution uses Burp Intruder, which is a demo in Community Edition. Each lab page carries an official solution section: keep it closed during the independent block and record the root cause and the minimal request and response instead. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-ps-ssrf-blacklist-filter",
+      "url": "https://portswigger.net/web-security/ssrf/lab-ssrf-with-blacklist-filter",
+      "provider": "PortSwigger",
+      "title": "Lab: SSRF with blacklist-based input filter",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "portswigger.net/web-security (search result): 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: PortSwigger lab \"SSRF with blacklist-based input filter\" AND lab \"Remote code execution via web shell upload\" APPRENTICE (portswigger.net). Result title identical to the lab title at this URL; result text: listed as PRACTITIONER under 'Circumventing common SSRF defenses'; also on the list of core labs for the Burp Suite Certified Practitioner exam.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "SSRF",
+        "deny-list weaknesses",
+        "address validation"
+      ],
+      "suggested_days": [
+        "D19"
+      ],
+      "block": "C",
+      "estimate_minutes": 45,
+      "difficulty": "PRACTITIONER",
+      "fallback": "w04-ps-ssrf-basic-local-server",
+      "notes": "Feeds the D19 defence block directly: it shows why a deny list is not address validation. The same search returned the apprentice file-handling lab 'Lab: Remote code execution via web shell upload' (portswigger.net/web-security/file-upload/lab-file-upload-remote-code-execution-via-web-shell-upload), an option for D18. Each lab page carries an official solution section: keep it closed during the independent block and record the root cause and the minimal request and response instead. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-ps-mystery-lab-challenge",
+      "url": "https://portswigger.net/web-security/mystery-lab-challenge",
+      "provider": "PortSwigger",
+      "title": "Mystery lab challenge",
+      "kind": "LAB",
+      "access": "FREE_ACCOUNT",
+      "access_note": "portswigger.net/web-security (search result): 'You can access everything (for free) and track your progress by creating an account'; a PortSwigger community page says reading needs no login and only the lab platform is behind sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: PortSwigger \"mystery lab challenge\" web-security mystery-lab-challenge (portswigger.net). Result title 'Mystery lab challenge' at this URL; result text: a random lab is generated with the objective hidden; level and topic can be chosen; the objective can be revealed and the lab de-anonymized. The same search returned 'All labs' at portswigger.net/web-security/all-labs.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "vulnerability classification",
+        "recon without context",
+        "unassisted practice"
+      ],
+      "suggested_days": [
+        "D20"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w04-owasp-juice-shop-releases",
+      "notes": "The provider states no fixed difficulty: level and topic are chosen by the learner. For D20 restrict the generator to the apprentice level and the week 4 topics; revealing the objective or de-anonymizing the lab is recorded as assistance in the score sheet. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-htb-web-requests",
+      "url": "https://academy.hackthebox.com/course/preview/web-requests",
+      "provider": "HTB Academy",
+      "title": "Web Requests",
+      "kind": "MODULE",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Search results describing HTB Academy path pages label this module Fundamental and Tier 0, and hackthebox.com/blog/learn-cybersecurity-for-free names it among five free beginner modules. HTB help centre (search results for 'Introduction to HTB Academy' and 'Academy Modules & Paths'): Tier 0 modules cost no Cubes to start, the button reads 'Start Module (Free)', and they award no Cubes. An HTB Academy account is needed.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: HTB Academy \"Web Requests\" course AND \"Introduction to Web Applications\" course AND \"Using Web Proxies\" course preview (academy.hackthebox.com). Result title 'Web Requests Course - HTB Academy - Hack The Box' at this URL; result text: HTTP and HTTPS, requests, responses and headers, methods and response codes, APIs; taught with cURL and the browser DevTools; classified Fundamental.",
+      "version": "as listed 2026-11-18; indexed snapshot several years old",
+      "topics": [
+        "HTTP requests and responses",
+        "headers",
+        "methods and status codes",
+        "cURL",
+        "browser DevTools"
+      ],
+      "suggested_days": [
+        "D16"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "Fundamental",
+      "fallback": "w04-thm-http-in-detail",
+      "notes": "The same search returned 'Introduction to Web Applications Course' (.../course/preview/introduction-to-web-applications, tier not shown) and 'Using Web Proxies Course' (.../course/preview/using-web-proxies, Easy, Burp Suite and ZAP, tier label conflicting in the results). The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-htb-sql-injection-fundamentals",
+      "url": "https://academy.hackthebox.com/course/preview/sql-injection-fundamentals",
+      "provider": "HTB Academy",
+      "title": "SQL Injection Fundamentals",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier not confirmed: one search summary read the Web Exploitation Specialist certification page as listing it under Tier 0, but the scraped labels were misaligned; another result shows only the label 'Offensive Fundamental'. Check for the 'Start Module (Free)' button. Paid tiers as shown in search results for hackthebox.com/blog/new-academy-pricing and help article 13677074 'Academy Subscriptions': subscriptions became tier-based on October 12 (the year 2026 is inferred from the age of the post, about 75 days on 2026-11-18); Student 10 USD/month and Silver 30 USD/month cover Tier 0-II, Gold 95 USD/month Tier 0-III, Platinum 125 USD/month Tier 0-IV; single modules can still be unlocked with Cubes.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: HTB Academy \"SQL Injection Fundamentals\" course AND \"File Inclusion\" course AND \"Server-side Attacks\" course preview (academy.hackthebox.com). Result title 'SQL Injection Fundamentals Course' at this URL; result text: 17 sections from an introduction to databases to a skills assessment, mainly MySQL, classified Medium.",
+      "version": "as listed 2026-11-18; indexed snapshot several years old",
+      "topics": [
+        "relational databases",
+        "MySQL",
+        "SQL injection",
+        "UNION",
+        "reading and writing files",
+        "mitigation"
+      ],
+      "suggested_days": [
+        "D17"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "Medium",
+      "fallback": "w04-thm-sql-injection",
+      "notes": "Use the database and query-structure sections for the D17 lesson. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-htb-command-injections",
+      "url": "https://academy.hackthebox.com/course/preview/command-injections",
+      "provider": "HTB Academy",
+      "title": "Command Injections",
+      "kind": "MODULE",
+      "access": "PAID",
+      "access_note": "A search summary of the HTB Certified Web Exploitation Specialist page tags Command Injections as a Tier II module (the scraped labels were partly misaligned, so confirm in the catalogue). Paid tiers as shown in search results for hackthebox.com/blog/new-academy-pricing and help article 13677074 'Academy Subscriptions': subscriptions became tier-based on October 12 (the year 2026 is inferred from the age of the post, about 75 days on 2026-11-18); Student 10 USD/month and Silver 30 USD/month cover Tier 0-II, Gold 95 USD/month Tier 0-III, Platinum 125 USD/month Tier 0-IV; single modules can still be unlocked with Cubes. New accounts receive some Cubes at sign-up; the amount and its conditions differ between the results.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries: HTB Academy \"Kerberos Attacks\" course OR ... and the Web Requests query above (academy.hackthebox.com). Result title 'Command Injections Course - HTB Academy - Hack The Box' at this URL (first section .../command-injections/intro-to-command-injections); listed as Medium.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "OS command injection",
+        "injection operators",
+        "filter evasion",
+        "prevention"
+      ],
+      "suggested_days": [
+        "D18"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "Medium",
+      "fallback": "w04-ps-os-command-injection-simple",
+      "notes": "Higher-tier Academy module: its exercise answers are not Retired Content and must not be published. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-htb-server-side-attacks",
+      "url": "https://academy.hackthebox.com/course/preview/server-side-attacks",
+      "provider": "HTB Academy",
+      "title": "Server-side Attacks",
+      "kind": "MODULE",
+      "access": "PAID",
+      "access_note": "A search summary of the HTB Certified Web Exploitation Specialist page tags Server-side Attacks as a Tier II module (labels partly misaligned, confirm in the catalogue). Paid tiers as shown in search results for hackthebox.com/blog/new-academy-pricing and help article 13677074 'Academy Subscriptions': subscriptions became tier-based on October 12 (the year 2026 is inferred from the age of the post, about 75 days on 2026-11-18); Student 10 USD/month and Silver 30 USD/month cover Tier 0-II, Gold 95 USD/month Tier 0-III, Platinum 125 USD/month Tier 0-IV; single modules can still be unlocked with Cubes.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: HTB Academy Bug Bounty Hunter job role path modules tiers ... (academy.hackthebox.com). Result title 'Server-side Attacks Course' at this URL; result text: covers Server-Side Request Forgery (SSRF), Server-Side Template Injection (SSTI) and Server-Side Includes (SSI) injection.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "SSRF",
+        "SSTI",
+        "SSI injection",
+        "server-side trust"
+      ],
+      "suggested_days": [
+        "D19"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w04-ps-ssrf-basic-local-server",
+      "notes": "Use only the SSRF sections in week 4. The HTB module 'File Inclusion' (.../course/preview/file-inclusion, Medium, 11 sections, Tier II per the same summary) covers the file inclusion half of D19. Higher-tier module answers must not be published. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-htb-starting-point",
+      "url": "https://help.hackthebox.com/en/articles/6007919-introduction-to-starting-point",
+      "provider": "Hack The Box",
+      "title": "Introduction to Starting Point",
+      "kind": "PATH",
+      "access": "MIXED",
+      "access_note": "Help article (search result): each tier mixes free machines with machines exclusive to VIP+ or HTB PRO. The HTB blog post 'Start Cybersecurity Awareness Month with our new Starting Point' names as free: Tier 1 Appointment, Sequel, Crocodile (Linux); Tier 2 Oopsie and Vaccine (Linux). The list dates from the launch of the redesigned track and may have changed. An HTB Labs account is needed.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Queries: Hack The Box help center \"Introduction to Starting Point\" ...; hackthebox.com machines \"Appointment\" OR \"Sequel\" OR \"Vaccine\" OR \"Oopsie\" Starting Point very easy machine page. Result title 'Introduction to Starting Point' at this URL. Machine pages returned: 'Sequel (Very Easy)' at hackthebox.com/machines/Sequel (Linux, retired, a MySQL service that allows access without a password) and 'Vaccine (Very Easy)' at hackthebox.com/machines/vaccine (Linux, retired, enumeration and password cracking). No machine page was returned for Appointment, Crocodile or Oopsie.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "SQL basics against a database service",
+        "web application enumeration",
+        "official beginner track"
+      ],
+      "suggested_days": [
+        "D17",
+        "D20"
+      ],
+      "block": "C",
+      "estimate_minutes": 90,
+      "difficulty": "Very Easy",
+      "fallback": "w04-otw-natas",
+      "notes": "Official beginner track: Sequel fits D17 (talking to a SQL database), Vaccine is an unassisted option for D20. Starting Point machines count as Retired Content for write-ups. Spoiler policy: the HTB Acceptable Use Policy (effective 2026-04-01) and help article 5188925 allow published solutions only for Retired Content (retired Machines, Sherlocks and Challenges, Starting Point machines, Tier 0 Academy modules and the named Mini Pro Labs). Solutions, flags, hints or spoilers of ACTIVE content must not be published. Confirm the 'retired' status on the platform before a write-up enters the portfolio. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-thm-http-in-detail",
+      "url": "https://tryhackme.com/room/httpindetail",
+      "provider": "TryHackMe",
+      "title": "HTTP in Detail",
+      "kind": "ROOM",
+      "access": "FREE_ACCOUNT",
+      "access_note": "A search summary of TryHackMe's free roadmap post (tryhackme.com/resources/blog/free_path) lists HTTP in Detail next to SQL Injection and OWASP Juice Shop; the post was described as dated 2025 or earlier, so confirm on the room page. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: tryhackme.com/room/httpindetail \"HTTP in Detail\" OR tryhackme.com/room/burpsuitebasics ... (tryhackme.com). This URL was returned; result text: 'Learn about how you request content from a web server using the HTTP protocol'; requests and responses, methods, status codes, headers, hands-on GET, POST, PUT and DELETE requests; part of the Web Hacking Fundamentals module. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "HTTP requests and responses",
+        "methods",
+        "status codes",
+        "headers",
+        "cookies"
+      ],
+      "suggested_days": [
+        "D16"
+      ],
+      "block": "A",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": "w04-mdn-http-overview",
+      "notes": "The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-thm-burp-suite-basics",
+      "url": "https://tryhackme.com/room/burpsuitebasics",
+      "provider": "TryHackMe",
+      "title": "Burp Suite: The Basics",
+      "kind": "ROOM",
+      "access": "FREE_ACCOUNT",
+      "access_note": "The text of the TryHackMe room OWASP Juice Shop (search result) says: 'The FREE Burpsuite rooms \"Burpsuite Basics\" and \"Burpsuite Repeater\" are recommended before completing this room'; TryHackMe's free listing also names 'Burp Suite: Repeater' (tryhackme.com/room/burpsuiterepeater). The wording may predate the current room version, so confirm on the room page. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: tryhackme.com/room/httpindetail \"HTTP in Detail\" OR tryhackme.com/room/burpsuitebasics \"Burp Suite: The Basics\" room (tryhackme.com). This URL was returned; result text: 'An introduction to using Burp Suite for web application pentesting', 15 tasks covering installation, the dashboard, Proxy, FoxyProxy, scoping, proxying HTTPS and an example attack. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "Burp Proxy",
+        "scoping",
+        "HTTPS interception",
+        "FoxyProxy"
+      ],
+      "suggested_days": [
+        "D16"
+      ],
+      "block": "B",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w04-ps-burp-getting-started",
+      "notes": "Follow with Burp Suite: Repeater (tryhackme.com/room/burpsuiterepeater), which was returned by a separate search and builds on this room. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-thm-sql-injection",
+      "url": "https://tryhackme.com/room/sqlinjectionlm",
+      "provider": "TryHackMe",
+      "title": "SQL Injection",
+      "kind": "ROOM",
+      "access": "FREE_ACCOUNT",
+      "access_note": "TryHackMe's free-resources guide (search result) lists 'SQL Injection - Learn how to detect and exploit SQL Injection vulnerabilities' and states that the rooms listed are free with a TryHackMe account. The guide's link target was not shown, and a different SQL room was reported as Premium or MAX only, so confirm on the room page. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: TryHackMe room \"SQL Injection\" sqlinjectionlm AND \"Command Injection\" oscommandinjection AND \"File Inclusion\" fileinc (tryhackme.com). This URL was returned; result text: SQL basics, in-band (error-based, UNION), blind (authentication bypass, boolean-based) and out-of-band SQL injection, and remediation. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "SQL basics",
+        "in-band SQL injection",
+        "blind SQL injection",
+        "remediation"
+      ],
+      "suggested_days": [
+        "D17"
+      ],
+      "block": "A",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w04-owasp-wstg-sql-injection",
+      "notes": "Other SQL rooms returned by the same search: sqlilab, sqlibasics, sqlmap. Automation such as sqlmap is used only after the manual labs (plan: manual first). The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-thm-command-injection",
+      "url": "https://tryhackme.com/room/oscommandinjection",
+      "provider": "TryHackMe",
+      "title": "Command Injection",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium/MAX.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as the SQL Injection room (tryhackme.com). This URL was returned; result text: task outline introduction, discovery, exploitation, practical lab, remediation, conclusion. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "OS command injection",
+        "discovery",
+        "remediation"
+      ],
+      "suggested_days": [
+        "D18"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w04-ps-os-command-injection-simple",
+      "notes": "The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-thm-file-inclusion",
+      "url": "https://tryhackme.com/room/fileinc",
+      "provider": "TryHackMe",
+      "title": "File Inclusion",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium/MAX.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Same query as the SQL Injection room (tryhackme.com). This URL was returned; result text: introduces Local File Inclusion, Remote File Inclusion and directory traversal. A related room 'File Inclusion, Path Traversal' (tryhackme.com/room/filepathtraversal: PHP wrappers, log poisoning) was also returned. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "local file inclusion",
+        "remote file inclusion",
+        "directory traversal"
+      ],
+      "suggested_days": [
+        "D18",
+        "D19"
+      ],
+      "block": "B",
+      "estimate_minutes": 75,
+      "difficulty": null,
+      "fallback": "w04-ps-path-traversal-simple",
+      "notes": "PortSwigger has no file inclusion lab in the results seen, so this room is the guided option for the file inclusion half of D19. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-thm-intro-to-ssrf",
+      "url": "https://tryhackme.com/room/ssrfqi",
+      "provider": "TryHackMe",
+      "title": "Intro to SSRF",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium/MAX.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: TryHackMe room \"OWASP Juice Shop\" owaspjuiceshop free room AND \"SSRF\" room ssrfqi Intro to SSRF (tryhackme.com). This URL was returned; result text: 'Learn how to exploit Server-Side Request Forgery (SSRF) vulnerabilities, allowing you to access internal server resources'; tasks on SSRF examples, finding an SSRF, defeating common defences and a practical. A different room 'SSRF' (tryhackme.com/room/ssrfhr) also exists. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "SSRF",
+        "internal resources",
+        "common SSRF defences"
+      ],
+      "suggested_days": [
+        "D19"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w04-ps-ssrf-basic-local-server",
+      "notes": "The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-thm-owasp-juice-shop",
+      "url": "https://tryhackme.com/room/owaspjuiceshop",
+      "provider": "TryHackMe",
+      "title": "OWASP Juice Shop",
+      "kind": "ROOM",
+      "access": "FREE_ACCOUNT",
+      "access_note": "TryHackMe's free-training guide (search result) lists OWASP Juice Shop under Website Fundamentals among its free rooms. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: TryHackMe room \"OWASP Juice Shop\" owaspjuiceshop free room ... (tryhackme.com). This URL was returned; result text: 'This room uses the Juice Shop vulnerable web application to learn how to identify and exploit common web application vulnerabilities'; tasks include finding the admin e-mail, the search parameter and a SQL injection login bypass. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18; the Juice Shop version inside the room was not shown",
+      "topics": [
+        "endpoint and parameter enumeration",
+        "injection",
+        "broken authentication"
+      ],
+      "suggested_days": [
+        "D16",
+        "D20"
+      ],
+      "block": "C",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w04-owasp-juice-shop-releases",
+      "notes": "Hosted alternative when the local Juice Shop VM is blocked. The room is guided: for D16 use only the reconnaissance tasks and build the endpoint and data-flow inventory yourself. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-owasp-wstg",
+      "url": "https://wstg.owasp.org/",
+      "provider": "OWASP",
+      "title": "OWASP Web Security Testing Guide",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Public OWASP page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: OWASP Web Security Testing Guide latest stable release version v4.2 v5 release 2026 (owasp.org, github.com). Result title 'OWASP Web Security Testing Guide' at this URL; result text: 'Stable' is an alias for the current release, currently v4.2; version 5.0 is in development; v4.2 is the version to cite.",
+      "version": "stable v4.2 (OWASP news post 'Web Security Testing Guide v4.2 Released' under owasp.org/2020/12/03/); v5.0 in development; 'latest' refreshed 2026-10-30",
+      "topics": [
+        "test design",
+        "scope",
+        "test case identifiers",
+        "reporting"
+      ],
+      "suggested_days": [
+        "D20"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Cite versioned v4.2 URLs, not 'latest': the development version uses another folder structure and other identifiers (for SSRF, v4.2 is WSTG-INPV-19 under 07-Input_Validation_Testing, 'latest' is WSTG-INJT-19 under 07-Injection). v4.2 test cases returned by search: wstg.owasp.org/v4.2/4-Web_Application_Security_Testing/07-Input_Validation_Testing/19-Testing_for_Server-Side_Request_Forgery/ ; owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/05-Authorization_Testing/01-Testing_Directory_Traversal_File_Include ; .../v42/4-Web_Application_Security_Testing/07-Input_Validation_Testing/11.1-Testing_for_Local_File_Inclusion."
+    },
+    {
+      "id": "w04-owasp-wstg-sql-injection",
+      "url": "https://wstg.owasp.org/v4.2/4-Web_Application_Security_Testing/07-Input_Validation_Testing/05-Testing_for_SQL_Injection/",
+      "provider": "OWASP",
+      "title": "OWASP WSTG-INPV-05: testing for SQL injection",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Public OWASP page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: OWASP WSTG v4.2 \"Testing for SQL Injection\" WSTG-INPV-05 ... (owasp.org). Result title 'OWASP WSTG-INPV-05: testing for SQL injection' at this URL; the same page is mirrored at owasp.org/www-project-web-security-testing-guide/v42/... with the title 'WSTG - v4.2'; result text: in-band, out-of-band and inferential classes; test every input including hidden fields, headers and cookies.",
+      "version": "WSTG v4.2",
+      "topics": [
+        "SQL injection test design",
+        "injection classes",
+        "detection"
+      ],
+      "suggested_days": [
+        "D17"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Reference for the D17 root-cause explanation and for mapping the finding to a test case identifier."
+    },
+    {
+      "id": "w04-owasp-wstg-command-injection",
+      "url": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/07-Input_Validation_Testing/12-Testing_for_Command_Injection",
+      "provider": "OWASP",
+      "title": "WSTG - v4.2 (Testing for Command Injection, WSTG-INPV-12)",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Public OWASP page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: OWASP WSTG v4.2 \"Testing for Command Injection\" WSTG-INPV-12 AND \"Testing for Server-Side Request Forgery\" WSTG-INPV-19 (owasp.org). Result title 'WSTG - v4.2' at this URL (the URL path names the test case); result text: remediation by sanitizing input, an allow list is preferred over a deny list.",
+      "version": "WSTG v4.2",
+      "topics": [
+        "OS command injection test design",
+        "remediation"
+      ],
+      "suggested_days": [
+        "D18"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "The result title is the generic 'WSTG - v4.2'; the test case name is taken from the URL path. Defence companion returned by search: 'OS Command Injection Defense - OWASP Cheat Sheet Series' (cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html) and 'Path Traversal Prevention - OWASP Cheat Sheet Series' (.../cheatsheets/Path_Traversal_Prevention_Cheat_Sheet.html)."
+    },
+    {
+      "id": "w04-owasp-cheatsheet-sql-injection-prevention",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
+      "provider": "OWASP",
+      "title": "SQL Injection Prevention - OWASP Cheat Sheet Series",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public OWASP page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: \"SQL Injection Prevention - OWASP Cheat Sheet Series\" prepared statements parameterized queries (cheatsheetseries.owasp.org). Result title identical at this URL; result text: parameterized queries for data values, identifiers mapped to an allow list, dynamic SQL inside stored procedures is not made safe by a prepared outer call. Companion result: 'Query Parameterization - OWASP Cheat Sheet Series' (.../cheatsheets/Query_Parameterization_Cheat_Sheet.html).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "parameter binding",
+        "allow-listed identifiers",
+        "least privilege"
+      ],
+      "suggested_days": [
+        "D17"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Basis for the D17 parameterized-query defence and for the toy source snippets of the expansion points."
+    },
+    {
+      "id": "w04-owasp-cheatsheet-ssrf-prevention",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
+      "provider": "OWASP",
+      "title": "Server Side Request Forgery Prevention - OWASP Cheat Sheet Series",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public OWASP page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: \"Server-Side Request Forgery Prevention - OWASP Cheat Sheet Series\" allow list network layer (cheatsheetseries.owasp.org). Result title 'Server Side Request Forgery Prevention - OWASP Cheat Sheet Series' at this URL; result text: allow lists at application and network layer, validate the resolved IP addresses because a domain allow list does not stop DNS rebinding, deny lists are bypass-prone.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "egress policy",
+        "address validation",
+        "DNS rebinding",
+        "network segregation"
+      ],
+      "suggested_days": [
+        "D19"
+      ],
+      "block": "D",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Maps one to one to the D19 defence block (egress policy, address validation, residual risk)."
+    },
+    {
+      "id": "w04-owasp-top10-2025",
+      "url": "https://owasp.org/Top10/2025/",
+      "provider": "OWASP",
+      "title": "OWASP Top 10:2025",
+      "kind": "STANDARD",
+      "access": "FREE",
+      "access_note": "Public OWASP page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: OWASP Top 10:2025 final release A01 Broken Access Control A05 Injection ... (owasp.org). Result title 'OWASP Top 10:2025' at this URL; result text: A01:2025 Broken Access Control (Server-Side Request Forgery is now part of it), A02:2025 Security Misconfiguration, A05:2025 Injection (third place in 2021), A10:2025 Mishandling of Exceptional Conditions. Category pages are also served from top10.owasp.org/2025/.",
+      "version": "2025 edition, shown as the current list on 2026-11-18",
+      "topics": [
+        "vulnerability classification",
+        "injection",
+        "SSRF as access control failure"
+      ],
+      "suggested_days": [
+        "D20"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Version-sensitive for the closed-book classification exam: SSRF is absorbed into A01:2025 Broken Access Control and Injection is A05:2025. The plan does not name an OWASP Top 10 edition for week 4."
+    },
+    {
+      "id": "w04-owasp-juice-shop-releases",
+      "url": "https://github.com/juice-shop/juice-shop/releases/",
+      "provider": "OWASP",
+      "title": "Releases · juice-shop/juice-shop · GitHub",
+      "kind": "TOOL",
+      "access": "FREE",
+      "access_note": "Public open-source repository; releases are indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: OWASP Juice Shop project page latest release version 2026 companion guide \"Pwning OWASP Juice Shop\" (owasp.org, github.com, owasp-juice.shop). Result title 'Releases · juice-shop/juice-shop · GitHub' at this URL; result text: v20.4.0 marked latest, assets dated 2026-11-08. Related results: OWASP news 'Juice Shop v20.0.0 - a fresh squeeze of features, now with AI', the OWASP project page (still showing v20.2.0) and 'Running OWASP Juice Shop :: Pwning OWASP Juice Shop' (pwning.owasp-juice.shop/companion-guide/latest/part1/running.html, refers to image v20.3.0).",
+      "version": "v20.4.0 (2026-11-08) per GitHub releases",
+      "topics": [
+        "local vulnerable web target",
+        "endpoint enumeration",
+        "unassisted challenge"
+      ],
+      "suggested_days": [
+        "D16",
+        "D20"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w04-thm-owasp-juice-shop",
+      "notes": "Local target of the plan: run it only in the isolated VM, bound to loopback, after separate approval; pin the release in the lab record because challenges differ between versions (v20 added AI features). The companion guide contains hints and solutions, so it stays closed during independent blocks. The repository root named in the plan is the parent path of this URL. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-mdn-http-overview",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview",
+      "provider": "MDN Web Docs (Mozilla)",
+      "title": "Overview of HTTP - MDN Web Docs",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public documentation page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: MDN \"An overview of HTTP\" AND \"Using HTTP cookies\" developer.mozilla.org Web HTTP (developer.mozilla.org). Result title 'Overview of HTTP - MDN Web Docs' at this URL; result text: the protocol is stateless, cookies add sessions. Related results: 'Using HTTP cookies - MDN Web Docs' (.../Web/HTTP/Guides/Cookies, updated about two months ago; an older copy exists at .../Web/HTTP/Cookies) and 'HTTP headers' (.../Web/HTTP/Reference/Headers).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "HTTP messages",
+        "statelessness",
+        "cookies and sessions",
+        "headers"
+      ],
+      "suggested_days": [
+        "D16"
+      ],
+      "block": "A",
+      "estimate_minutes": 40,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "The cookies guide is the reference for the D16 block D inventory (Secure, HttpOnly, Domain and Path)."
+    },
+    {
+      "id": "w04-otw-natas",
+      "url": "https://overthewire.org/wargames/natas/",
+      "provider": "OverTheWire",
+      "title": "OverTheWire: Natas",
+      "kind": "WARGAME",
+      "access": "FREE",
+      "access_note": "The public page of level 0 (overthewire.org/wargames/natas/natas0.html, search result) publishes the starting user name, password and URL; no registration appears in the results.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: OverTheWire Natas wargame web security server-side natas0 (overthewire.org). Result title 'OverTheWire: Natas' at this URL; result text: 'Natas teaches the basics of serverside web-security'; each level is its own website under natas.labs.overthewire.org and holds the password of the next level; no SSH login.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "server-side web security basics",
+        "per-level web authentication",
+        "password retrieval per level"
+      ],
+      "suggested_days": [
+        "D16",
+        "D18",
+        "D20"
+      ],
+      "block": "C",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Free fallback for every independent block of the week. The level topics are not described on the pages seen, so the mapping to days is by level order (early levels for D16). Passwords of levels are spoilers: keep them out of the portfolio. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w04-pwn-web-security",
+      "url": "https://pwn.college/intro-to-cybersecurity/web-security/",
+      "provider": "pwn.college",
+      "title": "Web Security",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "No result on pwn.college stated the access conditions for this dojo module.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: pwn.college \"Web Security\" module intro-to-cybersecurity path traversal command injection SQL injection challenges (pwn.college). Result title 'Web Security' at this URL; result text: levels Path Traversal 1 and 2, CMDi 1 to 6 (CMDi 5 is blind), SQLi 1 to 5, and in some versions authentication bypass, XSS and same-origin levels. Course copies exist under pwn.college/cse365-f2026/ and older terms with different level lists.",
+      "version": "as listed 2026-11-18; level lists differ between the dojo and the course copies",
+      "topics": [
+        "path traversal",
+        "OS command injection",
+        "SQL injection",
+        "reading server source"
+      ],
+      "suggested_days": [
+        "D18",
+        "D19"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": null,
+      "fallback": "w04-otw-natas",
+      "notes": "Level descriptions seen: Path Traversal 1 is a simple HTTP file server that serves /challenge/files, CMDi 5 is blind, the SQLi levels include a login bypass and a blind leak. Flags and solutions stay out of the portfolio. The estimate is a registry planning figure sized to the block, not a provider figure."
+    }
+  ],
+  "plan_fact_checks": [
+    {
+      "claim": "OWASP WSTG: the stable documented release is 4.2 (plan section 4 and section 16 item 8).",
+      "result": "CONFIRMED",
+      "evidence": "Query: OWASP Web Security Testing Guide latest stable release version v4.2 v5 release 2026 (owasp.org, github.com). Results 'OWASP Web Security Testing Guide' (wstg.owasp.org), the OWASP project page and the OWASP/wstg repository: 'Stable' currently means v4.2; version 5.0 is in development; a pull request 'Publish Latest 2026-10-30' refreshed only the development version."
+    },
+    {
+      "claim": "Versioned WSTG case links are to be preferred to 'latest' (plan section 16 item 8).",
+      "result": "CONFIRMED",
+      "evidence": "Search results show that 'latest' uses another structure and other identifiers than v4.2: the SSRF test is WSTG-INPV-19 under 07-Input_Validation_Testing in v4.2 and WSTG-INJT-19 under 07-Injection in 'latest'; the SQL injection page of 'latest' is at .../07-Injection/05-SQL_Injection/. A 'latest' link therefore breaks or changes meaning over time."
+    },
+    {
+      "claim": "PortSwigger 'All labs' at portswigger.net/web-security/all-labs is the place for exact exercise selection (plan section 4).",
+      "result": "CONFIRMED",
+      "evidence": "Query: PortSwigger \"mystery lab challenge\" web-security mystery-lab-challenge. Result 'All labs' at portswigger.net/web-security/all-labs was returned next to 'Mystery lab challenge'."
+    },
+    {
+      "claim": "D17 block B: two introductory PortSwigger SQL injection labs exist; block C adds one or two more.",
+      "result": "CONFIRMED",
+      "evidence": "Two labs were shown as APPRENTICE ('SQL injection vulnerability in WHERE clause allowing retrieval of hidden data' and 'SQL injection vulnerability allowing login bypass'). Every other SQL injection lab whose level appeared in the results is PRACTITIONER, so the additional labs of block C are one level harder than the plan's wording 'selected' suggests."
+    },
+    {
+      "claim": "Week 4 gate: at least 4 independent labs in at least 2 server-side classes is reachable with introductory labs.",
+      "result": "CONFIRMED",
+      "evidence": "APPRENTICE labs seen today: SQL injection (2), path traversal (1: simple case), OS command injection (1: simple case), SSRF (2: local server, another back-end system), file upload (1: remote code execution via web shell upload)."
+    },
+    {
+      "claim": "OWASP Juice Shop at github.com/juice-shop/juice-shop is the local vulnerable web target (plan section 4).",
+      "result": "CONFIRMED",
+      "evidence": "Query: OWASP Juice Shop project page latest release version 2026 ... Result 'Releases · juice-shop/juice-shop · GitHub' under the plan's repository path: v20.4.0 is the latest release (2026-11-08). The OWASP project page still shows v20.2.0 and the companion guide refers to image v20.3.0. The plan pins no version; the lab record should."
+    },
+    {
+      "claim": "D16 block B: Burp Proxy and Repeater can be configured for the labs with the documented free tooling.",
+      "result": "CONFIRMED",
+      "evidence": "Query: Burp Suite Community Edition free download limitations Burp Collaborator ... (portswigger.net). Results: 'Download Burp Suite Community Edition' lists the proxy and history, Repeater, Decoder, Sequencer and Comparer in Community, Intruder as a demo, and Burp Collaborator, crawling and scanning as Professional features; release page 'Professional / Community 2026.11' exists. Labs that need Collaborator were therefore left out."
+    }
+  ],
+  "gaps": [
+    "D20 blocks A and B are an examination and a document review by the plan, so no guided platform exercise is assigned to them. A candidate for a guided review is the TryHackMe room at tryhackme.com/room/owasptopten2025three (OWASP Top 10 2025: Insecure Data Handling, covers A05 Injection); its tier was not seen.",
+    "File inclusion (D19): no PortSwigger lab on local or remote file inclusion appeared in the results. The verified options are the TryHackMe room File Inclusion (tier unknown) and the HTB Academy module File Inclusion (Tier II per one search summary, URL academy.hackthebox.com/course/preview/file-inclusion).",
+    "No retired Hack The Box machine that is specifically about SQL injection, OS command injection or SSRF was verified; only the Starting Point pages of Sequel and Vaccine were seen, and the pages of Appointment, Crocodile and Oopsie were not returned.",
+    "HTB Academy tier not confirmed for SQL Injection Fundamentals, Using Web Proxies and Introduction to Web Applications.",
+    "TryHackMe tier not confirmed for Command Injection, File Inclusion and Intro to SSRF.",
+    "pwn.college: access conditions of the Web Security module were not shown in a search result.",
+    "Defence and detection side of the week (block D): two resources were seen but their tier was not, and they are not recorded as entries: LetsDefend 'Detecting Web Attacks' (app.letsdefend.io/training/lessons/web-attacks-101, covers SQL injection, command injection, RFI and LFI detection) and CyberDefenders 'Web Investigation Lab' (cyberdefenders.org/blueteam-ctf-challenges/web-investigation/, network forensics of a web server compromise).",
+    "Out-of-band labs (blind SSRF, blind OS command injection with out-of-band interaction) are not covered because Burp Collaborator is listed as a Professional feature.",
+    "Provider-stated durations were not seen for any entry of this week; every estimate is a planning figure.",
+    "The shared search budget of the session ended before the TryHackMe room 'Detecting Web Attacks' and the HTB machine pages of Appointment, Dancing, Responder and Archetype could be checked."
+  ]
+}

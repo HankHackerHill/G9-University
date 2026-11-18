@@ -1,0 +1,1022 @@
+{
+  "week": 3,
+  "checked_on": "2026-11-18",
+  "method": "web search results only; pages were not opened from the authoring session",
+  "entries": [
+    {
+      "id": "w03-htb-windows-fundamentals",
+      "url": "https://academy.hackthebox.com/course/preview/windows-fundamentals",
+      "provider": "HTB Academy",
+      "title": "Windows Fundamentals",
+      "kind": "MODULE",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Search results describing HTB Academy path pages label this module Tier 0, and hackthebox.com/blog/learn-cybersecurity-for-free names it among five free beginner modules. HTB help centre (search results for 'Introduction to HTB Academy' and 'Academy Modules & Paths'): Tier 0 modules cost no Cubes to start, the button reads 'Start Module (Free)', and they award no Cubes. An HTB Academy account is needed.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: HTB Academy \"Windows Fundamentals\" module course preview (academy.hackthebox.com). Result title 'Windows Fundamentals Course - HTB Academy - Hack The Box' at this URL; result text: 15 sections, rated Fundamental, no prerequisites, RDP-based exercises.",
+      "version": "as listed 2026-11-18; the indexed snapshot of the section list is several years old",
+      "topics": [
+        "Windows OS structure",
+        "NTFS and share permissions",
+        "services and processes",
+        "registry",
+        "WMI",
+        "Windows security"
+      ],
+      "suggested_days": [
+        "D11"
+      ],
+      "block": "A",
+      "estimate_minutes": 180,
+      "difficulty": "Fundamental",
+      "fallback": "w03-thm-windows-fundamentals-1",
+      "notes": "No prerequisites per the preview. The estimate is a registry planning figure sized to the block, not a provider figure. Keep module answers out of the student view."
+    },
+    {
+      "id": "w03-htb-intro-windows-command-line",
+      "url": "https://academy.hackthebox.com/course/preview/introduction-to-windows-command-line",
+      "provider": "HTB Academy",
+      "title": "Introduction to Windows Command Line",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier not confirmed: one search summary placed the module under a 'General Fundamental Tier 0' heading of the CJCA certification page, but the scraped labels were misaligned. Check for the 'Start Module (Free)' button. Paid tiers as shown in search results for hackthebox.com/blog/new-academy-pricing and help article 13677074 'Academy Subscriptions': subscriptions became tier-based on October 12 (the year 2026 is inferred from the age of the post, about 75 days on 2026-11-18); Student 10 USD/month and Silver 30 USD/month cover Tier 0-II, Gold 95 USD/month Tier 0-III, Platinum 125 USD/month Tier 0-IV; single modules can still be unlocked with Cubes.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: HTB Academy \"Introduction to Windows Command Line\" course PowerShell CMD module tier (academy.hackthebox.com). Result title 'Introduction to Windows Command Line Course' at this URL; result text: 23 sections, covers Command Prompt and PowerShell, difficulty shown as Easy (one listing showed Medium).",
+      "version": "as listed 2026-11-18; indexed snapshot several years old",
+      "topics": [
+        "cmd.exe",
+        "PowerShell cmdlets and modules",
+        "object pipeline",
+        "administration from the command line"
+      ],
+      "suggested_days": [
+        "D11",
+        "D14"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": "Easy",
+      "fallback": "w03-thm-windows-command-line",
+      "notes": "Prerequisite per the preview: Windows Fundamentals. The estimate is a registry planning figure sized to the block, not a provider figure. Only Tier 0 module answers fall under the HTB definition of Retired Content; do not publish answers of this module unless its tier is confirmed as 0."
+    },
+    {
+      "id": "w03-htb-intro-active-directory",
+      "url": "https://academy.hackthebox.com/course/preview/introduction-to-active-directory",
+      "provider": "HTB Academy",
+      "title": "Introduction to Active Directory",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier not confirmed: two searches on HTB domains showed the difficulty label 'Fundamental' but no tier. Check for the 'Start Module (Free)' button. Paid tiers as shown in search results for hackthebox.com/blog/new-academy-pricing and help article 13677074 'Academy Subscriptions': subscriptions became tier-based on October 12 (the year 2026 is inferred from the age of the post, about 75 days on 2026-11-18); Student 10 USD/month and Silver 30 USD/month cover Tier 0-II, Gold 95 USD/month Tier 0-III, Platinum 125 USD/month Tier 0-IV; single modules can still be unlocked with Cubes.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: HTB Academy \"Introduction to Active Directory\" module (academy.hackthebox.com). Result title 'Introduction to Active Directory Course' at this URL; result text: rated Fundamental; sections include Kerberos, DNS, LDAP, MSRPC, NTLM, Group Policy and two guided lab parts with hands-on AD administration tasks; 16 sections per the catalogue.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "AD structure and objects",
+        "Kerberos",
+        "NTLM",
+        "LDAP",
+        "Group Policy",
+        "rights and privileges",
+        "AD administration guided labs"
+      ],
+      "suggested_days": [
+        "D12",
+        "D15"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": "Fundamental",
+      "fallback": "w03-thm-active-directory-basics",
+      "notes": "Hosted equivalent of the D12 independent block (users, groups, OUs, policies) when the local domain controller is blocked; the protocol sections also fit D13 block A. Prerequisites per HTB listings: Introduction to Networking and Windows Fundamentals. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-htb-windows-event-logs-finding-evil",
+      "url": "https://academy.hackthebox.com/course/preview/windows-event-logs--finding-evil",
+      "provider": "HTB Academy",
+      "title": "Windows Event Logs & Finding Evil",
+      "kind": "MODULE",
+      "access": "UNKNOWN",
+      "access_note": "Tier not shown in the search results. Paid tiers as shown in search results for hackthebox.com/blog/new-academy-pricing and help article 13677074 'Academy Subscriptions': subscriptions became tier-based on October 12 (the year 2026 is inferred from the age of the post, about 75 days on 2026-11-18); Student 10 USD/month and Silver 30 USD/month cover Tier 0-II, Gold 95 USD/month Tier 0-III, Platinum 125 USD/month Tier 0-IV; single modules can still be unlocked with Cubes.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: HTB Academy \"Windows Event Logs & Finding Evil\" course (academy.hackthebox.com). Result title 'Windows Event Logs & Finding Evil Course' at this URL; result text: Medium difficulty, covers the anatomy of Windows Event Logs, Sysmon, Event Tracing for Windows and the Get-WinEvent cmdlet; ends with a skills assessment.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "Windows Event Log anatomy",
+        "Sysmon",
+        "ETW",
+        "Get-WinEvent",
+        "event correlation"
+      ],
+      "suggested_days": [
+        "D14"
+      ],
+      "block": "A",
+      "estimate_minutes": 120,
+      "difficulty": "Medium",
+      "fallback": "w03-ld-windows-fundamentals",
+      "notes": "Suggested prerequisites per the preview: Penetration Testing Process and Incident Handling Process. Use only the event-log and Get-WinEvent sections in week 3; the detection content returns in week 7. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-htb-starting-point",
+      "url": "https://help.hackthebox.com/en/articles/6007919-introduction-to-starting-point",
+      "provider": "Hack The Box",
+      "title": "Introduction to Starting Point",
+      "kind": "PATH",
+      "access": "MIXED",
+      "access_note": "Help article (search result): each of the three tiers mixes free machines with machines that are exclusive to VIP+ or HTB PRO; premium machines do not block progress. The HTB blog post 'Start Cybersecurity Awareness Month with our new Starting Point' names as free: Tier 0 Meow, Fawn, Dancing; Tier 2 Archetype, Shield, Pathfinder, Oopsie, Vaccine. That list is from the launch of the redesigned track and may have changed; the free status of the Tier 1 machine Responder was not confirmed. An HTB Labs account is needed.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Hack The Box help center \"Introduction to Starting Point\" tiers free VIP machines (help.hackthebox.com, hackthebox.com). Result title 'Introduction to Starting Point' at this URL; result text: three linear tiers; Tier 0 covers VPN connection, enumeration and service interaction; Tier 2 machines are multi-step with user.txt and root.txt.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "SMB enumeration",
+        "Windows services",
+        "official beginner track"
+      ],
+      "suggested_days": [
+        "D13",
+        "D15"
+      ],
+      "block": "C",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w03-thm-ad-basic-enumeration",
+      "notes": "Official beginner track. For week 3 use Dancing (Windows, SMB; D13) and Archetype (Windows; D15); the machine names come from the HTB blog, their pages were not seen in a search result. Starting Point machines count as Retired Content for write-ups. Spoiler policy: the HTB Acceptable Use Policy (effective 2026-04-01) and help article 5188925 allow published solutions only for Retired Content (retired Machines, Sherlocks and Challenges, Starting Point machines, Tier 0 Academy modules and the named Mini Pro Labs). Solutions, flags, hints or spoilers of ACTIVE content must not be published. Confirm the 'retired' status on the platform before a write-up enters the portfolio. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-htb-machine-active",
+      "url": "https://www.hackthebox.com/machines/active",
+      "provider": "Hack The Box",
+      "title": "Active (Easy)",
+      "kind": "MACHINE",
+      "access": "PAID",
+      "access_note": "HTB Labs tiers as shown in search results for help article 7257535 'HTB Labs Subscriptions': the Free plan has 20 active Machines and 80+ active Challenges; all retired Machines, Challenges and Sherlocks need VIP+ (25 USD/month or 223 USD/year) or HTB PRO (49 USD/month or 490 USD/year). The help article also mentions Guided Mode for free users in the two weeks after a machine retires and on 'Free Retired Machines'; no result showed Active in such a window.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: hackthebox.com/machines/active \"Active\" retired machine Easy Windows (hackthebox.com). Result title 'Active (Easy)' at this URL; result text: Windows machine, released 28/07/2018, retired, 'features two very prevalent techniques to gain privileges within an Active Directory environment'.",
+      "version": "retired machine, released 2018-07-28, as listed 2026-11-18",
+      "topics": [
+        "Active Directory",
+        "SMB shares",
+        "Kerberos",
+        "identity misconfiguration"
+      ],
+      "suggested_days": [
+        "D15"
+      ],
+      "block": "C",
+      "estimate_minutes": 150,
+      "difficulty": "Easy",
+      "fallback": "w03-htb-starting-point",
+      "notes": "RETIRED machine: a write-up is allowed, but keep it out of the exam answer key. Optional stretch target for the D15 unknown identity-misconfiguration assessment; the full attack chain belongs to week 10, so in week 3 the deliverable is the access matrix and the remediation, not an exploitation walkthrough. Spoiler policy: the HTB Acceptable Use Policy (effective 2026-04-01) and help article 5188925 allow published solutions only for Retired Content (retired Machines, Sherlocks and Challenges, Starting Point machines, Tier 0 Academy modules and the named Mini Pro Labs). Solutions, flags, hints or spoilers of ACTIVE content must not be published. Confirm the 'retired' status on the platform before a write-up enters the portfolio. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-htb-sherlock-campfire-1",
+      "url": "https://www.hackthebox.com/blog/kerberoasting-attack-detection",
+      "provider": "Hack The Box",
+      "title": "Campfire-1 (Sherlock), as introduced by the HTB blog post 'Kerberoasting attack detection'",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "The blog post calls it a free Sherlock with a guided mode, but the help centre says the Free plan covers active Sherlocks while all retired Sherlocks need VIP+ or HTB PRO. Which of the two applies today was not shown. HTB Labs tiers as shown in search results for help article 7257535 'HTB Labs Subscriptions': the Free plan has 20 active Machines and 80+ active Challenges; all retired Machines, Challenges and Sherlocks need VIP+ (25 USD/month or 223 USD/year) or HTB PRO (49 USD/month or 490 USD/year).",
+      "verification": "UNVERIFIED",
+      "evidence": "Queries: Hack The Box Sherlocks retired \"Campfire-1\" ...; Hack The Box blog \"Kerberoasting attack detection\" Sherlock ... (hackthebox.com, help.hackthebox.com, labs.hackthebox.com). Results: blog post 'Kerberoasting attack detection' at this URL names the Very Easy Sherlock 'Camp Fire 1' (domain controller logs and endpoint artifacts, filter on event ID 4769); an achievement page on labs.hackthebox.com is titled 'Solved Campfire-1 from Hack The Box!'. NOT confirmed: the retired status and a canonical Sherlock URL.",
+      "version": "state not confirmed on 2026-11-18 (retired or active unknown)",
+      "topics": [
+        "Kerberos service ticket events",
+        "event ID 4769",
+        "domain controller security log",
+        "event correlation"
+      ],
+      "suggested_days": [
+        "D14"
+      ],
+      "block": "C",
+      "estimate_minutes": 90,
+      "difficulty": "Very Easy",
+      "fallback": "w03-thm-windows-logging-for-soc",
+      "notes": "Do not assign and never publish answers until the Sherlock shows as RETIRED in HTB Labs. Spoiler policy: the HTB Acceptable Use Policy (effective 2026-04-01) and help article 5188925 allow published solutions only for Retired Content (retired Machines, Sherlocks and Challenges, Starting Point machines, Tier 0 Academy modules and the named Mini Pro Labs). Solutions, flags, hints or spoilers of ACTIVE content must not be published. Confirm the 'retired' status on the platform before a write-up enters the portfolio. The download contains real artifacts: analyse them only inside the isolated analysis VM. A sibling post 'LLMNR poisoning attack detection' (hackthebox.com/blog/llmnr-poisoning-attack-detection) introduces the Sherlock Noxious; its status was not confirmed either. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-htb-writeup-guidelines",
+      "url": "https://help.hackthebox.com/en/articles/5188925-streaming-writeups-walkthrough-guidelines",
+      "provider": "Hack The Box",
+      "title": "Streaming / Writeups / Walkthrough Guidelines",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public help centre article, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Hack The Box rules publishing write-ups active machines prohibited retired only (help.hackthebox.com, hackthebox.com). Result title 'Streaming / Writeups / Walkthrough Guidelines' at this URL; result text: publishing solutions of unauthorized content is a ToS violation; a machine can be active and 'expired' at once, so the 'retired' status must be confirmed first. Companion results: 'Hack The Box Platform Rules' (help article 12325897) and the Acceptable Use Policy PDF effective 01 April 2026.",
+      "version": "as listed 2026-11-18; AUP effective 2026-04-01",
+      "topics": [
+        "spoiler policy",
+        "portfolio rules",
+        "retired versus active content"
+      ],
+      "suggested_days": [
+        "D11",
+        "D12",
+        "D13",
+        "D14",
+        "D15"
+      ],
+      "block": "D",
+      "estimate_minutes": 10,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Read once before the first HTB exercise of the programme; it governs every HTB entry of this registry."
+    },
+    {
+      "id": "w03-thm-windows-fundamentals-1",
+      "url": "https://tryhackme.com/room/windowsfundamentals1xbx",
+      "provider": "TryHackMe",
+      "title": "Windows Fundamentals 1",
+      "kind": "ROOM",
+      "access": "FREE_ACCOUNT",
+      "access_note": "TryHackMe's 2026 guide (tryhackme.com/resources/blog/free-red-teaming-training-on-tryhackme-to-build-your-skills-in-2026) lists Windows Fundamentals 1 and 2, Windows Command Line and Active Directory Basics and states that every room listed is free with a TryHackMe account; a search summary also reported the room page as marked free. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: TryHackMe room \"Windows Fundamentals 1\" windowsfundamentals1xbx (tryhackme.com). This URL was returned; result text: part 1 of the Windows Fundamentals module, covering the desktop, NTFS, UAC, the Control Panel and Task Manager on a Windows Server 2019 VM. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "Windows desktop",
+        "NTFS",
+        "UAC",
+        "local accounts",
+        "Task Manager"
+      ],
+      "suggested_days": [
+        "D11"
+      ],
+      "block": "A",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w03-ld-windows-fundamentals",
+      "notes": "Windows Fundamentals 2 (tryhackme.com/room/windowsfundamentals2x0x, same free listing) and Windows Fundamentals 3 (tryhackme.com/room/windowsfundamentals3xzx, tier not shown) were also returned. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-thm-windows-command-line",
+      "url": "https://tryhackme.com/room/windowscommandline",
+      "provider": "TryHackMe",
+      "title": "Windows Command Line",
+      "kind": "ROOM",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Named in TryHackMe's 2026 guide (free-red-teaming-training-on-tryhackme-to-build-your-skills-in-2026), which states that every room listed is free with a TryHackMe account. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: TryHackMe \"Windows Command Line\" room cmd.exe basic commands ... tryhackme.com/room/windowscommandline (tryhackme.com). This URL was returned; result text: cmd.exe basics, system information, network configuration, file and folder management, tasklist and taskkill; prerequisite: the Windows and AD Fundamentals module. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "cmd.exe",
+        "systeminfo",
+        "ipconfig and netstat",
+        "file management",
+        "process listing"
+      ],
+      "suggested_days": [
+        "D11"
+      ],
+      "block": "B",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Part of the TryHackMe 'Command Line' module together with Windows PowerShell. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-thm-windows-powershell",
+      "url": "https://tryhackme.com/room/windowspowershell",
+      "provider": "TryHackMe",
+      "title": "Windows PowerShell",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium/MAX. TryHackMe's own posts say that most Windows content sits behind Premium or MAX, so check the room page before assigning it.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: tryhackme.com/room/windowspowershell \"Windows PowerShell\" room tasks cmdlets (tryhackme.com). This URL was returned; result text: room titled 'Windows PowerShell', nine tasks including navigating the file system, piping, filtering and sorting data, system and network information, real-time system analysis and scripting. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "PowerShell basics",
+        "object pipeline",
+        "filtering and sorting",
+        "system information",
+        "scripting"
+      ],
+      "suggested_days": [
+        "D11",
+        "D14"
+      ],
+      "block": "B",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w03-thm-windows-command-line",
+      "notes": "Matches the D11 tool block (object pipeline) and the D14 scripting lesson. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-thm-core-windows-processes",
+      "url": "https://tryhackme.com/room/btwindowsinternals",
+      "provider": "TryHackMe",
+      "title": "Core Windows Processes",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium/MAX. TryHackMe's own posts say that most Windows content sits behind Premium or MAX, so check the room page before assigning it.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: TryHackMe \"Core Windows Processes\" room btwindowsinternals OR \"Windows Internals\" room (tryhackme.com). This URL was returned; result text: 'Explore the core processes within a Windows operating system and understand what normal behaviour is'; tasks on Task Manager, System, smss.exe, csrss.exe, wininit.exe, services.exe, svchost.exe, lsass.exe, winlogon.exe and explorer.exe. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "process tree",
+        "parent-child relationships",
+        "services.exe and svchost.exe",
+        "lsass.exe"
+      ],
+      "suggested_days": [
+        "D11"
+      ],
+      "block": "C",
+      "estimate_minutes": 60,
+      "difficulty": null,
+      "fallback": "w03-utw-century",
+      "notes": "Hosted counterpart of the D11 independent process, user and service inventory. A separate room 'Windows Internals' (tryhackme.com/room/windowsinternals: processes, threads, virtual memory, DLLs, PE format) was also returned; tier not shown. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-thm-active-directory-basics",
+      "url": "https://tryhackme.com/room/winadbasics",
+      "provider": "TryHackMe",
+      "title": "Active Directory Basics",
+      "kind": "ROOM",
+      "access": "FREE_ACCOUNT",
+      "access_note": "TryHackMe's 2026 guide (free-red-teaming-training-on-tryhackme-to-build-your-skills-in-2026) lists Active Directory Basics in its AD section and states that every room listed is free with a TryHackMe account. The guide's link target was not shown: two slugs exist (winadbasics, nine tasks; winadbasicsrevamp, twelve tasks), so confirm on the room page which one the free listing points to. Free accounts get the AttackBox for one hour per day (help.tryhackme.com 'The AttackBox Explained'); the own-VPN route is the alternative.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: TryHackMe room \"Active Directory Basics\" winadbasics (tryhackme.com). This URL was returned; result text: introduces the basic concepts and functionality of Active Directory in nine tasks (Windows domains, managing users and computers, Group Policies, authentication methods, trees, forests and trusts). The same search returned tryhackme.com/room/winadbasicsrevamp (twelve tasks; adds creating a new domain, domain-joining a computer and a foreign forest trust). The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18; a revamped version exists under a second slug",
+      "topics": [
+        "Windows domains",
+        "users, groups and OUs",
+        "delegation",
+        "Group Policy",
+        "Kerberos and NetNTLM overview",
+        "trees, forests and trusts"
+      ],
+      "suggested_days": [
+        "D12",
+        "D15"
+      ],
+      "block": "B",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w03-ms-adds-install",
+      "notes": "Hosted alternative for the D12 tool block when the disposable domain controller cannot be built; the revamped version is the closer match because it includes creating a domain and joining a computer. First room of the module 'Active Directory Security Testing Basics' (tryhackme.com/module/active-directory-security-testing-basics). The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-thm-intro-ad-authentication",
+      "url": "https://tryhackme.com/room/introtoactivedirectoryauthentication",
+      "provider": "TryHackMe",
+      "title": "Intro to AD Authentication",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium/MAX. TryHackMe's own posts say that most Windows content sits behind Premium or MAX, so check the room page before assigning it.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: TryHackMe room \"Intro to AD Authentication\" introtoactivedirectoryauthentication Kerberos NTLM tasks (tryhackme.com). This URL was returned; result text: covers NTLM and Kerberos and gives hands-on practice identifying the protocol used during a live session; Task 3 NTLM challenge-response, Task 4 Kerberos (KDC, AS-REQ/AS-REP, TGS), Task 5 weaknesses of both protocols. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "NTLM challenge-response",
+        "Kerberos TGT and service tickets",
+        "KDC",
+        "SMB access with each protocol"
+      ],
+      "suggested_days": [
+        "D13"
+      ],
+      "block": "A",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w03-ms-kerberos-overview",
+      "notes": "Second room of the module 'Active Directory Security Testing Basics'. Task 5 mentions credential cracking: in week 3 read it for the limitation of each protocol only; attack practice is week 10. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-thm-ad-basic-enumeration",
+      "url": "https://tryhackme.com/room/adbasicenumeration",
+      "provider": "TryHackMe",
+      "title": "AD: Basic Enumeration",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium/MAX. TryHackMe's own posts say that most Windows content sits behind Premium or MAX, so check the room page before assigning it.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: TryHackMe module \"Active Directory Security Testing Basics\" rooms ... (tryhackme.com). This URL was returned and the module page lists the room as 'AD: Basic Enumeration'; result text: port table with LDAP 389 and Kerberos 88, enumeration of AD objects, users and policies, Kerbrute user enumeration and password spraying. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "LDAP",
+        "SMB",
+        "Kerberos port 88",
+        "enumeration of users and policies"
+      ],
+      "suggested_days": [
+        "D13"
+      ],
+      "block": "C",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w03-htb-starting-point",
+      "notes": "Hosted independent exercise for D13 (find an excessive directory or resource permission). The room contains user enumeration and password spraying against its own hosted lab: those steps stay inside the room's target and are never repeated elsewhere. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-thm-windows-event-logs",
+      "url": "https://tryhackme.com/room/windowseventlogs",
+      "provider": "TryHackMe",
+      "title": "Windows Event Logs",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium/MAX. TryHackMe's own posts say that most Windows content sits behind Premium or MAX, so check the room page before assigning it.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: TryHackMe \"Windows Event Logs\" room ... Event Viewer wevtutil Get-WinEvent XPath (tryhackme.com). This URL was returned on the third attempt; result text: Task 2 Event Viewer, Task 3 wevtutil.exe, Task 4 Get-WinEvent, Task 5 XPath Queries, Task 6 Event IDs, Task 7 Putting theory into practice. Other rooms name it 'Windows Event Logs' as their prerequisite. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18; the indexed page was flagged as old",
+      "topics": [
+        "Event Viewer",
+        "wevtutil",
+        "Get-WinEvent",
+        "XPath filters",
+        "event IDs"
+      ],
+      "suggested_days": [
+        "D14"
+      ],
+      "block": "B",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w03-ms-get-winevent",
+      "notes": "Guided tool practice for the D14 account and group audit. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-thm-windows-logging-for-soc",
+      "url": "https://tryhackme.com/room/windowsloggingforsoc",
+      "provider": "TryHackMe",
+      "title": "Windows Logging for SOC",
+      "kind": "ROOM",
+      "access": "UNKNOWN",
+      "access_note": "No search result on tryhackme.com showed whether this room is free or Premium/MAX. TryHackMe's own posts say that most Windows content sits behind Premium or MAX, so check the room page before assigning it.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: TryHackMe room \"Windows Logging for SOC\" windowsloggingforsoc Security event log Sysmon (tryhackme.com). This URL was returned; result text: Security log events 4624 and 4625, account management events such as 4720 and 4732, Security 4688 compared with Sysmon Event ID 1, Sysmon events 11, 13, 3 and 22; practice files Practice-Security.evtx and Practice-Sysmon.evtx. The result title field is the generic 'TryHackMe'; the room name comes from the result text.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "logon events 4624 and 4625",
+        "account management events",
+        "process creation 4688 versus Sysmon 1",
+        "Sysmon operational log"
+      ],
+      "suggested_days": [
+        "D14"
+      ],
+      "block": "C",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w03-thm-windows-event-logs",
+      "notes": "Hosted independent exercise for D14 (correlate user action, process and security records). It also shows the plan's telemetry caveat in practice: Security event IDs and Sysmon event IDs are different number spaces. The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-ms-adds-install",
+      "url": "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/deploy/install-active-directory-domain-services--level-100-",
+      "provider": "Microsoft Learn",
+      "title": "Install Active Directory Domain Services on Windows Server",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public Microsoft Learn documentation page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Learn \"Install Active Directory Domain Services (Level 100)\" windows-server identity ad-ds deploy (learn.microsoft.com). Result title 'Install Active Directory Domain Services on Windows Server' at this URL; result text: install by PowerShell (ADDSDeployment cmdlets), Server Manager or a staged RODC; required group memberships per operation; examples reference Windows Server 2025 forest and domain modes.",
+      "version": "as listed 2026-11-18; examples reference Windows Server 2025",
+      "topics": [
+        "AD DS role installation",
+        "new forest",
+        "DNS",
+        "DSRM password",
+        "required credentials"
+      ],
+      "suggested_days": [
+        "D12"
+      ],
+      "block": "B",
+      "estimate_minutes": 45,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "The plan's URL is valid; the page title no longer contains '(Level 100)'. Use it only for the disposable forest corp.g9.test inside the isolated lab."
+    },
+    {
+      "id": "w03-ms-group-policy-overview",
+      "url": "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/group-policy/group-policy-overview",
+      "provider": "Microsoft Learn",
+      "title": "Group Policy overview for Windows Server",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public Microsoft Learn documentation page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Learn \"Group Policy overview\" Windows Server group-policy-overview (learn.microsoft.com). Result title 'Group Policy overview for Windows Server' at this URL; result text: GPOs link to sites, domains and OUs; computer policy applies at startup and user policy at sign-in; background refresh. Sibling results: 'Group Policy processing for Windows' (.../group-policy/group-policy-processing: local, site, domain, OU order) and 'DNS and AD DS' (.../ad-ds/plan/dns-and-ad-ds).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "GPO scope",
+        "link order",
+        "processing and refresh",
+        "OUs"
+      ],
+      "suggested_days": [
+        "D12"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Mechanism reference for the D12 lesson and for the GPO verification in block D."
+    },
+    {
+      "id": "w03-ms-activedirectory-module",
+      "url": "https://learn.microsoft.com/en-us/powershell/module/activedirectory/?view=windowsserver2025-ps",
+      "provider": "Microsoft Learn",
+      "title": "ActiveDirectory Module",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public Microsoft Learn documentation page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Learn ActiveDirectory PowerShell module Get-ADUser Get-ADGroupMember reference windowsserver2025-ps (learn.microsoft.com). Result title 'ActiveDirectory Module' at this URL; the same search returned 'Get-ADUser (ActiveDirectory)' and 'Get-ADGroupMember (ActiveDirectory)' under .../module/activedirectory/ with view=windowsserver2025-ps; result text: Get-ADGroupMember -Recursive returns nested members.",
+      "version": "view windowsserver2025-ps, as listed 2026-11-18",
+      "topics": [
+        "Get-ADUser",
+        "Get-ADGroupMember",
+        "group nesting",
+        "LDAP filters"
+      ],
+      "suggested_days": [
+        "D12",
+        "D14",
+        "D15"
+      ],
+      "block": "B",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Reference for the account and group audit script (D14) and the domain access matrix (D15)."
+    },
+    {
+      "id": "w03-ms-kerberos-overview",
+      "url": "https://learn.microsoft.com/en-us/windows-server/security/kerberos/kerberos-authentication-overview",
+      "provider": "Microsoft Learn",
+      "title": "Kerberos authentication overview in Windows Server",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public Microsoft Learn documentation page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Learn \"Kerberos authentication overview\" Windows Server security kerberos (learn.microsoft.com). Result title 'Kerberos authentication overview in Windows Server' at this URL; result text: KDC on every domain controller, ticket-granting ticket then service ticket, Kerberos V5 with Microsoft extensions; in Windows Server 2025 Kerberos no longer honours the legacy SupportedEncryptionTypes registry value. Related result: 'Detect and Remediate RC4 Usage in Kerberos' (.../security/kerberos/detect-remediate-rc4-kerberos).",
+      "version": "as listed 2026-11-18; page metadata about two months old",
+      "topics": [
+        "KDC",
+        "TGT",
+        "service tickets",
+        "encryption types",
+        "authentication versus authorization"
+      ],
+      "suggested_days": [
+        "D13"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Authoritative text for the gate question 'explain Kerberos versus authorization'."
+    },
+    {
+      "id": "w03-ms-ntlm-deprecation",
+      "url": "https://learn.microsoft.com/en-us/windows/whats-new/deprecated-features",
+      "provider": "Microsoft Learn",
+      "title": "Deprecated features in the Windows client",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public Microsoft Learn documentation page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Learn \"NTLM overview\" Windows Server security OR \"Disabling NTLM\" deprecation (learn.microsoft.com). Result title 'Deprecated features in the Windows client' at this URL; result text: all NTLM versions (LANMAN, NTLMv1, NTLMv2) are no longer under active development, deprecation announced June 2024; NTLMv1 is removed starting with Windows 11 version 24H2 and Windows Server 2025; Microsoft recommends Negotiate. Related result: 'Block NTLM connections on SMB in Windows Server 2025' (.../windows-server/storage/file-server/smb-ntlm-blocking). The page titled 'NTLM overview' itself was not returned.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "NTLM limitations",
+        "NTLMv1 removal",
+        "Negotiate",
+        "SMB NTLM blocking"
+      ],
+      "suggested_days": [
+        "D13"
+      ],
+      "block": "A",
+      "estimate_minutes": 20,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Version-sensitive: older course material that treats NTLMv1 as present on current Windows is out of date."
+    },
+    {
+      "id": "w03-ms-smb-overview",
+      "url": "https://learn.microsoft.com/en-us/windows-server/storage/file-server/file-server-smb-overview",
+      "provider": "Microsoft Learn",
+      "title": "What is SMB File Sharing for Windows and Windows Server?",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public Microsoft Learn documentation page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Learn \"Overview of file sharing using the SMB 3 protocol in Windows Server\" file-server-smb-overview (learn.microsoft.com). Result title 'What is SMB File Sharing for Windows and Windows Server?' at this URL (the older title was 'Overview of file sharing using the SMB 3 protocol'); result text: dialect table, SMB 3.1.1 on Windows 10 1607 and Windows Server 2016 and later. Related results: 'SMB Security Enhancements' (.../file-server/smb-security) and 'Overview of Server Message Block signing in Windows' (.../file-server/smb-signing-overview).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "SMB dialects",
+        "shares",
+        "SMB signing and encryption"
+      ],
+      "suggested_days": [
+        "D13"
+      ],
+      "block": "A",
+      "estimate_minutes": 20,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "No official Microsoft Learn page on 'share versus NTFS permissions' was found; see gaps."
+    },
+    {
+      "id": "w03-ms-access-tokens",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/secauthz/access-tokens",
+      "provider": "Microsoft Learn",
+      "title": "Access Tokens - Win32 apps",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public Microsoft Learn documentation page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Learn \"Access tokens\" Win32 secauthz AND \"Access control overview\" ... (learn.microsoft.com). Result title 'Access Tokens - Win32 apps' at this URL; result text: the system produces an access token at logon; every process has a primary token. Related results: 'How AccessCheck Works' (.../win32/secauthz/how-dacls-control-access-to-an-object) and 'Security Principals' (.../windows-server/identity/ad-ds/manage/understand-security-principals).",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "access tokens",
+        "SIDs",
+        "privileges",
+        "DACL and ACE evaluation"
+      ],
+      "suggested_days": [
+        "D11",
+        "D13"
+      ],
+      "block": "B",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Mechanism reference for 'inspect authentication records and access tokens' (D13 block B)."
+    },
+    {
+      "id": "w03-ms-process-explorer",
+      "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/process-explorer",
+      "provider": "Microsoft Learn",
+      "title": "Process Explorer v17.21 - Sysinternals",
+      "kind": "TOOL",
+      "access": "FREE",
+      "access_note": "Sysinternals download page on Microsoft Learn, indexed without sign-in; the result text mentions the Sysinternals Live 'Run now' option.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Learn Sysinternals \"Process Explorer\" downloads AND \"Process Monitor\" procmon (learn.microsoft.com). The path /sysinternals/downloads/process-explorer was returned under the cs-cz, pl-pl and ru-ru locales with the title 'Process Explorer v17.21 - Sysinternals'; the en-us locale of the same path was not among the results. Result text: about 3.7 MB, dated November 5, 2026.",
+      "version": "v17.21 (page dated 2026-11-05 in the localized results)",
+      "topics": [
+        "process tree",
+        "handles and DLLs",
+        "token and privileges view",
+        "services"
+      ],
+      "suggested_days": [
+        "D11"
+      ],
+      "block": "B",
+      "estimate_minutes": 40,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Run only inside the Windows lab guest. Version seen on localized pages; confirm on the en-us page."
+    },
+    {
+      "id": "w03-ms-process-monitor",
+      "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/procmon",
+      "provider": "Microsoft Learn",
+      "title": "Process Monitor - Sysinternals",
+      "kind": "TOOL",
+      "access": "FREE",
+      "access_note": "Sysinternals download page on Microsoft Learn, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Learn Sysinternals \"Process Explorer\" downloads AND \"Process Monitor\" procmon (learn.microsoft.com). Result title 'Process Monitor - Sysinternals' at this URL; result text: v4.13, 3.1 MB, monitors file system, Registry, process, thread and DLL activity in real time; runs on Windows 11 and Windows Server 2019 and later.",
+      "version": "v4.13, as listed 2026-11-18",
+      "topics": [
+        "registry and file activity",
+        "process and thread events",
+        "filters"
+      ],
+      "suggested_days": [
+        "D11"
+      ],
+      "block": "B",
+      "estimate_minutes": 40,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Run only inside the Windows lab guest."
+    },
+    {
+      "id": "w03-ms-about-pipelines",
+      "url": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_pipelines?view=powershell-7.6",
+      "provider": "Microsoft Learn",
+      "title": "about_Pipelines - PowerShell",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public Microsoft Learn documentation page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Learn PowerShell about_Pipelines AND \"PowerShell 101\" ... (learn.microsoft.com). Result title 'about_Pipelines - PowerShell' at this URL; result text: pipeline operators, parameter binding by value and by property name. Related result: training module 'Understand the Windows PowerShell pipeline' (learn.microsoft.com/en-us/training/modules/understand-windows-powershell-pipeline/). No 'PowerShell 101' page was returned.",
+      "version": "view powershell-7.6, as listed 2026-11-18",
+      "topics": [
+        "object pipeline",
+        "ByValue and ByPropertyName binding"
+      ],
+      "suggested_days": [
+        "D11",
+        "D14"
+      ],
+      "block": "B",
+      "estimate_minutes": 20,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "The view parameter selects PowerShell 7.6; Windows PowerShell 5.1 on the lab server may differ in details."
+    },
+    {
+      "id": "w03-ms-get-winevent",
+      "url": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.diagnostics/get-winevent?view=powershell-7.6",
+      "provider": "Microsoft Learn",
+      "title": "Get-WinEvent (Microsoft.PowerShell.Diagnostics) - PowerShell",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public Microsoft Learn documentation page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Learn Get-WinEvent Microsoft.PowerShell.Diagnostics cmdlet reference (learn.microsoft.com). Result title 'Get-WinEvent (Microsoft.PowerShell.Diagnostics) - PowerShell' at this URL (also with view=powershell-5.1); result text: parameter sets LogName, ListLog, ProviderName, Path, FilterHashtable, FilterXml; newest events first. Related result: 'Creating Get-WinEvent queries with FilterHashtable' (.../powershell/scripting/samples/creating-get-winevent-queries-with-filterhashtable).",
+      "version": "views powershell-7.6 and powershell-5.1, as listed 2026-11-18",
+      "topics": [
+        "Get-WinEvent",
+        "FilterHashtable",
+        "XPath and XML filters"
+      ],
+      "suggested_days": [
+        "D14"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Reference for the sample Get-WinEvent output the plan asks for in the week 3 expansion points."
+    },
+    {
+      "id": "w03-ms-advanced-audit-policy",
+      "url": "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices/advanced-audit-policy-configuration",
+      "provider": "Microsoft Learn",
+      "title": "Advanced Audit Policy Configuration settings",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public Microsoft Learn documentation page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Learn \"Advanced security audit policy settings\" Windows OR \"Advanced Audit Policy Configuration\" ... (learn.microsoft.com). Result title 'Advanced Audit Policy Configuration settings' at this URL; result text: subcategories by category, default values, event volume; event 4769 volume is High on a KDC and the default is Not configured. Related result: 'Appendix L - Events to Monitor' (.../ad-ds/plan/appendix-l--events-to-monitor). Several other audit pages are now under /previous-versions/.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "audit subcategories",
+        "defaults",
+        "Logon/Logoff",
+        "Account Management",
+        "DS Access"
+      ],
+      "suggested_days": [
+        "D14"
+      ],
+      "block": "A",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Use it to check which events the lab can expect before the correlation exercise; an event that is not audited is a finding of block D, not a tool failure."
+    },
+    {
+      "id": "w03-ms-event-4624",
+      "url": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4624",
+      "provider": "Microsoft Learn",
+      "title": "4624(S) An account was successfully logged on. - Windows 10",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public Microsoft Learn documentation page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Learn \"4624(S): An account was successfully logged on\" AND \"4769(S, F): A Kerberos service ticket was requested\" event auditing (learn.microsoft.com). Result title '4624(S) An account was successfully logged on. - Windows 10' at this URL; result text: generated on the computer that was accessed; its Logon GUID links to event 4769 on a domain controller. The 4769 page was returned under /previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4769 and notes an updated 4769 format after the 2025-01-14 cumulative update.",
+      "version": "as listed 2026-11-18; the title still says Windows 10",
+      "topics": [
+        "logon types",
+        "Logon GUID",
+        "correlation of 4624 with 4769"
+      ],
+      "suggested_days": [
+        "D14"
+      ],
+      "block": "C",
+      "estimate_minutes": 30,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Field reference for the D14 correlation of a user action with process and security records."
+    },
+    {
+      "id": "w03-ms-sysmon-events",
+      "url": "https://learn.microsoft.com/en-us/windows/security/operating-system-security/sysmon/sysmon-events",
+      "provider": "Microsoft Learn",
+      "title": "Sysmon events",
+      "kind": "DOCS",
+      "access": "FREE",
+      "access_note": "Public Microsoft Learn documentation page, indexed without sign-in.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Learn Sysmon events \"Event ID 3: Network connection\" \"disabled by default\" ... (learn.microsoft.com). Result title 'Sysmon events' at this URL; result text: Event ID 3 (network connection) is disabled by default and should be enabled selectively. Sibling results: 'Sysmon - Sysinternals' (learn.microsoft.com/en-us/sysinternals/downloads/sysmon), 'Sysmon Overview', 'Sysmon configuration files' and 'Read and tune Sysmon events on Windows' under the same /sysmon/ path.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "Sysmon event IDs",
+        "Event ID 3 default",
+        "Security log versus Sysmon"
+      ],
+      "suggested_days": [
+        "D14"
+      ],
+      "block": "D",
+      "estimate_minutes": 20,
+      "difficulty": null,
+      "fallback": null,
+      "notes": "Supports the plan's telemetry caveat: confirm the audit policy and the Sysmon configuration before expecting an event."
+    },
+    {
+      "id": "w03-ms-windows-server-2025-evaluation",
+      "url": "https://www.microsoft.com/en-us/evalcenter/download-windows-server-2025",
+      "provider": "Microsoft",
+      "title": "Windows Server 2025",
+      "kind": "TOOL",
+      "access": "FREE_ACCOUNT",
+      "access_note": "Microsoft Evaluation Center (search result): registration is required before the download, at no charge; the evaluation edition expires in 180 days. The registration is a form, not a platform account.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Microsoft Evaluation Center Windows Server 2025 evaluation 180 days download (microsoft.com, learn.microsoft.com). Result title 'Windows Server 2025' at this URL; result text: 'This evaluation edition expires in 180 days'; ISO in several languages and a 64-bit VHD; 'Evaluation versions of Windows Server must be activated over the internet in the first 10 days to avoid automatic shutdown'.",
+      "version": "Windows Server 2025 evaluation, 180 days, as listed 2026-11-18",
+      "topics": [
+        "evaluation licence",
+        "disposable domain controller"
+      ],
+      "suggested_days": [
+        "D12"
+      ],
+      "block": "B",
+      "estimate_minutes": null,
+      "difficulty": null,
+      "fallback": "w03-thm-active-directory-basics",
+      "notes": "Licence caveat for the isolated lab: the result text says an evaluation must be activated over the internet within 10 days, which conflicts with a guest that has no internet route. Decide this in the lab design before D12. The download and any activation step are host changes that need separate approval. The workstation image (Windows 11 Enterprise evaluation) was not checked; see gaps."
+    },
+    {
+      "id": "w03-cd-kerberoasted",
+      "url": "https://cyberdefenders.org/blueteam-ctf-challenges/kerberoasted/",
+      "provider": "CyberDefenders",
+      "title": "Kerberoasted",
+      "kind": "CHALLENGE",
+      "access": "UNKNOWN",
+      "access_note": "The tier of this lab was not shown. CyberDefenders help centre (search results): Free Labs are open to all users, selected Pro Labs are 'Trial' labs with a one-time total of 5 hours per account (article about two years old), other labs need a paid plan; the lab list marks some labs PREMIUM.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: cyberdefenders.org blueteam-ctf-challenges kerberoasted lab Threat Hunting Medium (cyberdefenders.org). This URL was returned with the page title 'Blue team CTF Challenges'; result text and the Threat Hunting track page name the lab 'Kerberoasted': Medium, 60 minutes, 9 questions, Splunk and ELK, investigate Kerberos logs and identify compromised accounts.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "Kerberos logs",
+        "event ID 4769",
+        "service accounts",
+        "SIEM queries"
+      ],
+      "suggested_days": [
+        "D14",
+        "D15"
+      ],
+      "block": "C",
+      "estimate_minutes": 60,
+      "difficulty": "Medium",
+      "fallback": "w03-thm-windows-logging-for-soc",
+      "notes": "Provider-stated duration 60 minutes. Stretch option: it assumes SIEM query skills that the plan teaches in week 7. CyberDefenders publishes official walkthroughs for some labs under cyberdefenders.org/walkthroughs/: do not open one during the independent block."
+    },
+    {
+      "id": "w03-ld-windows-fundamentals",
+      "url": "https://app.letsdefend.io/training/lessons/windows-fundamentals",
+      "provider": "LetsDefend",
+      "title": "Windows Fundamentals - LetsDefend",
+      "kind": "MODULE",
+      "access": "FREE_ACCOUNT",
+      "access_note": "The course listing in the search result is marked free and asks only for a valid LetsDefend user.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: LetsDefend course \"Windows Fundamentals\" OR \"Active Directory\" OR \"Windows Event Logs\" training free (letsdefend.io, app.letsdefend.io). Result title 'Windows Fundamentals - LetsDefend' at this URL; result text: covers users, services, the registry, firewall basics and Windows event logs.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "Windows users and services",
+        "registry",
+        "Windows event logs",
+        "firewall basics"
+      ],
+      "suggested_days": [
+        "D11",
+        "D14"
+      ],
+      "block": "A",
+      "estimate_minutes": 90,
+      "difficulty": null,
+      "fallback": "w03-thm-windows-fundamentals-1",
+      "notes": "Hack The Box announced the acquisition of LetsDefend on 2025-09-16 and has imported LetsDefend courses into HTB Academy (for example 'Windows Fundamentals (LetsDefend) Course' at academy.hackthebox.com/course/preview/windows-fundamentals-letsdefend) and Sherlocks into HTB Labs. Whether new sign-ups continue on letsdefend.io was not shown. Other LetsDefend courses returned without a free tag: 'Event Log Analysis' and 'Hunting AD Attacks' (both rated hard). The estimate is a registry planning figure sized to the block, not a provider figure."
+    },
+    {
+      "id": "w03-utw-century",
+      "url": "https://underthewire.tech/wargames/century/15",
+      "provider": "Under the Wire",
+      "title": "Century 15 - underthewire-react",
+      "kind": "WARGAME",
+      "access": "UNKNOWN",
+      "access_note": "No result on underthewire.tech stated the access conditions. A third-party write-up says the level credentials are handed out in the project's Slack; that is not provider evidence.",
+      "verification": "SEARCH_CHECKED",
+      "evidence": "Query: Under the Wire Century wargame PowerShell (underthewire.tech). One result: 'Century 15 - underthewire-react' at this URL, with the site tagline 'PowerShell Training for the People'. The landing page of the Century wargame and level 0 were not among the results.",
+      "version": "as listed 2026-11-18",
+      "topics": [
+        "PowerShell over SSH",
+        "cmdlet discovery",
+        "Windows administration tasks"
+      ],
+      "suggested_days": [
+        "D11",
+        "D14"
+      ],
+      "block": "C",
+      "estimate_minutes": 120,
+      "difficulty": null,
+      "fallback": "w03-thm-windows-powershell",
+      "notes": "The only URL seen is the page of level 15; start at the first Century level through the site's own navigation. PowerShell counterpart of OverTheWire Bandit, which the learner knows from week 1. Per third-party write-ups the game is played over SSH to the provider's hosts, which needs an approved outbound connection. The estimate is a registry planning figure sized to the block, not a provider figure."
+    }
+  ],
+  "plan_fact_checks": [
+    {
+      "claim": "HTB path duration: CPTS (Penetration Tester) path estimate 342 h and SOC Analyst path 189 h (plan section 4 and section 16 item 1).",
+      "result": "CONFIRMED",
+      "evidence": "Query: help.hackthebox.com \"Academy Modules & Paths\" Penetration Tester path estimated hours 342 SOC Analyst 189. Result 'Academy Modules & Paths' at help.hackthebox.com/en/articles/12741910-academy-modules-paths: the table lists Penetration Tester (CPTS) 342 hours (42 days and 6 hours at 8 hours per day) and SOC Analyst (CDSA) 189 hours. Single source."
+    },
+    {
+      "claim": "OSCP+ scaled scoring begins on 2026-12-01; no fixed 70-point target for exams on or after that date (plan section 4 and section 16 item 3).",
+      "result": "CONFIRMED",
+      "evidence": "Query: OffSec OSCP+ \"Equated Scaled Scoring\" FAQ December 1 2026 exam scoring change passing score (help.offsec.com, offsec.com). Result 'OSCP+ Equated Scaled Scoring FAQ' at the plan's URL: exams that start before 2026-12-01 08:00 GMT keep the 70 raw-point pass mark; exams that start on or after it are reported on a 100 to 500 scale with 400 as the pass mark, the raw points needed depend on the exam set and are not published; results can take up to 15 business days. The OffSec blog post words the cut-off as 'exams taken through November 30, 2026'."
+    },
+    {
+      "claim": "MITRE ATT&CK: review the October 2026 release (plan section 4).",
+      "result": "CONFIRMED",
+      "evidence": "Query: MITRE ATT&CK latest release version October 2026 v19 release notes updates (attack.mitre.org). Results 'Updates - Updates - October 2026' and 'Version History': the October 2026 release is ATT&CK v20 (v19.2 ran until 2026-10-12; v20.1 is shown as current, and the site changelog lists a v20.1 content release dated 2026-11-05; the two dates for v20.1 do not agree in the results). v20 adds AI-related Enterprise techniques including Direct and Indirect Prompt Injection. v19 (April 2026) split the Defense Evasion tactic into Stealth and Defense Impairment, so material that names 'Defense Evasion' as a current tactic is outdated."
+    },
+    {
+      "claim": "The OWASP list for LLM applications that is current is the 2026 edition at genai.owasp.org/resource/owasp-genai-llm-top-10-2026/ (plan section 4 and section 16 item 6).",
+      "result": "CONFIRMED",
+      "evidence": "Query: OWASP Top 10 for LLM Applications current version year 2025 2026 genai.owasp.org (genai.owasp.org, owasp.org). Result: genai.owasp.org post under /2026/09/01/ titled 'OWASP GenAI Security Project Unveils 2026 Top 10 for LLM Applications, New Agent Control Standard ...'; the plan's URL was given as the download location. The 2025 edition remains as an archived resource; the owasp.org project page still shows 'Version 2025'."
+    },
+    {
+      "claim": "NIST SP 800-61 Rev. 3 is final since April 2025 (plan section 4 and section 16 item 7).",
+      "result": "CONFIRMED",
+      "evidence": "Query: NIST SP 800-61 Rev. 3 final \"Incident Response Recommendations and Considerations for Cybersecurity Risk Management\" April 2025 (csrc.nist.gov, nist.gov). Results: nist.gov news item of 2025/04 'NIST Revises SP 800-61 ...' and the PDF nist.sp.800-61r3.pdf: finalized 2025-04-03, a CSF 2.0 Community Profile, supersedes Rev. 2 (marked withdrawn 2025-04-03)."
+    },
+    {
+      "claim": "OWASP WSTG: the stable documented release is 4.2 (plan section 4 and section 16 item 8).",
+      "result": "CONFIRMED",
+      "evidence": "Query: OWASP Web Security Testing Guide latest stable release version v4.2 v5 release 2026 (owasp.org, github.com). Results 'OWASP Web Security Testing Guide' (wstg.owasp.org) and the OWASP/wstg repository: 'Stable' is an alias for the current release, currently v4.2; version 5.0 is in development; a 'Publish Latest 2026-10-30' pull request refreshed the development version only."
+    },
+    {
+      "claim": "Sysmon network Event ID 3 is disabled by default (plan sections 4 and 16 item 4, week 3 telemetry caveat).",
+      "result": "CONFIRMED",
+      "evidence": "Query: Microsoft Learn Sysmon events \"Event ID 3: Network connection\" \"disabled by default\" (learn.microsoft.com). Results 'Sysmon events' (the plan's URL) and 'Sysmon - Sysinternals': the network connection event is disabled by default."
+    },
+    {
+      "claim": "Wazuh quickstart sizing starts at 4 vCPU / 8 GiB / 50 GB (plan section 16 item 5).",
+      "result": "CONFIRMED",
+      "evidence": "Query: Wazuh quickstart hardware requirements 4 vCPU 8 GiB 50 GB agents 90 days (documentation.wazuh.com). Result 'Quickstart · Wazuh documentation' at the plan's URL: 1 to 25 agents need 4 vCPU, 8 GiB RAM and 50 GB for 90 days; 26 to 50 agents 8 vCPU and 100 GB; 51 to 100 agents 200 GB. The VM page names the v4.14.10 OVA; a 5.0-beta1 documentation tree is indexed, so recheck the figures when week 7 is authored."
+    },
+    {
+      "claim": "AD DS deployment guide at learn.microsoft.com/.../ad-ds/deploy/install-active-directory-domain-services--level-100- (plan section 4 and week 3 core sites).",
+      "result": "CONFIRMED",
+      "evidence": "Query: Microsoft Learn \"Install Active Directory Domain Services (Level 100)\" ... (learn.microsoft.com). The URL was returned; the current title is 'Install Active Directory Domain Services on Windows Server' and the examples reference Windows Server 2025."
+    },
+    {
+      "claim": "Microsoft AD DS hub page at learn.microsoft.com/en-us/windows-server/identity/ad-ds/ and Sysinternals hub page at learn.microsoft.com/en-us/sysinternals/ (plan section 4).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Neither hub URL appeared in a search result today; only child pages under both paths were returned (for example .../ad-ds/deploy/..., .../ad-ds/manage/group-policy/..., .../sysinternals/downloads/procmon). A dedicated search for the AD DS hub was refused because the shared search budget of the session was used up."
+    },
+    {
+      "claim": "Week 3 guided lab: a licensed evaluation of Windows Server and of a workstation is available.",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Confirmed for the server only. Query: Microsoft Evaluation Center Windows Server 2025 evaluation 180 days download: result 'Windows Server 2025' at microsoft.com/en-us/evalcenter/download-windows-server-2025, 180-day evaluation after registration, with the statement that evaluation versions must be activated over the internet within 10 days to avoid automatic shutdown. The Windows 11 Enterprise evaluation search was refused (search budget used up)."
+    },
+    {
+      "claim": "HTB Windows and introductory AD modules exist (week 3 core sites).",
+      "result": "CONFIRMED",
+      "evidence": "Search results on academy.hackthebox.com returned the preview pages of 'Windows Fundamentals', 'Introduction to Windows Command Line', 'Introduction to Active Directory', 'Active Directory LDAP' and 'Windows Event Logs & Finding Evil'. Only Windows Fundamentals was shown as Tier 0."
+    },
+    {
+      "claim": "HTB main labs: unknown and retired practice, no active-machine spoilers in the portfolio (plan section 4).",
+      "result": "CONFIRMED",
+      "evidence": "Query: Hack The Box rules publishing write-ups active machines prohibited retired only. Results 'Streaming / Writeups / Walkthrough Guidelines', 'Hack The Box Platform Rules' and the Acceptable Use Policy (effective 2026-04-01): solutions only for Retired Content; no solutions, flags, hints or spoilers for active content; retired Machines and Sherlocks need VIP+ or HTB PRO per 'HTB Labs Subscriptions'."
+    },
+    {
+      "claim": "LetsDefend (letsdefend.io) is a standalone provider for guided SOC triage (plan section 4).",
+      "result": "NOT_CONFIRMED",
+      "evidence": "Query: LetsDefend Hack The Box acquisition ... Results: Hack The Box announced the acquisition of LetsDefend on 2025-09-16; HTB roadmap entries report 150 LetsDefend Sherlocks added to HTB Labs and 191 LetsDefend courses added as HTB Academy modules. Course pages on app.letsdefend.io are still indexed, but no result said whether the standalone platform keeps accepting sign-ups."
+    }
+  ],
+  "gaps": [
+    "D15 independent block: no free, unguided Active Directory misconfiguration challenge was verified. The HTB retired machine Active needs VIP+ or HTB PRO; the TryHackMe module 'Active Directory Security Testing Basics' is said to end with two live challenges, but their names, URLs and tier were not seen.",
+    "D15 blocks A and B are an examination and a review by the plan, so the only platform exercise assigned to them is a revisit of Active Directory Basics.",
+    "HTB Academy tier not confirmed for Introduction to Active Directory, Introduction to Windows Command Line and Windows Event Logs & Finding Evil.",
+    "TryHackMe tier not confirmed for Windows PowerShell, Core Windows Processes, Intro to AD Authentication, AD: Basic Enumeration, Windows Event Logs and Windows Logging for SOC.",
+    "HTB Sherlocks Campfire-1 (Kerberos service ticket events) and Noxious (LLMNR poisoning, NTLM): retired status, canonical URL and tier not confirmed; Campfire-1 is recorded as UNVERIFIED, Noxious is not recorded.",
+    "No official Microsoft Learn page that states how share permissions and NTFS permissions combine was found; the results were Microsoft Q&A threads and an Azure NetApp Files page.",
+    "No official Microsoft page on LDAP in AD DS was searched for; the only LDAP resources seen are the HTB Academy module 'Active Directory LDAP' (tier unknown) and the port table of the TryHackMe room AD: Basic Enumeration.",
+    "Workstation image for the domain join: the Windows 11 Enterprise evaluation page was not checked because the shared search budget of the session ended.",
+    "HTB Starting Point machine pages for Dancing, Responder and Archetype were not seen (same reason); their names and free status come from an HTB blog post that may be out of date.",
+    "Under the Wire: the landing page of the Century wargame and its access conditions were not seen.",
+    "Provider-stated durations were seen only for CyberDefenders Kerberoasted; every other estimate is a planning figure.",
+    "OverTheWire and pwn.college have no Windows or Active Directory content that was found for this week."
+  ]
+}
