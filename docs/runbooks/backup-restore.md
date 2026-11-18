@@ -6,7 +6,7 @@ Preconditions: the app is the only writer; backups are created by the trusted ba
 
 1. `backup.create` → `BackupState::Requested → SnapshotCreated` via the SQLite Online Backup API (`Backup::run_to_completion`) into `<data>/backups/<backup_id>.sqlite` (temporary name until verified).
 2. `backup.verify` on the **copy**: `PRAGMA integrity_check`, `PRAGMA foreign_key_check`, migration checksums match the embedded set, table counts and relationship invariants, attachment manifest consistency → `Checked`.
-3. `backup.restore_test`: open the copy in a disposable location, run the application invariant suite → `RestoreTested` → `Retained`. The manifest row records app version, schema version, page count, sha256, deletion-ledger checkpoint and (when enabled) encryption key id.
+3. `backup.restore_test`: open the copy in a disposable location, run the application invariant suite → `RestoreTested` → `Retained`. The manifest row records app version, schema version, page count, sha256 and deletion-ledger checkpoint (an encryption key id only if application-level encryption is built: PROPOSED). **A snapshot and every copy of it is not encrypted**: it is protected only by the full-disk encryption of the volume it sits on (ADR-0015), so put copies on an encrypted volume.
 4. Failure at any step → `Failed` with the report attached; the previous retained set is untouched.
 
 `backup.verify` and `backup.restore_test` read the manifest (state, path, checksum, audit anchor, verification report, revision) from `backup_manifests` (`g9_storage::backup::read_manifest`), so the three steps may run in different processes, for example `g9 call backup.create`, then `g9 call backup.verify`, then `g9 call backup.restore_test`, each a separate command (IMPLEMENTED, TESTED: `crates/g9-app/tests/backup_persistence.rs`, `scripts/smoke_test.sh`). An unknown id answers `NOT_FOUND backup.not_found`; an `--expected-revision` older than the stored revision answers `STALE_REVISION`. `system.status.last_backup` is the newest `RETAINED` manifest in the database. The operator label of `backup.create` is not persisted (`null` after a restart).
@@ -118,4 +118,4 @@ SQLite transactions guarantee atomicity; WAL checkpoints are monitored (`PRAGMA 
 ## Model-down and key-unavailable modes
 
 - Model runtime unavailable: every deterministic feature stays available; teaching panels show "Recommendation unavailable (model offline)"; skill invocations return `RESOURCE_UNAVAILABLE`.
-- Encryption key unavailable: RECOVERY-READONLY mode — refuse decryption, never overwrite, offer verified-backup restore.
+- Encryption key unavailable: applies only once application-level backup encryption exists (PROPOSED; none is built today). Then: RECOVERY-READONLY mode — refuse decryption, never overwrite, offer verified-backup restore.

@@ -18,7 +18,7 @@ Every content-bearing record carries `data_domain` (LEARNING, BUSINESS, PERSONAL
 | Opt-in reflections, capacity self-reports | 365 days default, configurable | PERSONAL domain; excluded from exports by default |
 | Skill invocation records | 180 days | metadata only |
 | Idempotency records | 30 days | purged at open, counted back from the earlier of the clock and the newest stored record (a clock set ahead purges nothing recent); a deleted calendar event's title is removed from them at once |
-| Backups | per `data_retention_rules` (daily 14, weekly 8, monthly 12 proposed) | encrypted at rest (see below) |
+| Backups | per `data_retention_rules` (daily 14, weekly 8, monthly 12 proposed) | NOT encrypted by the application: a snapshot and every copy (`g9 copy-backup`, attachment files) is a plain SQLite file or plain file, mode 0600, protected only by the host's full-disk encryption (ADR-0015). A copy on a USB drive or a synced folder is readable by whoever holds it. Application-level encryption is PROPOSED (row below) |
 
 Retention is enforced by a deterministic maintenance command (`system.retention_sweep`, Stage 03) that requires an approval per run and writes a `domain_events` row summarizing counts.
 

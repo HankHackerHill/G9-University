@@ -146,12 +146,25 @@ pub struct ApprovalBook {
 impl ApprovalBook {
     /// Hydrate every stored approval request.
     pub fn hydrate(conn: &Connection, operator: &Actor) -> Result<Self, G9Error> {
+        // One snapshot, one insert per row, one restore: `put` per row would serialise and
+        // parse the whole ledger every time, which is quadratic in the number of stored
+        // requests (audit 2026-11-18, F1).
         let mut book = Self::default();
-        for state in ApprovalState::ALL {
-            for row in approvals_store::list_by_state(conn, *state)? {
-                book.put(record_from_row(&row, operator))?;
+        let mut snapshot = book.snapshot()?;
+        if let Some(records) = snapshot
+            .get_mut("records")
+            .and_then(serde_json::Value::as_object_mut)
+        {
+            for state in ApprovalState::ALL {
+                for row in approvals_store::list_by_state(conn, *state)? {
+                    let record = record_from_row(&row, operator);
+                    let value = serde_json::to_value(&record)
+                        .map_err(|_| G9Error::internal_redacted("approvals.snapshot"))?;
+                    records.insert(record.request.id.as_str().to_string(), value);
+                }
             }
         }
+        book.restore(&snapshot)?;
         Ok(book)
     }
 
