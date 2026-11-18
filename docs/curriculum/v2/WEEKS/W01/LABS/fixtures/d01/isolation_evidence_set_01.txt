@@ -1,7 +1,7 @@
 Sample (synthetic): an invented evidence package for stack A (two guests on separate lab networks, no router). Not an observation of any lab.
 Stack label: stack-01. Guests: g9-atk-01 (RED), g9-tgt-01 (DMZ). Package time (invented): 2099-01-01T12:10:00Z.
 The designated LAN address of the owner's probe is written 203.0.113.10 here, a documentation address standing in for the real one.
-Host interfaces (invented): enp7s0 (uplink), vpn0 (tunnel), docker0, virbr91, virbr92, virbr93, vnet3, vnet4.
+Host interfaces (invented): enp7s0 (uplink), vpn0 (tunnel), docker0, virbr91, virbr92, vnet3, vnet4.
 
 == E1 host, domain interfaces ==
 $ virsh -c qemu:///system domiflist g9-atk-01
@@ -84,8 +84,11 @@ table inet g9lab_guard {
 == E7 host IPv6 on the lab bridges ==
 $ ip -6 addr show dev virbr91
 (no output)
-$ sysctl net.ipv6.conf.virbr91.disable_ipv6
+$ ip -6 addr show dev virbr92
+(no output)
+$ sysctl net.ipv6.conf.virbr91.disable_ipv6 net.ipv6.conf.virbr92.disable_ipv6
 net.ipv6.conf.virbr91.disable_ipv6 = 1
+net.ipv6.conf.virbr92.disable_ipv6 = 1
 
 == E8 probe from g9-atk-01 toward the designated address, with host captures ==
 $ date -u +%Y-%m-%dT%H:%M:%SZ        (host, before the captures)

@@ -26,6 +26,25 @@ The four states are independent (plan section 14.3). Each is set only by its own
 > - Until the blocker is resolved: exercises that need the local lab are deferred or replaced by the hosted alternative the day guide names, the substitution is recorded, and no intrusive local test is made. A blocked lab is recorded as BLOCKED, never as passed.
 > - Where it is handled: `docs/curriculum/v2/HOST_READINESS.md` (read-only diagnostics and how to read their results), `docs/curriculum/v2/LAB_ARCHITECTURE.md` (topology and isolation acceptance tests), `docs/curriculum/v2/SAFETY_AUTHORIZATION.md` (scope, rules of engagement, incident procedure).
 
+## What exists and what is pending (2026-11-18)
+
+Labels: TESTED (a test or gate in the repository passes), VERIFIED (checked by reading or running, evidence named), SEARCH_CHECKED (a web search returned the page; the page was not opened), NOT RUN, PROPOSED.
+
+| Part | State | Evidence |
+|---|---|---|
+| Application support for the 60-day shape (backend, schemas, import, planning, block labels, desktop mock and screens) | Done, TESTED | ADR-0023; `crates/g9-curriculum/tests/mastery_v2.rs`, `crates/g9-storage/tests/mastery_v2.rs`, `crates/g9-app/tests/mastery_v2.rs`, `apps/cli/tests/mastery_v2.rs`, `apps/desktop/src/ipc/transports/mock.test.ts` |
+| Builder and its checks | Done, TESTED | `scripts/build_curriculum_v2.py`, `scripts/tests/test_gates_build_curriculum_v2.py`; `python3 -I scripts/build_curriculum_v2.py --available` checks the weeks that have all five day guides (a week with fewer is reported as in progress, not judged) and is part of the preflight |
+| Master plan, authoring contract, ADR | Done | `MASTER_PLAN_V2.0.md` (verbatim, never edited), `AUTHORING.md`, ADR-0023 |
+| Resource registries of weeks 1 to 12 (460 entries: lab, platform and reference addresses with access tier) | Written, SEARCH_CHECKED or ASSUMED or UNVERIFIED per entry; no page was opened (network policy) | `WEEKS/Wnn/RESOURCES.json`, `docs/curriculum/v2/AUTHORING.md` |
+| Course-level documents (student and instructor guides, safety and authorization, host readiness, lab architecture, templates, entry diagnostic, midpoint benchmark, capstone, grading rubrics) | Drafted; not yet through the technical, adversarial and acceptance reviews (plan section 14) | the files named in "Layout" |
+| Week 1 | Design files and fixtures written (61 fixture files, SHA-256 of each in `WEEKS/W01/LABS/fixtures/MANIFEST.md`, all 61 match: VERIFIED); 2 of 5 day guides (days 1 and 4) written; the builder reports problems for the rest | `python3 -I scripts/build_curriculum_v2.py --week 1` |
+| Weeks 2 to 12: day guides (58 of 60 missing), Friday exams and keys, labs, quizzes | NOT WRITTEN | |
+| Generated files (`SCHEDULE_60_DAYS.md`, `CURRICULUM_MAP.md`, `RESOURCE_REGISTRY.md`, question bank, answer-key file, spaced-recall plan, `seed.v2.json`, `draft.v2.json`, lesson sheets v2, quiz file) | NOT GENERATED: the builder produces them only when all 12 weeks pass | `scripts/doc_refs_allow.json` lists the references to them as `planned` |
+| The window on the v2 course (Program setup import, lesson sheets, quiz panel, hands-on list, key reveal) | NOT BUILT. The window imports the Appendix A draft, whose 12 weeks of courseware are complete | ADR-0023 decision 9 (PROPOSED) |
+| Any lab on the G9 host | NOT RUN (Stage 00 blocker) | `HOST_READINESS.md` |
+
+To resume: write week N following `AUTHORING.md` (day guides, Friday assessment, keys, labs), run `python3 -I scripts/build_curriculum_v2.py --week N` until it reports no problem, then `--write` when all 12 weeks pass; delete the `planned` entries of `scripts/doc_refs_allow.json` that the generated files make stale (the checker fails on a stale entry). Nothing in the v2 course is imported into the application until the owner promotes it (`docs/curriculum/promotion.md`).
+
 ## What this is
 
 A 12-week apprenticeship of 60 weekdays at 8 accountable study hours a day: 480 hours. It is penetration-testing-first purple-team training: each offensive mechanism is followed by its defensive observation, a remediation and a retest. It is not equal-depth mastery of every security specialty (plan sections 1 and 12), and it makes no promise of professional status or of a certification result (plan section 0.4, last rule).

@@ -28,7 +28,7 @@ Guided labs and flags from days 26 to 29 are learning, not assessment. They are 
 |---|---|---|
 | Pool of candidate targets | not fixed | section 5 says how and by when |
 | Hosted platform accounts and tiers the owner holds | not recorded. ASSUMED unknown | the pool can only use a platform whose tier you hold on the day the pool is fixed |
-| Registry evidence for candidates | `docs/curriculum/v2/WEEKS/W06/RESOURCES.json` lists retired Hack The Box machine pages and TryHackMe beginner rooms. Every entry is SEARCH_CHECKED on 2026-11-18, which means a search result was seen and the page was not opened. `docs/curriculum/v2/WEEKS/W12/RESOURCES.json` names no individual candidate: its pool entries are index pages and its gap list says so | each candidate is re-checked by you by opening its page (section 5.3) |
+| Registry evidence for candidates | `docs/curriculum/v2/WEEKS/W06/RESOURCES.json` lists retired Hack The Box machine pages and TryHackMe beginner rooms. Each of those entries is SEARCH_CHECKED on 2026-11-18, which means a search result was seen and the page was not opened. `docs/curriculum/v2/WEEKS/W12/RESOURCES.json` names no individual candidate: its pool entries are index pages and its gap list says so | each candidate is re-checked by you by opening its page (section 5.3) |
 | Access tier of retired Hack The Box machines | the week 6 registry records them as PAID (a subscription tier above the free plan), SEARCH_CHECKED, not read. ASSUMED here, see `docs/curriculum/v2/RESOURCE_REGISTRY.md` (generated later from the week registries) | without that tier these entries are not in your pool |
 | Stage 00 (libvirt socket) | unresolved (`docs/curriculum/v2/README.md`) | the hosted form of this benchmark needs no local guest (INFERRED from the week 6 row of `docs/curriculum/v2/LAB_ARCHITECTURE.md`, section 13). The local form of section 5.1 does, and is unavailable while Stage 00 is blocked |
 | How a hosted platform's VPN profile is reached | open decision O-02 of `docs/curriculum/v2/SAFETY_AUTHORIZATION.md`; the default is browser-based environments only | an entry that needs a VPN profile on the host is ineligible until you decide O-02 and record it (eligibility E-07) |
@@ -53,7 +53,7 @@ Every rule applies from 08:00 on the day until the attempt is submitted. The las
 | R-09 | Leave nothing behind. No denial-of-service or stress test, no destructive action, no persistence left after the window, nothing that spoils the instance for the next user. On a shared instance make no configuration change on the target. A fix is applied only on a dedicated instance and only where the platform's terms allow it (section 8) | N-14 and N-17 | safety gate failure when the exposure or the change is not contained; otherwise points in P1 and D4 |
 | R-10 | Evidence is raw, timed and kept as you go: the command log, the outputs, the hypotheses and the hint and aids logs (section 7). Nothing is reconstructed from memory without saying so | plan 9.4; INSTRUCTOR_GUIDE, section 5 | fabricated or unreconstructed claims: evidence-integrity failure |
 | R-11 | Honest claims. Every claim carries OBSERVED, INFERRED, ASSUMED, UNVERIFIED or NOT RUN. A scanner result is a hypothesis. A flag value is never copied into the report: record the platform's acceptance as a time and a statement, not the string | plan 0.4, 9.4; PENTEST_FINDING status rules; SAFETY_AUTHORIZATION, section 8.1 | a false positive claimed as verified: evidence-integrity failure |
-| R-12 | Private by default. The report of a platform-designated target is never published. The portfolio receives a skill record and the sanitized deficiency register (section 7), never steps, credentials found, flags or screenshots | SAFETY_AUTHORIZATION, section 8.1; `docs/curriculum/v2/PORTFOLIO/README.md`, sections 5.3 and 6 | portfolio defect |
+| R-12 | Private by default. The report of a platform-designated target is never published. The portfolio receives a sanitized form of the report with no steps, credentials found, flags or screenshots of the target, in practice a skill record (PORTFOLIO, section 6), and the sanitized deficiency register (section 7) | SAFETY_AUTHORIZATION, section 8.1; `docs/curriculum/v2/PORTFOLIO/README.md`, sections 5.3 and 6 | portfolio defect |
 | R-13 | Stop conditions. STOP-01 to STOP-16 of SAFETY_AUTHORIZATION apply. A stop condition ends offensive work. The rest of the block is for the evidence you already have and for the report; resuming needs a fresh approval, which a scored attempt does not give for STOP-02, STOP-03, STOP-05, STOP-08, STOP-09 or STOP-10 | SAFETY_AUTHORIZATION, section 9 | depends on the cause (section 4.3) |
 
 ## 4. Scope, authorization and stop conditions
@@ -192,12 +192,12 @@ The middle column is the plan's day 30 text. The third column is what this file 
 | about 08:25 | | | define the week 6 assessment in the window if it is not defined; begin the attempt | attempt start time |
 | 08:30 to 10:30 | A | Midpoint theory exam and scope review | Part 1, the closed-book knowledge exam of 20 questions, in the first 90 minutes (ESTIMATE). No notes, no AI. Lock the answers: write them to a file, compute the SHA-256, write the hash and the time. Then about 30 minutes of scope review that does not need the target: the rules of section 3, the platform terms and tier check, the standing exclusions, the stop table of section 4.3, the generic part of the scope block and the RoE | locked answers with hash; generic scope block |
 | 10:30 to 10:45 | break | | not study | |
-| 10:45 to 12:45 | B | Review exam-style limitations; no walkthrough | first about 80 minutes (ESTIMATE): the diagnostic retest of section 10, closed book, locked by hash. Then about 40 minutes: review what the benchmark can and cannot show (no hints, one target, 150 minutes, no AI), what a partial result looks like (section 9), the evidence discipline and the report skeleton, and a dry run of your recording setup on a non-target. No walkthrough of any exercise, and no new-target exposure | locked retest answers; report skeleton ready |
+| 10:45 to 12:45 | B | Review exam-style limitations; no walkthrough | first about 100 minutes (ESTIMATE of `docs/curriculum/v2/ASSESSMENTS/ENTRY_DIAGNOSTIC.md`, section 1.3): Part 1 of the diagnostic retest (section 10), closed book, locked by hash. Then about 20 minutes: review what the benchmark can and cannot show (no hints, one target, 150 minutes, no AI), what a partial result looks like (section 9) and the report skeleton. The dry run of your recording setup is done the evening before (section 6.1). No walkthrough of any exercise, and no new-target exposure | locked retest answers; report skeleton ready |
 | 12:45 to 13:45 | lunch | | not study | |
 | 13:45 to 16:15 | C | Independent unknown target, full chain to meaningful verified result | the attack window of 150 minutes (section 6.3) | evidence bundle |
 | 16:15 to 17:15 | D | Commercial-style report; midpoint deficiency register | section 6.4 | report, register, scorecard |
 
-The retest has no block in the plan, which requires it on day 30 (plan 1.3). Placing it in block B takes time from the review that block B holds. See the departures table.
+The retest has no block in the plan, which requires it on day 30 (plan 1.3). Placing Part 1 in block B takes about 100 of its 120 minutes from the review that block B holds, and Part 3 of the diagnostic does not fit in the day at all (section 10). See the departures table.
 
 ### 6.3 Block C: checkpoints
 
@@ -206,7 +206,7 @@ The checkpoints are PROPOSED planning aids. They are not rules and they do not c
 | Time | Minute | Checkpoint |
 |---|---|---|
 | 13:45 | 0 | handover and draw record (section 5.4); you receive the target id and address and nothing else |
-| 13:45 to 14:00 | 0 to 15 | complete the scope block, confirm the target's identity from an independent source, sign the RoE, write the test plan. No target contact before this is done and timestamped (ESTIMATE: 15 minutes) |
+| 13:45 to 14:00 | 0 to 15 | complete the scope block, confirm the target's identity from an independent source, sign the RoE, write the test plan. No target contact before this is done and timestamped; starting the instance and reading its address are platform use and not contact (ESTIMATE: 15 minutes) |
 | 14:30 | 45 | the enumeration inventory exists with a source and a time for each fact. This is also the 45-minute point of the hint ladder in a guided day; in a scored attempt no hint follows it |
 | 15:15 | 90 | at least one falsifiable hypothesis has been tested with its predicted result recorded before the test |
 | 15:45 | 120 | decide: continue the attack to 16:10, or switch to close-out (evidence index, the target's own logs if you have access, the negative controls, the partial-result statement) |
@@ -333,6 +333,7 @@ What follows from the table, stated plainly:
 1. A hosted target with paper-only defensive analysis leaves a margin of 12 points to the aim of 80. Part 1 and the practical must be near their ceilings.
 2. An unsolved attempt cannot reach 80 as the rubric reads, and the week 6 gate is not met either. That is the correct outcome of honest partial work (plan 9.2), recorded as NOT MET without a gate failure. It is not a reason to claim success you did not obtain.
 3. A solved attempt that carries any gate failure is not a passed practical, whatever its total.
+4. The application's own rule is stricter and is recorded beside the plan's (`docs/curriculum/v2/INSTRUCTOR_GUIDE.md`, section 10). For a type F Part 3, paper-only defensive analysis can earn at most 14 of the 22 points of the set that feeds `remediation_verification` (D2 3, D3 2, D4 5, E3 4), which is 63.6 percent and level 2. The application can then fail an attempt that the plan's gate of 80 passes. This is a consequence of a hosted target, not an error of scoring.
 
 ## 9. When the target is not solved at the time limit
 
@@ -361,13 +362,14 @@ The plan keeps the entry diagnostic on day 1 and retests it at the midpoint and 
 
 | Item | Rule |
 |---|---|
-| What | the 30 questions E01 to E30 of `docs/curriculum/v2/ASSESSMENTS/ENTRY_DIAGNOSTIC.md`, or the parallel form that file designates for the retest. If it designates none, the same 30 are used and the scorecard says that the day 1 key was open to you after day 1, so growth is overstated by an unknown amount (INFERRED) |
-| A second contamination to know about | the plan file `docs/curriculum/v2/MASTER_PLAN_V2.0.md` holds the diagnostic's expected answers in its section 8.1. If you have read them, the retest measures recall of them. State on the scorecard whether you did |
-| When | block B, the first 80 minutes (ESTIMATE: 20 concise responses at about 2 minutes and 10 applied items at about 4) |
-| How | closed book; no notes, no AI; written answers; locked at the end by SHA-256 and time |
-| Scoring | after the attempt is submitted, against the diagnostic's instructor key in `docs/curriculum/v2/ASSESSMENTS/INSTRUCTOR/`: 1, 0.5 or 0 per question, then the share per domain, using the domain grouping of `docs/curriculum/v2/STUDENT_GUIDE.md`, section 9 |
-| Use | compare each domain with day 1; re-place the domain on its track (below 70 percent Guided, 70 to 89 Independent labs, 90 or more with an independent practical pass Expert extension). Today's practical is the independent practical evidence for the domains it touched. The deficiency register carries the result as context |
-| The practical baseline | if the entry diagnostic defines a non-invasive practical baseline and a retest of it, follow that file. The midpoint practical is also evidence |
+| What | Part 1 of `docs/curriculum/v2/ASSESSMENTS/ENTRY_DIAGNOSTIC.md`: the 30 questions E01 to E30, which are the plan's minimum. Part 2 (E31 to E40) is optional; use it only if you sat it on day 1, and compare the sheet's Part 1 only column in any case (section 5.1 of that file) |
+| Which form | one form exists. The diagnostic key lists a parallel form for the midpoint as an open point (O-D-02 of `docs/curriculum/v2/ASSESSMENTS/INSTRUCTOR/ENTRY_DIAGNOSTIC_KEY.md`). Until one is written the same form is used, and the scorecard says that the day 1 key was open to you after day 1, so growth is overstated by an unknown amount (INFERRED) |
+| A second contamination to know about | `docs/curriculum/v2/MASTER_PLAN_V2.0.md` holds the diagnostic's expected answers in its section 8.1. If you have read them, the retest measures recall of them. State on the scorecard whether you did |
+| When | block B, the first 100 minutes (ESTIMATE given by section 1.3 of the diagnostic for Part 1) |
+| How | closed book; no notes, no AI, no tools; written answers, one file; locked at the end by SHA-256 and time, as in section 1.4 of the diagnostic |
+| Scoring | after the attempt is submitted, against `docs/curriculum/v2/ASSESSMENTS/INSTRUCTOR/ENTRY_DIAGNOSTIC_KEY.md`, with the key opening logged. Fill the same sheet as on day 1 (section 5 of the diagnostic): 1 or 0 for multiple choice, 1, 0.5 or 0 for the rest, then the share per domain |
+| Use | compare each domain with day 1 and re-place it on its track by the sheet's rules (below 70 percent Guided, 70 to 89 Independent labs, 90 or more with a practical pass Expert extension). Today's practical is the independent practical evidence for the domains it touched (a part 2 score of at least 30 of 40 is the practical minimum of plan 9.1). The deficiency register carries the result as context. One question moves a small domain by a large step, so read the questions you missed |
+| Part 3, the paper practical baseline | six tasks, about 75 minutes (section 1.3 of the diagnostic), which cannot fit in the day. PROPOSED: not retested in block B. The midpoint practical stands as the practical evidence, and a placement that needs Part 3 is marked provisional. If you want Part 3 retested, sit it outside the counted hours on a later day, record that it was, and do not credit it as study |
 
 ## 11. Commands proposed for review
 
@@ -398,7 +400,7 @@ Version-sensitive facts are stated as ASSUMED with the registry pointer `docs/cu
 
 | What | Why |
 |---|---|
-| The diagnostic retest sits in block B | plan 1.3 requires it on day 30 and gives it no block; block B holds only a review. PROPOSED placement |
+| Part 1 of the diagnostic retest sits in block B and Part 3 is not retested in the day | plan 1.3 requires the retest on day 30 and gives it no block; block B holds only a review, which shrinks to about 20 minutes. Part 3 of the diagnostic takes about 75 more minutes. PROPOSED placement |
 | The scope review in block A is generic and the target-specific scope step is the first 15 minutes of block C | the target is drawn at 13:45 so that a morning of knowledge of its name cannot turn into research (R-05) |
 | The draw is at the start of block C, not earlier | INSTRUCTOR_GUIDE, section 8.1: handover at the start of the clock only |
 | The raw evidence bundle is hashed at the start of block D, before the report | stricter than the guide's order; the hash then covers what the report must not change |
@@ -416,4 +418,4 @@ Version-sensitive facts are stated as ASSUMED with the registry pointer `docs/cu
 | OP-MP-02 | whether to accept paper-only Part 3 on a hosted target, or to add a small local fixture exercise earlier in week 6 for the defensive part (plan 9.3 allows an unseen practical to be modified; the instructor guide proposes a pre-built local fixture, section 8.2) | paper analysis, ceilings as in section 8.1 |
 | OP-MP-03 | open decision O-02 (platform VPN profile) | browser-based environments only |
 | OP-MP-04 | a second reader for the report and the scoring, recorded by name on the scorecard | none; the grade is self-adjudicated |
-| OP-MP-05 | which form of the diagnostic the retest uses | the same 30 items, with the contamination stated |
+| OP-MP-05 | whether a parallel form of the diagnostic is written for the midpoint (open point O-D-02 of its key) | the same 30 items, with the contamination stated |

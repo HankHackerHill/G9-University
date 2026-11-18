@@ -19,7 +19,7 @@ Part 2: labadmin extract, run by labadmin, 2099-01-05T09:05:00Z to 09:09:00Z.
 
 $ sudo stat -c '%A %U:%G %n' /srv/g9toy-spool /srv/g9toy-spool/outbox /srv/g9toy-spool/outbox/batch_0001.txt /srv/g9toy-spool/outbox/batch_0002.txt /srv/g9toy-spool/inbox /srv/g9toy-spool/scratch /var/lib/g9toy-spool /var/lib/g9toy-spool/counter /etc/g9toy-spool/g9toy.conf
 drwxr-xr-x root:root /srv/g9toy-spool
-drwxrws---+ svcspool:shippers /srv/g9toy-spool/outbox
+drwxrws--- svcspool:shippers /srv/g9toy-spool/outbox
 -rw-r----- svcspool:shippers /srv/g9toy-spool/outbox/batch_0001.txt
 -rw-r----- labuser7:shippers /srv/g9toy-spool/outbox/batch_0002.txt
 drwx-ws--- svcspool:loaders /srv/g9toy-spool/inbox
@@ -27,6 +27,9 @@ drwxr-x--- svcspool:svcspool /srv/g9toy-spool/scratch
 drwxr-x--- svcspool:svcspool /var/lib/g9toy-spool
 -rw-r----- svcspool:svcspool /var/lib/g9toy-spool/counter
 -rw-r--r-- root:root /etc/g9toy-spool/g9toy.conf
+
+$ sudo ls -ld /srv/g9toy-spool/outbox
+drwxrws---+ 2 svcspool shippers 4096 Jan  4 16:12 /srv/g9toy-spool/outbox
 
 $ sudo getfacl /srv/g9toy-spool/outbox
 # file: srv/g9toy-spool/outbox

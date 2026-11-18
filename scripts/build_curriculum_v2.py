@@ -19,7 +19,7 @@ Generated (never edited by hand):
 Usage (stdlib only; run from anywhere):
     python3 -I scripts/build_curriculum_v2.py                  check all 12 weeks and require the generated files to be current
     python3 -I scripts/build_curriculum_v2.py --week 3         check week 3 only (repeatable); generated files are not compared
-    python3 -I scripts/build_curriculum_v2.py --available      check every week whose folder holds a day guide; writes nothing
+    python3 -I scripts/build_curriculum_v2.py --available      check every week whose folder holds all five day guides; writes nothing
     python3 -I scripts/build_curriculum_v2.py --write          check all 12 weeks and (re)write the generated files
     python3 -I scripts/build_curriculum_v2.py --seed-text D11  print the four seed texts of a day
     python3 -I scripts/build_curriculum_v2.py --print-seed     print the seed manifest (the plan alone) on standard output
@@ -1875,6 +1875,12 @@ def week_has_day_file(w: int) -> bool:
     return wdir.is_dir() and any(re.fullmatch(r"DAY_\d{2}\.md", p.name) for p in wdir.iterdir() if p.is_file())
 
 
+def week_has_every_day_file(w: int) -> bool:
+    """All five day guides of the week exist: the week is submitted for checking (--available judges only these)."""
+    wdir = WEEKS_DIR / week_name(w)
+    return wdir.is_dir() and all((wdir / f"DAY_{n:02d}.md").is_file() for n in week_days(w))
+
+
 def expected_files(w: int) -> tuple[list[str], list[str]]:
     """(the files an author writes, the files this script generates), relative to the week folder."""
     days = week_days(w)
@@ -2603,7 +2609,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     ap.add_argument("--write", action="store_true", help="write the generated files (all 12 weeks are required)")
     ap.add_argument("--week", type=int, action="append", metavar="N", help="check only week N (repeatable); the generated files are not compared")
-    ap.add_argument("--available", action="store_true", help="check every week whose folder holds a day guide; write nothing")
+    ap.add_argument("--available", action="store_true", help="check every week whose folder holds all five day guides (a week with fewer is reported as in progress, not judged); write nothing")
     ap.add_argument("--seed-text", metavar="DNN", help="print the four seed texts of a day")
     ap.add_argument("--print-seed", action="store_true", help="print the seed manifest (generated from the plan alone) on standard output")
     args = ap.parse_args()
@@ -2638,10 +2644,12 @@ def main() -> int:
     except PackError as exc:
         sys.stderr.write(f"error: {exc}\n")
         return 2
+    in_progress: list[int] = []
     if args.week:
         selected = sorted(set(args.week))
     elif args.available:
-        selected = [w for w in range(1, 13) if week_has_day_file(w)]
+        selected = [w for w in range(1, 13) if week_has_every_day_file(w)]
+        in_progress = [w for w in range(1, 13) if week_has_day_file(w) and not week_has_every_day_file(w)]
     else:
         selected = list(range(1, 13))
     full = selected == list(range(1, 13)) and not args.week
@@ -2678,6 +2686,8 @@ def main() -> int:
     print(f"ok    v2 courseware valid: {counts}")
     if not full:
         print(f"      partial run (weeks {selected}): the generated files were not compared and nothing was written")
+        if in_progress:
+            print(f"      weeks in progress (some day guides, not all five), not judged by --available: {in_progress}; check one with --week N")
         return 0
 
     outputs = build_outputs(plan, weeks, info, registry_index)

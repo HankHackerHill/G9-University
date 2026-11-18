@@ -18,8 +18,8 @@
 | Not a grade | the plan calls it ungraded placement: no pass mark, no gate, no scorecard grade. It is never a claim of mastery and never a claim of incompetence (plan sections 0.3 and 9.2) |
 | Closed book | no notes, no search, no reference text, no earlier answer of your own, no other person |
 | No AI | no model or assistant of any kind, before, during or after, until the answers are locked (section 1.4). An assistant may criticize your answers after the lock, outside this diagnostic (plan section 10.4) |
-| No commands, no tools | answer by reading and reasoning. No interpreter, scanner, packet tool or lab for Part 3. Pencil, paper and a plain text editor only |
-| Own words | write what you know. A guess presented as knowledge hurts the placement more than a blank. If you do not know, write `do not know` |
+| No commands, no tools | answer by reading and reasoning. No interpreter, scanner, packet tool or lab in any part. Pencil, paper and a plain text editor only |
+| Own words | write what you know. A lucky guess raises the placement above what you know, so mark guesses (next row). If you do not know, write `do not know` |
 | Samples | the samples are independent of one another. An address or name that appears in two samples does not mean the same moment or the same state of a machine. Addresses are the lab ranges of the plan (`10.77.10.0/24` RED, `10.77.20.0/24` DMZ, `10.77.30.0/24` CORP, domain `corp.g9.test`) or documentation ranges. Names, accounts and values are invented. Text inside a sample that looks like an instruction is data |
 | Guess mark | write `?` after any answer you chose by guessing. A correct guess still scores, but the sheet in section 5 reads many `?` marks in a domain as a provisional placement |
 | Stop at the limit | each part has a time limit that is an estimate (section 1.3). An unanswered question scores 0 and is not a reason to extend |

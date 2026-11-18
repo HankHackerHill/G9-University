@@ -1,10 +1,12 @@
 # Synthetic lab copy of an Ubuntu-style sshd_config (excerpt: no host keys, no subsystems).
+# KbdInteractiveAuthentication needs OpenSSH 8.7 or later; older releases call it ChallengeResponseAuthentication.
 Include /etc/ssh/sshd_config.d/*.conf
 
 ListenAddress 127.0.0.1
 PermitRootLogin prohibit-password
 PubkeyAuthentication yes
 PasswordAuthentication no
+KbdInteractiveAuthentication no
 UsePAM yes
 X11Forwarding no
 StrictModes yes

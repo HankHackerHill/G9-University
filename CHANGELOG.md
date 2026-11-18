@@ -2,6 +2,25 @@
 
 All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 
+## [0.1.0] — unreleased (2026-11-18 update)
+
+### Added (2026-11-18, the owner's "G9 Cybersecurity Mastery v2.0" plan; ADR-0023)
+- **A second curriculum shape.** `g9_domain::curriculum` has two structure profiles: `CT9_480` (Appendix A, unchanged, 72 days) and `MASTERY_V2` (12 weeks of five 480-minute weekdays, 60 days, 180 objectives, a scored Friday, 15- and 60-minute pauses). Validation, import, daily plans, session planning and the block labels on screen follow the profile a manifest declares. Manifest format 1.1.0 adds the optional `structure.assessment_day_of_week`; 1.0.0 checksums are unchanged and pinned in tests. No database migration. TESTED: `crates/g9-curriculum/tests/mastery_v2.rs`, `crates/g9-storage/tests/mastery_v2.rs`, `crates/g9-app/tests/mastery_v2.rs`, `crates/g9-app/tests/manifest_schema.rs`, `apps/cli/tests/mastery_v2.rs`; the desktop mock mirrors the profiles (`apps/desktop/src/ipc/transports/mock-curriculum.ts`).
+- **Courseware builder** `scripts/build_curriculum_v2.py` (460 tests) checks the courseware under `docs/curriculum/v2/` and generates the seed, the draft, the lesson sheets, quizzes, answer keys, Friday assessment payloads and indexes once all 12 weeks pass; keys are kept out of learner files by rule. `--available` judges the weeks that have all five day guides and reports a partly written week as in progress.
+- **Hands-on registries** for weeks 1 to 12 (`docs/curriculum/v2/WEEKS/Wnn/RESOURCES.json`, 460 entries: platform, address, access tier, verification label). Labels are SEARCH_CHECKED, ASSUMED or UNVERIFIED; no page could be opened (network policy), so none is labelled verified by reading.
+- **Course documents drafted** (student and instructor guides, safety and authorization, host readiness, lab architecture, templates, entry diagnostic, midpoint benchmark, capstone, rubrics) and **week 1 partly written** (design files, 61 synthetic fixtures with SHA-256 in `MANIFEST.md`, all verified; days 1 and 4). Status table: `docs/curriculum/v2/README.md`.
+- Schemas: `schemas/curriculum/answer-keys.schema.json`, `resource-registry.schema.json`; `lesson-sheets.schema.json` now covers 60-day sheets (1.1.0) and follows the house rules (no `$ref`, typed objects).
+
+### Changed (2026-11-18)
+- The IPC responses `curriculum.program` and `curriculum.daily_plan` carry `profile`, `days_per_week` and the block `label` as required fields (schemas and mock updated together).
+- `typescript-eslint` 8.72.1 to 8.73.0 (exact pin): closes the `minimatch` advisory. `npm audit` now reports 11 advisories (12 before), all in dev tooling and all through one: `picomatch` ReDoS (GHSA-fc5q-39xc-vjpf, affects <= 4.0.7). The latest `picomatch` is 4.0.7, so no patched release exists; `npm audit fix` offers a downgrade of `vite` and `vitest` that does not remove it. Nothing here is in the built bundle or the Tauri shell. PROPOSED: re-check when `picomatch` publishes a fix.
+- `scripts/doc_refs_allow.json`: 36 references to courseware files that are not written or generated yet are allow-listed as `planned` (the checker fails when an entry goes stale).
+
+### Not done (2026-11-18, stated so that nothing reads as finished)
+- Courseware for weeks 2 to 12 (58 of 60 day guides, 11 Friday exams and keys, labs, quizzes), the generated v2 files, the course-document review passes, the window on the v2 course (import, lesson sheets, quiz panel, hands-on list, key reveal; ADR-0023 decision 9 is PROPOSED). The window still imports the Appendix A draft, whose courseware is complete.
+- The triple security audit with web research on everything known as of 2026-11-16, and a Rust advisory scan (`cargo audit` and `cargo deny` are not installed here; installing was refused and not worked around). The last review is `docs/audit/security-audit-2026-11-17.md`.
+- NOT RUN: the Tauri shell on a display, any lab on the G9 host.
+
 ## [0.1.0] — unreleased (2026-11-17 update)
 
 ### Added (2026-11-16 and 2026-11-17, the no-decision steps of `docs/release/path-to-10.md` section 9; evidence `docs/release/path-to-10-evidence.md`)

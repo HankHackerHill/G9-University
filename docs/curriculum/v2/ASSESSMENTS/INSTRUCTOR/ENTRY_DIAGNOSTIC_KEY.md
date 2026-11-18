@@ -36,7 +36,7 @@ Instructor only. Not part of the learner's view. The learner file is `docs/curri
 
 ### 1.3 What the points mean
 
-The diagnostic is ungraded placement. There is no pass mark, no gate and no scorecard grade (plan section 9.2; `docs/curriculum/v2/ASSESSMENTS/GRADING_RUBRICS.md`, section 9). The points select a track per domain by the adaptive rule of plan section 1.3 and are compared with the day 30 and day 60 retests. A score is never reported as a level of skill, and a placement is never used to excuse or to skip an assessment. Item scores are noisy: a domain holds between four and six questions, so one question moves a four-question domain by 25 points.
+The diagnostic is ungraded placement. There is no pass mark, no gate and no scorecard grade (plan section 9.2; `docs/curriculum/v2/ASSESSMENTS/GRADING_RUBRICS.md`, section 9). The points select a track per domain by the adaptive rule of plan section 1.3 and are compared with the day 30 and day 60 retests. A score is never reported as a level of skill, and a placement is never used to excuse or to skip an assessment. Item scores are noisy: a domain holds four to six questions with Part 2 (two to six with Part 1 only), so one question moves a four-question domain by 25 points.
 
 ## 2. Register of questions
 
@@ -468,7 +468,7 @@ import re
 
 FAILED = re.compile(
     r"^\w{3} +\d{1,2} \d{2}:\d{2}:\d{2} \S+ sshd\[\d+\]: "
-    r"Failed password for (?:invalid user )?(?P<user>\S+) from (?P<ip>\S+) port (?P<port>\d+) ssh2$"
+    r"Failed password for (?:invalid user )?(\S+) from (\S+) port (\d+) ssh2$"
 )
 
 def count_failures(lines):
@@ -478,7 +478,8 @@ def count_failures(lines):
         if m is None:
             skipped += 1
             continue
-        counts[m["user"]] = counts.get(m["user"], 0) + 1
+        user = m.group(1)
+        counts[user] = counts.get(user, 0) + 1
     return counts, skipped
 ```
 
@@ -565,7 +566,7 @@ Credit (S): an address of the other family is not a member and returns false; an
 | Item | Reference answer | Points |
 |---|---|---:|
 | (a) port 8000 | open. Packets 1 to 3 are the handshake (SYN, SYN-ACK, ACK); packet 4 is an HTTP request and packet 6 an HTTP 200 reply, so an application answered. A connect scan reports `open` | 1 (0.5 state, 0.5 evidence) |
-| (a) port 8001 | closed. Packet 8 is a RST,ACK from the target itself in reply to the SYN of packet 7: the host is reachable and nothing accepts on that port. A connect scan reports `closed` | 1 |
+| (a) port 8001 | closed. Packet 8 is a RST,ACK that carries the target's address, in reply to the SYN of packet 7: the target answered and nothing accepts on that port. A connect scan reports `closed`. The capture cannot tell a reset from the target's own stack from one sent on its behalf by a device that rejects (credit if a learner says so; not required) | 1 |
 | (a) port 8002 | filtered. The SYN of packet 9 (at 2.305 s) is retransmitted in packets 10 and 11 (at +1.001 s and +3.005 s from the first, a doubling back-off) and nothing answers: no reply, no reset, no ICMP error. This fits a silent drop on the path or at the host. A connect scan reports `filtered`. It is not `closed` (that would be a reset) and it does not show a listener or its absence, or where the drop is | 1 |
 | (a) port 8003 and packet 13 | filtered. Packet 13 comes from `10.77.10.1`, the RED port of the lab router, not from the target: the router answered the probe with an ICMP destination-unreachable error, code "host administratively prohibited", so the policy at the router refused the probe. The target did not answer, and the capture does not show that the target ever saw the SYN. A connect scan reports `filtered` | 1 (0.5 state, 0.5 the router as the sender) |
 | (b) two unsupported conclusions | any two of: a service listens on 8002 or 8003 (not shown); the target is down or unreachable (it answered on 8000 and 8001); the firewall of the target dropped the packets of 8002 (the capture does not show where the drop is); 8002 is closed (a closed port answers with a reset); the service on 8000 is healthy or secure (one request and one reply); anything about the target's operating system (no such field is shown); that the HTTP content is benign | 2 (1 each) |

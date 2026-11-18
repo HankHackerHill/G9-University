@@ -4,7 +4,25 @@ Format: `GOVERNANCE.md` "Stage PASS report (required content)". Evidence labels:
 
 Repository state: branch `ccr-0cea681c-p9jbru`; the commit that last touches this file is the report's HEAD; baseline `f414481` (initial commit, 2026-11-05). All commits are local and **unpushed** by operator instruction ("Do not connect to GitHub only work here"); the remote branch is at `e987383`.
 
-## Update 2026-11-17 (latest): the no-decision steps of the path to 10, the 2026-11-10 review leads, and a final security review
+## Update 2026-11-18 (latest): the owner's v2.0 plan applied as a second curriculum shape; scope cut at the owner's usage limit
+
+Owner requests: apply the "G9 Cybersecurity Mastery v2.0" plan, fill gaps only if needed, add quizzes, tests, questions and hands-on learning (Hack The Box, TryHackMe and similar), then one more triple security audit with a search of everything known as of 2026-11-16; later, "I only have 13% usage left for the week ... only execute things that matter and help this app be useable ... while still maintaining the safety and security of the codebase". No CI or workflow was started (`ci.yml` stays `workflow_dispatch` only).
+
+| Delivered | Where | Label |
+|---|---|---|
+| Second structure profile `MASTERY_V2` next to `CT9_480`; manifest 1.1.0; import, plan, labels, desktop mock | ADR-0023; the five `mastery_v2` test files and `apps/desktop/src/ipc/transports/mock.test.ts` | TESTED (counts below) |
+| Courseware builder and its 460 tests; schemas for answer keys, resource registries and 60-day lesson sheets | `scripts/build_curriculum_v2.py`, `scripts/tests/test_gates_build_curriculum_v2.py`, `schemas/curriculum/` | TESTED |
+| Resource registries of 12 weeks (460 entries) | `docs/curriculum/v2/WEEKS/Wnn/RESOURCES.json` | SEARCH_CHECKED, ASSUMED or UNVERIFIED per entry; no page opened |
+| Course documents (drafted), week 1 design files and 61 fixtures (SHA-256 match: VERIFIED), 2 of 60 day guides | `docs/curriculum/v2/` | DRAFT; no review pass run |
+| Doc-reference gate green again: 36 references to unwritten courseware allow-listed as `planned` | `scripts/doc_refs_allow.json` | TESTED (`check_doc_refs.py`: 0 broken) |
+| `--available` judges only weeks with all five day guides, so a partly written week does not fail the preflight | `scripts/build_curriculum_v2.py` | TESTED (460 builder tests) |
+| `typescript-eslint` 8.73.0; `npm audit` 12 to 11 advisories, all `picomatch` (no patched release exists), dev tooling only | `apps/desktop/package.json`, CHANGELOG | TESTED (tsc, eslint, vitest, build) |
+
+Verification on this tree (this sandbox, no CI): @@VERIFY@@
+
+NOT DONE, and why (each is also in `docs/curriculum/v2/README.md` and CHANGELOG): courseware of weeks 2 to 12 and the generated v2 files; the window on the v2 course (ADR-0023 decision 9 is PROPOSED; the window keeps importing the complete Appendix A draft); the triple audit with web research and a Rust advisory scan (the last review is `docs/audit/security-audit-2026-11-17.md`; `cargo audit` could not be installed here and was not worked around); ipc-1 (PROPOSED, needs the shell run). Owner actions: unchanged (task 26: run the Tauri shell on the G9 host and the restore drill; decisions listed in sections 12 and 13). To resume the courseware: `docs/curriculum/v2/README.md`, "What exists and what is pending".
+
+## Update 2026-11-17: the no-decision steps of the path to 10, the 2026-11-10 review leads, and a final security review
 
 Owner requests: "Start now" (the 20 no-decision steps of `docs/release/path-to-10.md` section 9), "Finish this build and don't stop until complete", and "Continue until project is completely finished and fully tested codebase for errors and security". No CI or workflow was started (owner instruction: CI runs only when the owner starts it). Every step's evidence is a row of `docs/release/path-to-10-evidence.md`.
 

@@ -121,7 +121,7 @@
       "title": "Linux Luminarium.",
       "kind": "PATH",
       "access": "FREE_ACCOUNT",
-      "access_note": "pwn.college home page text in the search result: the platform is 'open, for free, to participation'; an account is needed to track progress and an SSH key is linked to it (ssh hacker@dojo.pwn.college).",
+      "access_note": "pwn.college home page text in the search result: the platform is 'open, for free, to participation'; an account is needed to track progress and an SSH key is linked to it (the dojo host is reached over SSH with that key).",
       "verification": "SEARCH_CHECKED",
       "evidence": "Query 'pwn.college Linux Luminarium dojo' on pwn.college: result 'Linux Luminarium.' at this URL; text lists 17 modules and 128 challenges, from Hello Hackers to Further Learning, including Processes and Jobs, Untangling Users, Perceiving Permissions and Chaining Commands.",
       "version": "as listed 2026-11-18 (17 modules, 128 challenges in the result)",

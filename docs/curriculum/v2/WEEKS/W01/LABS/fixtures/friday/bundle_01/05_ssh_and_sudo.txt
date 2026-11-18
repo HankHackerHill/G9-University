@@ -6,6 +6,7 @@ $ ls /etc/ssh/sshd_config.d/
 $ cat /etc/ssh/sshd_config.d/10-g9-lab.conf
 # Synthetic lab file.
 PasswordAuthentication no
+KbdInteractiveAuthentication no
 PermitRootLogin no
 StrictModes yes
 AllowUsers labanalyst labuser6 labuser7 labadmin
@@ -18,9 +19,10 @@ ls: cannot open directory '/etc/sudoers.d/': Permission denied
 
 Part 2: labadmin extract, run by labadmin, 2099-01-05T09:10:00Z to 09:12:00Z.
 
-$ sudo sshd -T | grep -E '^(passwordauthentication|permitrootlogin|strictmodes|allowusers|listenaddress|pubkeyauthentication) '
+$ sudo sshd -T | grep -E '^(passwordauthentication|kbdinteractiveauthentication|permitrootlogin|strictmodes|allowusers|pubkeyauthentication) '
 pubkeyauthentication yes
 passwordauthentication no
+kbdinteractiveauthentication no
 permitrootlogin no
 strictmodes yes
 allowusers labanalyst
