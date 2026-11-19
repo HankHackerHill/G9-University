@@ -1,0 +1,14 @@
+2099-01-03T09:00:01+0000 tgt sshd[2101]: Server listening on 127.0.0.1 port 22.
+2099-01-03T09:02:11+0000 tgt sshd[2150]: Authentication refused: bad ownership or modes for directory /home/labuser9/.ssh
+2099-01-03T09:02:11+0000 tgt sshd[2150]: Connection closed by authenticating user labuser9 127.0.0.1 port 40112 [preauth]
+2099-01-03T09:04:40+0000 tgt sshd[2171]: Accepted publickey for labuser8 from 127.0.0.1 port 40120 ssh2: ED25519 SHA256:synthetic-fingerprint-0001
+2099-01-03T09:04:40+0000 tgt sshd[2171]: pam_unix(sshd:session): session opened for user labuser8(uid=1008) by (uid=0)
+2099-01-03T09:05:02+0000 tgt sshd[2171]: pam_unix(sshd:session): session closed for user labuser8
+2099-01-03T09:11:15+0000 tgt sshd[2190]: Invalid user backup from 127.0.0.1 port 40140
+2099-01-03T09:11:17+0000 tgt sshd[2190]: Failed password for invalid user backup from 127.0.0.1 port 40140 ssh2
+2099-01-03T09:11:19+0000 tgt sshd[2190]: Connection closed by invalid user backup 127.0.0.1 port 40140 [preauth]
+2099-01-03T09:14:03+0000 tgt sshd[2203]: User labuser2 from 127.0.0.1 not allowed because not listed in AllowUsers
+2099-01-03T09:14:03+0000 tgt sshd[2203]: Connection closed by invalid user labuser2 127.0.0.1 port 40150 [preauth]
+2099-01-03T09:20:30+0000 tgt sshd[2230]: Failed publickey for labuser8 from 127.0.0.1 port 40160 ssh2: ED25519 SHA256:synthetic-fingerprint-0002
+2099-01-03T09:20:31+0000 tgt sshd[2230]: Accepted password for labuser8 from 127.0.0.1 port 40160 ssh2
+2099-01-03T09:20:31+0000 tgt sshd[2230]: pam_unix(sshd:session): session opened for user labuser8(uid=1008) by (uid=0)
