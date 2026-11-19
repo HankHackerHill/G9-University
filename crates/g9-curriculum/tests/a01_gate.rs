@@ -204,6 +204,30 @@ fn error_mutations() -> Vec<Mutation> {
         (codes::OBJECTIVE_TEXT_EMPTY, |m| {
             m.weeks[0].days[0].objectives[0].text = "\t".into()
         }),
+        (codes::TEXT_HIDDEN_CHARACTER, |m| {
+            // right-to-left override: "...report<U+202E>fdp.exe" is shown reordered
+            m.weeks[0].days[0].objectives[0].text = "Review the ACL report\u{202E}fdp.exe".into()
+        }),
+        (codes::TEXT_HIDDEN_CHARACTER, |m| {
+            m.weeks[0].days[0].evidence_artifact = "report\u{200B}".into()
+        }),
+        (codes::TEXT_HIDDEN_CHARACTER, |m| {
+            m.name = "name\u{2066}".into()
+        }),
+        (codes::TEXT_HIDDEN_CHARACTER, |m| {
+            m.weeks[0].title = "title\u{FEFF}".into()
+        }),
+        (codes::TEXT_HIDDEN_CHARACTER, |m| {
+            m.provenance_note = Some("note\u{E0041}".into())
+        }),
+        (codes::TEXT_HIDDEN_CHARACTER, |m| {
+            m.weeks[0].days[0].resources.push(Resource {
+                reference: "https://portswigger.net/web-security\u{200E}".into(),
+                kind: ResourceKind::External,
+                license_note: Some("free tier".into()),
+                version: Some("2026-11".into()),
+            })
+        }),
         (codes::COMPETENCY_ID_INVALID, |m| {
             m.weeks[0].days[0].objectives[0].competency_ids = vec!["has space".into()]
         }),
@@ -335,6 +359,37 @@ fn a01_rejects_each_violation() {
     }
     let all_w: BTreeSet<&str> = codes::ALL_WARNINGS.iter().copied().collect();
     assert_eq!(covered_warnings, all_w);
+}
+
+#[test]
+fn free_text_may_hold_tab_and_line_feed_and_the_hidden_character_report_is_bounded() {
+    // TAB and LF are the layout characters free text may hold.
+    let mut m = seed();
+    m.weeks[0].days[0].objectives[0].text = "a\tb\nc".into();
+    assert!(!validate(&m).has_error(codes::TEXT_HIDDEN_CHARACTER));
+
+    // A manifest with a hidden character in every objective yields a bounded report whose
+    // messages quote no text (audit 2026-11-18, V2-01 and V2-05).
+    let mut m = seed();
+    for week in &mut m.weeks {
+        for day in &mut week.days {
+            for obj in &mut day.objectives {
+                obj.text = format!("{}\u{200B}", obj.text);
+            }
+        }
+    }
+    let report = validate(&m);
+    let hidden: Vec<_> = report
+        .errors
+        .iter()
+        .filter(|e| e.code == codes::TEXT_HIDDEN_CHARACTER)
+        .collect();
+    assert_eq!(hidden.len(), 20);
+    assert_eq!(hidden[0].path, "/weeks/0/days/0/objectives/0/text");
+    assert!(hidden[0].message.contains("U+200B"));
+    assert!(!hidden[0]
+        .message
+        .contains(&m.weeks[0].days[0].objectives[0].text));
 }
 
 #[test]

@@ -16,6 +16,19 @@ const HIDDEN = /[\p{Cc}\u00AD\u061C\u180E\u200B-\u200F\u2028-\u202E\u2060-\u206F
 /** Keys of a request whose value is a name (`NAME_KEYS` in `crates/g9-app/src/dispatch.rs`). */
 export const NAME_KEYS: readonly string[] = ['title', 'filename', 'label'];
 
+/**
+ * The code point (upper-case hex, at least four digits) of the first hidden character of `text`
+ * other than TAB and LF, or `null`. Twin of `hidden_character` in `g9-curriculum`.
+ */
+export function hiddenCharacter(text: string): string | null {
+  for (const ch of text) {
+    if (ch !== '\t' && ch !== '\n' && HIDDEN.test(ch)) {
+      return (ch.codePointAt(0) ?? 0).toString(16).toUpperCase().padStart(4, '0');
+    }
+  }
+  return null;
+}
+
 /** Why `text` cannot be stored as a name, or `null` when it can. Same words as `name_defect`. */
 export function nameDefect(text: string): string | null {
   const hidden = HIDDEN.exec(text);

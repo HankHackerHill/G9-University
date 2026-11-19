@@ -29,6 +29,7 @@ use crate::error::CurriculumError;
 use crate::manifest::{Block, BlockSpec, Day, Manifest, Reconciliation, ResourceKind, Structure};
 use crate::provenance::provenance_label;
 use g9_domain::curriculum::{profile_for, ProfileBlock, STRUCTURE_PROFILES};
+use g9_domain::text::is_hidden;
 use g9_domain::{
     ActorId, CompetencyId, CurriculumCounts, CurriculumId, CurriculumInvariants, DayOfWeek,
     InvariantViolation, ManifestProvenance, SchemaVersion, StructureProfile, StructureProfileId,
@@ -107,6 +108,11 @@ pub mod codes {
     pub const OBJECTIVE_ID_DUPLICATE: &str = "objective.id.duplicate";
     /// Objective text is blank.
     pub const OBJECTIVE_TEXT_EMPTY: &str = "objective.text.empty";
+    /// A free-text field (name, week title, objective text, evidence artifact,
+    /// provenance note, resource reference, licence note or version) holds a
+    /// control, invisible or direction-changing character other than TAB and
+    /// LF (audit 2026-11-18, V2-01).
+    pub const TEXT_HIDDEN_CHARACTER: &str = "manifest.text.hidden_character";
     /// A `competency_ids` entry is not a valid `CompetencyId` slug.
     pub const COMPETENCY_ID_INVALID: &str = "objective.competency_id.invalid";
     /// Block `seq` is not its 1-based position.
@@ -152,6 +158,7 @@ pub mod codes {
         OBJECTIVE_ID_MISMATCH,
         OBJECTIVE_ID_DUPLICATE,
         OBJECTIVE_TEXT_EMPTY,
+        TEXT_HIDDEN_CHARACTER,
         COMPETENCY_ID_INVALID,
         BLOCK_SEQ,
         DURATION_NON_POSITIVE,
@@ -359,6 +366,7 @@ pub fn validate(manifest: &Manifest) -> ValidationReport {
     );
     let counts = check_weeks(manifest, profile, &mut r);
     check_provenance(manifest, &mut r);
+    check_hidden_text(manifest, &mut r);
     let mut report = ValidationReport::for_profile(profile, counts);
     report.errors = r.errors;
     report.warnings = r.warnings;
@@ -872,6 +880,70 @@ fn blocks_match(blocks: &[Block], canonical: &[ProfileBlock]) -> bool {
             .iter()
             .zip(canonical.iter())
             .all(|(b, c)| b.block == c.code && b.minutes == i64::from(c.minutes))
+}
+
+/// Hidden-character reports a manifest can cost: a hostile manifest cannot
+/// make the report as long as the manifest (audit 2026-11-18, V2-05).
+const MAX_HIDDEN_TEXT_ERRORS: usize = 20;
+
+/// The first character of `text` that cannot be seen or that changes the
+/// order of the text, TAB and LF excepted (they are the only layout characters
+/// free text may hold).
+fn hidden_character(text: &str) -> Option<char> {
+    text.chars()
+        .find(|c| is_hidden(*c) && *c != '\t' && *c != '\n')
+}
+
+/// Every free-text field is shown to the operator as text. A bidirectional
+/// override or a zero-width character in one of them makes the screen show
+/// something other than what was stored (audit 2026-11-18, V2-01). The
+/// message names the position and the code point, never the text.
+fn check_hidden_text(m: &Manifest, r: &mut Reporter) {
+    let mut found = 0usize;
+    let mut check = |path: String, text: &str, r: &mut Reporter| {
+        if found >= MAX_HIDDEN_TEXT_ERRORS {
+            return;
+        }
+        if let Some(c) = hidden_character(text) {
+            found += 1;
+            r.error(
+                codes::TEXT_HIDDEN_CHARACTER,
+                path,
+                format!(
+                    "holds a character that cannot be seen or that changes the order of the text (U+{:04X})",
+                    u32::from(c)
+                ),
+            );
+        }
+    };
+    check("/name".to_string(), &m.name, r);
+    if let Some(note) = &m.provenance_note {
+        check("/provenance_note".to_string(), note, r);
+    }
+    for (wi, week) in m.weeks.iter().enumerate() {
+        check(format!("/weeks/{wi}/title"), &week.title, r);
+        for (di, day) in week.days.iter().enumerate() {
+            let dpath = format!("/weeks/{wi}/days/{di}");
+            check(
+                format!("{dpath}/evidence_artifact"),
+                &day.evidence_artifact,
+                r,
+            );
+            for (oi, obj) in day.objectives.iter().enumerate() {
+                check(format!("{dpath}/objectives/{oi}/text"), &obj.text, r);
+            }
+            for (ri, res) in day.resources.iter().enumerate() {
+                let rpath = format!("{dpath}/resources/{ri}");
+                check(format!("{rpath}/reference"), &res.reference, r);
+                if let Some(note) = &res.license_note {
+                    check(format!("{rpath}/license_note"), note, r);
+                }
+                if let Some(version) = &res.version {
+                    check(format!("{rpath}/version"), version, r);
+                }
+            }
+        }
+    }
 }
 
 fn check_provenance(m: &Manifest, r: &mut Reporter) {

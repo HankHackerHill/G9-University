@@ -13,6 +13,7 @@
  */
 import type { StructureProfileId, Violation } from '../operations';
 import type { JsonValue } from '../types';
+import { hiddenCharacter } from '../../lib/text';
 
 // ---------------------------------------------------------------------------
 // Profiles (g9_domain::curriculum)
@@ -204,6 +205,7 @@ export interface ParsedObjective {
 export interface ParsedResource {
   ref: string;
   kind: 'EXTERNAL' | 'INTERNAL';
+  license_note: string | null;
   version: string | null;
 }
 
@@ -251,6 +253,7 @@ export interface ParsedManifest {
   name: string;
   version: string;
   provenance: ManifestProvenanceName;
+  provenance_note: string | null;
   structure: ParsedStructure;
   weekday_blocks: ParsedBlockSpec[];
   saturday_blocks: ParsedBlockSpec[];
@@ -350,11 +353,11 @@ function parseDay(value: unknown): ParsedDay {
         ? []
         : items(rec.resources).map((r): ParsedResource => {
             const res = closedObject(r, ['ref', 'kind'], ['license_note', 'version']);
-            optionalText(res.license_note);
+            const licenseNote = optionalText(res.license_note);
             if (res.kind !== 'EXTERNAL' && res.kind !== 'INTERNAL') {
               return refuse();
             }
-            return { ref: text(res.ref), kind: res.kind, version: optionalText(res.version) };
+            return { ref: text(res.ref), kind: res.kind, license_note: licenseNote, version: optionalText(res.version) };
           }),
   };
 }
@@ -367,7 +370,7 @@ export function parseManifest(value: JsonValue): ParsedManifest | null {
       ['manifest_schema_version', 'curriculum_id', 'name', 'version', 'provenance', 'structure', 'weekday_blocks', 'saturday_blocks', 'weeks'],
       ['provenance_note', 'reconciliation'],
     );
-    optionalText(rec.provenance_note);
+    const provenanceNote = optionalText(rec.provenance_note);
     const s = closedObject(rec.structure, ['weeks', 'days_per_week', 'objectives_per_day', 'weekday_minutes', 'saturday_minutes', 'weekly_minutes', 'total_minutes', 'sunday'], ['assessment_day_of_week']);
     let reconciliation: ParsedReconciliation | null = null;
     if (rec.reconciliation !== undefined && rec.reconciliation !== null) {
@@ -380,6 +383,7 @@ export function parseManifest(value: JsonValue): ParsedManifest | null {
       name: text(rec.name),
       version: text(rec.version),
       provenance: provenanceOf(rec.provenance),
+      provenance_note: provenanceNote,
       structure: {
         weeks: u32(s.weeks),
         days_per_week: u32(s.days_per_week),
@@ -455,6 +459,7 @@ export const MANIFEST_CODES = {
   objectiveIdMismatch: 'objective.id.mismatch',
   objectiveIdDuplicate: 'objective.id.duplicate',
   objectiveTextEmpty: 'objective.text.empty',
+  textHiddenCharacter: 'manifest.text.hidden_character',
   competencyIdInvalid: 'objective.competency_id.invalid',
   blockSeq: 'block.seq.mismatch',
   durationNonPositive: 'duration.non_positive',
@@ -507,6 +512,46 @@ function blocksMatch(list: readonly ParsedBlockSpec[], canonical: readonly Profi
       return b.block === c?.code && b.minutes === c.minutes;
     })
   );
+}
+
+/** Hidden-character reports a manifest can cost (`MAX_HIDDEN_TEXT_ERRORS` in `crates/g9-curriculum/src/validate.rs`). */
+const MAX_HIDDEN_TEXT_ERRORS = 20;
+
+/**
+ * Every free-text field is shown to the operator as text: a bidirectional override or a zero-width
+ * character in one of them makes the screen show something other than what was stored (audit
+ * 2026-11-18, V2-01). TAB and LF are the layout characters free text may hold. The message names
+ * the code point, never the text. Twin of `check_hidden_text` in the backend.
+ */
+function checkHiddenText(m: ParsedManifest, r: Report): void {
+  let found = 0;
+  const check = (path: string, text: string | null): void => {
+    if (text === null || found >= MAX_HIDDEN_TEXT_ERRORS) {
+      return;
+    }
+    const c = hiddenCharacter(text);
+    if (c !== null) {
+      found += 1;
+      r.error(MANIFEST_CODES.textHiddenCharacter, path, `holds a character that cannot be seen or that changes the order of the text (U+${c})`);
+    }
+  };
+  check('/name', m.name);
+  check('/provenance_note', m.provenance_note);
+  m.weeks.forEach((week, wi) => {
+    check(`/weeks/${wi}/title`, week.title);
+    week.days.forEach((day, di) => {
+      const dpath = `/weeks/${wi}/days/${di}`;
+      check(`${dpath}/evidence_artifact`, day.evidence_artifact);
+      day.objectives.forEach((obj, oi) => {
+        check(`${dpath}/objectives/${oi}/text`, obj.text);
+      });
+      day.resources.forEach((res, ri) => {
+        check(`${dpath}/resources/${ri}/ref`, res.ref);
+        check(`${dpath}/resources/${ri}/license_note`, res.license_note);
+        check(`${dpath}/resources/${ri}/version`, res.version);
+      });
+    });
+  });
 }
 
 function checkHeader(m: ParsedManifest, r: Report): void {
@@ -791,6 +836,8 @@ export function checkManifest(value: JsonValue): ManifestCheck {
   } else {
     checkReconciliation(m.reconciliation, r);
   }
+
+  checkHiddenText(m, r);
 
   const arithmetic: [string, number, number][] = [
     ['curriculum.weeks', profile.weeks, counts.weeks],

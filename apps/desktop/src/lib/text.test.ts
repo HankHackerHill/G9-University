@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { firstUnprintableName, nameDefect } from './text';
+import { firstUnprintableName, hiddenCharacter, nameDefect } from './text';
 
 describe('names are one line of visible text', () => {
   it('accepts ordinary names in any script, padded or not', () => {
@@ -38,5 +38,16 @@ describe('names are one line of visible text', () => {
     expect(firstUnprintableName({ nested: { label: '  ' } })).toEqual({ field: 'label', reason: 'is empty or only spaces' });
     expect(firstUnprintableName(null)).toBeNull();
     expect(firstUnprintableName('title')).toBeNull();
+  });
+});
+
+describe('free text in an imported curriculum', () => {
+  it('may hold tab and line feed and refuses every other hidden character, naming its code point', () => {
+    expect(hiddenCharacter('a\tb\nc')).toBeNull();
+    expect(hiddenCharacter('Überblick 報告書')).toBeNull();
+    expect(hiddenCharacter('report\u202Efdp.exe')).toBe('202E');
+    expect(hiddenCharacter('a\u200Bb')).toBe('200B');
+    expect(hiddenCharacter('a\r\nb')).toBe('000D');
+    expect(hiddenCharacter('x\u{E0041}y')).toBe('E0041');
   });
 });
