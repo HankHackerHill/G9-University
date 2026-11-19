@@ -27,14 +27,17 @@ const ALLOWED: &[(&str, char, usize)] = &[
 
 const SKIPPED_DIRS: &[&str] = &[
     ".git",
-    // Agent sessions' temporary git worktrees: copies, not part of the repository.
-    ".claude",
     "target",
     "node_modules",
     "dist",
     "__pycache__",
     ".venv",
 ];
+
+/// Repository-relative directories skipped as a whole: agent sessions' temporary git
+/// worktrees are copies, not part of the repository. `.claude` itself is scanned: its project
+/// skills steer an AI agent.
+const SKIPPED_PATHS: &[&str] = &[".claude/worktrees"];
 
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -43,7 +46,7 @@ fn repository_root() -> PathBuf {
         .unwrap()
 }
 
-fn text_files(dir: &Path, out: &mut Vec<PathBuf>) {
+fn text_files(root: &Path, dir: &Path, out: &mut Vec<PathBuf>) {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return;
     };
@@ -57,8 +60,13 @@ fn text_files(dir: &Path, out: &mut Vec<PathBuf>) {
         }
         if kind.is_dir() {
             let name = entry.file_name().to_string_lossy().to_string();
-            if !SKIPPED_DIRS.contains(&name.as_str()) {
-                text_files(&path, out);
+            let relative = path
+                .strip_prefix(root)
+                .map(|r| r.to_string_lossy().replace('\\', "/"))
+                .unwrap_or_default();
+            if !SKIPPED_DIRS.contains(&name.as_str()) && !SKIPPED_PATHS.contains(&relative.as_str())
+            {
+                text_files(root, &path, out);
             }
         } else if kind.is_file() {
             out.push(path);
@@ -94,13 +102,24 @@ fn the_scan_finds_what_it_is_for() {
 fn no_text_file_of_the_repository_holds_a_hidden_character() {
     let root = repository_root();
     let mut files = Vec::new();
-    text_files(&root, &mut files);
+    text_files(&root, &root, &mut files);
     assert!(
         files.len() > 500,
         "the scan found only {} files under {}",
         files.len(),
         root.display()
     );
+    // Files that steer an AI agent (project skills, `.claude/`) are the most valuable place to
+    // hide an instruction in invisible characters: the scan must reach them (audit 2026-11-19;
+    // `.claude` used to be skipped by name).
+    for required in [".claude/skills", ".agents/skills"] {
+        assert!(
+            files
+                .iter()
+                .any(|f| f.strip_prefix(&root).is_ok_and(|r| r.starts_with(required))),
+            "the scan does not reach any file under {required}"
+        );
+    }
     let mut offenders = Vec::new();
     let mut allowed_seen = vec![0_usize; ALLOWED.len()];
     for file in &files {

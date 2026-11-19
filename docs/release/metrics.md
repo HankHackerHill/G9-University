@@ -7,7 +7,7 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 | Metric | Value | Counted from |
 |---|---|---|
 | Workspace members (crates) | 15 (13 under `crates/`; 14 default members) | `Cargo.toml` |
-| Rust lines | 134,883 (src 95,572, tests 38,587, other 724) | the members' `.rs` files and `[[test]]` paths |
+| Rust lines | 134,902 (src 95,572, tests 38,606, other 724) | the members' `.rs` files and `[[test]]` paths |
 | `#[test]` attributes | 1,231 | the same files |
 | Routed IPC operations | 53 | `OPERATIONS` in `crates/g9-app/src/ops.rs` |
 | PROPOSED IPC operations | 15 (analytics 3, executive 4, research 4, teaching 4) | `PROPOSED_OPERATIONS` of the modules `crates/g9-app/src/dispatch.rs` names |
@@ -26,7 +26,7 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 
 | Crate | Path | Default member | Files | src lines | tests lines | other lines | `#[test]` |
 |---|---|---|---|---|---|---|---|
-| g9-domain | `crates/g9-domain` | yes | 19 | 3,376 | 145 | 0 | 42 |
+| g9-domain | `crates/g9-domain` | yes | 19 | 3,376 | 164 | 0 | 42 |
 | g9-policy | `crates/g9-policy` | yes | 11 | 4,892 | 3,211 | 0 | 87 |
 | g9-storage | `crates/g9-storage` | yes | 34 | 28,735 | 3,761 | 0 | 218 |
 | g9-curriculum | `crates/g9-curriculum` | yes | 12 | 2,910 | 2,389 | 0 | 47 |
@@ -41,7 +41,7 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 | g9-evaluation | `crates/g9-evaluation` | yes | 18 | 6,714 | 1,910 | 0 | 61 |
 | g9-cli | `apps/cli` | yes | 39 | 9,251 | 4,105 | 660 | 123 |
 | g9-mentor-desktop | `apps/desktop/src-tauri` | no | 4 | 1,592 | 0 | 18 | 23 |
-| Total | | | 295 | 95,572 | 38,587 | 724 | 1,231 |
+| Total | | | 295 | 95,572 | 38,606 | 724 | 1,231 |
 
 Rust files that no member builds: none.
 
