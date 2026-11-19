@@ -143,6 +143,8 @@ jobs:
         run: $PY -I scripts/gen_metrics.py
       - name: backlog map (every open register and RTM row is mapped or counted; the unmapped count only goes down)
         run: $PY -I scripts/check_backlog.py
+      - name: no ignored project file (nothing .gitignore excludes is part of the project; GIT-1)
+        run: $PY -I scripts/check_ignored_files.py
       - name: tests of the gates themselves
         run: G9_REQUIRE_JSONSCHEMA=1 $PY -I -m unittest discover -s scripts/tests -p 'test_*.py'
 

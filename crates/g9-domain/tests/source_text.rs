@@ -32,12 +32,34 @@ const SKIPPED_DIRS: &[&str] = &[
     "dist",
     "__pycache__",
     ".venv",
+    // Tool caches that are not UTF-8 text and that git ignores (ruff writes its own .gitignore in it).
+    ".ruff_cache",
 ];
 
 /// Repository-relative directories skipped as a whole: agent sessions' temporary git
 /// worktrees are copies, not part of the repository. `.claude` itself is scanned: its project
 /// skills steer an AI agent.
 const SKIPPED_PATHS: &[&str] = &[".claude/worktrees"];
+
+/// Files that are binary by design (the Tauri icons and the SQLite upgrade fixtures). Any other
+/// file that is not valid UTF-8 is a failure: a file with one invalid byte used to be skipped
+/// whole, so hidden characters elsewhere in it went unseen (audit 2026-11-19, GATE-1).
+const BINARY_EXTENSIONS: &[&str] = &["png", "sqlite"];
+
+/// Why a file that is not valid UTF-8 cannot be skipped, or `None` when it may be.
+fn not_text_defect(relative: &str, bytes: &[u8]) -> Option<String> {
+    if std::str::from_utf8(bytes).is_ok() {
+        return None;
+    }
+    let extension = relative.rsplit('.').next().unwrap_or("").to_lowercase();
+    if BINARY_EXTENSIONS.contains(&extension.as_str()) {
+        None
+    } else {
+        Some(format!(
+            "{relative}: not valid UTF-8 and not one of the binary types {BINARY_EXTENSIONS:?}"
+        ))
+    }
+}
 
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -46,7 +68,9 @@ fn repository_root() -> PathBuf {
         .unwrap()
 }
 
-fn text_files(root: &Path, dir: &Path, out: &mut Vec<PathBuf>) {
+/// Every regular file under `dir`, except the skipped directories; symbolic links are not
+/// followed and are collected in `links`: a link outside the skipped directories is a failure.
+fn text_files(root: &Path, dir: &Path, out: &mut Vec<PathBuf>, links: &mut Vec<PathBuf>) {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return;
     };
@@ -56,6 +80,7 @@ fn text_files(root: &Path, dir: &Path, out: &mut Vec<PathBuf>) {
             continue;
         };
         if kind.is_symlink() {
+            links.push(path);
             continue;
         }
         if kind.is_dir() {
@@ -66,7 +91,7 @@ fn text_files(root: &Path, dir: &Path, out: &mut Vec<PathBuf>) {
                 .unwrap_or_default();
             if !SKIPPED_DIRS.contains(&name.as_str()) && !SKIPPED_PATHS.contains(&relative.as_str())
             {
-                text_files(root, &path, out);
+                text_files(root, &path, out, links);
             }
         } else if kind.is_file() {
             out.push(path);
@@ -99,10 +124,42 @@ fn the_scan_finds_what_it_is_for() {
 }
 
 #[test]
+fn a_file_that_is_not_utf8_or_a_link_can_no_longer_slip_past_the_scan() {
+    // One invalid byte next to a right-to-left override: the old scan skipped the whole file.
+    let source = b"let a = 1; // \xE2\x80\xAE\xFF\n";
+    assert!(not_text_defect("src/a.ts", source).is_some());
+    assert!(not_text_defect("scripts/run.sh", source).is_some());
+    // The known binary types and valid UTF-8 pass.
+    assert!(not_text_defect("icons/icon.png", b"\x89PNG\xFF").is_none());
+    assert!(not_text_defect("fixtures/schema-v01.sqlite", b"SQLite\xFF").is_none());
+    assert!(not_text_defect("docs/a.md", "plain \u{fc}ber".as_bytes()).is_none());
+
+    // A symbolic link is reported, not followed.
+    #[cfg(unix)]
+    {
+        let dir = std::env::temp_dir().join(format!("g9-scan-links-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("real.txt"), "x").unwrap();
+        let _ = std::fs::remove_file(dir.join("link.txt"));
+        std::os::unix::fs::symlink(dir.join("real.txt"), dir.join("link.txt")).unwrap();
+        let (mut files, mut links) = (Vec::new(), Vec::new());
+        text_files(&dir, &dir, &mut files, &mut links);
+        assert_eq!(files, vec![dir.join("real.txt")]);
+        assert_eq!(links, vec![dir.join("link.txt")]);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+}
+
+#[test]
 fn no_text_file_of_the_repository_holds_a_hidden_character() {
     let root = repository_root();
     let mut files = Vec::new();
-    text_files(&root, &root, &mut files);
+    let mut links = Vec::new();
+    text_files(&root, &root, &mut files, &mut links);
+    assert!(
+        links.is_empty(),
+        "symbolic links outside the skipped directories (the scan does not follow them): {links:?}"
+    );
     assert!(
         files.len() > 500,
         "the scan found only {} files under {}",
@@ -123,11 +180,7 @@ fn no_text_file_of_the_repository_holds_a_hidden_character() {
     let mut offenders = Vec::new();
     let mut allowed_seen = vec![0_usize; ALLOWED.len()];
     for file in &files {
-        // Binary files (images, fonts, archives) are not text; skip what is not UTF-8.
         let Ok(bytes) = std::fs::read(file) else {
-            continue;
-        };
-        let Ok(text) = String::from_utf8(bytes) else {
             continue;
         };
         let relative = file
@@ -135,6 +188,14 @@ fn no_text_file_of_the_repository_holds_a_hidden_character() {
             .unwrap()
             .to_string_lossy()
             .replace('\\', "/");
+        // Binary files are listed by type; a text-looking file that is not UTF-8 is a failure.
+        if let Some(defect) = not_text_defect(&relative, &bytes) {
+            offenders.push(defect);
+            continue;
+        }
+        let Ok(text) = String::from_utf8(bytes) else {
+            continue;
+        };
         for (line, column, c) in hidden_in(&text) {
             match ALLOWED
                 .iter()

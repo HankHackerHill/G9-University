@@ -7,8 +7,8 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 | Metric | Value | Counted from |
 |---|---|---|
 | Workspace members (crates) | 15 (13 under `crates/`; 14 default members) | `Cargo.toml` |
-| Rust lines | 134,902 (src 95,572, tests 38,606, other 724) | the members' `.rs` files and `[[test]]` paths |
-| `#[test]` attributes | 1,231 | the same files |
+| Rust lines | 135,459 (src 95,901, tests 38,834, other 724) | the members' `.rs` files and `[[test]]` paths |
+| `#[test]` attributes | 1,239 | the same files |
 | Routed IPC operations | 53 | `OPERATIONS` in `crates/g9-app/src/ops.rs` |
 | PROPOSED IPC operations | 15 (analytics 3, executive 4, research 4, teaching 4) | `PROPOSED_OPERATIONS` of the modules `crates/g9-app/src/dispatch.rs` names |
 | Migrations | 15 (0001 to 0015) | `crates/g9-storage/src/migrations/` |
@@ -18,18 +18,18 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 | JSON schemas | 117 (109 in `schemas/ipc/`, 8 elsewhere) | `schemas/` |
 | Skill packages | 37 | `.agents/skills/` |
 | Competency packs | 8 | `data/competency-packs/` |
-| Frontend TS/TSX | 127 files, 26,996 lines; 41 test files | `apps/desktop/` |
+| Frontend TS/TSX | 127 files, 27,109 lines; 41 test files | `apps/desktop/` |
 | CSS | 16 files, 4,224 lines | `apps/desktop/` |
-| Scripts | 22 in `scripts/`, 3 in `scripts/e2e/`, 12 test modules in `scripts/tests/` | `scripts/` |
+| Scripts | 23 in `scripts/`, 3 in `scripts/e2e/`, 14 test modules in `scripts/tests/` | `scripts/` |
 
 ## Rust per workspace member
 
 | Crate | Path | Default member | Files | src lines | tests lines | other lines | `#[test]` |
 |---|---|---|---|---|---|---|---|
-| g9-domain | `crates/g9-domain` | yes | 19 | 3,376 | 164 | 0 | 42 |
+| g9-domain | `crates/g9-domain` | yes | 19 | 3,589 | 225 | 0 | 46 |
 | g9-policy | `crates/g9-policy` | yes | 11 | 4,892 | 3,211 | 0 | 87 |
-| g9-storage | `crates/g9-storage` | yes | 34 | 28,735 | 3,761 | 0 | 218 |
-| g9-curriculum | `crates/g9-curriculum` | yes | 12 | 2,910 | 2,389 | 0 | 47 |
+| g9-storage | `crates/g9-storage` | yes | 34 | 28,771 | 3,761 | 0 | 218 |
+| g9-curriculum | `crates/g9-curriculum` | yes | 12 | 2,911 | 2,396 | 0 | 47 |
 | g9-calendar | `crates/g9-calendar` | yes | 10 | 3,951 | 916 | 0 | 56 |
 | g9-evidence | `crates/g9-evidence` | yes | 9 | 3,756 | 369 | 0 | 40 |
 | g9-competency | `crates/g9-competency` | yes | 9 | 4,006 | 0 | 0 | 38 |
@@ -37,11 +37,11 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 | g9-retention | `crates/g9-retention` | yes | 7 | 952 | 0 | 0 | 11 |
 | g9-ai-adapter | `crates/g9-ai-adapter` | yes | 11 | 2,613 | 614 | 0 | 40 |
 | g9-skills | `crates/g9-skills` | yes | 15 | 4,499 | 1,423 | 0 | 63 |
-| g9-app | `crates/g9-app` | yes | 83 | 14,670 | 17,693 | 46 | 328 |
+| g9-app | `crates/g9-app` | yes | 83 | 14,749 | 17,853 | 46 | 332 |
 | g9-evaluation | `crates/g9-evaluation` | yes | 18 | 6,714 | 1,910 | 0 | 61 |
 | g9-cli | `apps/cli` | yes | 39 | 9,251 | 4,105 | 660 | 123 |
 | g9-mentor-desktop | `apps/desktop/src-tauri` | no | 4 | 1,592 | 0 | 18 | 23 |
-| Total | | | 295 | 95,572 | 38,606 | 724 | 1,231 |
+| Total | | | 295 | 95,901 | 38,834 | 724 | 1,239 |
 
 Rust files that no member builds: none.
 
@@ -90,8 +90,8 @@ Cross-checks passed: operations.parse, operations.unique, operations.disjoint, o
 
 | Group | Files | Lines |
 |---|---|---|
-| Application source (`apps/desktop/src/`, .ts/.tsx) | 80 | 18,890 |
-| Test files (`*.test.ts`, `*.test.tsx`) | 41 | 7,788 |
+| Application source (`apps/desktop/src/`, .ts/.tsx) | 80 | 18,955 |
+| Test files (`*.test.ts`, `*.test.tsx`) | 41 | 7,836 |
 | Test support (`apps/desktop/src/test/`) | 5 | 292 |
 | Build configuration (.ts outside `apps/desktop/src/`) | 1 | 26 |
 | CSS | 16 | 4,224 |
@@ -105,6 +105,6 @@ Cross-checks passed: operations.parse, operations.unique, operations.disjoint, o
 | JSON schemas elsewhere in `schemas/` | 8 |
 | Skill packages (`.agents/skills/`) | 37 |
 | Competency packs (`data/competency-packs/`) | 8 |
-| Files in `scripts/` | 22 (.json 1, .py 18, .sh 3) |
+| Files in `scripts/` | 23 (.json 1, .py 19, .sh 3) |
 | Files in `scripts/e2e/` | 3 |
-| Test modules `scripts/tests/test_*.py` | 12 |
+| Test modules `scripts/tests/test_*.py` | 14 |

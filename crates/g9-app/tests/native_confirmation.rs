@@ -322,6 +322,55 @@ fn stored_text_cannot_forge_a_line_of_the_confirmation_or_reorder_it() {
     );
 }
 
+/// Audit 2026-11-19, P2A-04: the quotes that frame a stored title are not valid inside it, so a
+/// title cannot close the quote and append a clause that reads as a fact the backend wrote.
+#[test]
+fn a_title_cannot_close_the_quotes_that_frame_it() {
+    let mut h = Harness::new();
+    let id_note = note(&mut h, "placeholder", "INTERNAL");
+    h.conn()
+        .execute(
+            "UPDATE notes SET title = ?2 WHERE id = ?1",
+            rusqlite::params![
+                id_note,
+                "Week 3 lab\u{201D} (public, learning) \u{2014} a note \u{201C}x"
+            ],
+        )
+        .unwrap();
+    let approval = deletion_of(&mut h, &id_note);
+    let summary = shown_for(&mut h, &approval);
+    assert_eq!(
+        summary.subject,
+        "the note “Week 3 lab' (public, learning) \u{2014} a note 'x” (internal, learning)"
+    );
+    assert_eq!(summary.subject.matches('\u{201D}').count(), 1);
+    assert_eq!(summary.subject.matches('\u{201C}').count(), 1);
+}
+
+/// Audit 2026-11-19, P2A-05: the fingerprint line is hexadecimal digits only, whatever a
+/// restored or edited row holds.
+#[test]
+fn the_fingerprint_of_the_confirmation_is_hexadecimal_whatever_the_row_holds() {
+    let mut h = Harness::new();
+    let id_note = note(&mut h, "placeholder", "INTERNAL");
+    let approval = deletion_of(&mut h, &id_note);
+    h.conn()
+        .execute(
+            "UPDATE approval_requests
+                SET operation_json = json_set(operation_json, '$.parameters_sha256', ?2)
+              WHERE id = ?1",
+            rusqlite::params![approval.as_str(), "00\n\nApprove: a harmless change"],
+        )
+        .unwrap();
+    let summary = shown_for(&mut h, &approval);
+    assert!(
+        summary.fingerprint.chars().all(|c| c.is_ascii_hexdigit()),
+        "{:?}",
+        summary.fingerprint
+    );
+    assert_eq!(summary.text().lines().count(), 9, "{}", summary.text());
+}
+
 #[test]
 fn an_erasure_confirmation_says_how_many_files_go_with_the_note() {
     // An approved erasure of a note also removes its files from disk (ADR-0017), so the
@@ -357,6 +406,76 @@ fn an_erasure_confirmation_says_how_many_files_go_with_the_note() {
         };
         assert!(text_of(&mut h).ends_with(expected), "{}", text_of(&mut h));
     }
+}
+
+/// Audit 2026-11-19 (P2A-01): `assessment.approve_final` stores its approval on the resource kind
+/// GRADE_DECISION, which had no describer, so the native dialog said "a new grade decision that is
+/// not stored yet" for an attempt that exists and holds a grade: the one irreversible approval
+/// could not be told from another. The dialog must say which assessment and which grade.
+#[test]
+fn the_confirmation_of_a_final_grade_says_which_assessment_and_which_grade() {
+    let mut h = Harness::new();
+    seed_blind_practical(&h, 1, Some(3));
+    let attempt = h
+        .call("assessment.begin", json!({ "assessment_id": "ad-w1" }))
+        .unwrap()["result"]["attempt_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    h.call(
+        "assessment.submit",
+        json!({ "attempt_id": attempt, "evidence_refs": [] }),
+    )
+    .unwrap();
+    h.call(
+        "assessment.review_evidence",
+        json!({ "attempt_id": attempt }),
+    )
+    .unwrap();
+    let criteria: Vec<serde_json::Value> = g9_assessment::Rubric::baseline()
+        .criteria()
+        .iter()
+        .map(|c| json!({ "criterion_code": c.code, "score": 1, "source": "HUMAN_REVIEWER", "evidence_refs": [] }))
+        .collect();
+    h.call(
+        "assessment.grade_provisional",
+        json!({ "attempt_id": attempt, "criteria": criteria }),
+    )
+    .unwrap();
+
+    let required = h
+        .call("assessment.approve_final", json!({ "attempt_id": attempt }))
+        .unwrap_err();
+    assert_eq!(
+        required.category,
+        g9_domain::ErrorCategory::ApprovalRequired
+    );
+    let shown = shown_for(&mut h, &required.approval_id.unwrap());
+    assert!(
+        !shown.subject.contains("not stored yet"),
+        "the attempt exists and holds a grade: {}",
+        shown.subject
+    );
+    assert!(
+        shown
+            .subject
+            .starts_with("making final the grade of an attempt at the assessment “"),
+        "{}",
+        shown.subject
+    );
+    assert!(
+        shown
+            .subject
+            .contains("; the grade that would become final: ")
+            && shown.subject.ends_with(" of 100, fail"),
+        "{}",
+        shown.subject
+    );
+    assert!(
+        !shown.subject.contains("no grade recorded"),
+        "{}",
+        shown.subject
+    );
 }
 
 #[test]

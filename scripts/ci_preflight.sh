@@ -63,11 +63,27 @@ wanted() {
 }
 
 if [ -z "$WORK" ]; then WORK="$(mktemp -d "${TMPDIR:-/tmp}/g9-preflight.XXXXXX")"; fi
+# The run deletes the export and, when it created it, the build directory. A path with '..' can
+# name a directory outside --work, so such paths are refused and the others are resolved first
+# (audit 2026-11-19, P2D-01).
+case "/$WORK/" in */../*) echo "refusing a --work with '..' components: $WORK" >&2; exit 2 ;; esac
+WORK="$(realpath -m -- "$WORK")"
 SRC="$WORK/src"
 LOGS="$WORK/logs"
 if [ -e "$SRC" ]; then echo "refusing to reuse an existing export: $SRC" >&2; exit 2; fi
 mkdir -p "$SRC" "$LOGS"
-if [ -z "$TARGET" ]; then TARGET="$WORK/target"; fi
+if [ -z "$TARGET" ]; then
+  TARGET="$WORK/target"
+else
+  case "/$TARGET/" in */../*) echo "refusing a --target with '..' components: $TARGET" >&2; exit 2 ;; esac
+  TARGET="$(realpath -m -- "$TARGET")"
+fi
+# A build directory that exists before this run is never this run's to delete.
+TARGET_EXISTED=0
+if [ -e "$TARGET" ]; then TARGET_EXISTED=1; fi
+if [ "$TARGET" = "$WORK/target" ] && [ "$TARGET_EXISTED" -eq 1 ]; then
+  echo "refusing to reuse an existing build directory: $TARGET" >&2; exit 2
+fi
 
 git -C "$REPO" archive "$SHA" | tar -x -C "$SRC"
 echo "revision : $SHA ($REV)"
@@ -179,6 +195,8 @@ if wanted content-gates; then
     step content-gates "document references" . python3 -I scripts/check_doc_refs.py
     step content-gates "metrics" . python3 -I scripts/gen_metrics.py
     step content-gates "backlog map" . python3 -I scripts/check_backlog.py
+    # The export has no .git: the gate reads the original working tree (audit 2026-11-19, GIT-1).
+    step content-gates "no ignored project file" . python3 -I scripts/check_ignored_files.py --root "$REPO"
     step content-gates "gate tests" . env G9_REQUIRE_JSONSCHEMA=1 python3 -I -m unittest discover -s scripts/tests -p 'test_*.py'
   else
     skip content-gates "all steps" "python3 module jsonschema is not installed (CI pins jsonschema==4.26.0)"
@@ -216,6 +234,6 @@ fi
 if [ "$KEEP" -eq 0 ]; then
   # Keep the logs; remove the export and, when it was created here, the build output.
   rm -rf "$SRC"
-  case "$TARGET" in "$WORK"/*) rm -rf "$TARGET" ;; esac
+  case "$TARGET" in "$WORK"/*) if [ "$TARGET_EXISTED" -eq 0 ]; then rm -rf -- "$TARGET"; fi ;; esac
 fi
 exit 0

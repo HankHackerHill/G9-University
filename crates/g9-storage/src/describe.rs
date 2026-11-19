@@ -19,8 +19,28 @@ use rusqlite::{params, Connection, OptionalExtension};
 /// Longest stored text shown in a description.
 const MAX_TEXT: usize = 96;
 
+/// `text` framed in typographic quotes. The framing characters are replaced inside the text by an
+/// apostrophe: a title that holds U+201D could otherwise close the quote and append a clause that
+/// reads as a fact the backend wrote (audit 2026-11-19, P2A-04).
 fn quoted(text: &str) -> String {
-    format!("“{}”", one_line(text, MAX_TEXT))
+    let inner = one_line(text, MAX_TEXT).replace(['“', '”', '"'], "'");
+    format!("“{inner}”")
+}
+
+/// Whether [`describe_resource`] has a description for `kind` at all. A kind without one is shown
+/// as such; it must not be called "not stored yet" (audit 2026-11-19, P2A-01).
+pub fn is_describable(kind: ResourceKind) -> bool {
+    matches!(
+        kind,
+        ResourceKind::Note
+            | ResourceKind::Attachment
+            | ResourceKind::CalendarEvent
+            | ResourceKind::Attempt
+            | ResourceKind::GradeDecision
+            | ResourceKind::CurriculumVersion
+            | ResourceKind::ScheduleProposal
+            | ResourceKind::Export
+    )
 }
 
 fn lower(word: &str) -> String {
@@ -128,7 +148,14 @@ pub fn describe_resource(
                     one_line(&zone, 48)
                 )
             }),
-        ResourceKind::Attempt => {
+        // `assessment.approve_final` covers a GRADE_DECISION whose id is the attempt's id: say which
+        // assessment and which grade would become final (audit 2026-11-19, P2A-01).
+        ResourceKind::Attempt | ResourceKind::GradeDecision => {
+            let lead = if kind == ResourceKind::GradeDecision {
+                "making final the grade of an attempt at the assessment"
+            } else {
+                "an attempt at the assessment"
+            };
             let attempt = conn
                 .query_row(
                     "SELECT d.title, d.code, a.state, a.mode
@@ -168,8 +195,17 @@ pub fn describe_resource(
                             )
                         },
                     );
+                    // A provisional grade is not stored as a decision: for the approval of a final
+                    // grade the application layer adds the grade that would become final
+                    // (`commands::assessment::final_grade_preview`), so no stale "no grade
+                    // recorded" is printed here.
+                    let tail = if kind == ResourceKind::GradeDecision {
+                        String::new()
+                    } else {
+                        format!("; {graded}")
+                    };
                     Some(format!(
-                        "an attempt at the assessment {} ({}), {} mode, {}; {graded}",
+                        "{lead} {} ({}), {} mode, {}{tail}",
                         quoted(&title),
                         one_line(&code, 48),
                         lower(&mode),

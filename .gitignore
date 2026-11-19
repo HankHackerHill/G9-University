@@ -25,5 +25,10 @@ binding.key
 /.claude/worktrees/
 
 # Synthetic lab fixtures are .log files by design; docs/curriculum/v2/WEEKS/W01/LABS/fixtures/MANIFEST.md lists the SHA-256 of each, so they must be tracked (a clone without them fails the builder).
+!docs/curriculum/v2/WEEKS/*/LABS/fixtures/*.log
 !docs/curriculum/v2/WEEKS/*/LABS/fixtures/*/*.log
 !docs/curriculum/v2/WEEKS/*/LABS/fixtures/*/*/*.log
+!docs/curriculum/v2/WEEKS/*/LABS/fixtures/*/*/*/*.log
+!docs/curriculum/v2/WEEKS/*/LABS/fixtures/*/*/*/*/*.log
+!docs/curriculum/v2/FIXTURES/*/*.log
+!docs/curriculum/v2/FIXTURES/*/*/*.log

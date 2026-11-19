@@ -536,6 +536,7 @@ function checkHiddenText(m: ParsedManifest, r: Report): void {
     }
   };
   check('/name', m.name);
+  check('/version', m.version);
   check('/provenance_note', m.provenance_note);
   m.weeks.forEach((week, wi) => {
     check(`/weeks/${wi}/title`, week.title);

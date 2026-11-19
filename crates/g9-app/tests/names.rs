@@ -92,6 +92,16 @@ fn a_name_that_is_blank_or_holds_a_hidden_character_is_refused_and_nothing_is_st
         ("zero\u{200B}width", "U+200B"),
         ("tag\u{E0041}", "U+E0041"),
         ("sep\u{2028}arator", "U+2028"),
+        // Audit 2026-11-19, NAME-1: characters that render as nothing or as blank space.
+        ("invoice\u{3164}.exe", "U+3164"),
+        ("\u{2800}x", "U+2800"),
+        ("a\u{FFFC}b", "U+FFFC"),
+        ("a\u{034F}b", "U+034F"),
+        ("a\u{E0100}b", "U+E0100"),
+        ("a\u{FE0F}b", "U+FE0F"),
+        ("report.pdf\u{3000}\u{3000}.exe", "U+3000"),
+        ("report\u{00A0}final", "U+00A0"),
+        ("report   final", "holds two or more spaces in a row"),
     ];
     let mut h = harness();
     let before = rows(&h);
@@ -141,6 +151,37 @@ fn ordinary_names_in_any_script_are_accepted() {
             assert!(out.is_ok(), "{op} {name:?}: {out:?}");
         }
     }
+}
+
+/// Audit 2026-11-19, P2A-03: a review prompt is shown as a row title and inside a sentence of
+/// facts, so it may keep layout and spaces but not a hidden, blank or reordering character.
+#[test]
+fn a_review_prompt_with_a_hidden_character_is_refused_and_nothing_is_stored() {
+    let mut h = harness();
+    let before = rows(&h);
+    for hostile in [
+        "Recall the flag \u{202E}.tpircs",
+        "zero\u{200B}width",
+        "filler\u{3164}",
+        "bell\u{0007}",
+    ] {
+        let err = h
+            .call(
+                "retention.create_item",
+                json!({ "prompt": hostile, "answer": "a" }),
+            )
+            .unwrap_err();
+        assert_eq!(err.category, ErrorCategory::InvalidInput, "{hostile:?}");
+        assert_eq!(err.code, "input.name_not_printable", "{hostile:?}: {err:?}");
+        assert_eq!(err.details.unwrap()["field"], "prompt");
+    }
+    assert_eq!(rows(&h), before, "nothing was stored");
+    // Layout, a no-break space and a non-ASCII letter are fine in free text.
+    h.call(
+        "retention.create_item",
+        json!({ "prompt": "What does\u{00A0}HSTS prevent?\nName one \u{fc}ber-case.", "answer": "a" }),
+    )
+    .unwrap();
 }
 
 #[test]

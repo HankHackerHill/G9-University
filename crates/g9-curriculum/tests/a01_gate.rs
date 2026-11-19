@@ -215,6 +215,13 @@ fn error_mutations() -> Vec<Mutation> {
             m.name = "name\u{2066}".into()
         }),
         (codes::TEXT_HIDDEN_CHARACTER, |m| {
+            m.version = "2.0.0\u{200B}".into()
+        }),
+        (codes::TEXT_HIDDEN_CHARACTER, |m| {
+            // a blank-rendering filler is not in `is_hidden` and is refused all the same
+            m.weeks[0].days[0].objectives[0].text = "report\u{3164}".into()
+        }),
+        (codes::TEXT_HIDDEN_CHARACTER, |m| {
             m.weeks[0].title = "title\u{FEFF}".into()
         }),
         (codes::TEXT_HIDDEN_CHARACTER, |m| {

@@ -29,7 +29,6 @@ use crate::error::CurriculumError;
 use crate::manifest::{Block, BlockSpec, Day, Manifest, Reconciliation, ResourceKind, Structure};
 use crate::provenance::provenance_label;
 use g9_domain::curriculum::{profile_for, ProfileBlock, STRUCTURE_PROFILES};
-use g9_domain::text::is_hidden;
 use g9_domain::{
     ActorId, CompetencyId, CurriculumCounts, CurriculumId, CurriculumInvariants, DayOfWeek,
     InvariantViolation, ManifestProvenance, SchemaVersion, StructureProfile, StructureProfileId,
@@ -890,8 +889,7 @@ const MAX_HIDDEN_TEXT_ERRORS: usize = 20;
 /// order of the text, TAB and LF excepted (they are the only layout characters
 /// free text may hold).
 fn hidden_character(text: &str) -> Option<char> {
-    text.chars()
-        .find(|c| is_hidden(*c) && *c != '\t' && *c != '\n')
+    g9_domain::text::hidden_in_text(text)
 }
 
 /// Every free-text field is shown to the operator as text. A bidirectional
@@ -917,6 +915,9 @@ fn check_hidden_text(m: &Manifest, r: &mut Reporter) {
         }
     };
     check("/name".to_string(), &m.name, r);
+    // The version label is shown raw in the window and becomes part of the stored version id
+    // (audit 2026-11-19, VERSION-1: the one manifest text field this check had left out).
+    check("/version".to_string(), &m.version, r);
     if let Some(note) = &m.provenance_note {
         check("/provenance_note".to_string(), note, r);
     }

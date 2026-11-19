@@ -1294,6 +1294,38 @@ fn finalize_attempt(
     })
 }
 
+/// What `assessment.approve_final` would make final for `attempt_id`, in words, for the native
+/// confirmation of the approval (audit 2026-11-19, P2A-01). Read-only: the same derivation as the
+/// command's own precondition check, nothing is stored. A provisional grade is not a stored
+/// decision, so the storage layer cannot say it; this function says it from the criterion results.
+pub(crate) fn final_grade_preview(
+    conn: &Connection,
+    scope: &ReadScope,
+    attempt_id: &str,
+    operator: &Actor,
+    now: UtcMillis,
+) -> String {
+    let preview = || -> Option<String> {
+        let id: AttemptId = attempt_id.parse().ok()?;
+        let loaded = load(conn, scope, &id).ok()?;
+        if loaded.attempt.state == AssessmentAttemptState::ApprovedFinal {
+            return Some("this attempt already has a final grade".to_string());
+        }
+        let attempt = domain_attempt(conn, &loaded, operator).ok()?;
+        let (decision, _) = decide_final(conn, &loaded, &attempt.attempt, operator, now).ok()?;
+        let total = decision
+            .breakdown
+            .weighted_total
+            .map_or_else(|| "no total".to_string(), |t| format!("{t:.1} of 100"));
+        Some(format!(
+            "the grade that would become final: {total}, {}",
+            if decision.pass { "pass" } else { "fail" }
+        ))
+    };
+    preview()
+        .unwrap_or_else(|| "the grade that would become final could not be computed".to_string())
+}
+
 /// `assessment.approve_final` (approval-gated: `GradeFinalize`).
 pub fn approve_final(
     ctx: &mut AppContext,

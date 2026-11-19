@@ -1416,6 +1416,8 @@ describe('mock transport: importing a manifest of the second shape (format 1.1.0
     ['an objective text with a right-to-left override', 'manifest.text.hidden_character', '/weeks/0/days/0/objectives/0/text', (m) => (at(dayOf(m, 1).objectives, 0).text = 'Review the ACL report\u202Efdp.exe')],
     ['an evidence artifact with a zero-width space', 'manifest.text.hidden_character', '/weeks/0/days/0/evidence_artifact', (m) => (dayOf(m, 1).evidence_artifact = 'report\u200B')],
     ['a curriculum name with a bidirectional isolate', 'manifest.text.hidden_character', '/name', (m) => (m.name = 'name\u2066')],
+    ['a version label with a zero-width space', 'manifest.text.hidden_character', '/version', (m) => (m.version = '2.0.0\u200B')],
+    ['an objective text with a Hangul filler', 'manifest.text.hidden_character', '/weeks/0/days/0/objectives/0/text', (m) => (at(dayOf(m, 1).objectives, 0).text = 'report\u3164')],
     ['a resource reference with a direction mark', 'manifest.text.hidden_character', '/weeks/0/days/0/resources/0/ref', (m) => (dayOf(m, 1).resources = [{ ref: 'https://portswigger.net/web-security\u200E', kind: 'INTERNAL' }])],
     ['a competency id that is not an identifier', 'objective.competency_id.invalid', '/weeks/0/days/0/objectives/0/competency_ids/0', (m) => (at(dayOf(m, 1).objectives, 0).competency_ids = ['not valid!'])],
     ['a block out of sequence', 'block.seq.mismatch', '/weeks/0/days/0/blocks/1/seq', (m) => (at(dayOf(m, 1).blocks, 1).seq = 5)],

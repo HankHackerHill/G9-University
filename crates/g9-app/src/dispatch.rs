@@ -192,6 +192,12 @@ fn refuse_oversized(op: &str, payload: &Value) -> Result<(), G9Error> {
 /// approval confirmation and exports show as a fact.
 const NAME_KEYS: [&str; 3] = ["title", "filename", "label"];
 
+/// Keys of a request whose value is free text that the window shows as the title of a row and
+/// inside a sentence of facts (a review prompt): it may keep layout and spaces, but not a hidden,
+/// blank or text-reordering character (`g9_domain::text::hidden_in_text`; audit 2026-11-19,
+/// P2A-03). Other free text (a note's body, a reason) is not shown that way and keeps its rules.
+const LINE_TEXT_KEYS: [&str; 1] = ["prompt"];
+
 /// Refuse a request in which a name is blank or holds a hidden character
 /// (`g9_domain::text::name_defect`). One check at the boundary, by key, so that
 /// an operation added later is covered without its handler knowing the rule
@@ -208,6 +214,22 @@ fn refuse_unprintable_names(payload: &Value) -> Result<(), G9Error> {
                             "a title, file name or label needs visible text and no control, invisible or text-reordering characters",
                         )
                         .with_details(serde_json::json!({ "field": key, "reason": reason })));
+                    }
+                }
+                if let (true, Value::String(text)) = (LINE_TEXT_KEYS.contains(&key.as_str()), value)
+                {
+                    if let Some(c) = g9_domain::text::hidden_in_text(text) {
+                        return Err(G9Error::invalid_input(
+                            "input.name_not_printable",
+                            "a title, file name or label needs visible text and no control, invisible or text-reordering characters",
+                        )
+                        .with_details(serde_json::json!({
+                            "field": key,
+                            "reason": format!(
+                                "holds a character that cannot be seen or that changes the order of the text (U+{:04X})",
+                                u32::from(c)
+                            )
+                        })));
                     }
                 }
                 refuse_unprintable_names(value)?;
@@ -312,11 +334,28 @@ pub fn approval_summary(
         &row.operation.resource.id,
     )?
     .unwrap_or_else(|| {
-        format!(
-            "a new {} that is not stored yet; its content is fixed by the fingerprint below",
-            kind.replace('_', " ").to_lowercase()
-        )
+        let word = kind.replace('_', " ").to_lowercase();
+        if g9_storage::describe::is_describable(row.operation.resource.kind) {
+            format!("a new {word} that is not stored yet; its content is fixed by the fingerprint below")
+        } else {
+            // No describer exists for this kind: do not claim that the record is absent.
+            format!("a {word} that this confirmation cannot describe from storage; its content is fixed by the fingerprint below")
+        }
     });
+    // The grade an approval of `assessment.approve_final` would make final is not a stored
+    // decision yet: the application layer derives it, read-only, from the criterion results.
+    let subject = if row.operation.resource.kind == g9_domain::ResourceKind::GradeDecision {
+        let preview = crate::commands::assessment::final_grade_preview(
+            ctx.db.conn(),
+            &g9_storage::repos::ReadScope::from_scope(&row.operation.scope, false),
+            &row.operation.resource.id,
+            &ctx.svc.operator,
+            row.requested_at,
+        );
+        format!("{subject}; {preview}")
+    } else {
+        subject
+    };
     let scope = format!(
         "the {} area, {} mode",
         word(serde_json::to_value(row.operation.scope.domain)),
@@ -338,7 +377,15 @@ pub fn approval_summary(
         subject,
         grants,
         scope,
-        fingerprint: row.operation.parameters_sha256.chars().take(16).collect(),
+        // Hexadecimal digits only: a restored snapshot's row is not re-validated when it is read
+        // (audit 2026-11-19, P2A-05).
+        fingerprint: row
+            .operation
+            .parameters_sha256
+            .chars()
+            .filter(char::is_ascii_hexdigit)
+            .take(16)
+            .collect(),
     })
 }
 
