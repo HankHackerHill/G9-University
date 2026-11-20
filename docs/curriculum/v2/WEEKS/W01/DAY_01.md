@@ -51,7 +51,7 @@ Prerequisites: a terminal on the trusted host, never a target; every command rea
 1. Evidence gap G1: the failed `virsh` command as typed, its user, the full error; compare with your block R plan.
 2. Four synthetic hosts, `d01/host_diag_sample_01.txt` to `_04.txt`: one line each: decision-tree leaf (HOST_READINESS section 7), deciding line, next read-only row, what is not established. They are independent paper data.
 3. Fit arithmetic on `d01/host_budget_sample.txt` for stack A (6 vCPU, 9 GiB, 120 GiB thin) and B (8, 11, 140), rule stated: threads are a ceiling, not a reservation; P-06 (PROPOSED) wants available memory of stack RAM plus 8 GiB; thin disks grow, and baselines multiply what is consumed.
-4. Real rows S-01 to S-09 one at a time, then the tree: from your evidence choose F-08 to F-11, F-17 (layout, socket, group) or F-24 to F-27 (rules, routes); F-28 needs `sudo`. Save each output verbatim with its time; interpretation separate, INFERRED. Any connection to a libvirt daemon is class C: it can start a socket-activated daemon.
+4. Real rows S-01 to S-08 one at a time, then the tree: from your evidence choose F-08 to F-11, F-17 (layout, socket, group) or F-24 to F-27 (rules, routes); F-28 needs `sudo`. Save each output verbatim with its time; interpretation separate, INFERRED. Any connection to a libvirt daemon is class C: it can start a socket-activated daemon.
 5. Paper plan of stack A: `G9-ATK-01` RED `10.77.10.10/24`, MAC `52:54:00:77:10:0a`, `g9-lab-red`, `virbr91`; `G9-TGT-01` DMZ `10.77.20.20/24`, MAC `52:54:00:77:20:14`, `g9-lab-dmz`, `virbr92`; one NIC each, no default route, IPv6 off, no host address in `10.77.0.0/16`. They cannot reach each other: the expected state.
 
 Ground truth: unit files (S-05) with the socket directory (F-11); route table (S-07) with rules (F-24). Three unexplained outputs in a row is STOP-15.
@@ -106,7 +106,7 @@ Estimates: 20 min open the diagnostic key, score, fill the placement sheet, one 
 
 ## Troubleshooting and rollback
 - Expected: each row prints what you predicted or something you can explain; the four synthetic hosts reach different leaves; the record says NOT RUN wherever nothing ran.
-- Missing dependency: a tool or column is absent (`docker`, `MOUNTPOINTS`): record the message, install nothing; a substitute is a new command needing review.
+- Missing dependency: a tool or column is absent (`MOUNTPOINTS`, for example): record the message, install nothing; a substitute is a new command needing review.
 - No connectivity: the hosted game is unreachable: change no host network setting, finish the paper tasks, mark the hosted part NOT RUN. Two stack A guests not reaching each other is expected.
 - Unexpected result: save it, write what it contradicts and a test separating the explanations; three in a row is STOP-15.
 - Safety breach: stop, do not fix forward, keep evidence; a guest that seems to reach the LAN, host or Internet is STOP-03; open the incident record (SAFETY_AUTHORIZATION section 10).

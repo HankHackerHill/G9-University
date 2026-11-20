@@ -487,7 +487,7 @@ _PLAN_ADDRESSES: set[tuple[int, ...]] | None = None
 
 
 def plan_addresses() -> set[tuple[int, ...]]:
-    """The IPv4 addresses the owner's plan names: the lab topology (10.77.x.x) and the host networks it says to avoid (its Docker bridges
+    """The IPv4 addresses the owner's plan names: the lab topology (10.77.x.x) and the host networks it says to avoid (its container bridges
     and the host LAN). A lesson on isolation has to name them; they are the plan's facts, not hosts of the lesson."""
     global _PLAN_ADDRESSES
     if _PLAN_ADDRESSES is None:

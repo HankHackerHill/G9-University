@@ -19,6 +19,7 @@
 | 15 | SKILL.md is not a security boundary; native Rust-side confirmation for protected operations (PROPOSED, Stage 03) | C11, SEC-03 | ADR-0014 |
 | 16 | Target host Ubuntu 26.04.1 LTS (Wayland); CI runner ubuntu-26.04 | operator instruction; VERIFIED release dates | README.md, .github/workflows/ci.yml |
 | 17 | Appendix A seed stays PROPOSED_SEED until reconciled with the original plan and approved | C01 | docs/curriculum/provenance-and-reconciliation.md |
+| 19 | The container engine (Docker) is not used in this repository: not in code, scripts, workflows or proposed commands, and not run by anyone working on it. The rule is lifted only by the owner's explicit instruction. Courseware commands that called it were removed (their ids stay); how intentionally vulnerable applications are hosted in the target guest instead is an OPEN decision | owner instruction 2026-11-20 | `scripts/check_no_docker.py`, `.github/workflows/ci.yml`, `docs/curriculum/v2/LAB_ARCHITECTURE.md` section 9 |
 | 18 | Skill packages and knowledge packs are generated from checked-in tables and validated in CI; all PROPOSED | budget and consistency | scripts/gen_skill_packages.py, scripts/gen_competency_packs.py |
 
 ## First exact proposed Stage 03 operation (not performed)

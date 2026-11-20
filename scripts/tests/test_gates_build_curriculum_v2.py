@@ -994,7 +994,7 @@ class OneWeek(TreeCase):
             "The documentation ranges are 192.0.2.1, 198.51.100.9 and 203.0.113.7.", "The private blocks are 10.0.0.0/8, 172.16.0.0/12 and 192.168.0.0/16.",
             "The metadata address is 169.254.169.254 inside the cloud lab.", "The key id AKIAIOSFODNN7EXAMPLE is the documented example.",
             "The lab net is 10.77.10.0/24 and the DMZ 10.77.20.0/24.", "The OID 1.3.6.1.4.1.9 names a branch.", "Version 3.11.4 of the tool is assumed.",
-            "The plan names the host LAN 192.168.1.0/24 and the Docker bridge 172.17.0.0/16 as networks to keep a guest off.",
+            "The plan names the host LAN 192.168.1.0/24 and the container bridge 172.17.0.0/16 as networks to keep a guest off.",
         ]  # fmt: skip
         for line in lines:
             paste(D2, line)(self.tree)

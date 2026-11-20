@@ -30,7 +30,7 @@ A design statement is PROPOSED. A product behaviour that this file does not sour
 |---|---|---|---:|---:|---:|
 | `G9-RTR-01` | OPNsense or pfSense: internal-only inter-zone policy and logs | RED `.1`, DMZ `.1`, CORP `.1` | 2 | 2 GiB | 20 GiB |
 | `G9-ATK-01` | Linux attacker: authorized tools and analysis | RED `10.77.10.10` | 4 | 6 GiB | 80 GiB |
-| `G9-TGT-01` | Ubuntu target: Docker-hosted intentionally vulnerable applications | DMZ `10.77.20.20` | 2 | 3 GiB | 40 GiB |
+| `G9-TGT-01` | Ubuntu target: intentionally vulnerable applications (how they are hosted is an open decision, section 9) | DMZ `10.77.20.20` | 2 | 3 GiB | 40 GiB |
 | `G9-DC-01` | Windows Server AD: domain controller, DNS, Kerberos, GPO | CORP `10.77.30.10` | 2 | 6 GiB | 80 GiB |
 | `G9-WKS-01` | Windows workstation: domain-joined test endpoint | CORP `10.77.30.20` | 2 | 6 GiB | 70 GiB |
 | `G9-SIEM-01` | Wazuh all-in-one: SIEM and endpoint telemetry | CORP `10.77.30.30` | 4 | 8 GiB | 100 GiB |
@@ -76,7 +76,7 @@ G9 Ubuntu host (trusted; not itself a target; no address in 10.77.0.0/16)
 G9-RTR-01: three isolated virtual interfaces, no NAT, no bridged WAN, no default gateway.
 Domain: corp.g9.test (a test namespace; never a real customer domain).
 G9-MAL-01: separate, disposable, no network interface, never joined to AD.
-Docker with intentionally vulnerable applications runs inside G9-TGT-01 only.
+Intentionally vulnerable applications run inside G9-TGT-01 only.
 ```
 
 | Zone | libvirt network | Bridge | CIDR | Router port | Members | Addressing |
@@ -315,32 +315,32 @@ Fragment of a design for the domain (not a definition; elided parts are marked):
 </domain>
 ```
 
-## 9. Docker inside the target guest only
+## 9. Intentionally vulnerable applications in the target guest only
 
-Plan: intentionally vulnerable Docker applications live inside the Ubuntu target VM, never on the trusted G9 host; do not mount a Docker socket, production secrets, an SSH agent or sensitive files into deliberately vulnerable containers. "Host" in the plan's rule is the Docker host, which for these applications is `G9-TGT-01`.
+Owner instruction of 2026-11-20: the container engine is not used anywhere in this repository's code or proposed commands. The owner's plan (not edited) hosts intentionally vulnerable applications in containers inside the Ubuntu target VM; **how they are hosted in `G9-TGT-01` instead is an OPEN DECISION** of the owner, and no hosting command is proposed here until it is made. The rules below hold whatever the hosting is; they never allow a vulnerable application on the trusted G9 host.
 
 | ID | Rule (PROPOSED) | Check |
 |---|---|---|
-| D-01 | No vulnerable image runs on the trusted host's Docker. The host's Docker, its networks and its behaviour are not changed | HOST_READINESS F-30 |
-| D-02 | Images are pulled only during staging (a class C or D approval; the plan lists Docker image pulls as needing approval), pinned by digest, and the digest is recorded. The baseline is taken after the pull | media record |
-| D-03 | No container mounts the Docker socket, the guest's home, an SSH agent, a credential file or any path other than a synthetic data directory | `docker inspect` row TD-02 |
-| D-04 | No container is privileged or given extra capabilities, unless one exercise's RoE says so and names it (week 11 privileged-container exercise) | TD-02 |
-| D-05 | The Docker daemon does not listen on a TCP port | listening-socket check TD-04 |
-| D-06 | Applications bind the guest's loopback by default (the plan's registry note for Juice Shop: loopback bind within the isolated VM). Exposure on `10.77.20.20` for a RED exercise is E1, one port, one window | TD-02, TD-04 |
-| D-07 | Memory, CPU and process limits are set on each container so that one cannot starve the guest | TD-02 |
-| D-08 | Data in containers is synthetic; no credential of the owner exists in the guest | fixture manifest |
-| D-09 | The addresses inside the guest's Docker (for example `172.17.0.0/16`) are unrelated to the host's Docker addresses of the same range; every evidence record names the system where an address was seen | evidence record |
-| D-10 | Whether the crAPI container set fits in 3 GiB is not established; resize inside the 31 GiB rule if needed | week 5 guide |
+| D-01 | No vulnerable application runs on the trusted host. The host's networks and behaviour are not changed | HOST_READINESS read-only network rows (F-23 to F-28) |
+| D-02 | Application packages or images are fetched only during staging (a class C or D approval), pinned by version or digest, and the pin is recorded. The baseline is taken after the fetch | media record |
+| D-03 | No vulnerable application is given the guest's home, an SSH agent, a credential file or any path other than a synthetic data directory | inspection of the service definition in the guest |
+| D-04 | No vulnerable application runs privileged or with extra capabilities, unless one exercise's RoE says so and names it (week 11 privileged-container exercise) | as D-03 |
+| D-05 | No management daemon of the hosting method listens on a TCP port | listening-socket check TD-04 |
+| D-06 | Applications bind the guest's loopback by default (the plan's registry note for Juice Shop: loopback bind within the isolated VM). Exposure on `10.77.20.20` for a RED exercise is E1, one port, one window | TD-04 |
+| D-07 | Memory, CPU and process limits are set on each application so that one cannot starve the guest | service definition |
+| D-08 | Data in the applications is synthetic; no credential of the owner exists in the guest | fixture manifest |
+| D-09 | Addresses inside the guest (for example in `172.17.0.0/16`) are unrelated to the host's addresses of the same range; every evidence record names the system where an address was seen | evidence record |
+| D-10 | Whether the crAPI application set fits in 3 GiB is not established; resize inside the 31 GiB rule if needed | week 5 guide |
 
-Proposed commands inside `G9-TGT-01` (class D; no approval recorded):
+Proposed commands inside `G9-TGT-01` (class D; no approval recorded). TD-01, TD-02, TD-03 and TD-05 were removed on 2026-11-20 on the owner's instruction (they called the container engine); their ids stay so that references remain valid.
 
 | ID | Command | Target | Purpose and expected output | Side effects | Privilege | Safe scope | Rollback |
 |---|---|---|---|---|---|---|---|
-| TD-01 | `docker run -d --name juice --memory 1g --cpus 1 --pids-limit 256 --cap-drop ALL -p 127.0.0.1:3000:3000 <image reference pinned by digest>` | `G9-TGT-01` | starts one training application bound to the guest's loopback; prints a container id. Whether the application runs without capabilities is ASSUMED | starts a container, opens a loopback port in the guest | a user in the guest's docker group (root-equivalent in the guest) | the guest only | `docker rm -f juice` |
-| TD-02 | `docker inspect --format '{{.HostConfig.Privileged}} {{.HostConfig.Binds}} {{.HostConfig.NetworkMode}} {{.HostConfig.PortBindings}}' juice` | the container's configuration | expect `false`, no binds, the default network, the loopback port only | none | as TD-01 | the one container | none needed (read-only) |
-| TD-03 | `docker ps --format '{{.Names}} {{.Image}} {{.Ports}}'` | the guest's Docker | lists containers, images and published ports | none | as TD-01 | the guest | none needed (read-only) |
-| TD-04 | `ss -tlnp` | the guest | listening sockets; the Docker daemon is not on TCP; the application is on the loopback address (process names need root) | none | user, or root for process names | the guest | none needed (read-only) |
-| TD-05 | `docker rm -f juice` | the container | removes it | deletes the container and its writable layer | as TD-01 | the one container | recreate from TD-01 |
+| TD-01 | (removed) | | removed 2026-11-20 on the owner's instruction | | | | |
+| TD-02 | (removed) | | removed 2026-11-20 on the owner's instruction | | | | |
+| TD-03 | (removed) | | removed 2026-11-20 on the owner's instruction | | | | |
+| TD-04 | `ss -tlnp` | the guest | listening sockets; no management daemon is on TCP; the application is on the loopback address (process names need root) | none | user, or root for process names | the guest | none needed (read-only) |
+| TD-05 | (removed) | | removed 2026-11-20 on the owner's instruction | | | | |
 
 ## 10. AD backup and restore
 
@@ -637,7 +637,7 @@ Rules:
 | 1 | RTR, ATK, TGT | 8 | 11 | 35% | 140 | T8, T6, T7, T5, T1, T9 | the first sub-step (two guests, static addresses) can start with ATK and TGT on separate bridges, with no router |
 | 2 | RTR, ATK, TGT | 8 | 11 | 35% | 140 | as week 1 | captures taken on the router's taps |
 | 3 | DC, WKS | 4 | 12 | 39% | 150 | T8, T6, T7, T5, T9 (AD variant) | CORP only: no router needed; T2 and T3 wait for ATK and the router |
-| 4 | RTR, ATK, TGT | 8 | 11 | 35% | 140 | as week 1 | Docker inside the target; most PortSwigger work is hosted and runs no guest |
+| 4 | RTR, ATK, TGT | 8 | 11 | 35% | 140 | as week 1 | vulnerable applications inside the target; most PortSwigger work is hosted and runs no guest |
 | 5 | RTR, ATK, TGT | 8 | 11 | 35% | 140 | as week 1 | crAPI memory fit is not established; the target may be resized inside the budget |
 | 6 | RTR, ATK, TGT, DC, WKS | 12 | 23 | 74% | 290 | T1 to T3, T5 to T9 and the retest after the day 29 exception | the plan's core sites for the day 30 midpoint are hosted machines, so no guest is assumed for that day (INFERRED) |
 | 7 | RTR, ATK, TGT, DC, WKS, SIEM | 16 | 31 | 100% | 390 | T1 to T9 | days 31 to 33: DC, WKS, SIEM (8 vCPU, 20 GiB, 250 GiB); day 34: RTR, ATK, TGT, SIEM (12 vCPU, 19 GiB, 240 GiB); the full stack only if the day needs it |

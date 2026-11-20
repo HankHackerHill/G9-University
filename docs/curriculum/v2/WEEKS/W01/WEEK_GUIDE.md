@@ -56,7 +56,7 @@ Dates are the plan's original calendar. Time figures for hosted work are estimat
 
 | Tool | Runs on | Purpose | Reference |
 |---|---|---|---|
-| `lscpu`, `free`, `df`, `lsblk`, `ip`, `systemctl`, `ls`, `id`, `readlink`, `printenv`, `uptime`, `sha256sum` | the G9 host, read-only, each approved | Stage 00 diagnostics, evidence hashes | `docs/curriculum/v2/HOST_READINESS.md` rows S-01 to S-09 and F-01 to F-31 |
+| `lscpu`, `free`, `df`, `lsblk`, `ip`, `systemctl`, `ls`, `id`, `readlink`, `printenv`, `uptime`, `sha256sum` | the G9 host, read-only, each approved | Stage 00 diagnostics, evidence hashes | `docs/curriculum/v2/HOST_READINESS.md` rows S-01 to S-08 and F-01 to F-28 (S-09, F-29 and F-30 were removed) |
 | `virsh`, `qemu-img`, `tcpdump` | the G9 host, class C after approval | guest inventory, network and domain state, host-side captures on a guest's tap | `docs/curriculum/v2/LAB_ARCHITECTURE.md` sections 5, 11 and 12; `w01-libvirt-daemons`, `w01-libvirt-formatnetwork`, `w01-ubuntu-libvirt` |
 | `ip`, `netplan`, `sysctl`, `ss`, a Bash `/dev/tcp` redirection | `G9-ATK-01`, `G9-TGT-01` | static addresses, routes, listeners, a one-line client | `w01-man7-ss`, `w01-man7-bind`, `w01-man7-listen` |
 | `id`, `stat`, `namei`, `chmod`, `chown`, `chgrp`, `getfacl` (optional), `useradd`, `groupadd`, `sudo -u`, `visudo` | `G9-TGT-01` | identities and permission decisions, accounts, delegation checks | `w01-man7-credentials`, `w01-man7-path-resolution`, `w01-man7-acl`, `w01-sudoers-manual` |

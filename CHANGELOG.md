@@ -2,6 +2,17 @@
 
 All notable changes are recorded here. Labels follow `GOVERNANCE.md`.
 
+## [0.1.0] — unreleased (2026-11-20 update)
+
+### Removed (2026-11-20, owner instruction: the container engine is not used in this repository)
+- **CI**: the `EmbarkStudios/cargo-deny-action` step. Its action.yml (read at v2.1.1) runs in a container image, so CI was running the container engine even though no file of ours named it. CI now installs `cargo-deny` 0.22.0 with `cargo install --locked --version 0.22.0 cargo-deny` and runs `cargo deny --all-features --locked check`, as `scripts/ci_preflight.sh` already did. NOT RUN: the workflow was not started and the install was not run here; whether 0.22.0 accepts `deny.toml` unchanged is unverified.
+- **Courseware commands that called the engine**: `S-09`, `F-29` and `F-30` of `docs/curriculum/v2/HOST_READINESS.md`, and `TD-01`, `TD-02`, `TD-03` and `TD-05` of `docs/curriculum/v2/LAB_ARCHITECTURE.md` (the ids stay, marked removed); the engine's group name from `F-17` and `F-18`; the day-1 guide now uses rows S-01 to S-08. The tool entry `w11-docker-bench-security` is gone from the week 11 registry (34 entries left). **Open decision of the owner**: how intentionally vulnerable applications are hosted in the target guest instead (the owner's plan, which is not edited, hosts them in containers).
+- Two code strings in the courseware builder and its test that named the engine's bridge network are reworded.
+
+### Added (2026-11-20)
+- `scripts/check_no_docker.py` (8 tests; wired into `scripts/ci_preflight.sh` and `.github/workflows/ci.yml`): fails when a tracked file is named like a container build or composition file, when a code or configuration file outside `docs/` names the engine or its tools, or when a workflow uses an Action that is not on its allow-list (an Action can run in a container with no word of ours saying so) or a `container:` or `services:` key. It fails on the previous commit with exactly three findings (the Action and the two strings). Prose under `docs/` and Markdown are not read.
+- Still mentioned in prose, left for the owner to say whether to remove: the owner's plan (verbatim, never edited), safety rules that forbid misuse of the engine, facts about the owner's host (its networks and interface names), the week 5, 6 and 11 registry notes and two reading references of week 11, an entry-diagnostic question about a mounted daemon socket and its key, two invented interface lists of the week 1 fixtures, and the historical audit records.
+
 ## [0.1.0] — unreleased (2026-11-18 update)
 
 ### Added (2026-11-18, the owner's "G9 Cybersecurity Mastery v2.0" plan; ADR-0023)

@@ -298,31 +298,6 @@
       "notes": "Supports W11-Q02 (privileged container, mounted daemon socket). Pair with the capabilities(7) and namespaces(7) manual pages (man7.org; capabilities(7) is registered in WEEKS/W06 as w06-man7-capabilities). estimate_minutes is a registry planning figure sized to the block, not a provider figure."
     },
     {
-      "id": "w11-docker-bench-security",
-      "url": "https://github.com/docker/docker-bench-security",
-      "provider": "Docker (open source)",
-      "title": "docker/docker-bench-security - Docker Bench for Security",
-      "kind": "TOOL",
-      "access": "UNKNOWN",
-      "access_note": "No search result seen, so no tier evidence. Public open-source repository expected; licence not read (ASSUMED, not evidence).",
-      "verification": "ASSUMED",
-      "evidence": "Not searched: the shared web-search budget of the run (200 calls per turn) was already used up when this author's first query ran, so no search result was seen. Address and title recalled from training data (cutoff June 2026), not seen in any result today. Kept ASSUMED because it is the long-standing script that checks a host against the CIS Docker Benchmark (recalled).",
-      "version": "not checked; benchmark edition covered by the script not read",
-      "topics": [
-        "CIS Docker Benchmark",
-        "host audit",
-        "container configuration"
-      ],
-      "suggested_days": [
-        "D52"
-      ],
-      "block": "B",
-      "estimate_minutes": 60,
-      "difficulty": null,
-      "fallback": "w11-owasp-docker-cheatsheet",
-      "notes": "Run only on the disposable lab guest that hosts the vulnerable container, after the owner approves the install. Treat each WARN as a hypothesis: check the configuration yourself before calling it a finding, and record which checks do not apply to the lab. Do not run it on the G9 host itself. estimate_minutes is a registry planning figure sized to the block, not a provider figure."
-    },
-    {
       "id": "w11-owasp-docker-cheatsheet",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
       "provider": "OWASP",

@@ -20,7 +20,7 @@ Generated from the files of the tree by `scripts/gen_metrics.py --write`. `pytho
 | Competency packs | 8 | `data/competency-packs/` |
 | Frontend TS/TSX | 127 files, 27,109 lines; 41 test files | `apps/desktop/` |
 | CSS | 16 files, 4,224 lines | `apps/desktop/` |
-| Scripts | 23 in `scripts/`, 3 in `scripts/e2e/`, 14 test modules in `scripts/tests/` | `scripts/` |
+| Scripts | 24 in `scripts/`, 3 in `scripts/e2e/`, 15 test modules in `scripts/tests/` | `scripts/` |
 
 ## Rust per workspace member
 
@@ -105,6 +105,6 @@ Cross-checks passed: operations.parse, operations.unique, operations.disjoint, o
 | JSON schemas elsewhere in `schemas/` | 8 |
 | Skill packages (`.agents/skills/`) | 37 |
 | Competency packs (`data/competency-packs/`) | 8 |
-| Files in `scripts/` | 23 (.json 1, .py 19, .sh 3) |
+| Files in `scripts/` | 24 (.json 1, .py 20, .sh 3) |
 | Files in `scripts/e2e/` | 3 |
-| Test modules `scripts/tests/test_*.py` | 14 |
+| Test modules `scripts/tests/test_*.py` | 15 |

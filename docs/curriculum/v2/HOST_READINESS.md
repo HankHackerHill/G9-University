@@ -143,7 +143,7 @@ All rows are proposed text. Rollback "none needed (read-only)" means the command
 | S-06 | `ls -l /dev/kvm` | the KVM device node | a character device, normally owned by root with group `kvm`; or `No such file or directory`. Check ownership and permissions | none | user | the host | none needed (read-only) |
 | S-07 | `ip -4 route` | the IPv4 main routing table | default routes with metrics and the connected subnets, including Docker bridges. It does not show policy routes | none | user | the host | none needed (read-only) |
 | S-08 | `ip -6 route` | the IPv6 main routing table | possibly no lines | none | user | the host | none needed (read-only) |
-| S-09 | `docker version` | the Docker client version and the daemon's answer | client and server blocks with versions, or a permission or connection error | queries the daemon's API; writes nothing | user in group `docker`, or root | the host's Docker | none needed (read-only) |
+| S-09 | (removed) | removed 2026-11-20 on the owner's instruction: the container engine is not used and no command here calls it; the id stays so that references remain valid | | | | | |
 
 ### 5.2 Follow-up rows, chosen from returned evidence only
 
@@ -167,8 +167,8 @@ The plan requires follow-up diagnostics to be selected from the returned evidenc
 | F-14 | `dpkg-query -W -f='${Package} ${Version} ${db:Status-Abbrev}\n' 'libvirt*' 'qemu*' 'virtinst' 'ovmf' 'swtpm*' 'dnsmasq*'` | the package database (Debian and Ubuntu, ASSUMED) | `ii` lines for installed packages; a "no packages found matching" message per pattern without one | none | user | the host | none needed (read-only) |
 | F-15 | `virsh --version` | the client's version | a version string; this option is client-only and does not connect (ASSUMED) | none | user | the host | none needed (read-only) |
 | F-16 | `virtqemud --version` or `libvirtd --version` (the owner may skip: F-14 gives package versions) | the daemon binary's version | prints a version and exits (ASSUMED); the binary is run, though only to print | none expected | user | the host | none needed (read-only) |
-| F-17 | `id` | the owner's user and groups | groups such as `kvm`, `libvirt`, `docker` (Debian and Ubuntu names, ASSUMED) | none | user | the host | none needed (read-only) |
-| F-18 | `getent group kvm libvirt libvirt-qemu docker` | the group database entries | which groups exist and who belongs; a missing group suggests the package that creates it is absent (ASSUMED) | none | user | the host | none needed (read-only) |
+| F-17 | `id` | the owner's user and groups | groups such as `kvm`, `libvirt` (Debian and Ubuntu names, ASSUMED) | none | user | the host | none needed (read-only) |
+| F-18 | `getent group kvm libvirt libvirt-qemu` | the group database entries | which groups exist and who belongs; a missing group suggests the package that creates it is absent (ASSUMED) | none | user | the host | none needed (read-only) |
 | F-19 | `printenv LIBVIRT_DEFAULT_URI` | the environment override of the default connection URI | the URI, or nothing with exit status 1 | none | user | the owner's shell | none needed (read-only) |
 | F-20 | `ls -l ~/.config/libvirt/` and `grep -n uri_default ~/.config/libvirt/libvirt.conf` | the per-user client configuration | a file list and any `uri_default` line; `No such file or directory` is a normal answer | none | user | the owner's home | none needed (read-only) |
 | F-21 | `grep -n -e unix_sock -e auth_unix -e listen_ /etc/libvirt/libvirtd.conf /etc/libvirt/virtqemud.conf` | the daemons' socket and authentication settings (commented defaults match too) | lines naming the socket directory, group, permissions and listening options; an error for a file that does not exist | none | user (the files are normally world-readable, ASSUMED) | the host | none needed (read-only) |
@@ -179,8 +179,8 @@ The plan requires follow-up diagnostics to be selected from the returned evidenc
 | F-26 | `ip -br addr` and `ip -br link` | every interface with state, addresses and links | brief lines; existing `virbr*` interfaces, `docker0`, `br-*`, the VPN interface and their subnets | none | user | the host | none needed (read-only) |
 | F-27 | `ip route get 10.77.10.10`, `ip route get 10.77.20.20`, `ip route get 10.77.30.10` | the kernel's route choice for three lab addresses; no packet is sent | the chosen route per address; a result through the default route or a physical or VPN interface means no lab route exists now | none | user | the host | none needed (read-only) |
 | F-28 | `sudo nft list ruleset` | the firewall rules in force | the tables and chains of Docker, libvirt (if present) and any VPN kill-switch rules. It may reveal VPN endpoint addresses: redact. If the firewall backend was never used the command may load a kernel module (ASSUMED; harmless, but a state change) | possible module load | root (sudo; class B) | the host | none needed (read-only); an unloaded module is not rolled back |
-| F-29 | `docker network ls` | Docker network names, drivers, scopes | the default bridge and user networks | none | user in group `docker`, or root | the host's Docker | none needed (read-only) |
-| F-30 | `docker ps --format '{{.Names}} {{.Image}} {{.Ports}}'` | running containers, their images and published ports | any container. An intentionally vulnerable image, or a port published on all addresses, would conflict with plan section 3.2 | none | user in group `docker`, or root | the host's Docker | none needed (read-only) |
+| F-29 | (removed) | removed 2026-11-20 on the owner's instruction: the container engine is not used and no command here calls it; the id stays so that references remain valid | | | | | |
+| F-30 | (removed) | removed 2026-11-20 on the owner's instruction: the container engine is not used and no command here calls it; the id stays so that references remain valid | | | | | |
 | F-31 | `uptime -s` | the time the system booted | a date and time; compare with 2026-11-14 to see whether the host restarted after the observation (H7) | none | user | the host | none needed (read-only) |
 
 ### 5.3 Class C rows: connection probes (not read-only)
@@ -288,16 +288,14 @@ Sample (synthetic): S-05 on a host with no libvirt daemon units.
 | F-23: `disable_ipv6 = 1` for `all` | disabled on existing interfaces; new interfaces (`virbr`, `vnet`) take the `default` value, so check it too | | |
 | F-23: `ip_forward = 1` | the host forwards IPv4 (Docker normally sets it, ASSUMED); relevant to the bridge-exposure design (`docs/curriculum/v2/LAB_ARCHITECTURE.md`, section 7) | | |
 | F-23: `rp_filter` and `arp_ignore` values | they decide whether a guest on a bridge can reach host addresses (section 7 of the architecture file) | | |
-| S-09: `permission denied` on the Docker socket | the user is not in group `docker`; not a libvirt matter. Membership in that group is root-equivalent | | |
-| S-09 returns client and server | the daemon answers; its firewall rules and forwarding exist | | F-28, F-29 |
-| F-30 lists a vulnerable image, or a port published on all addresses | a vulnerable application on the host, which plan section 3.2 forbids; record and stop (SAFETY_AUTHORIZATION, STOP-06) | | |
+| a vulnerable application is found on the host by any row | a vulnerable application on the host, which plan section 3.2 forbids; record and stop (SAFETY_AUTHORIZATION, STOP-06) | | |
 
 ## 7. Decision tree: from returned evidence to the next diagnostic
 
 The tree names the next read-only row; it never names an installation. Its leaves are decisions for the owner.
 
 ```text
-START   S-01 to S-09 returned and recorded; owner has written down the failed virsh command (G1)
+START   S-01 to S-08 returned and recorded; owner has written down the failed virsh command (G1)
 |
 +-- N1  S-06 /dev/kvm
 |     +-- exists and accessible ----------------------> F-07 -> N5
@@ -326,7 +324,7 @@ START   S-01 to S-09 returned and recorded; owner has written down the failed vi
 |
 +-- N5  network picture (independent of N1 to N4)
 |     +-- S-07, F-26 or F-27 show a use of 10.77.0.0/16 -> leaf L13
-|     +-- none ---------------------------------------> F-23 to F-30 recorded -> leaf L14
+|     +-- none ---------------------------------------> F-23 to F-28 recorded -> leaf L14
 |
 +-- N6  resources: S-02, S-03, S-04, F-22 recorded ---> leaf L15
 ```
@@ -361,7 +359,7 @@ Every row is NOT MET on 2026-11-18: no evidence exists for any of them.
 | P-02 | KVM acceleration is usable: `/dev/kvm` exists and QEMU can use it under the intended connection | F-07 PASS lines, then a guest observed running accelerated after a separately approved first build step | plan section 2.1 ("not yet verified") | NOT MET |
 | P-03 | the libvirt network, storage and QEMU drivers answer on the intended URI | C-01 and C-03 outputs | plan section 3.2 | NOT MET |
 | P-04 | no route, interface, Docker network, VPN allowed range or libvirt network overlaps `10.77.0.0/16` in any table | S-07, F-24 to F-27 | plan section 3.2 ("check collisions") | NOT MET |
-| P-05 | a baseline of the host's network state exists before any change: routes in all tables, rules, interfaces, firewall ruleset, forwarding sysctls, Docker networks, with a hash, so that a later comparison can show the VPN and Docker behaviour unchanged | the outputs of F-23 to F-29 | plan section 2.2 ("preserve Proton/WireGuard and Docker behavior") | NOT MET |
+| P-05 | a baseline of the host's network state exists before any change: routes in all tables, rules, interfaces, firewall ruleset, forwarding sysctls, Docker networks, with a hash, so that a later comparison can show the VPN and Docker behaviour unchanged | the outputs of F-23 to F-28 (F-29 was removed) | plan section 2.2 ("preserve Proton/WireGuard and Docker behavior") | NOT MET |
 | P-06 | resource fit: `MemAvailable` at the start of a session is at least the week's stack RAM plus 8 GiB headroom (PROPOSED heuristic, not measured), and free space at the image location is at least about 600 GB (the plan's target) | S-02, S-03 or F-22 at approval time | plan section 3.1 | NOT MET |
 | P-07 | the owner has accepted the standing rules and signed the RoE for the exercise, and approved each mutating command | `docs/curriculum/v2/SAFETY_AUTHORIZATION.md` (sections 2 and 12) | plan section 0.4 | NOT MET |
 | P-08 | the nine isolation acceptance tests are written as reviewed commands, and the order is fixed: containment tests before any vulnerable service starts, positive tests last | `docs/curriculum/v2/LAB_ARCHITECTURE.md`, section 11 | plan section 3.3 | NOT MET |

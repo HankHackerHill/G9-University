@@ -51,11 +51,13 @@ jobs:
         run: cargo test --locked -p g9-evaluation --test layering_gate -- --ignored
       - name: dependency tree (line count; a cycle already fails the build)
         run: cargo tree --locked -e normal --prefix none | sort -u > /tmp/tree.txt && wc -l /tmp/tree.txt
+      # The EmbarkStudios cargo-deny Action runs in a container (runs.using is a container image);
+      # the container engine is not used in this repository (owner instruction, 2026-11-20), so
+      # cargo-deny is built from its crates.io source at a pinned version and run directly.
+      - name: install cargo-deny (pinned; built from source; no container Action)
+        run: cargo install --locked --version 0.22.0 cargo-deny
       - name: cargo-deny (licenses, advisories, bans)
-        uses: EmbarkStudios/cargo-deny-action@c3bbe7e4e3f7baeee1a3dd9aec0a3b2aded580fb # v2.1.1
-        with:
-          command: check
-          arguments: --all-features --locked
+        run: cargo deny --all-features --locked check
 
   desktop-shell:
     name: tauri shell (Linux build with system webkit)
@@ -145,6 +147,8 @@ jobs:
         run: $PY -I scripts/check_backlog.py
       - name: no ignored project file (nothing .gitignore excludes is part of the project; GIT-1)
         run: $PY -I scripts/check_ignored_files.py
+      - name: no container engine (code, configuration and workflows; Actions on an allow-list; owner rule 2026-11-20)
+        run: $PY -I scripts/check_no_docker.py
       - name: tests of the gates themselves
         run: G9_REQUIRE_JSONSCHEMA=1 $PY -I -m unittest discover -s scripts/tests -p 'test_*.py'
 

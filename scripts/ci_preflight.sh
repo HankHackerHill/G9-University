@@ -136,7 +136,7 @@ if wanted rust; then
   step rust "layering: deny-target graph" . cargo test --locked -p g9-evaluation --test layering_gate -- --ignored
   step rust "dependency tree" . sh -c 'cargo tree --locked -e normal --prefix none | sort -u | wc -l'
   if have cargo-deny; then
-    # CI uses EmbarkStudios/cargo-deny-action, which fetches the advisory database.
+    # CI installs cargo-deny (pinned) with cargo install and runs it live, which fetches the advisory database.
     # Offline, the local advisory database is used as it is; its age is printed in the log.
     if [ "$OFFLINE" -eq 1 ]; then
       step rust "cargo-deny (offline database)" . cargo deny --all-features --locked --offline check
@@ -197,6 +197,8 @@ if wanted content-gates; then
     step content-gates "backlog map" . python3 -I scripts/check_backlog.py
     # The export has no .git: the gate reads the original working tree (audit 2026-11-19, GIT-1).
     step content-gates "no ignored project file" . python3 -I scripts/check_ignored_files.py --root "$REPO"
+    # Reads the tracked files of the original repository (the export has no .git); owner rule 2026-11-20.
+    step content-gates "no container engine" . python3 -I scripts/check_no_docker.py --root "$REPO"
     step content-gates "gate tests" . env G9_REQUIRE_JSONSCHEMA=1 python3 -I -m unittest discover -s scripts/tests -p 'test_*.py'
   else
     skip content-gates "all steps" "python3 module jsonschema is not installed (CI pins jsonschema==4.26.0)"
