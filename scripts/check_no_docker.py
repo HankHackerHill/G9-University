@@ -8,10 +8,11 @@ on it, unless the owner lifts the rule explicitly. This gate keeps the code side
 
 It reads every tracked file (`git ls-files`) and fails when
   1. a file is named like a container build or composition file (the engine's build file, its
-     compose files and ignore file, a Containerfile, a dev-container definition, Podman files);
+     compose files and ignore file, a Containerfile, a dev-container definition, or the files of
+     the other container engines);
   2. a code or configuration file (any tracked file outside `docs/` that is not Markdown) names a
-     container engine or its tools: the engine itself, its daemon, its compose tool, Podman,
-     containerd, buildah, nerdctl;
+     container engine or its tools (the engine itself, its daemon, its compose tool, and the other
+     container engines and build tools listed in ENGINE_TOKENS);
   3. a GitHub workflow uses an Action that is not on the allow-list below, or uses a `container:`
      or `services:` key. An Action can run in a container without any word of ours saying so (the
      cargo-deny Action did: its action.yml says `runs.using` is a container image), so a new Action
